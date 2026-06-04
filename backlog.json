@@ -1,0 +1,1177 @@
+{
+  "project": "Abbott Cyber Consulting \u2014 GRC Security Scorecard",
+  "version": "1.3",
+  "created": "2026-05-14",
+  "updated": "2026-06-04",
+  "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
+  "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
+  "sections": [
+    {
+      "id": "core",
+      "title": "Core Concept",
+      "phase": 1,
+      "description": "Foundational platform capabilities \u2014 the spine everything else attaches to.",
+      "items": [
+        {
+          "id": "s1",
+          "text": "Security posture scoring for organisations / clients",
+          "done": true
+        },
+        {
+          "id": "s2",
+          "text": "Phase 1: Survey-based input (quick start, no tooling required)",
+          "done": true
+        },
+        {
+          "id": "s3",
+          "text": "Phase 2: Ingest vuln scan results (Nessus, Qualys, etc.)",
+          "done": false
+        },
+        {
+          "id": "s4",
+          "text": "Phase 3: Pen test findings integration",
+          "done": false
+        },
+        {
+          "id": "s5",
+          "text": "Unified score across all data sources",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "dashboard_shell",
+      "title": "Platform Dashboard Shell",
+      "phase": 1,
+      "description": "Main navigation shell, org switcher, sidebar, and module routing.",
+      "items": [
+        {
+          "id": "d1",
+          "text": "Sidebar navigation with grouped modules (Assessments, Risk Management, Compliance, Exercises, Reporting)",
+          "done": true
+        },
+        {
+          "id": "d2",
+          "text": "Org switcher dropdown: Grandfather / Father / Child three-tier selector",
+          "done": true
+        },
+        {
+          "id": "d3",
+          "text": "Dashboard home: org tier card, assessments run, avg posture score, quick links",
+          "done": true
+        },
+        {
+          "id": "d4",
+          "text": "Module routing: live modules open inline, unbuilt modules show phase/coming-soon card",
+          "done": true
+        },
+        {
+          "id": "d5",
+          "text": "Score dot indicators on sidebar nav items (green/amber/red based on latest score)",
+          "done": true
+        },
+        {
+          "id": "d6",
+          "text": "Topbar breadcrumb and active org pill",
+          "done": true
+        },
+        {
+          "id": "d7",
+          "text": "Per-org assessment history with trend line (2+ assessments)",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "survey",
+      "title": "Phase 1 \u2014 Survey Engine",
+      "phase": 1,
+      "description": "Survey-based scoring. Insurance Readiness built as first live module.",
+      "items": [
+        {
+          "id": "s6",
+          "text": "Build CIS Controls v8 survey question set",
+          "done": false
+        },
+        {
+          "id": "s6a",
+          "text": "Insurance Readiness Assessment: dual-weighted scoring (security + insurance premium impact)",
+          "done": true
+        },
+        {
+          "id": "s6b",
+          "text": "Accordion-style survey panels per category, inline scoring",
+          "done": true
+        },
+        {
+          "id": "s6c",
+          "text": "Save & record score: each submission appends to org assessment history",
+          "done": true
+        },
+        {
+          "id": "s6d",
+          "text": "Trend line chart: score history per module per org",
+          "done": true
+        },
+        {
+          "id": "s6e",
+          "text": "Premium savings estimator: gap-based insurance cost reduction estimates",
+          "done": true
+        },
+        {
+          "id": "s7",
+          "text": "Weighted scoring per control / IG tier (CIS)",
+          "done": false
+        },
+        {
+          "id": "s8",
+          "text": "Role-based survey routing (IT admin, exec, etc.)",
+          "done": false
+        },
+        {
+          "id": "s9",
+          "text": "Gap analysis output with remediation priorities",
+          "done": false
+        },
+        {
+          "id": "s10",
+          "text": "Export: PDF scorecard report",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "technology_stack",
+      "title": "Technology Stack Survey",
+      "phase": 1,
+      "description": "Inventory security and adjacent tools. Each tool selection pre-populates scores against relevant frameworks, establishing technical security maturity before manual survey answers.",
+      "items": [
+        {
+          "id": "ts1",
+          "text": "Tool inventory: categorised list of security and security-adjacent tools (EDR, SIEM, email gateway, identity, backup, firewall, PAM, MFA, SOAR, etc.)",
+          "done": true,
+          "notes": "10 categories, 41 questions delivered. Y/N/NA/Partial answer model with inline partial-detail capture. tool_category machine tag on every question for MSP catalog match. SUPABASE_PATCH_002.sql adds techstack_responses table."
+        },
+        {
+          "id": "ts2",
+          "text": "Per-tool selection auto-maps to CIS Controls, NIST CSF, and Insurance Readiness scoring",
+          "done": true,
+          "notes": "Each question carries mappings.cis (with IG tier), mappings.nist (CSF 2.0 IDs), mappings.insurance (impact rating + note). Rendered as individually-clickable chip-lets under each question."
+        },
+        {
+          "id": "ts3",
+          "text": "Technical maturity score: pre-populated baseline before manual survey questions are answered",
+          "done": true,
+          "notes": "Overall + per-category maturity computed live (Yes=1, Partial=0.5, No=0, NA=excluded). Snapshot writes to assessments table with module='techstack' on save, feeding the dashboard score dot."
+        },
+        {
+          "id": "ts4",
+          "text": "Gap view: which framework controls have no tool coverage",
+          "done": false,
+          "notes": "Follow-up: dedicated view that inverts the mapping — shows CIS/NIST controls grouped by 'No' or unanswered tech stack questions."
+        },
+        {
+          "id": "ts5",
+          "text": "Tool stack summary card: exportable for client-facing technology posture review",
+          "done": true,
+          "notes": "Export JSON button delivers full snapshot including tool_category, question_type, derive_strategy tags for downstream MSP catalog matching and framework auto-scoping."
+        },
+        {
+          "id": "ts6",
+          "text": "Optional category toggles (Cloud Security Posture, Application Security) — show only when client has cloud / SaaS scope",
+          "done": false
+        },
+        {
+          "id": "ts7",
+          "text": "Move questions from JS const into Supabase techstack_questions table so MSPs can manage their own question sets without code deploys",
+          "done": false
+        },
+        {
+          "id": "ts8",
+          "text": "MSP tool catalog (msp_tools table) + join logic to classify each client answer as sell / upgrade / replace opportunity",
+          "done": false
+        },
+        {
+          "id": "ts9",
+          "text": "Framework auto-scoping: tech stack answers pre-populate CIS / NIST / Insurance survey questions via derive_strategy",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "tpra",
+      "title": "Third-Party Risk Assessment (TPRA)",
+      "phase": 1,
+      "description": "Vendor risk assessment module. 5-step guided wizard to assess vendors by data sensitivity and risk signals, producing a tiered risk rating and recommendations.",
+      "items": [
+        {
+          "id": "tp1",
+          "text": "Vendor intake: name, product, website, assessor, data categories with sensitivity labels, jurisdiction, data residency, provided docs",
+          "done": true
+        },
+        {
+          "id": "tp2",
+          "text": "Vendor profile: company intelligence fields (legal entity, size, HQ, certifications, breach history, etc.) with Verified / Inferred / Unknown confidence labels",
+          "done": true
+        },
+        {
+          "id": "tp3",
+          "text": "Risk findings: area, severity (Critical\u2013Info), confidence, applies-to, detail, recommendation; vendor follow-up items list",
+          "done": true
+        },
+        {
+          "id": "tp4",
+          "text": "Auto-suggested risk tier: data sensitivity \u00d7 vendor signals matrix \u2192 Critical / High / Moderate / Low with manual override and rationale field",
+          "done": true
+        },
+        {
+          "id": "tp5",
+          "text": "Review & publish: assessment summary, save as draft, complete, edit, delete from list",
+          "done": true
+        },
+        {
+          "id": "tp6",
+          "text": "Supabase persistence: full CRUD against vendor_assessments table (PATCH_005)",
+          "done": true
+        },
+        {
+          "id": "tp7",
+          "text": "Copy report prompt for Claude: pre-filled prompt to generate a .docx vendor risk report",
+          "done": true
+        },
+        {
+          "id": "tp8",
+          "text": "Push High/Critical findings to Risk Register as Third-Party risk entries on completion",
+          "done": false,
+          "notes": "Checkbox UI is already in place on Step 5. Blocked by Risk Register module (Phase 2). Wire up once risk_register_core is built."
+        },
+        {
+          "id": "tp9",
+          "text": "Native PDF export of completed vendor risk assessment (Abbott Cyber branded)",
+          "done": false
+        },
+        {
+          "id": "tp10",
+          "text": "Vendor register: filter and sort assessment list by tier, status, data sensitivity, or assessor",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "hierarchy",
+      "title": "Org Hierarchy \u2014 Grandfather / Father / Child Model",
+      "phase": 1,
+      "description": "Three-tier multi-tenancy model supporting both MSP and franchise organisational structures.",
+      "items": [
+        {
+          "id": "s30",
+          "text": "Define three-tier org model: Grandfather (MSP/Franchisor) \u2192 Father (Region/Group) \u2192 Child (Site/Client)",
+          "done": true
+        },
+        {
+          "id": "s31",
+          "text": "Grandfather tenant: full visibility across all Father and Child orgs",
+          "done": true
+        },
+        {
+          "id": "s32",
+          "text": "Father tenant: manages and reports across its own Child orgs only",
+          "done": true
+        },
+        {
+          "id": "s33",
+          "text": "Child tenant: self-contained org with own data, assessments, and users",
+          "done": true
+        },
+        {
+          "id": "s34",
+          "text": "Role-based access control enforced at each tier (no cross-tenant data leakage)",
+          "done": false
+        },
+        {
+          "id": "s35",
+          "text": "MSP use case: Grandfather = MSP, Father = MSP client group or vertical, Child = end client",
+          "done": true
+        },
+        {
+          "id": "s36",
+          "text": "Franchise use case: Grandfather = Franchisor HQ, Father = Regional operator, Child = individual location",
+          "done": true
+        },
+        {
+          "id": "s37",
+          "text": "Child orgs can be onboarded by Father or Grandfather with templated baseline configs",
+          "done": false
+        },
+        {
+          "id": "s38",
+          "text": "Grandfather can push policy baselines and compliance frameworks down to all tiers",
+          "done": false
+        },
+        {
+          "id": "s39",
+          "text": "Each tier can have its own branding (white-label support for MSP resellers)",
+          "done": false
+        },
+        {
+          "id": "s40",
+          "text": "Audit log: track who accessed or modified data at each tier",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "grandfather_reporting",
+      "title": "Grandfather \u2014 Consolidated Reporting",
+      "phase": 2,
+      "description": "Portfolio-wide visibility and reporting for the top-tier tenant (MSP or Franchisor HQ).",
+      "items": [
+        {
+          "id": "s41",
+          "text": "Grandfather dashboard: aggregate security score across all Father and Child orgs",
+          "done": false
+        },
+        {
+          "id": "s42",
+          "text": "Heatmap view: which Child orgs are highest risk across the portfolio",
+          "done": false
+        },
+        {
+          "id": "s43",
+          "text": "Cross-org trend line: portfolio-wide score over time",
+          "done": false
+        },
+        {
+          "id": "s44",
+          "text": "Filter/slice by Father group, industry vertical, region, or framework",
+          "done": false
+        },
+        {
+          "id": "s45",
+          "text": "Common control gap report: which CIS/NIST controls are failing most across children",
+          "done": false
+        },
+        {
+          "id": "s46",
+          "text": "Portfolio-level PDF report: executive summary + per-org breakdown",
+          "done": false
+        },
+        {
+          "id": "s47",
+          "text": "Flagged orgs report: Children with sustained low scores or critical open findings",
+          "done": false
+        },
+        {
+          "id": "s48",
+          "text": "Remediation velocity tracking: how fast are Child orgs closing gaps",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "father_reporting",
+      "title": "Father \u2014 Group Consolidated Reporting",
+      "phase": 2,
+      "description": "Group-level reporting scoped to a Father tenant's own Child orgs.",
+      "items": [
+        {
+          "id": "s49",
+          "text": "Father dashboard: aggregate score across own Child orgs only",
+          "done": false
+        },
+        {
+          "id": "s50",
+          "text": "Side-by-side Child org comparison: score, open findings, last assessment date",
+          "done": false
+        },
+        {
+          "id": "s51",
+          "text": "Father-level gap analysis: common weaknesses shared across its children",
+          "done": false
+        },
+        {
+          "id": "s52",
+          "text": "Group PDF report: exportable for Father-level client or regional review",
+          "done": false
+        },
+        {
+          "id": "s53",
+          "text": "Escalation view: surface Children that need urgent attention to Father admins",
+          "done": false
+        },
+        {
+          "id": "s54",
+          "text": "Father can submit consolidated report upward to Grandfather on demand",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "vuln_scan",
+      "title": "Phase 2 \u2014 Vuln Scan Integration",
+      "phase": 2,
+      "description": "Import and map vulnerability scan output from common tools into the scoring model.",
+      "items": [
+        {
+          "id": "s11",
+          "text": "Import Nessus / Qualys / OpenVAS XML/CSV output",
+          "done": false
+        },
+        {
+          "id": "s12",
+          "text": "Map CVEs to CIS / NIST control families",
+          "done": false
+        },
+        {
+          "id": "s13",
+          "text": "CVSS scoring overlay on posture score",
+          "done": false
+        },
+        {
+          "id": "s14",
+          "text": "Trend tracking: score change over time",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "nist_expansion",
+      "title": "Phase 3 \u2014 Framework Expansion (NIST)",
+      "phase": 3,
+      "description": "Expand from CIS Controls into NIST CSF 2.0 and related frameworks.",
+      "items": [
+        {
+          "id": "s15",
+          "text": "Map CIS controls to NIST CSF 2.0 categories",
+          "done": false
+        },
+        {
+          "id": "s16",
+          "text": "NIST CSF function dashboard: Govern / Identify / Protect / Detect / Respond / Recover",
+          "done": false
+        },
+        {
+          "id": "s17",
+          "text": "Maturity tier scoring (Partial \u2192 Adaptive)",
+          "done": false
+        },
+        {
+          "id": "s18",
+          "text": "Support for NIST SP 800-53 control families",
+          "done": false
+        },
+        {
+          "id": "s19",
+          "text": "Optional: SOC 2 / ISO 27001 crosswalk",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "pentest",
+      "title": "Pen Test Integration",
+      "phase": 3,
+      "description": "Incorporate penetration testing findings into the overall posture score.",
+      "items": [
+        {
+          "id": "s20",
+          "text": "Manual finding entry (severity, affected system, control)",
+          "done": false
+        },
+        {
+          "id": "s21",
+          "text": "Import from common pen test report formats",
+          "done": false
+        },
+        {
+          "id": "s22",
+          "text": "Findings mapped to MITRE ATT&CK techniques",
+          "done": false
+        },
+        {
+          "id": "s23",
+          "text": "Remediation tracking: open / in progress / closed",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "reporting",
+      "title": "Reporting & Output",
+      "phase": 2,
+      "description": "Client-facing and internal reporting outputs.",
+      "items": [
+        {
+          "id": "s24",
+          "text": "Executive dashboard: single score + risk summary",
+          "done": false
+        },
+        {
+          "id": "s25",
+          "text": "Technical drill-down per control / domain",
+          "done": false
+        },
+        {
+          "id": "s26",
+          "text": "Branded PDF report export (client-facing)",
+          "done": false
+        },
+        {
+          "id": "s27",
+          "text": "Comparison view: current vs previous assessment",
+          "done": false
+        },
+        {
+          "id": "s28",
+          "text": "Roadmap recommendations sorted by impact vs effort",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "risk_register_core",
+      "title": "Risk Register \u2014 Core Structure & Columns",
+      "phase": 2,
+      "description": "Full GRC-grade risk register with inherent/residual scoring, treatment tracking, and framework mapping.",
+      "items": [
+        {
+          "id": "r1",
+          "text": "Risk ID: auto-generated unique identifier per risk entry (e.g. RSK-0042)",
+          "done": false
+        },
+        {
+          "id": "r2",
+          "text": "Risk Title: short descriptive name of the risk",
+          "done": false
+        },
+        {
+          "id": "r3",
+          "text": "Risk Description: full narrative of what the risk is and how it arises",
+          "done": false
+        },
+        {
+          "id": "r4",
+          "text": "Risk Category: dropdown (Operational / Technical / Compliance / Third-Party / Physical / Strategic)",
+          "done": false
+        },
+        {
+          "id": "r5",
+          "text": "Affected Asset / System: what is exposed (server, app, process, data type)",
+          "done": false
+        },
+        {
+          "id": "r6",
+          "text": "Threat Source: internal / external / natural / third-party",
+          "done": false
+        },
+        {
+          "id": "r7",
+          "text": "Likelihood: scored 1\u20135 (Rare / Unlikely / Possible / Likely / Almost Certain)",
+          "done": false
+        },
+        {
+          "id": "r8",
+          "text": "Impact: scored 1\u20135 (Negligible / Minor / Moderate / Major / Critical)",
+          "done": false
+        },
+        {
+          "id": "r9",
+          "text": "Inherent Risk Score: auto-calculated Likelihood \u00d7 Impact (1\u201325)",
+          "done": false
+        },
+        {
+          "id": "r10",
+          "text": "Current Controls: describe existing mitigations in place",
+          "done": false
+        },
+        {
+          "id": "r11",
+          "text": "Control Effectiveness: rated Low / Medium / High",
+          "done": false
+        },
+        {
+          "id": "r12",
+          "text": "Residual Risk Score: adjusted score after control effectiveness applied",
+          "done": false
+        },
+        {
+          "id": "r13",
+          "text": "Risk Treatment: dropdown (Accept / Mitigate / Transfer / Avoid)",
+          "done": false
+        },
+        {
+          "id": "r14",
+          "text": "Treatment Plan / Notes: free-text field for planned remediation actions",
+          "done": false
+        },
+        {
+          "id": "r15",
+          "text": "Risk Owner: person or role accountable for this risk",
+          "done": false
+        },
+        {
+          "id": "r16",
+          "text": "Review Date: scheduled next review date",
+          "done": false
+        },
+        {
+          "id": "r17",
+          "text": "Date Identified: when the risk was first logged",
+          "done": false
+        },
+        {
+          "id": "r18",
+          "text": "Last Updated: timestamp of most recent edit",
+          "done": false
+        },
+        {
+          "id": "r19",
+          "text": "Status: Open / In Remediation / Accepted / Closed",
+          "done": false
+        },
+        {
+          "id": "r20",
+          "text": "Framework Mapping: link risk to CIS control / NIST CSF function / ISO domain",
+          "done": false
+        },
+        {
+          "id": "r21",
+          "text": "Org Tier: tag risk to Child / Father / Grandfather level (for hierarchy rollup)",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "risk_register_ux",
+      "title": "Risk Register \u2014 UX & Workflow",
+      "phase": 2,
+      "description": "Day-to-day usability features for managing the risk register.",
+      "items": [
+        {
+          "id": "r22",
+          "text": "Inline editable rows \u2014 edit any field without opening a separate modal",
+          "done": false
+        },
+        {
+          "id": "r23",
+          "text": "Risk matrix heatmap view: plot all risks on a 5\u00d75 likelihood vs impact grid",
+          "done": false
+        },
+        {
+          "id": "r24",
+          "text": "Filter/sort by category, status, owner, residual score, or date",
+          "done": false
+        },
+        {
+          "id": "r25",
+          "text": "Bulk status update: mark multiple risks accepted or closed at once",
+          "done": false
+        },
+        {
+          "id": "r26",
+          "text": "Risk aging alert: flag risks not reviewed within defined period (e.g. 90 days)",
+          "done": false
+        },
+        {
+          "id": "r27",
+          "text": "Auto-populate risks from assessment findings (vuln scan, pen test, survey gaps)",
+          "done": false
+        },
+        {
+          "id": "r28",
+          "text": "Link risks to open remediation tasks or roadmap items",
+          "done": false
+        },
+        {
+          "id": "r29",
+          "text": "Grandfather/Father can view child org risk registers in read-only mode",
+          "done": false
+        },
+        {
+          "id": "r30",
+          "text": "Risk register change log: who changed what and when",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "risk_register_export",
+      "title": "Risk Register \u2014 Excel Export",
+      "phase": 2,
+      "description": "Full .xlsx export with conditional formatting, heatmap tab, and summary tab.",
+      "items": [
+        {
+          "id": "r31",
+          "text": "One-click export of full risk register to .xlsx",
+          "done": false
+        },
+        {
+          "id": "r32",
+          "text": "All columns exported with correct data types (dates as dates, numbers as numbers)",
+          "done": false
+        },
+        {
+          "id": "r33",
+          "text": "Inherent and residual scores auto-colour coded in Excel (red / amber / green) via conditional formatting",
+          "done": false
+        },
+        {
+          "id": "r34",
+          "text": "Risk matrix tab: 5\u00d75 heatmap generated as a second Excel sheet",
+          "done": false
+        },
+        {
+          "id": "r35",
+          "text": "Summary tab: total risks by category, status, and treatment type",
+          "done": false
+        },
+        {
+          "id": "r36",
+          "text": "Filter/sort preserved on export (export respects active filters)",
+          "done": false
+        },
+        {
+          "id": "r37",
+          "text": "Client-branded header row with org name, export date, and framework version",
+          "done": false
+        },
+        {
+          "id": "r38",
+          "text": "Grandfather consolidated export: one workbook with one sheet per Child org",
+          "done": false
+        },
+        {
+          "id": "r39",
+          "text": "Export history log: record of who exported and when (audit trail)",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "tabletop_core",
+      "title": "Tabletop Program \u2014 Core Framework",
+      "phase": 3,
+      "description": "Scenario library, exercise builder, scheduling, and facilitator guide generation.",
+      "items": [
+        {
+          "id": "t1",
+          "text": "Tabletop exercise library: pre-built MITRE ATT&CK aligned scenarios (ransomware, BEC, insider, supply chain, DDoS, data breach)",
+          "done": true
+        },
+        {
+          "id": "t2",
+          "text": "Operational track: IT/security team with vCISO facilitator console",
+          "done": true
+        },
+        {
+          "id": "t2a",
+          "text": "Executive track (C-suite/board)",
+          "done": false
+        },
+        {
+          "id": "t2b",
+          "text": "Vendor/Third-Party track",
+          "done": false
+        },
+        {
+          "id": "t3",
+          "text": "Scenario builder: create custom exercises from scratch or clone/modify existing ones",
+          "done": false
+        },
+        {
+          "id": "t4",
+          "text": "Scenario metadata: industry relevance tags, estimated duration, difficulty, required participants",
+          "done": true
+        },
+        {
+          "id": "t5",
+          "text": "Map each scenario to NIST IR phases and MITRE ATT&CK tactics/techniques",
+          "done": true
+        },
+        {
+          "id": "t6",
+          "text": "Exercise scheduling: set date, time, participants, and facilitator per exercise",
+          "done": false
+        },
+        {
+          "id": "t7",
+          "text": "Recurring schedule support: annual, semi-annual, or quarterly cadence per track",
+          "done": false
+        },
+        {
+          "id": "t8",
+          "text": "Exercise status tracking: Planned / In Progress / Completed / Overdue",
+          "done": false
+        },
+        {
+          "id": "t9",
+          "text": "Facilitator guide: inject sequence, facilitator notes, timing cues, correct criticality per inject",
+          "done": true
+        },
+        {
+          "id": "t10",
+          "text": "Participant invite system: send exercise brief and pre-read materials ahead of session",
+          "done": false
+        },
+        {
+          "id": "t10a",
+          "text": "Email delivery option for remote participants (notify by email instead of dashboard)",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "tabletop_operational",
+      "title": "Tabletop \u2014 Operational Track (IT / Security Team)",
+      "phase": 3,
+      "description": "Technical scenario track for IT and security teams with vCISO facilitator console.",
+      "items": [
+        {
+          "id": "t11",
+          "text": "Scenarios: ransomware via phishing (built), BEC wire fraud (built), active directory compromise, cloud misconfiguration, credential theft",
+          "done": true
+        },
+        {
+          "id": "t11a",
+          "text": "Step 0 \u2014 TL Declaration: Technical Lead receives raw signal, assigns severity (P1\u2013P4), recommends declare or monitor before IR plan activates",
+          "done": true
+        },
+        {
+          "id": "t11b",
+          "text": "vCISO commentary card: exercise briefing shown at launch explaining TL declaration flow and participant roles",
+          "done": true
+        },
+        {
+          "id": "t11c",
+          "text": "Three ingestion points: SOC alert, technician anomaly, PSA customer ticket",
+          "done": true
+        },
+        {
+          "id": "t12",
+          "text": "Role-filtered inject cards: each role sees situation-appropriate information per inject",
+          "done": true
+        },
+        {
+          "id": "t12a",
+          "text": "Roles: Incident Commander (vCISO), Technical Lead, Communications Lead, Legal/Compliance, Executive Sponsor (assumed by ops participant)",
+          "done": true
+        },
+        {
+          "id": "t12b",
+          "text": "Executive Sponsor role card: displayed at breach declaration gate explaining assumed-role mindset and responsibilities",
+          "done": true
+        },
+        {
+          "id": "t13",
+          "text": "Playbook alignment: map exercise steps to existing IR / DR playbooks",
+          "done": false
+        },
+        {
+          "id": "t14",
+          "text": "Gap identification: note where playbook breaks down or team is unsure during exercise",
+          "done": false
+        },
+        {
+          "id": "t15",
+          "text": "Tool availability check: confirm which tools/systems would be available during a real incident",
+          "done": false
+        },
+        {
+          "id": "t16",
+          "text": "Escalation path practice: comms test baked into role-specific injects",
+          "done": true
+        },
+        {
+          "id": "t17",
+          "text": "Real-time response log: each role logs actions and decisions per inject",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "tabletop_executive",
+      "title": "Tabletop \u2014 Executive Track (C-Suite / Board)",
+      "phase": 3,
+      "description": "Business-framed scenario track for executives and board members.",
+      "items": [
+        {
+          "id": "t18",
+          "text": "Scenarios: ransomware with ransom demand decision, regulatory breach notification, reputational crisis, M&A cyber due diligence failure, cyber insurance claim",
+          "done": false
+        },
+        {
+          "id": "t19",
+          "text": "Business impact framing: scenarios presented in revenue, reputation, and regulatory terms \u2014 not technical",
+          "done": false
+        },
+        {
+          "id": "t20",
+          "text": "Decision inject cards: executives presented with choices \u2014 pay/don't pay, notify/delay, shut down/continue operations",
+          "done": false
+        },
+        {
+          "id": "t21",
+          "text": "Legal & regulatory prompts: when does GDPR/PIPEDA breach notification clock start, who is the regulator",
+          "done": false
+        },
+        {
+          "id": "t22",
+          "text": "Board communication exercise: draft a stakeholder communication under simulated pressure",
+          "done": false
+        },
+        {
+          "id": "t23",
+          "text": "Insurance review prompt: what does the policy cover, what are the exclusions",
+          "done": false
+        },
+        {
+          "id": "t24",
+          "text": "Executive debrief template: document decisions made, rationale, and what would be done differently",
+          "done": false
+        },
+        {
+          "id": "t25",
+          "text": "Cyber risk appetite discussion: use exercise outcome to calibrate exec risk tolerance",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "tabletop_vendor",
+      "title": "Tabletop \u2014 Vendor / Third-Party Track",
+      "phase": 3,
+      "description": "Scenario track focused on third-party and supply chain risk.",
+      "items": [
+        {
+          "id": "t26",
+          "text": "Scenarios: critical vendor ransomware impact, supply chain compromise (SolarWinds-style), vendor data breach exposing client data, vendor going dark during incident",
+          "done": false
+        },
+        {
+          "id": "t27",
+          "text": "Vendor notification drill: how and when does the vendor notify you, is it in the contract",
+          "done": false
+        },
+        {
+          "id": "t28",
+          "text": "Shared responsibility mapping: who owns what during a vendor-side incident",
+          "done": false
+        },
+        {
+          "id": "t29",
+          "text": "Vendor IR plan review: does the vendor have an IR plan, can you see it, does it meet your standards",
+          "done": false
+        },
+        {
+          "id": "t30",
+          "text": "Substitution/continuity exercise: if this vendor went offline for 72hrs, what is the fallback",
+          "done": false
+        },
+        {
+          "id": "t31",
+          "text": "Contractual gap identification: log SLA/notification gaps discovered during the exercise",
+          "done": false
+        },
+        {
+          "id": "t32",
+          "text": "Vendor scorecard update: findings from exercise feed back into vendor risk register",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "tabletop_aar",
+      "title": "Tabletop \u2014 After Action & Reporting",
+      "phase": 3,
+      "description": "Post-exercise documentation, action tracking, and compliance evidence.",
+      "items": [
+        {
+          "id": "t33",
+          "text": "After Action Report (AAR): auto-generated from facilitator notes, response logs, and criticality ratings captured during exercise",
+          "done": true
+        },
+        {
+          "id": "t34",
+          "text": "AAR sections: summary metrics, TL declaration accuracy, MITRE mapping revealed, criticality accuracy by role, full event timeline, breach declaration record, IR plan comparison",
+          "done": true
+        },
+        {
+          "id": "t34a",
+          "text": "IR plan comparison \u2014 automated: upload ratified IR plan document and auto-compare against exercise event log",
+          "done": false
+        },
+        {
+          "id": "t35",
+          "text": "Action items log: capture owners, due dates, and priority for each identified gap",
+          "done": false
+        },
+        {
+          "id": "t36",
+          "text": "Action items linked to risk register: gaps auto-create or update risk entries",
+          "done": false
+        },
+        {
+          "id": "t37",
+          "text": "Action item tracking: open / in progress / closed with due date alerts",
+          "done": false
+        },
+        {
+          "id": "t38",
+          "text": "Exercise history: full log of all exercises run per org with AAR attached",
+          "done": false
+        },
+        {
+          "id": "t39",
+          "text": "Trend view: which gaps recur across multiple exercises over time",
+          "done": false
+        },
+        {
+          "id": "t40",
+          "text": "Grandfather/Father visibility: view exercise completion status across Child orgs",
+          "done": false
+        },
+        {
+          "id": "t41",
+          "text": "Export AAR to PDF: branded, client-ready after action report (Anthropic API)",
+          "done": false
+        },
+        {
+          "id": "t42",
+          "text": "Export action items to Excel: same format as risk register for consistency",
+          "done": false
+        },
+        {
+          "id": "t43",
+          "text": "Compliance evidence: mark exercises as evidence for NIST / ISO / SOC 2 audit readiness",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "tabletop_multiplayer",
+      "title": "Tabletop \u2014 Multiplayer / Remote Participant Engine",
+      "phase": 3,
+      "description": "Jackbox-style session joining: facilitator generates a session code, participants join via link on any device, select their role, and receive role-filtered injects in real time. No accounts required for participants.",
+      "items": [
+        {
+          "id": "mp1",
+          "text": "Session host: vCISO creates a session and receives a unique 6-character session code (e.g. CYBER4)",
+          "done": false
+        },
+        {
+          "id": "mp2",
+          "text": "Join link: participants navigate to a URL and enter the session code to join \u2014 no account or login required",
+          "done": false
+        },
+        {
+          "id": "mp3",
+          "text": "Role selection screen: participant sees available roles for the session, selects one, enters their name \u2014 role is locked once taken",
+          "done": false
+        },
+        {
+          "id": "mp4",
+          "text": "Role capacity: each role can only be claimed by one participant \u2014 late joiners see remaining open roles only",
+          "done": false
+        },
+        {
+          "id": "mp5",
+          "text": "Waiting room: participants see who has joined and which roles are filled while facilitator prepares to launch",
+          "done": false
+        },
+        {
+          "id": "mp6",
+          "text": "Facilitator lobby view: see all connected participants, their roles, and connection status before launching",
+          "done": false
+        },
+        {
+          "id": "mp7",
+          "text": "Role-filtered inject delivery: when facilitator releases an inject, each participant sees only their role-specific information on their device",
+          "done": false
+        },
+        {
+          "id": "mp8",
+          "text": "Participant response input: each role submits their response and criticality rating from their own device",
+          "done": false
+        },
+        {
+          "id": "mp9",
+          "text": "Facilitator sees all responses in real time: dashboard shows which roles have responded and which are pending per inject",
+          "done": false
+        },
+        {
+          "id": "mp10",
+          "text": "Facilitator-only view: facilitator notes and correct criticality are never shown on participant screens",
+          "done": false
+        },
+        {
+          "id": "mp11",
+          "text": "Breach declaration: IC and Exec Sponsor co-sign from their own devices \u2014 both must confirm before breach is logged",
+          "done": false
+        },
+        {
+          "id": "mp12",
+          "text": "Session persistence: if a participant disconnects and rejoins with the same code and role, their session state is restored",
+          "done": false
+        },
+        {
+          "id": "mp13",
+          "text": "Session expiry: sessions auto-close after exercise completion or after a configurable idle period (e.g. 4 hours)",
+          "done": false
+        },
+        {
+          "id": "mp14",
+          "text": "AAR available to all participants post-exercise: shareable read-only link to the After Action Report",
+          "done": false
+        },
+        {
+          "id": "mp15",
+          "text": "Mobile-responsive participant view: join and participate fully from a phone or tablet",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "tabletop_bcdr",
+      "title": "Tabletop \u2014 BCDR Track",
+      "phase": 3,
+      "description": "Business continuity and disaster recovery scenario track. Broader than cyber \u2014 covers natural disaster, power outage, key person loss, supply chain failure.",
+      "items": [
+        {
+          "id": "tb1",
+          "text": "BCDR scenario library: datacenter outage, extended power failure, pandemic/key person loss, critical supplier failure, physical site loss",
+          "done": false
+        },
+        {
+          "id": "tb2",
+          "text": "RTO/RPO awareness injects: team must identify recovery time and recovery point objectives per affected system",
+          "done": false
+        },
+        {
+          "id": "tb3",
+          "text": "Business impact analysis prompts: which processes fail first, what is the revenue/ops impact per hour of downtime",
+          "done": false
+        },
+        {
+          "id": "tb4",
+          "text": "Activation decision: when does the BC Plan formally activate and who has authority",
+          "done": false
+        },
+        {
+          "id": "tb5",
+          "text": "Communication tree drill: staff, customers, regulators, insurers \u2014 who is notified and in what order",
+          "done": false
+        },
+        {
+          "id": "tb6",
+          "text": "Alternate site / failover exercise: where do staff go, what systems are available",
+          "done": false
+        },
+        {
+          "id": "tb7",
+          "text": "AAR maps to BC Plan gaps same as cyber tabletop",
+          "done": false
+        }
+      ]
+    }
+  ]
+}
