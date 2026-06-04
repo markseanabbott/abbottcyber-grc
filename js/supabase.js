@@ -1,0 +1,90 @@
+const SB_URL = 'https://sssyimtkvmtgjpusedvq.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzc3lpbXRrdm10Z2pwdXNlZHZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NzA1NTMsImV4cCI6MjA5NDU0NjU1M30.FxQaJn97YewSQi6s45nw1LgMRfBj8xhswLM47_Q2zXI';
+
+async function sbFetch(path, method = 'GET', body = null, extraHeaders = {}) {
+  const headers = {
+    'apikey': SB_KEY,
+    'Authorization': `Bearer ${SB_KEY}`,
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
+  if (method === 'POST' && !extraHeaders.Prefer) headers.Prefer = 'return=representation';
+  Object.assign(headers, extraHeaders);
+  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+    method, headers,
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (!res.ok) { const t = await res.text(); throw new Error(`${res.status}: ${t}`); }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+const sb = {
+  orgs: () => sbFetch('organisations?select=*&order=tier.asc,name.asc'),
+  assessments: (orgId) => sbFetch(`assessments?org_id=eq.${orgId}&order=assessed_at.asc`),
+  saveAssessment: (d) => sbFetch('assessments', 'POST', d),
+  createOrg: (d) => sbFetch('organisations', 'POST', d),
+  updateOrg: (id, patch) => sbFetch(`organisations?id=eq.${id}`, 'PATCH', patch, { Prefer: 'return=representation' }),
+  deleteOrg: (id) => sbFetch(`organisations?id=eq.${id}`, 'DELETE', null, { Prefer: 'return=representation' }),
+};
+
+// Organisation Profiles persistence layer
+sb.profiles = {
+  getAll: () => sbFetch('organisation_profiles?select=*'),
+  get: (orgId) => sbFetch(`organisation_profiles?org_id=eq.${orgId}&select=*`),
+  upsert: (row) => sbFetch('organisation_profiles', 'POST', row, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+};
+
+// Technology Stack Survey persistence layer
+sb.techstack = {
+  getResponses: (orgId) => sbFetch(`techstack_responses?org_id=eq.${orgId}&select=*`),
+  upsertResponse: (row) => sbFetch('techstack_responses', 'POST', row, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+  // Snapshot to assessments table for trend tracking (same pattern as insurance module)
+  saveSnapshot: (d) => sbFetch('assessments', 'POST', d),
+};
+
+// Third-Party Risk Assessment persistence layer
+sb.tpra = {
+  getAll: (orgId) => sbFetch(`vendor_assessments?org_id=eq.${orgId}&order=created_at.desc`),
+  upsert: (row) => sbFetch('vendor_assessments', 'POST', row, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+  update: (id, patch) => sbFetch(`vendor_assessments?id=eq.${id}`, 'PATCH', patch, { Prefer: 'return=representation' }),
+  delete: (id) => sbFetch(`vendor_assessments?id=eq.${id}`, 'DELETE'),
+};
+
+// Tabletop persistence layer — wraps Supabase calls for the operational tabletop module.
+sb.tt = {
+  // RPC: ask the DB for a fresh 6-char session code (alphabet defined in SUPABASE_SCHEMA.sql)
+  newCode: async () => {
+    const r = await sbFetch('rpc/generate_session_code', 'POST', {});
+    return typeof r === 'string' ? r : (r && r[0]) || '';
+  },
+  createSession: async (row) => {
+    const r = await sbFetch('tabletop_sessions', 'POST', row);
+    return Array.isArray(r) ? r[0] : r;
+  },
+  updateSession: (id, patch) => sbFetch(`tabletop_sessions?id=eq.${id}`, 'PATCH', patch, { Prefer: 'return=representation' }),
+  getSession: async (id) => {
+    const r = await sbFetch(`tabletop_sessions?id=eq.${id}&select=*`);
+    return r && r[0];
+  },
+  upsertResponse: (row) => sbFetch('tabletop_responses', 'POST', row, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+  upsertNotif: (row) => sbFetch('tabletop_notif_checks', 'POST', row, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+  appendLog: (sessionId, exerciseLog) => sbFetch(`tabletop_sessions?id=eq.${sessionId}`, 'PATCH', { exercise_log: exerciseLog, updated_at: new Date().toISOString() }, { Prefer: 'return=representation' }),
+  // Multiplayer methods
+  getSessionByCode: async (code) => {
+    const r = await sbFetch(`tabletop_sessions?session_code=eq.${encodeURIComponent(code)}&select=*`);
+    return r && r[0] ? r[0] : null;
+  },
+  getParticipants: async (sessionId) => {
+    const r = await sbFetch(`tabletop_participants?session_id=eq.${sessionId}&select=*&order=joined_at.asc`);
+    return r || [];
+  },
+  claimRole: async (row) => {
+    const r = await sbFetch('tabletop_participants', 'POST', row, { Prefer: 'return=representation' });
+    return Array.isArray(r) ? r[0] : r;
+  },
+  getResponses: async (sessionId, injectIdx) => {
+    const r = await sbFetch(`tabletop_responses?session_id=eq.${sessionId}&inject_index=eq.${injectIdx}&select=*`);
+    return r || [];
+  },
+};
