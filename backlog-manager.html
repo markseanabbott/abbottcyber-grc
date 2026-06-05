@@ -412,15 +412,52 @@ const PRIORITY_CLASS = { Critical: 'p-critical', High: 'p-high', Medium: 'p-medi
 async function loadBacklog() {
   try {
     const r = await fetch(BACKLOG_PATH + '?t=' + Date.now());
+    if (!r.ok) throw new Error('fetch failed');
     backlog = await r.json();
-    activeSectionId = backlog.sections[0].id;
-    renderSidebar();
-    renderStats();
-    renderMain();
+    bootApp();
   } catch(e) {
-    document.getElementById('mainContent').innerHTML =
-      `<div style="color:red;padding:20px">Could not load backlog.json — open this file from the same folder as backlog.json.</div>`;
+    // fetch() is blocked by Chrome on file:// — show a file picker instead
+    showFilePicker();
   }
+}
+
+function showFilePicker() {
+  document.getElementById('mainContent').innerHTML = `
+    <div style="text-align:center;padding:64px 20px">
+      <div style="font-size:40px;margin-bottom:16px">📂</div>
+      <div style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:8px">Select backlog.json</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:28px;line-height:1.6">
+        Chrome blocks direct file access when opened via <code>file://</code>.<br>
+        Click below and pick <strong>backlog.json</strong> from your project folder.
+      </div>
+      <label class="btn btn-cyan" style="cursor:pointer;display:inline-flex;align-items:center;gap:8px">
+        📂 Choose backlog.json
+        <input type="file" accept=".json" style="display:none" onchange="handleFilePick(this)">
+      </label>
+    </div>`;
+}
+
+function handleFilePick(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      backlog = JSON.parse(e.target.result);
+      bootApp();
+    } catch(err) {
+      document.getElementById('mainContent').innerHTML =
+        `<div style="color:red;padding:20px">Could not parse the selected file — make sure you picked backlog.json.</div>`;
+    }
+  };
+  reader.readAsText(file);
+}
+
+function bootApp() {
+  activeSectionId = backlog.sections[0].id;
+  renderSidebar();
+  renderStats();
+  renderMain();
 }
 
 // ── SIDEBAR ───────────────────────────────────────────────────────────────────
