@@ -52,7 +52,7 @@
         },
         {
           "id": "d2",
-          "text": "Org switcher dropdown: Grandfather / Father / Child three-tier selector",
+          "text": "Org switcher dropdown: Platform / Grandfather / Father / Child four-tier selector with tier-scoped visibility",
           "done": true
         },
         {
@@ -91,7 +91,8 @@
         {
           "id": "s6",
           "text": "Build CIS Controls v8 survey question set",
-          "done": false
+          "done": true,
+          "notes": "Built. 153 safeguards across 18 control groups, IG1/IG2/IG3 tiering, full assessment form with Yes/Partial/No/NA answers, per-safeguard comments, Quick Check (47 questions), POAM, and Executive Report."
         },
         {
           "id": "s6a",
@@ -121,7 +122,8 @@
         {
           "id": "s7",
           "text": "Weighted scoring per control / IG tier (CIS)",
-          "done": false
+          "done": true,
+          "notes": "Built. cisCalcScore() applies Yes=1 / Partial=0.5 / No=0 weighting, filters safeguards by org's IG goal (ig1/ig2/ig3), and returns score, yes/partial/answered/total counts. Score used in dashboard trend, exec report dials, and POAM."
         },
         {
           "id": "s8",
@@ -321,7 +323,8 @@
         {
           "id": "tp6",
           "text": "Supabase persistence: full CRUD against vendor_assessments table (PATCH_005)",
-          "done": true
+          "done": true,
+          "notes": "Code complete. WARNING: vendor_assessments table is missing from the live DB — sql/SUPABASE_PATCH_005.sql needs to be re-run in the Supabase SQL Editor to restore it before TPRA saves will work."
         },
         {
           "id": "tp7",
@@ -405,7 +408,8 @@
         {
           "id": "s34",
           "text": "Role-based access control enforced at each tier (no cross-tenant data leakage)",
-          "done": false
+          "done": false,
+          "notes": "App-level done: auth roles (platform_admin/org_admin/analyst/viewer) gate visibility via visibleOrgs() and the org switcher. DB-level RLS still has open anon policies alongside authenticated ones — full per-org enforcement at DB layer is PATCH_010 (auth4 in backlog)."
         },
         {
           "id": "s35",
