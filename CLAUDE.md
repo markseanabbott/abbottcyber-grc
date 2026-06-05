@@ -33,23 +33,44 @@ AbbottCyber GRC/
 ├── CLAUDE.md                      ← This file
 ├── .env                           ← Supabase credentials (NEVER commit this)
 ├── .gitignore                     ← Must include .env
-├── PROJECT_BRIEF.md               ← Original project brief (high-level goals)
-├── HANDOVER_NOTES.md              ← Architecture decisions and context
 ├── backlog.json                   ← Feature backlog — source of truth for what's done/next
-├── index.html                     ← THE APP (5,482 lines, all modules here)
-├── ~~tech_stack_survey_prototype.html~~  ← Deleted (obsolete)
-├── SUPABASE_SCHEMA.sql            ← Base schema (already run)
-├── SUPABASE_PATCH_001.sql         ← Added platform tier (already run)
-├── SUPABASE_PATCH_002.sql         ← Added techstack_responses (already run)
-├── SUPABASE_PATCH_003.sql         ← Added organisation_profiles (already run)
-├── SUPABASE_PATCH_004.sql         ← Unique constraint on tabletop role claiming (already run)
-├── SUPABASE_PATCH_005.sql         ← Added vendor_assessments (already run)
-├── SUPABASE_PATCH_006.sql         ← Added cis_goal to organisation_profiles (already run)
-├── SUPABASE_PATCH_007.sql         ← Added cis_safeguard_notes (already run)
-└── SUPABASE_PATCH_008.sql         ← Added cis_poam_items (already run)
+├── backlog-manager.html           ← Local backlog UI tool
+├── index.html                     ← THE APP (modular JS, single HTML entry point)
+├── css/
+│   ├── core.css                   ← Layout, components, design tokens
+│   └── modules.css                ← Module-specific styles
+├── js/
+│   ├── config.js                  ← App state, tier config, nav config, visibility scoping
+│   ├── supabase.js                ← sbFetch wrapper and all Supabase persistence layers
+│   ├── auth.js                    ← Supabase Auth login, session management, user chip
+│   ├── app.js                     ← Boot, org switcher, nav, render router
+│   ├── home.js                    ← Dashboard home view
+│   ├── orgs.js                    ← Organisation Manager CRUD
+│   ├── users.js                   ← User Management (create, edit, delete, org access)
+│   ├── insurance.js               ← Insurance Readiness Survey
+│   ├── cis.js                     ← CIS Controls v8 (assessment, POAM, exec report)
+│   ├── techstack.js               ← Technology Stack Survey
+│   ├── tpra.js                    ← Third-Party Risk Assessment wizard
+│   ├── tabletop.js                ← Tabletop Exercise Engine
+│   └── multiplayer.js             ← Tabletop multiplayer join/display flows
+├── sql/                           ← All Supabase schema and patch files (run in order)
+│   ├── SUPABASE_SCHEMA.sql        ← Base schema
+│   ├── SUPABASE_PATCH_001.sql     ← Added platform tier
+│   ├── SUPABASE_PATCH_002.sql     ← Added techstack_responses
+│   ├── SUPABASE_PATCH_003.sql     ← Added organisation_profiles
+│   ├── SUPABASE_PATCH_004.sql     ← Unique constraint on tabletop role claiming
+│   ├── SUPABASE_PATCH_005.sql     ← Added vendor_assessments (NOTE: table missing in DB — re-run)
+│   ├── SUPABASE_PATCH_006.sql     ← Added cis_goal to organisation_profiles
+│   ├── SUPABASE_PATCH_007.sql     ← Added cis_safeguard_notes
+│   ├── SUPABASE_PATCH_008.sql     ← Added cis_poam_items
+│   └── SUPABASE_PATCH_009.sql     ← Auth: auth_id on users, user_org_access, authenticated RLS
+└── archive/
+    ├── PROJECT_BRIEF.md           ← Original project brief
+    ├── HANDOVER_NOTES.md          ← Early architecture notes
+    └── FILE_SPLIT_PLAN.md         ← Plan used to split original index.html into js/ modules
 ```
 
-All patches have been run. The live database reflects the cumulative schema.
+All patches have been run except PATCH_005 (vendor_assessments table is missing — needs re-run).
 
 ---
 
@@ -65,7 +86,7 @@ SUPABASE_URL=https://sssyimtkvmtgjpusedvq.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzc3lpbXRrdm10Z2pwdXNlZHZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NzA1NTMsImV4cCI6MjA5NDU0NjU1M30.FxQaJn97YewSQi6s45nw1LgMRfBj8xhswLM47_Q2zXI
 ```
 
-RLS is enabled on all tables with open anon policies (tighten when user auth is added in Phase 2).
+RLS is enabled on all tables. Both anon and authenticated policies are active (PATCH_009). Anon policies will be removed in PATCH_010 once auth is confirmed stable.
 
 ---
 
