@@ -303,6 +303,43 @@
   .view-tab:hover:not(.active) { border-color: var(--cyan); color: var(--navy); }
 
   .hidden { display: none !important; }
+
+  /* BOARD VIEW */
+  .board-view { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 20px; min-height: 420px; align-items: flex-start; }
+  .board-col {
+    min-width: 260px; width: 260px; flex-shrink: 0;
+    display: flex; flex-direction: column;
+    background: var(--bg); border-radius: 10px;
+    border: 2px solid transparent; transition: border-color .15s, background .15s;
+  }
+  .board-col.drag-over { border-color: var(--cyan); background: #e8f7fc; }
+  .board-col-header {
+    padding: 10px 14px; border-radius: 8px 8px 0 0;
+    font-size: 12px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .board-col-body {
+    flex: 1; padding: 8px; display: flex; flex-direction: column; gap: 8px;
+    min-height: 80px; max-height: calc(100vh - 280px); overflow-y: auto;
+  }
+  .board-card {
+    background: #fff; border-radius: 7px; padding: 10px 12px;
+    border: 1px solid var(--border); border-left: 3px solid var(--border);
+    cursor: grab; transition: box-shadow .12s, opacity .12s; user-select: none;
+  }
+  .board-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+  .board-card.dragging { opacity: .35; cursor: grabbing; }
+  .board-card.done-card .bc-text { text-decoration: line-through; color: var(--muted); }
+  .board-card.bc-critical { border-left-color: var(--red); }
+  .board-card.bc-high     { border-left-color: #ea580c; }
+  .board-card.bc-medium   { border-left-color: var(--amber); }
+  .board-card.bc-low      { border-left-color: var(--green); }
+  .bc-id   { font-size: 10px; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
+  .bc-text { font-size: 12px; line-height: 1.45; color: var(--text); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .bc-footer { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+  .bc-section { font-size: 10px; color: var(--muted); background: #eef0f6; padding: 2px 7px; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+  .bc-done { width: 14px; height: 14px; accent-color: var(--cyan); cursor: pointer; margin-left: auto; flex-shrink: 0; }
+  .board-drop-hint { font-size: 11px; color: var(--muted); text-align: center; padding: 16px 8px; border: 1.5px dashed var(--border); border-radius: 6px; }
 </style>
 </head>
 <body>
@@ -329,6 +366,7 @@
     <div class="view-tabs">
       <div class="view-tab active" data-view="section" onclick="switchView('section')">By Section</div>
       <div class="view-tab" data-view="priority" onclick="switchView('priority')">By Priority</div>
+      <div class="view-tab" data-view="board" onclick="switchView('board')">Board</div>
     </div>
 
     <div class="filter-bar">
@@ -467,7 +505,8 @@ function renderMain() {
   if (!backlog) return;
   const f = getFilters();
   if (activeView === 'section') renderSectionView(f);
-  else renderPriorityView(f);
+  else if (activeView === 'priority') renderPriorityView(f);
+  else renderBoardView(f);
 }
 
 function renderSectionView(f) {
@@ -583,6 +622,102 @@ function renderPriorityView(f) {
   }
   if (!html) html = `<div style="color:var(--muted);padding:20px">No items match the current filters.</div>`;
   document.getElementById('mainContent').innerHTML = html;
+}
+
+// ── BOARD VIEW ────────────────────────────────────────────────────────────────
+let draggedItemId = null;
+
+const BOARD_COLS = [
+  { key: 'Critical', label: 'Critical',         hdrCls: 'pg-critical', cardCls: 'bc-critical' },
+  { key: 'High',     label: 'High',             hdrCls: 'pg-high',     cardCls: 'bc-high'     },
+  { key: 'Medium',   label: 'Medium',           hdrCls: 'pg-medium',   cardCls: 'bc-medium'   },
+  { key: 'Low',      label: 'Low',              hdrCls: 'pg-low',      cardCls: 'bc-low'      },
+  { key: '',         label: 'Unset',            hdrCls: 'pg-unset',    cardCls: ''            },
+];
+
+function renderBoardView(f) {
+  const groups = {};
+  BOARD_COLS.forEach(c => { groups[c.key] = []; });
+  for (const sec of backlog.sections) {
+    for (const item of sec.items) {
+      if (!itemMatchesFilters(item, sec, f)) continue;
+      const p = item.priority || '';
+      if (p in groups) groups[p].push({ item, sec });
+    }
+  }
+  let html = '<div class="board-view">';
+  for (const col of BOARD_COLS) {
+    const entries = groups[col.key];
+    const colId = 'col-' + (col.key || 'unset');
+    const cards = entries.length
+      ? entries.map(({ item, sec }) => renderBoardCard(item, sec, col.cardCls)).join('')
+      : `<div class="board-drop-hint">Drop here</div>`;
+    html += `
+    <div class="board-col" id="${colId}"
+      ondragover="boardDragOver(event, '${col.key}')"
+      ondrop="boardDrop(event, '${col.key}')">
+      <div class="board-col-header ${col.hdrCls}">
+        <span>${col.label}</span>
+        <span>${entries.length}</span>
+      </div>
+      <div class="board-col-body">${cards}</div>
+    </div>`;
+  }
+  html += '</div>';
+  document.getElementById('mainContent').innerHTML = html;
+}
+
+function renderBoardCard(item, sec, cardCls) {
+  const doneClass = item.done ? 'done-card' : '';
+  return `<div class="board-card ${cardCls} ${doneClass}" id="bcard-${item.id}"
+    draggable="true"
+    ondragstart="boardDragStart(event,'${item.id}')"
+    ondragend="boardDragEnd(event)">
+    <div class="bc-id">${item.id}</div>
+    <div class="bc-text">${escHtml(item.text)}</div>
+    <div class="bc-footer">
+      <span class="bc-section" title="${escHtml(sec.title)}">${escHtml(sec.title)}</span>
+      <input type="checkbox" class="bc-done" ${item.done ? 'checked' : ''}
+        onchange="toggleDone('${item.id}', this.checked)" title="Mark done">
+    </div>
+  </div>`;
+}
+
+function boardDragStart(e, id) {
+  draggedItemId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => {
+    const el = document.getElementById('bcard-' + id);
+    if (el) el.classList.add('dragging');
+  }, 0);
+}
+
+function boardDragEnd(e) {
+  if (draggedItemId) {
+    const el = document.getElementById('bcard-' + draggedItemId);
+    if (el) el.classList.remove('dragging');
+  }
+  document.querySelectorAll('.board-col').forEach(c => c.classList.remove('drag-over'));
+  draggedItemId = null;
+}
+
+function boardDragOver(e, priority) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.board-col').forEach(c => c.classList.remove('drag-over'));
+  e.currentTarget.classList.add('drag-over');
+}
+
+function boardDrop(e, priority) {
+  e.preventDefault();
+  if (!draggedItemId) return;
+  const item = findItem(draggedItemId);
+  if (item) item.priority = priority || null;
+  document.querySelectorAll('.board-col').forEach(c => c.classList.remove('drag-over'));
+  draggedItemId = null;
+  renderStats();
+  renderBoardView(getFilters());
+  showToast('Priority updated');
 }
 
 // ── ACTIONS ───────────────────────────────────────────────────────────────────
