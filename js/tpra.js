@@ -6,13 +6,13 @@
 const TPRA_DATA_CATEGORIES = [
   { id: 'payment',     label: 'Payment / Cardholder Data',            sensitivity: 'Critical', reg: 'PCI-DSS' },
   { id: 'phi',         label: 'Health / PHI',                          sensitivity: 'Critical', reg: 'HIPAA' },
-  { id: 'auth',        label: 'Auth Secrets / API Keys / Credentials', sensitivity: 'Critical', reg: 'â€”' },
+  { id: 'auth',        label: 'Auth Secrets / API Keys / Credentials', sensitivity: 'Critical', reg: '—' },
   { id: 'pii',         label: 'Customer / Guest PII (at scale)',        sensitivity: 'High',     reg: 'PIPEDA / CCPA' },
   { id: 'hr',          label: 'Employee / HR Data',                     sensitivity: 'High',     reg: 'Employment law' },
   { id: 'financial',   label: 'Financial / Banking Records',            sensitivity: 'High',     reg: 'GLBA / FINTRAC' },
   { id: 'confidential',label: 'Confidential / IP / Contracts',          sensitivity: 'Moderate', reg: 'Contractual' },
-  { id: 'operational', label: 'Operational Data / Telemetry / Logs',    sensitivity: 'Low',      reg: 'â€”' },
-  { id: 'public',      label: 'Public / Non-Sensitive',                 sensitivity: 'Low',      reg: 'â€”' },
+  { id: 'operational', label: 'Operational Data / Telemetry / Logs',    sensitivity: 'Low',      reg: '—' },
+  { id: 'public',      label: 'Public / Non-Sensitive',                 sensitivity: 'Low',      reg: '—' },
 ];
 
 const TPRA_PROFILE_ATTRS = [
@@ -101,7 +101,7 @@ function tpraHighestSensitivity(cats) {
 }
 
 function tpraTierBadge(tier) {
-  if (!tier) return '<span class="badge b-gray">â€”</span>';
+  if (!tier) return '<span class="badge b-gray">—</span>';
   const cls = { Critical:'b-red', High:'b-amber', Moderate:'b-amber', Low:'b-green' }[tier] || 'b-gray';
   return '<span class="badge ' + cls + '">' + tier + '</span>';
 }
@@ -149,7 +149,7 @@ function renderTPRAList() {
       '<div style="font-size:36px;margin-bottom:0.75rem">ðŸ­</div>' +
       '<div style="font-size:14px;font-weight:700;margin-bottom:6px">No vendor assessments yet</div>' +
       '<div style="font-size:12px;color:var(--muted);margin-bottom:1.1rem;max-width:400px;margin-left:auto;margin-right:auto">' +
-      'Run a guided third-party risk assessment against any vendor, supplier, or SaaS tool â€” and generate a client-ready Word report.</div>' +
+      'Run a guided third-party risk assessment against any vendor, supplier, or SaaS tool — and generate a client-ready Word report.</div>' +
       '<button class="btn btn-primary" onclick="tpraNew()">+ Start your first assessment</button></div>';
   } else {
     html += '<div class="card" style="padding:0;overflow:hidden"><table class="assess-table">' +
@@ -158,7 +158,7 @@ function renderTPRAList() {
       const hs = tpraHighestSensitivity(a.data_categories || []);
       const critHigh = (a.findings || []).filter(function(f) { return f.severity === 'Critical' || f.severity === 'High'; }).length;
       html += '<tr style="cursor:pointer" onclick="tpraViewDetail(\'' + a.id + '\')">' +
-        '<td><div class="assess-row-name">' + escH(a.vendor_name) + '</div><div class="assess-row-sub">' + escH(a.product_name || 'â€”') + '</div></td>' +
+        '<td><div class="assess-row-name">' + escH(a.vendor_name) + '</div><div class="assess-row-sub">' + escH(a.product_name || '—') + '</div></td>' +
         '<td>' + tpraSensBadge(hs) + '</td>' +
         '<td>' + tpraTierBadge(a.tier) + '</td>' +
         '<td>' + (critHigh > 0 ? '<span class="badge b-red">' + critHigh + ' High+</span>' : '<span style="font-size:11px;color:var(--muted)">' + (a.findings || []).length + ' total</span>') + '</td>' +
@@ -178,7 +178,7 @@ function renderTPRAWizard() {
   const step = tpraState.step;
   const STEPS = ['Vendor Intake', 'Vendor Profile', 'Risk Findings', 'Tier & Rationale', 'Review & Publish'];
   let nav = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:0.85rem;flex-wrap:wrap">' +
-    '<button class="btn btn-outline btn-sm" onclick="tpraBackToList()">â† Back</button>' +
+    '<button class="btn btn-outline btn-sm" onclick="tpraBackToList()">← Back</button>' +
     '<div style="flex:1;font-size:15px;font-weight:700">' + (d.id ? 'Edit' : 'New') + ' Assessment: ' + escH(d.vendor_name || 'New Vendor') + '</div>' +
     '<span class="badge b-navy">Step ' + step + ' of 5</span></div>';
   let steps = '<div class="nist-track" style="margin-bottom:1rem">';
@@ -214,7 +214,7 @@ function tpraStep1() {
     '<div class="form-row"><div><div class="field-lbl">Website</div><input type="text" value="' + escH(d.website) + '" placeholder="https://" oninput="tpraState.draft.website=this.value"></div>' +
     '<div><div class="field-lbl">Assessor / Prepared by</div><input type="text" value="' + escH(d.assessor) + '" placeholder="Your name" oninput="tpraState.draft.assessor=this.value"></div></div></div>' +
     '<div class="card"><div class="card-title">Data Categories in Scope</div>' +
-    '<div style="font-size:12px;color:var(--muted);margin-bottom:0.75rem">What data will live with or pass through this vendor? Select all that apply â€” this drives the impact axis of the risk tier.</div>' +
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:0.75rem">What data will live with or pass through this vendor? Select all that apply — this drives the impact axis of the risk tier.</div>' +
     '<div class="checkbox-group">' + catHtml + '</div></div>' +
     '<div class="card"><div class="card-title">Jurisdiction & Residency</div>' +
     '<div class="form-row" style="margin-bottom:8px"><div><div class="field-lbl">Client Jurisdiction</div>' +
@@ -223,10 +223,10 @@ function tpraStep1() {
     '</select></div>' +
     '<div><div class="field-lbl">Data Residency Requirement</div><input type="text" value="' + escH(d.data_residency) + '" placeholder="e.g. Data must stay in Canada" oninput="tpraState.draft.data_residency=this.value"></div></div>' +
     '<div><div class="field-lbl">Provided Documentation (gated docs you have)</div>' +
-    '<textarea placeholder="List any SOC 2 reports, DPAs, security questionnaires, trust-centre exports you have in handâ€¦" oninput="tpraState.draft.provided_docs=this.value">' + escH(d.provided_docs) + '</textarea></div></div>' +
+    '<textarea placeholder="List any SOC 2 reports, DPAs, security questionnaires, trust-centre exports you have in hand…" oninput="tpraState.draft.provided_docs=this.value">' + escH(d.provided_docs) + '</textarea></div></div>' +
     '<div style="display:flex;justify-content:flex-end;gap:8px">' +
     '<button class="btn btn-outline btn-sm" onclick="tpraSaveDraft()">Save Draft</button>' +
-    '<button class="btn btn-primary" onclick="tpraNext()">Next: Vendor Profile â†’</button></div>';
+    '<button class="btn btn-primary" onclick="tpraNext()">Next: Vendor Profile →</button></div>';
 }
 
 function tpraStep2() {
@@ -238,7 +238,7 @@ function tpraStep2() {
     rows += '<div style="padding:0.7rem 0;border-bottom:1px solid var(--border)">' +
       '<div class="field-lbl" style="margin-bottom:5px">' + attr.label + '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 100px;gap:8px;align-items:start">' +
-      '<textarea style="min-height:44px" placeholder="Enter what you found, or leave blankâ€¦" oninput="tpraSetProf(\'' + attr.key + '\',this.value)">' + escH(prof[attr.key] || '') + '</textarea>' +
+      '<textarea style="min-height:44px" placeholder="Enter what you found, or leave blank…" oninput="tpraSetProf(\'' + attr.key + '\',this.value)">' + escH(prof[attr.key] || '') + '</textarea>' +
       '<div style="display:flex;flex-direction:column;gap:3px">' +
       ['Verified','Inferred','Unknown'].map(function(c) {
         const sel = conf[attr.key] === c;
@@ -247,15 +247,15 @@ function tpraStep2() {
       }).join('') +
       '</div></div></div>';
   });
-  return '<div class="card"><div class="card-title">Vendor Profile â€” Company Intelligence</div>' +
+  return '<div class="card"><div class="card-title">Vendor Profile — Company Intelligence</div>' +
     '<div style="font-size:12px;color:var(--muted);margin-bottom:0.85rem">Enter what you found from public sources. Label each: ' +
-    tpraConfBadge('Verified') + ' named source confirmed Â· ' + tpraConfBadge('Inferred') + ' reasonably deduced Â· ' + tpraConfBadge('Unknown') + ' not publicly available</div>' +
+    tpraConfBadge('Verified') + ' named source confirmed · ' + tpraConfBadge('Inferred') + ' reasonably deduced · ' + tpraConfBadge('Unknown') + ' not publicly available</div>' +
     rows +
     '<div style="padding:0.7rem 0"><div class="field-lbl" style="margin-bottom:5px">Recent Developments (last 18 months)</div>' +
-    '<textarea style="min-height:72px" placeholder="Notable news: funding, layoffs, acquisitions, breaches, leadership changes, outagesâ€¦" oninput="tpraSetProf(\'recent_developments\',this.value)">' + escH(prof.recent_developments || '') + '</textarea></div></div>' +
-    '<div style="display:flex;justify-content:space-between;gap:8px"><button class="btn btn-outline btn-sm" onclick="tpraGoStep(1)">â† Back</button>' +
+    '<textarea style="min-height:72px" placeholder="Notable news: funding, layoffs, acquisitions, breaches, leadership changes, outages…" oninput="tpraSetProf(\'recent_developments\',this.value)">' + escH(prof.recent_developments || '') + '</textarea></div></div>' +
+    '<div style="display:flex;justify-content:space-between;gap:8px"><button class="btn btn-outline btn-sm" onclick="tpraGoStep(1)">← Back</button>' +
     '<div style="display:flex;gap:8px"><button class="btn btn-outline btn-sm" onclick="tpraSaveDraft()">Save Draft</button>' +
-    '<button class="btn btn-primary" onclick="tpraNext()">Next: Risk Findings â†’</button></div></div>';
+    '<button class="btn btn-primary" onclick="tpraNext()">Next: Risk Findings →</button></div></div>';
 }
 
 function tpraStep3() {
@@ -288,13 +288,13 @@ function tpraStep3() {
           '<div class="spb open" id="fp' + i + '">' +
           '<div class="form-row" style="margin-bottom:8px">' +
           '<div><div class="field-lbl">Finding Area</div><select onchange="tpraUpdateFinding(' + i + ',\'area\',this.value)">' +
-          '<option value="">Select areaâ€¦</option>' + areaOpts + '</select></div>' +
+          '<option value="">Select area…</option>' + areaOpts + '</select></div>' +
           '<div><div class="field-lbl">Severity</div><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">' + sevBtns + '</div></div></div>' +
           '<div class="form-row" style="margin-bottom:8px">' +
           '<div><div class="field-lbl">Confidence</div><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">' + confBtns + '</div></div>' +
           '<div><div class="field-lbl">Applies To</div><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">' + atBtns + '</div></div></div>' +
           '<div style="margin-bottom:8px"><div class="field-lbl">Finding Detail</div>' +
-          '<textarea placeholder="Describe the risk clearlyâ€¦" oninput="tpraUpdateFinding(' + i + ',\'detail\',this.value)">' + escH(f.detail||'') + '</textarea></div>' +
+          '<textarea placeholder="Describe the risk clearly…" oninput="tpraUpdateFinding(' + i + ',\'detail\',this.value)">' + escH(f.detail||'') + '</textarea></div>' +
           '<div><div class="field-lbl">Recommendation</div>' +
           '<textarea placeholder="What should the client do?" style="min-height:48px" oninput="tpraUpdateFinding(' + i + ',\'recommendation\',this.value)">' + escH(f.recommendation||'') + '</textarea></div></div></div>';
       }).join('');
@@ -311,12 +311,12 @@ function tpraStep3() {
     findHtml +
     '<button class="btn btn-outline" style="width:100%;margin-top:4px" onclick="tpraAddFinding()">+ Add Finding</button></div>' +
     '<div class="card"><div class="card-title">Vendor Follow-up Items</div>' +
-    '<div style="font-size:12px;color:var(--muted);margin-bottom:0.75rem">Questions to send the vendor â€” Unknown gaps that need their response.</div>' +
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:0.75rem">Questions to send the vendor — Unknown gaps that need their response.</div>' +
     outstanding +
     '<button class="btn btn-outline btn-sm" onclick="tpraAddOutstanding()">+ Add Item</button></div>' +
-    '<div style="display:flex;justify-content:space-between;gap:8px"><button class="btn btn-outline btn-sm" onclick="tpraGoStep(2)">â† Back</button>' +
+    '<div style="display:flex;justify-content:space-between;gap:8px"><button class="btn btn-outline btn-sm" onclick="tpraGoStep(2)">← Back</button>' +
     '<div style="display:flex;gap:8px"><button class="btn btn-outline btn-sm" onclick="tpraSaveDraft()">Save Draft</button>' +
-    '<button class="btn btn-primary" onclick="tpraNext()">Next: Tier & Rationale â†’</button></div></div>';
+    '<button class="btn btn-primary" onclick="tpraNext()">Next: Tier & Rationale →</button></div></div>';
 }
 
 function tpraStep4() {
@@ -343,18 +343,18 @@ function tpraStep4() {
     '<div style="background:var(--bg);border-radius:8px;padding:0.85rem 1rem;margin-bottom:1rem;border-left:3px solid var(--cyan)">' +
     '<div style="font-size:11px;font-weight:700;color:var(--cyan);margin-bottom:4px">AUTO-SUGGESTED TIER</div>' +
     '<div style="font-size:13px;font-weight:700;margin-bottom:4px">' + tpraTierBadge(suggested.tier) +
-    ' â€” Data Sensitivity: <strong>' + suggested.dataSensitivity + '</strong> Ã— Vendor Signals: <strong>' + suggested.vendorSignal + '</strong></div>' +
+    ' — Data Sensitivity: <strong>' + suggested.dataSensitivity + '</strong> Ã— Vendor Signals: <strong>' + suggested.vendorSignal + '</strong></div>' +
     '<div style="font-size:11px;color:var(--muted)">Override below if your professional judgement differs, and document the rationale.</div></div>' +
     '<div class="field-lbl" style="margin-bottom:6px">Selected Tier</div>' +
     '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem">' + tierBtns + '</div>' +
     '<div class="field-lbl" style="margin-bottom:4px">Tier Rationale</div>' +
-    '<textarea style="min-height:100px" placeholder="Explain the deciding factors: data sensitivity, vendor signals, and any professional judgement appliedâ€¦" oninput="tpraState.draft.tier_rationale=this.value">' + escH(d.tier_rationale) + '</textarea></div>' +
+    '<textarea style="min-height:100px" placeholder="Explain the deciding factors: data sensitivity, vendor signals, and any professional judgement applied…" oninput="tpraState.draft.tier_rationale=this.value">' + escH(d.tier_rationale) + '</textarea></div>' +
     '<div class="card"><div class="card-title">Prioritised Recommendations</div>' +
-    '<textarea style="min-height:120px" placeholder="Key recommendations: contract provisions, required vendor responses, compensating controls, risk acceptance conditions, monitoring requirementsâ€¦" oninput="tpraState.draft.recommendations=this.value">' + escH(d.recommendations) + '</textarea></div>' +
+    '<textarea style="min-height:120px" placeholder="Key recommendations: contract provisions, required vendor responses, compensating controls, risk acceptance conditions, monitoring requirements…" oninput="tpraState.draft.recommendations=this.value">' + escH(d.recommendations) + '</textarea></div>' +
     outstanding +
-    '<div style="display:flex;justify-content:space-between;gap:8px"><button class="btn btn-outline btn-sm" onclick="tpraGoStep(3)">â† Back</button>' +
+    '<div style="display:flex;justify-content:space-between;gap:8px"><button class="btn btn-outline btn-sm" onclick="tpraGoStep(3)">← Back</button>' +
     '<div style="display:flex;gap:8px"><button class="btn btn-outline btn-sm" onclick="tpraSaveDraft()">Save Draft</button>' +
-    '<button class="btn btn-primary" onclick="tpraNext()">Next: Review & Publish â†’</button></div></div>';
+    '<button class="btn btn-primary" onclick="tpraNext()">Next: Review & Publish →</button></div></div>';
 }
 
 function tpraStep5() {
@@ -396,7 +396,7 @@ function tpraStep5() {
   return '<div class="card"><div class="card-title">Assessment Summary</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem">' +
     '<div style="background:var(--bg);border-radius:8px;padding:0.75rem 1rem"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px">Vendor</div>' +
-    '<div style="font-size:14px;font-weight:700">' + escH(d.vendor_name || 'â€”') + '</div><div style="font-size:12px;color:var(--muted)">' + escH(d.product_name || '') + '</div></div>' +
+    '<div style="font-size:14px;font-weight:700">' + escH(d.vendor_name || '—') + '</div><div style="font-size:12px;color:var(--muted)">' + escH(d.product_name || '') + '</div></div>' +
     '<div style="background:var(--bg);border-radius:8px;padding:0.75rem 1rem"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px">Risk Tier</div>' +
     '<div style="font-size:22px;font-weight:700;margin-top:2px">' + tpraTierBadge(d.tier) + '</div></div>' +
     '<div style="background:var(--bg);border-radius:8px;padding:0.75rem 1rem"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px">Data in Scope</div>' +
@@ -408,7 +408,7 @@ function tpraStep5() {
     '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--cyan2);margin-bottom:0.5rem">Generate Word Report</div>' +
     '<div style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:1rem;line-height:1.5">After completing, ask Claude to generate the full .docx vendor risk report. Click below to copy a pre-filled prompt with your assessment data.</div>' +
     '<button class="btn" style="background:var(--cyan);color:#fff;width:100%" onclick="tpraCopyPrompt()">ðŸ“‹ Copy Report Prompt for Claude</button></div>' +
-    '<div style="display:flex;justify-content:space-between;gap:8px"><button class="btn btn-outline btn-sm" onclick="tpraGoStep(4)">â† Back</button>' +
+    '<div style="display:flex;justify-content:space-between;gap:8px"><button class="btn btn-outline btn-sm" onclick="tpraGoStep(4)">← Back</button>' +
     '<div style="display:flex;gap:8px"><button class="btn btn-outline btn-sm" onclick="tpraSaveDraft()">Save as Draft</button>' +
     '<button class="btn btn-green" onclick="tpraComplete()" ' + (canComplete?'':'disabled title="Vendor name and tier required"') + '>âœ“ Complete Assessment</button></div></div>';
 }
@@ -435,8 +435,8 @@ function renderTPRADetail(a) {
     const val = profile[attr.key];
     const c = profConf[attr.key];
     return '<tr><td style="padding:8px;border-bottom:1px solid var(--border);font-weight:700;white-space:nowrap">' + escH(attr.label) + '</td>' +
-      '<td style="padding:8px;border-bottom:1px solid var(--border);color:' + (val?'var(--text)':'var(--muted)') + '">' + (val ? escH(val) : 'â€”') + '</td>' +
-      '<td style="padding:8px;border-bottom:1px solid var(--border)">' + (c ? tpraConfBadge(c) : '<span style="color:var(--muted)">â€”</span>') + '</td></tr>';
+      '<td style="padding:8px;border-bottom:1px solid var(--border);color:' + (val?'var(--text)':'var(--muted)') + '">' + (val ? escH(val) : '—') + '</td>' +
+      '<td style="padding:8px;border-bottom:1px solid var(--border)">' + (c ? tpraConfBadge(c) : '<span style="color:var(--muted)">—</span>') + '</td></tr>';
   }).join('');
 
   const findingsHtml = findings.length > 0
@@ -448,7 +448,7 @@ function renderTPRADetail(a) {
           tpraFindingSevBadge(f.severity) + '<span style="font-size:13px;font-weight:700">' + escH(f.area) + '</span>' + atBadge +
           (f.confidence ? '<span style="margin-left:auto">' + tpraConfBadge(f.confidence) + '</span>' : '') + '</div>' +
           '<div style="font-size:12px;color:var(--text);line-height:1.5;margin-bottom:4px">' + escH(f.detail||'') + '</div>' +
-          (f.recommendation ? '<div style="font-size:12px;color:var(--navy);background:#eef1ff;border-radius:6px;padding:5px 9px;margin-top:4px"><strong>â†’</strong> ' + escH(f.recommendation) + '</div>' : '') +
+          (f.recommendation ? '<div style="font-size:12px;color:var(--navy);background:#eef1ff;border-radius:6px;padding:5px 9px;margin-top:4px"><strong>→</strong> ' + escH(f.recommendation) + '</div>' : '') +
           '</div>';
       }).join('') + '</div>'
     : '';
@@ -463,8 +463,8 @@ function renderTPRADetail(a) {
     : '';
 
   return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:0.85rem;flex-wrap:wrap">' +
-    '<button class="btn btn-outline btn-sm" onclick="tpraBackToList()">â† Back</button>' +
-    '<div style="flex:1;font-size:15px;font-weight:700">' + escH(a.vendor_name) + ' â€” Vendor Risk Assessment</div>' +
+    '<button class="btn btn-outline btn-sm" onclick="tpraBackToList()">← Back</button>' +
+    '<div style="flex:1;font-size:15px;font-weight:700">' + escH(a.vendor_name) + ' — Vendor Risk Assessment</div>' +
     '<button class="btn btn-outline btn-sm" onclick="tpraEdit(\'' + a.id + '\')">Edit</button>' +
     '<button class="btn btn-cyan btn-sm" onclick="tpraCopyPromptForId(\'' + a.id + '\')">ðŸ“‹ Copy Report Prompt</button></div>' +
     '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:0.85rem">' +
@@ -474,7 +474,7 @@ function renderTPRADetail(a) {
     '<div class="wcard"><div class="wcard-label">Status</div><div style="margin-top:6px"><span class="badge ' + (a.status==='complete'?'b-green':'b-amber') + '">' + (a.status==='complete'?'Complete':'Draft') + '</span></div><div class="wcard-sub">' + new Date(a.created_at).toLocaleDateString() + '</div></div></div>' +
     (a.tier_rationale ? '<div class="card"><div class="card-title">Tier Rationale</div><div style="font-size:13px;line-height:1.6">' + escH(a.tier_rationale) + '</div></div>' : '') +
     '<div class="card"><div class="card-title">Data in Scope</div><div class="checkbox-group">' + catChips + '</div>' +
-    (a.jurisdiction ? '<div style="margin-top:8px;font-size:12px"><strong>Jurisdiction:</strong> ' + escH(a.jurisdiction) + (a.data_residency?' Â· <strong>Residency:</strong> '+escH(a.data_residency):'') + '</div>' : '') + '</div>' +
+    (a.jurisdiction ? '<div style="margin-top:8px;font-size:12px"><strong>Jurisdiction:</strong> ' + escH(a.jurisdiction) + (a.data_residency?' · <strong>Residency:</strong> '+escH(a.data_residency):'') + '</div>' : '') + '</div>' +
     '<div class="card"><div class="card-title">Vendor Profile</div>' +
     '<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>' +
     '<th style="text-align:left;padding:6px 8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);border-bottom:2px solid var(--border);white-space:nowrap">Attribute</th>' +
@@ -667,7 +667,7 @@ function tpraBuildAndCopy(d) {
 
   try {
     navigator.clipboard.writeText(prompt);
-    toast('Prompt copied â€” paste into Claude to generate the report âœ“', '#15803d');
+    toast('Prompt copied — paste into Claude to generate the report âœ“', '#15803d');
   } catch(e) {
     const backdrop = document.createElement('div');
     backdrop.className = 'modal-backdrop';

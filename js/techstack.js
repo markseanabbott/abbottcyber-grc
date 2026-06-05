@@ -1,20 +1,20 @@
 ﻿// ============================================================
-// TECHNOLOGY STACK SURVEY â€” tooling-focused, drives MSP catalog match + framework auto-scoping
+// TECHNOLOGY STACK SURVEY — tooling-focused, drives MSP catalog match + framework auto-scoping
 // ============================================================
 //
 // Each question carries three machine tags (not rendered to surveying user, exposed in export):
-//   tool_category   â€” joins against MSP portfolio (drives sell / upgrade / replace classification)
-//   question_type   â€” 'presence' | 'coverage' | 'feature' | 'process'
+//   tool_category   — joins against MSP portfolio (drives sell / upgrade / replace classification)
+//   question_type   — 'presence' | 'coverage' | 'feature' | 'process'
 //                     drives whether a gap is a tool sale, an upgrade, or a services engagement
-//   derive_strategy â€” how this answer propagates into CIS / NIST / Insurance surveys
-//                     'standard' = yesâ†’implemented, partialâ†’partial, noâ†’not_implemented, naâ†’skip
+//   derive_strategy — how this answer propagates into CIS / NIST / Insurance surveys
+//                     'standard' = yes→implemented, partial→partial, no→not_implemented, na→skip
 //
 // NIST uses CSF 2.0 IDs (PR.AA, PR.PS, PR.DS, DE.CM, ID.RA, PR.AT).
 
 const TS_CATS = [
   {
     id: 'endpoint', icon: 'ðŸ’»', title: 'Endpoint Protection',
-    desc: 'Workstations, laptops and servers â€” agents, patching, encryption.',
+    desc: 'Workstations, laptops and servers — agents, patching, encryption.',
     questions: [
       { id: 'edr', tool_category: 'EDR', question_type: 'presence', derive_strategy: 'standard',
         text: 'Is EDR (Endpoint Detection & Response) deployed and active on all servers and endpoints?',
@@ -45,7 +45,7 @@ const TS_CATS = [
       },
       { id: 'app_allowlist', tool_category: 'App_Allowlisting', question_type: 'feature', derive_strategy: 'standard',
         text: 'Is application allowlisting enforced on critical servers (only approved binaries can execute)?',
-        suggestion: 'Windows Defender Application Control / AppLocker, ThreatLocker, Airlock Digital. IG3-level maturity â€” typically only critical servers, not user endpoints.',
+        suggestion: 'Windows Defender Application Control / AppLocker, ThreatLocker, Airlock Digital. IG3-level maturity — typically only critical servers, not user endpoints.',
         mappings: {
           cis: [{ id: '2.5', title: 'Allowlist authorised software', ig: '3' }, { id: '2.6', title: 'Allowlist authorised libraries', ig: '3' }, { id: '2.7', title: 'Allowlist authorised scripts', ig: '3' }],
           nist: [{ id: 'PR.PS-05', title: 'Installation and execution of unauthorised software is prevented' }],
@@ -91,7 +91,7 @@ const TS_CATS = [
         mappings: {
           cis: [{ id: '5.6', title: 'Centralise account management', ig: '2' }, { id: '6.8', title: 'Define and maintain role-based access control', ig: '3' }],
           nist: [{ id: 'PR.AA-03', title: 'Users, services, and hardware are authenticated' }, { id: 'PR.AA-05', title: 'Access permissions, entitlements, and authorisations are defined and managed' }],
-          insurance: { impact: 'mid', note: 'PAM presence is rated favourably by most carriers â€” especially for orgs with shared admin credentials in scope.' },
+          insurance: { impact: 'mid', note: 'PAM presence is rated favourably by most carriers — especially for orgs with shared admin credentials in scope.' },
         }
       },
       { id: 'jml', tool_category: 'JML_Automation', question_type: 'process', derive_strategy: 'standard',
@@ -100,7 +100,7 @@ const TS_CATS = [
         mappings: {
           cis: [{ id: '5.3', title: 'Disable dormant accounts', ig: '1' }, { id: '6.2', title: 'Establish an access revocation process', ig: '1' }],
           nist: [{ id: 'PR.AA-01', title: 'Identities and credentials for authorised users, services, and hardware are managed' }],
-          insurance: { impact: 'mid', note: 'Stale accounts are a common breach root cause â€” carriers ask about leaver SLA. >24h is a yellow flag, >7d a red flag.' },
+          insurance: { impact: 'mid', note: 'Stale accounts are a common breach root cause — carriers ask about leaver SLA. >24h is a yellow flag, >7d a red flag.' },
         }
       },
     ]
@@ -142,7 +142,7 @@ const TS_CATS = [
         mappings: {
           cis: [{ id: '14.3', title: 'Train workforce members on authentication best practices', ig: '1' }],
           nist: [{ id: 'PR.AT-01', title: 'Personnel are provided with awareness and training' }],
-          insurance: { impact: 'low', note: 'Not directly rated but signals operational discipline. Free to enable â€” no excuse to skip.' },
+          insurance: { impact: 'low', note: 'Not directly rated but signals operational discipline. Free to enable — no excuse to skip.' },
         }
       },
     ]
@@ -213,7 +213,7 @@ const TS_CATS = [
     questions: [
       { id: 'backup_tool', tool_category: 'Backup_Tool', question_type: 'presence', derive_strategy: 'standard',
         text: 'Is a backup tool covering all critical systems on a defined schedule (servers, M365, SaaS data)?',
-        suggestion: 'Veeam, Datto, Cove, Acronis, Rubrik, Cohesity. M365 needs explicit third-party backup â€” native retention is not backup.',
+        suggestion: 'Veeam, Datto, Cove, Acronis, Rubrik, Cohesity. M365 needs explicit third-party backup — native retention is not backup.',
         mappings: {
           cis: [{ id: '11.1', title: 'Establish and maintain a data recovery process', ig: '1' }, { id: '11.2', title: 'Perform automated backups', ig: '1' }],
           nist: [{ id: 'PR.DS-11', title: 'Backups of data are created, protected, maintained, and tested' }, { id: 'RC.RP-01', title: 'The recovery plan is executed' }],
@@ -240,7 +240,7 @@ const TS_CATS = [
       },
       { id: 'rto_rpo', tool_category: 'RTO_RPO_Defined', question_type: 'process', derive_strategy: 'standard',
         text: 'Are RTO and RPO defined per critical system, with business-owner sign-off?',
-        suggestion: 'Documented in BCP / IR Plan. Business-owner sign-off is what makes it real â€” IT-only definitions tend to be wishful.',
+        suggestion: 'Documented in BCP / IR Plan. Business-owner sign-off is what makes it real — IT-only definitions tend to be wishful.',
         mappings: {
           cis: [{ id: '11.1', title: 'Establish and maintain a data recovery process', ig: '1' }],
           nist: [{ id: 'GV.RM-04', title: 'Strategic direction that describes appropriate risk response options is established and communicated' }, { id: 'RC.RP-04', title: 'Critical mission functions and cybersecurity risk management are considered to establish post-incident operational norms' }],
@@ -436,14 +436,14 @@ const TS_CATS = [
         mappings: {
           cis: [{ id: '4.1', title: 'Establish and maintain a secure configuration process', ig: '1' }, { id: '4.2', title: 'Establish and maintain a secure configuration process for network infrastructure', ig: '1' }],
           nist: [{ id: 'PR.PS-01', title: 'Configuration management practices are established and applied' }],
-          insurance: { impact: 'mid', note: 'Increasingly asked on renewals â€” "do you enforce a hardening baseline" is becoming standard.' },
+          insurance: { impact: 'mid', note: 'Increasingly asked on renewals — "do you enforce a hardening baseline" is becoming standard.' },
         }
       },
     ]
   },
 ];
 
-// ---- TECH STACK â€” state, render, handlers ----
+// ---- TECH STACK — state, render, handlers ----
 
 function tsInit() {
   tsState = {
@@ -468,7 +468,7 @@ async function tsLoadResponses() {
     tsState.dirty = false;
   } catch (e) {
     tsState.loading = false;
-    toast('Could not load tech stack â€” ' + e.message, '#dc2626');
+    toast('Could not load tech stack — ' + e.message, '#dc2626');
     console.error(e);
   }
 }
@@ -507,11 +507,11 @@ function tsEscAttr(s) {
 function tsRenderChips(q) {
   const m = q.mappings;
   const chips = [];
-  (m.cis || []).forEach(c => chips.push({ cls:'chip-cis',  fw:'CIS',  id:c.id,  tip:`CIS Controls v8 â€” ${c.id}\n${c.title}\n(IG ${c.ig})` }));
-  (m.nist || []).forEach(c => chips.push({ cls:'chip-nist', fw:'NIST', id:c.id,  tip:`NIST CSF 2.0 â€” ${c.id}\n${c.title}` }));
+  (m.cis || []).forEach(c => chips.push({ cls:'chip-cis',  fw:'CIS',  id:c.id,  tip:`CIS Controls v8 — ${c.id}\n${c.title}\n(IG ${c.ig})` }));
+  (m.nist || []).forEach(c => chips.push({ cls:'chip-nist', fw:'NIST', id:c.id,  tip:`NIST CSF 2.0 — ${c.id}\n${c.title}` }));
   if (m.insurance) {
     const insCls = m.insurance.impact==='high'?'chip-ins-high':m.insurance.impact==='mid'?'chip-ins-mid':'chip-ins-low';
-    chips.push({ cls:insCls, fw:'Ins', id:m.insurance.impact.toUpperCase(), tip:`Insurance â€” ${m.insurance.impact.toUpperCase()} impact\n\n${m.insurance.note}` });
+    chips.push({ cls:insCls, fw:'Ins', id:m.insurance.impact.toUpperCase(), tip:`Insurance — ${m.insurance.impact.toUpperCase()} impact\n\n${m.insurance.note}` });
   }
   return `<div class="chip-row">${chips.map(c =>
     `<span class="chip ${c.cls}" title="${tsEscAttr(c.tip)}"><span class="chip-fw">${c.fw}</span>${c.id}</span>`
@@ -533,7 +533,7 @@ function tsRenderQuestion(q) {
     </div>
     <div class="ts-partial ${ans==='partial'?'open':''}">
       <div class="ts-partial-lbl">What is partial? (required)</div>
-      <textarea placeholder="e.g. EDR on servers only, not all laptops â€” planned Q3" oninput="tsSetDetail('${q.id}',this.value)">${(a.detail||'').replace(/</g,'&lt;')}</textarea>
+      <textarea placeholder="e.g. EDR on servers only, not all laptops — planned Q3" oninput="tsSetDetail('${q.id}',this.value)">${(a.detail||'').replace(/</g,'&lt;')}</textarea>
     </div>
   </div>`;
 }
@@ -672,5 +672,5 @@ async function tsExportSnapshot() {
 }
 
 // ============================================================
-// MULTIPLAYER â€” Player join experience (?join=CODE)
+// MULTIPLAYER — Player join experience (?join=CODE)
 // ============================================================
