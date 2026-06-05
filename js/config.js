@@ -71,9 +71,7 @@ const NAV = [
   { id: 'g_assessments', group: 'Assessments', icon: '📋', items: [
     { id: 'assessments', icon: '📋', label: 'Assessments Hub', live: true, phase: 1 },
     { id: 'insurance', icon: '🛡️', label: 'Insurance Readiness', live: true, phase: 1 },
-    { id: 'cis_ig1', icon: '✅', label: 'CIS Controls — IG1', live: true, phase: 1 },
-    { id: 'cis_ig2', icon: '✅', label: 'CIS Controls — IG2', live: true, phase: 1 },
-    { id: 'cis_ig3', icon: '✅', label: 'CIS Controls — IG3', live: true, phase: 1 },
+    { id: 'cis', icon: '✅', label: 'CIS Controls v8', live: true, phase: 1 },
     { id: 'nist', icon: '🏛️', label: 'NIST CSF 2.0', live: false, phase: 3 },
     { id: 'techstack', icon: '🖥️', label: 'Technology Stack', live: true, phase: 1 },
   ]},
@@ -112,5 +110,5 @@ let insState = { answers: {}, openPanels: {} };
 let tsState = null;  // Technology Stack survey state; per-org, hydrated from Supabase on enter.
 let orgProfiles = {};  // keyed by org_id; hydrated at init + after profile saves
 let orgModalTab = 'details';  // 'details' | 'profile'
-let cisState = { ig: null, answers: {}, openPanels: {} };  // CIS Controls survey state
+let cisState = { answers: {}, openPanels: {}, orgId: null, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {} };  // CIS Controls survey state
 let tpraState = null;  // Third-Party Risk Assessment state; per-org, hydrated on enter.

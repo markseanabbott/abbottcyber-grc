@@ -1,8 +1,8 @@
 {
-  "project": "Abbott Cyber Consulting \u2014 GRC Security Scorecard",
-  "version": "1.3",
+  "project": "Abbott Cyber Consulting — GRC Security Scorecard",
+  "version": "1.4",
   "created": "2026-05-14",
-  "updated": "2026-06-05",
+  "updated": "2026-06-05 (session 2)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -10,7 +10,7 @@
       "id": "core",
       "title": "Core Concept",
       "phase": 1,
-      "description": "Foundational platform capabilities \u2014 the spine everything else attaches to.",
+      "description": "Foundational platform capabilities — the spine everything else attaches to.",
       "items": [
         {
           "id": "s1",
@@ -84,7 +84,7 @@
     },
     {
       "id": "survey",
-      "title": "Phase 1 \u2014 Survey Engine",
+      "title": "Phase 1 — Survey Engine",
       "phase": 1,
       "description": "Survey-based scoring. Insurance Readiness built as first live module.",
       "items": [
@@ -199,6 +199,52 @@
       ]
     },
     {
+      "id": "cis_controls",
+      "title": "CIS Controls v8 — Enhancements",
+      "phase": 1,
+      "description": "Extensions to the CIS Controls assessment module: per-safeguard evidence capture, auditor comments, and deeper reporting.",
+      "items": [
+        {
+          "id": "cis1",
+          "text": "Per-safeguard assessor comments: free-text note field per safeguard in the assessment form, persisted in the answers jsonb or a dedicated table. Display inline in form and read-only in assessment detail view.",
+          "done": true,
+          "notes": "Implemented. 💬 Comment button toggles inline textarea per safeguard. Notes saved to cis_safeguard_notes table (PATCH_007). Evidence columns (evidence_url, evidence_filename) added to same table for Phase 2."
+        },
+        {
+          "id": "cis2",
+          "text": "Per-safeguard evidence upload: file attachment (PDF, screenshot, doc) linked to a safeguard and an assessment run. Store in Supabase Storage; show filename + download link in form and detail view. New SQL patch required.",
+          "done": false
+        },
+        {
+          "id": "cis_quick",
+          "text": "CIS Quick Check: 47 plain-language questions across all 18 CIS control groups. No evidence required. Fast posture read for client intake. Lives inside the CIS module dashboard. Saves to assessments table as module=cis_quick.",
+          "done": true,
+          "notes": "Built. renderCISQuick() with score-so-far hero, progress bar, per-control group sections. cisSaveQuick() / cisOpenQuickAssessment() / cisDeleteQuickAssessment(). Dashboard shows Quick Check history card below full assessment history."
+        },
+        {
+          "id": "cis_poam",
+          "text": "CIS POAM (Plan of Action & Milestones): per-assessment gap report with Assigned To, Target Date, Risk Decision (Remediate/Accept/Transfer), Rationale, Status columns. Excel export with logo placeholder row. POAM button on each assessment history row.",
+          "done": true,
+          "notes": "Built. cis_poam_items table (PATCH_008). renderCISPoam(), cisOpenPoam(), cisSavePoam(), cisExportPoam(). Logo row placeholder in Excel export (row 1) — full logo upload is backlogged."
+        },
+        {
+          "id": "cis_poam_logo",
+          "text": "Client logo upload for POAM and report exports: allow logo upload in Organisation Manager, stored in Supabase Storage, embedded in Excel/PDF exports at top of document.",
+          "done": false
+        },
+        {
+          "id": "cis3",
+          "text": "CIS assessment PDF/Excel export: produce a formatted report card showing score, IG progress, per-control summary, and gap list — branded Abbott Cyber.",
+          "done": false
+        },
+        {
+          "id": "cis4",
+          "text": "CIS gap report: dedicated view listing all unanswered or 'No' safeguards for the selected IG goal, sorted by control group, with recommended remediation priority.",
+          "done": false
+        }
+      ]
+    },
+    {
       "id": "tpra",
       "title": "Third-Party Risk Assessment (TPRA)",
       "phase": 1,
@@ -216,12 +262,12 @@
         },
         {
           "id": "tp3",
-          "text": "Risk findings: area, severity (Critical\u2013Info), confidence, applies-to, detail, recommendation; vendor follow-up items list",
+          "text": "Risk findings: area, severity (Critical–Info), confidence, applies-to, detail, recommendation; vendor follow-up items list",
           "done": true
         },
         {
           "id": "tp4",
-          "text": "Auto-suggested risk tier: data sensitivity \u00d7 vendor signals matrix \u2192 Critical / High / Moderate / Low with manual override and rationale field",
+          "text": "Auto-suggested risk tier: data sensitivity × vendor signals matrix → Critical / High / Moderate / Low with manual override and rationale field",
           "done": true
         },
         {
@@ -289,13 +335,13 @@
     },
     {
       "id": "hierarchy",
-      "title": "Org Hierarchy \u2014 Grandfather / Father / Child Model",
+      "title": "Org Hierarchy — Grandfather / Father / Child Model",
       "phase": 1,
       "description": "Three-tier multi-tenancy model supporting both MSP and franchise organisational structures.",
       "items": [
         {
           "id": "s30",
-          "text": "Define three-tier org model: Grandfather (MSP/Franchisor) \u2192 Father (Region/Group) \u2192 Child (Site/Client)",
+          "text": "Define three-tier org model: Grandfather (MSP/Franchisor) → Father (Region/Group) → Child (Site/Client)",
           "done": true
         },
         {
@@ -352,7 +398,7 @@
     },
     {
       "id": "grandfather_reporting",
-      "title": "Grandfather \u2014 Consolidated Reporting",
+      "title": "Grandfather — Consolidated Reporting",
       "phase": 2,
       "description": "Portfolio-wide visibility and reporting for the top-tier tenant (MSP or Franchisor HQ).",
       "items": [
@@ -400,7 +446,7 @@
     },
     {
       "id": "father_reporting",
-      "title": "Father \u2014 Group Consolidated Reporting",
+      "title": "Father — Group Consolidated Reporting",
       "phase": 2,
       "description": "Group-level reporting scoped to a Father tenant's own Child orgs.",
       "items": [
@@ -438,7 +484,7 @@
     },
     {
       "id": "vuln_scan",
-      "title": "Phase 2 \u2014 Vuln Scan Integration",
+      "title": "Phase 2 — Vuln Scan Integration",
       "phase": 2,
       "description": "Import and map vulnerability scan output from common tools into the scoring model.",
       "items": [
@@ -466,7 +512,7 @@
     },
     {
       "id": "nist_expansion",
-      "title": "Phase 3 \u2014 Framework Expansion (NIST)",
+      "title": "Phase 3 — Framework Expansion (NIST)",
       "phase": 3,
       "description": "Expand from CIS Controls into NIST CSF 2.0 and related frameworks.",
       "items": [
@@ -482,7 +528,7 @@
         },
         {
           "id": "s17",
-          "text": "Maturity tier scoring (Partial \u2192 Adaptive)",
+          "text": "Maturity tier scoring (Partial → Adaptive)",
           "done": false
         },
         {
@@ -559,8 +605,50 @@
       ]
     },
     {
+      "id": "vciso_program",
+      "title": "vCISO Program Record System",
+      "phase": 2,
+      "description": "System of record for vCISO engagements. Ingests practitioner artifacts rather than replacing workflow — the vCISO keeps their tools and templates; the platform becomes the longitudinal client program record. Core principle: bring your own workflow.",
+      "items": [
+        {
+          "id": "vciso1",
+          "text": "Client Record & Program History Store: per-client record holding all uploaded artifacts organized by month and type (monthly report, assessment, TPRA, policy, tabletop, meeting notes). Builds a program timeline automatically from ingestion date and document type. No data entry beyond the upload itself.",
+          "done": false,
+          "priority": "High",
+          "notes": "Foundational — all other vCISO program features depend on this store."
+        },
+        {
+          "id": "vciso2",
+          "text": "Monthly Report Ingestion & Signal Extraction: on upload of a monthly report (Word/PDF), extract key signals via AI — risk posture indicators, open action items, framework areas touched, deliverables referenced. Present extracted signals to the vCISO for a quick confirm/correct step before storing.",
+          "done": false,
+          "priority": "High",
+          "notes": "Core AI intelligence layer. Turns unstructured document into structured program data without requiring the vCISO to change their report format."
+        },
+        {
+          "id": "vciso3",
+          "text": "Hours Input — Lightweight, Not a Timesheet: single input per month per client — hours consumed, hours budgeted, optional activity tag. No timesheets, no per-task logging. The vCISO loads the number however they track it; the tool stores the result.",
+          "done": false,
+          "priority": "Medium"
+        },
+        {
+          "id": "vciso4",
+          "text": "Client Health Dashboard (practitioner-facing): portfolio view showing all clients at a glance — burn rate vs. retainer, last activity date, open action items count, months of program history. Surfaces clients burning hot or going dark before it becomes a problem.",
+          "done": false,
+          "priority": "High",
+          "notes": "Built for the vCISO, not the client. Practitioner-facing only."
+        },
+        {
+          "id": "vciso5",
+          "text": "Client Portal — Program View (client-facing): thin read-only view for the client — program timeline, deliverables received, risk posture trend, open action items, document library. Derived entirely from ingested artifacts — no additional data entry to populate it. Answers 'what are we paying for?' before it gets asked.",
+          "done": false,
+          "priority": "Low",
+          "notes": "Build after ingestion layer (vciso1, vciso2) is stable and trusted. Phase 3 candidate."
+        }
+      ]
+    },
+    {
       "id": "risk_register_core",
-      "title": "Risk Register \u2014 Core Structure & Columns",
+      "title": "Risk Register — Core Structure & Columns",
       "phase": 2,
       "description": "Full GRC-grade risk register with inherent/residual scoring, treatment tracking, and framework mapping.",
       "items": [
@@ -596,17 +684,17 @@
         },
         {
           "id": "r7",
-          "text": "Likelihood: scored 1\u20135 (Rare / Unlikely / Possible / Likely / Almost Certain)",
+          "text": "Likelihood: scored 1–5 (Rare / Unlikely / Possible / Likely / Almost Certain)",
           "done": false
         },
         {
           "id": "r8",
-          "text": "Impact: scored 1\u20135 (Negligible / Minor / Moderate / Major / Critical)",
+          "text": "Impact: scored 1–5 (Negligible / Minor / Moderate / Major / Critical)",
           "done": false
         },
         {
           "id": "r9",
-          "text": "Inherent Risk Score: auto-calculated Likelihood \u00d7 Impact (1\u201325)",
+          "text": "Inherent Risk Score: auto-calculated Likelihood × Impact (1–25)",
           "done": false
         },
         {
@@ -673,18 +761,18 @@
     },
     {
       "id": "risk_register_ux",
-      "title": "Risk Register \u2014 UX & Workflow",
+      "title": "Risk Register — UX & Workflow",
       "phase": 2,
       "description": "Day-to-day usability features for managing the risk register.",
       "items": [
         {
           "id": "r22",
-          "text": "Inline editable rows \u2014 edit any field without opening a separate modal",
+          "text": "Inline editable rows — edit any field without opening a separate modal",
           "done": false
         },
         {
           "id": "r23",
-          "text": "Risk matrix heatmap view: plot all risks on a 5\u00d75 likelihood vs impact grid",
+          "text": "Risk matrix heatmap view: plot all risks on a 5×5 likelihood vs impact grid",
           "done": false
         },
         {
@@ -726,7 +814,7 @@
     },
     {
       "id": "risk_register_export",
-      "title": "Risk Register \u2014 Excel Export",
+      "title": "Risk Register — Excel Export",
       "phase": 2,
       "description": "Full .xlsx export with conditional formatting, heatmap tab, and summary tab.",
       "items": [
@@ -747,7 +835,7 @@
         },
         {
           "id": "r34",
-          "text": "Risk matrix tab: 5\u00d75 heatmap generated as a second Excel sheet",
+          "text": "Risk matrix tab: 5×5 heatmap generated as a second Excel sheet",
           "done": false
         },
         {
@@ -779,7 +867,7 @@
     },
     {
       "id": "tabletop_core",
-      "title": "Tabletop Program \u2014 Core Framework",
+      "title": "Tabletop Program — Core Framework",
       "phase": 3,
       "description": "Scenario library, exercise builder, scheduling, and facilitator guide generation.",
       "items": [
@@ -858,7 +946,7 @@
     },
     {
       "id": "tabletop_operational",
-      "title": "Tabletop \u2014 Operational Track (IT / Security Team)",
+      "title": "Tabletop — Operational Track (IT / Security Team)",
       "phase": 3,
       "description": "Technical scenario track for IT and security teams with vCISO facilitator console.",
       "items": [
@@ -869,7 +957,7 @@
         },
         {
           "id": "t11a",
-          "text": "Step 0 \u2014 TL Declaration: Technical Lead receives raw signal, assigns severity (P1\u2013P4), recommends declare or monitor before IR plan activates",
+          "text": "Step 0 — TL Declaration: Technical Lead receives raw signal, assigns severity (P1–P4), recommends declare or monitor before IR plan activates",
           "done": true
         },
         {
@@ -900,17 +988,20 @@
         {
           "id": "t13",
           "text": "Playbook alignment: map exercise steps to existing IR / DR playbooks",
-          "done": false
+          "done": false,
+          "priority": "Critical"
         },
         {
           "id": "t14",
           "text": "Gap identification: note where playbook breaks down or team is unsure during exercise",
-          "done": false
+          "done": false,
+          "priority": "Critical"
         },
         {
           "id": "t15",
           "text": "Tool availability check: confirm which tools/systems would be available during a real incident",
-          "done": false
+          "done": false,
+          "priority": "Critical"
         },
         {
           "id": "t16",
@@ -926,98 +1017,113 @@
     },
     {
       "id": "tabletop_executive",
-      "title": "Tabletop \u2014 Executive Track (C-Suite / Board)",
+      "title": "Tabletop — Executive Track (C-Suite / Board)",
       "phase": 3,
       "description": "Business-framed scenario track for executives and board members.",
       "items": [
         {
           "id": "t18",
           "text": "Scenarios: ransomware with ransom demand decision, regulatory breach notification, reputational crisis, M&A cyber due diligence failure, cyber insurance claim",
-          "done": false
+          "done": false,
+          "priority": "Low"
         },
         {
           "id": "t19",
-          "text": "Business impact framing: scenarios presented in revenue, reputation, and regulatory terms \u2014 not technical",
-          "done": false
+          "text": "Business impact framing: scenarios presented in revenue, reputation, and regulatory terms — not technical",
+          "done": false,
+          "priority": "Low"
         },
         {
           "id": "t20",
-          "text": "Decision inject cards: executives presented with choices \u2014 pay/don't pay, notify/delay, shut down/continue operations",
-          "done": false
+          "text": "Decision inject cards: executives presented with choices — pay/don't pay, notify/delay, shut down/continue operations",
+          "done": false,
+          "priority": "Low"
         },
         {
           "id": "t21",
           "text": "Legal & regulatory prompts: when does GDPR/PIPEDA breach notification clock start, who is the regulator",
-          "done": false
+          "done": false,
+          "priority": "Low"
         },
         {
           "id": "t22",
           "text": "Board communication exercise: draft a stakeholder communication under simulated pressure",
-          "done": false
+          "done": false,
+          "priority": "Low"
         },
         {
           "id": "t23",
           "text": "Insurance review prompt: what does the policy cover, what are the exclusions",
-          "done": false
+          "done": false,
+          "priority": "Low"
         },
         {
           "id": "t24",
           "text": "Executive debrief template: document decisions made, rationale, and what would be done differently",
-          "done": false
+          "done": false,
+          "priority": "Low"
         },
         {
           "id": "t25",
           "text": "Cyber risk appetite discussion: use exercise outcome to calibrate exec risk tolerance",
-          "done": false
+          "done": false,
+          "priority": "Low"
         }
       ]
     },
     {
       "id": "tabletop_vendor",
-      "title": "Tabletop \u2014 Vendor / Third-Party Track",
+      "title": "Tabletop — Vendor / Third-Party Track",
       "phase": 3,
       "description": "Scenario track focused on third-party and supply chain risk.",
       "items": [
         {
           "id": "t26",
           "text": "Scenarios: critical vendor ransomware impact, supply chain compromise (SolarWinds-style), vendor data breach exposing client data, vendor going dark during incident",
-          "done": false
+          "done": false,
+          "priority": "Low"
         },
         {
           "id": "t27",
           "text": "Vendor notification drill: how and when does the vendor notify you, is it in the contract",
-          "done": false
+          "done": false,
+          "priority": "Low"
         },
         {
           "id": "t28",
           "text": "Shared responsibility mapping: who owns what during a vendor-side incident",
-          "done": false
+          "done": false,
+          "priority": "Low"
         },
         {
           "id": "t29",
           "text": "Vendor IR plan review: does the vendor have an IR plan, can you see it, does it meet your standards",
-          "done": false
+          "done": false,
+          "priority": "Low"
         },
         {
           "id": "t30",
           "text": "Substitution/continuity exercise: if this vendor went offline for 72hrs, what is the fallback",
-          "done": false
+          "done": false,
+          "priority": "Low"
         },
         {
           "id": "t31",
           "text": "Contractual gap identification: log SLA/notification gaps discovered during the exercise",
-          "done": false
+          "done": false,
+          "priority": "Low"
         },
         {
           "id": "t32",
           "text": "Vendor scorecard update: findings from exercise feed back into vendor risk register",
-          "done": false
+          "done": false,
+          "priority": "Medium"
         }
       ]
     },
     {
       "id": "tabletop_aar",
-      "title": "Tabletop \u2014 After Action & Reporting",
+      "title": "Tabletop — After Action & Reporting",
       "phase": 3,
       "description": "Post-exercise documentation, action tracking, and compliance evidence.",
       "items": [
@@ -1033,43 +1139,51 @@
         },
         {
           "id": "t34a",
-          "text": "IR plan comparison \u2014 automated: upload ratified IR plan document and auto-compare against exercise event log",
-          "done": false
+          "text": "IR plan comparison — automated: upload ratified IR plan document and auto-compare against exercise event log",
+          "done": false,
+          "priority": "Critical"
         },
         {
           "id": "t35",
           "text": "Action items log: capture owners, due dates, and priority for each identified gap",
-          "done": false
+          "done": false,
+          "priority": "High"
         },
         {
           "id": "t36",
           "text": "Action items linked to risk register: gaps auto-create or update risk entries",
-          "done": false
+          "done": false,
+          "priority": "High"
         },
         {
           "id": "t37",
           "text": "Action item tracking: open / in progress / closed with due date alerts",
-          "done": false
+          "done": false,
+          "priority": "High"
         },
         {
           "id": "t38",
           "text": "Exercise history: full log of all exercises run per org with AAR attached",
-          "done": false
+          "done": false,
+          "priority": "High"
         },
         {
           "id": "t39",
           "text": "Trend view: which gaps recur across multiple exercises over time",
-          "done": false
+          "done": false,
+          "priority": "High"
         },
         {
           "id": "t40",
           "text": "Grandfather/Father visibility: view exercise completion status across Child orgs",
-          "done": false
+          "done": false,
+          "priority": "Medium"
         },
         {
           "id": "t41",
           "text": "Export AAR to PDF: branded, client-ready after action report (Anthropic API)",
-          "done": false
+          "done": false,
+          "priority": "High"
         },
         {
           "id": "t42",
@@ -1085,19 +1199,19 @@
           "id": "t44",
           "text": "Vendor Breach Scenario Inject: post-TPRA, offer to generate a one-page tabletop scenario pre-populated from the assessment — data categories exposed, regulatory notification clock (jurisdiction already captured at intake), decision-maker identification, cyber insurance trigger, and DPA contractual rights. No manual prep required.",
           "done": false,
-          "priority": null
+          "priority": "Critical"
         },
         {
           "id": "t45",
           "text": "Findings-to-Remediation Loop: tabletop gaps (missing DPA, unknown notification timeline, no IR decision tree) output as structured action items in the same format as TPRA findings — feeding directly into the client's risk register and remediation roadmap. Closes the loop no competing platform currently closes.",
           "done": false,
-          "priority": null
+          "priority": "Critical"
         }
       ]
     },
     {
       "id": "tabletop_multiplayer",
-      "title": "Tabletop \u2014 Multiplayer / Remote Participant Engine",
+      "title": "Tabletop — Multiplayer / Remote Participant Engine",
       "phase": 3,
       "description": "Jackbox-style session joining: facilitator generates a session code, participants join via link on any device, select their role, and receive role-filtered injects in real time. No accounts required for participants.",
       "items": [
@@ -1108,17 +1222,17 @@
         },
         {
           "id": "mp2",
-          "text": "Join link: participants navigate to a URL and enter the session code to join \u2014 no account or login required",
+          "text": "Join link: participants navigate to a URL and enter the session code to join — no account or login required",
           "done": false
         },
         {
           "id": "mp3",
-          "text": "Role selection screen: participant sees available roles for the session, selects one, enters their name \u2014 role is locked once taken",
+          "text": "Role selection screen: participant sees available roles for the session, selects one, enters their name — role is locked once taken",
           "done": false
         },
         {
           "id": "mp4",
-          "text": "Role capacity: each role can only be claimed by one participant \u2014 late joiners see remaining open roles only",
+          "text": "Role capacity: each role can only be claimed by one participant — late joiners see remaining open roles only",
           "done": false
         },
         {
@@ -1153,7 +1267,7 @@
         },
         {
           "id": "mp11",
-          "text": "Breach declaration: IC and Exec Sponsor co-sign from their own devices \u2014 both must confirm before breach is logged",
+          "text": "Breach declaration: IC and Exec Sponsor co-sign from their own devices — both must confirm before breach is logged",
           "done": false
         },
         {
@@ -1180,9 +1294,9 @@
     },
     {
       "id": "tabletop_bcdr",
-      "title": "Tabletop \u2014 BCDR Track",
+      "title": "Tabletop — BCDR Track",
       "phase": 3,
-      "description": "Business continuity and disaster recovery scenario track. Broader than cyber \u2014 covers natural disaster, power outage, key person loss, supply chain failure.",
+      "description": "Business continuity and disaster recovery scenario track. Broader than cyber — covers natural disaster, power outage, key person loss, supply chain failure.",
       "items": [
         {
           "id": "tb1",
@@ -1206,7 +1320,7 @@
         },
         {
           "id": "tb5",
-          "text": "Communication tree drill: staff, customers, regulators, insurers \u2014 who is notified and in what order",
+          "text": "Communication tree drill: staff, customers, regulators, insurers — who is notified and in what order",
           "done": false
         },
         {

@@ -45,7 +45,7 @@ async function loadAssessments(orgId) {
     orgAssessments[orgId] = {};
     (rows || []).forEach(r => {
       if (!orgAssessments[orgId][r.module]) orgAssessments[orgId][r.module] = [];
-      orgAssessments[orgId][r.module].push({ date: r.assessed_at, score: r.score, secPct: r.sec_pct, insPct: r.ins_pct, answers: r.answers || {} });
+      orgAssessments[orgId][r.module].push({ id: r.id, date: r.assessed_at, score: r.score, secPct: r.sec_pct, insPct: r.ins_pct, answers: r.answers || {}, conductedBy: r.conducted_by || '' });
     });
   } catch (e) { orgAssessments[orgId] = {}; }
 }
@@ -103,6 +103,7 @@ async function selectOrg(id) {
   document.getElementById('orgDD').style.display = 'none';
   document.getElementById('orgChev').textContent = '▾';
   insState = { answers: {}, openPanels: {} };
+  cisState = { answers: {}, openPanels: {}, orgId: null, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {} };
   tsState = null;  // tech stack state is per-org — force reload on next view
   tpraState = null;  // TPRA state is per-org — force reload on next view
   await loadAssessments(id);
@@ -188,9 +189,7 @@ function renderMain() {
   if (activeNav === 'home') { el.innerHTML = renderHome(); drawTrend(); return; }
   if (activeNav === 'assessments') { el.innerHTML = renderAssessmentsHub(); setTimeout(drawAllHubTrends, 80); return; }
   if (activeNav === 'insurance') { el.innerHTML = renderInsurance(); drawTrend(); return; }
-  if (activeNav === 'cis_ig1') { el.innerHTML = renderCIS('ig1'); return; }
-  if (activeNav === 'cis_ig2') { el.innerHTML = renderCIS('ig2'); return; }
-  if (activeNav === 'cis_ig3') { el.innerHTML = renderCIS('ig3'); return; }
+  if (activeNav === 'cis') { el.innerHTML = renderCIS(); setTimeout(() => { const c = document.getElementById('cisTrendChart'); if (c) cisTrendDraw(); }, 80); return; }  // trend draw covers both dashboard + form views
   if (activeNav === 'orgs') { el.innerHTML = renderOrgManager(); setTimeout(updateParentOptions, 100); return; }
   if (activeNav === 'tabletop') { el.innerHTML = renderTabletop(); return; }
   if (activeNav === 'techstack') {

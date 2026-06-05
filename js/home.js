@@ -63,9 +63,7 @@ function renderHome() {
 // ============================================================
 
 const ASSESSMENT_CATALOG = [
-  { id: 'cis_ig1', label: 'CIS Controls v8 — IG1', icon: '✅', ig: 'ig1', igLabel: 'IG1', igClass: 'ig1-badge', description: 'Basic cyber hygiene. Suitable for all organisations.', nav: 'cis_ig1' },
-  { id: 'cis_ig2', label: 'CIS Controls v8 — IG2', icon: '✅', ig: 'ig2', igLabel: 'IG2', igClass: 'ig2-badge', description: 'IG1 + intermediate controls. Medium-complexity environments.', nav: 'cis_ig2' },
-  { id: 'cis_ig3', label: 'CIS Controls v8 — IG3', icon: '✅', ig: 'ig3', igLabel: 'IG3', igClass: 'ig3-badge', description: 'All controls. Mature security programs, high-value targets.', nav: 'cis_ig3' },
+  { id: 'cis', label: 'CIS Controls v8', icon: '✅', ig: null, igLabel: null, description: '153 safeguards across 18 controls. Per-org IG goal (IG1/IG2/IG3). Full assessment history.', nav: 'cis' },
   { id: 'insurance', label: 'Insurance Readiness', icon: '🛡️', ig: null, igLabel: null, description: 'Dual-weighted readiness score for cyber insurance applications.', nav: 'insurance' },
   { id: 'nist', label: 'NIST CSF 2.0', icon: '🏛️', ig: null, igLabel: null, description: 'NIST Cybersecurity Framework 2.0 assessment.', nav: 'nist', comingSoon: true },
   { id: 'techstack', label: 'Technology Stack', icon: '🖥️', ig: null, igLabel: null, description: 'Maps your technology to security frameworks and gaps.', nav: 'techstack' },
@@ -105,7 +103,9 @@ function renderAssessmentsHub() {
               <div class="assess-row-name">${a.icon} ${a.label}</div>
               <div class="assess-row-sub">${a.description}</div>
             </td>
-            <td>${a.igLabel ? `<span class="ig-badge ${a.igClass}">${a.igLabel}</span>` : '<span style="color:var(--muted);font-size:11px">—</span>'}</td>
+            <td>${a.id === 'cis'
+            ? (() => { const g = (orgProfiles[currentOrg?.id] || {}).cis_goal; const igCols = { ig1: { bg: '#dcfce7', txt: '#15803d' }, ig2: { bg: '#dbeafe', txt: '#1d4ed8' }, ig3: { bg: '#ede9fe', txt: '#6d28d9' } }; const c = igCols[g]; return g && c ? `<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:${c.bg};color:${c.txt}">${g.toUpperCase()}</span>` : '<span style="font-size:10px;color:var(--muted)">No goal set</span>'; })()
+            : a.igLabel ? `<span class="ig-badge ${a.igClass}">${a.igLabel}</span>` : '<span style="color:var(--muted);font-size:11px">—</span>'}</td>
             <td style="color:${last ? 'var(--text)' : 'var(--muted)'}">
               ${last ? `<span style="font-size:11px">${last.date}</span>` : '<span style="font-size:11px">Never</span>'}
               ${runs.length > 1 ? `<div style="font-size:10px;color:var(--muted)">${runs.length} runs total</div>` : ''}
@@ -182,11 +182,12 @@ function duplicateAssessment(moduleId) {
     insState = { answers: Object.assign({}, last.answers || {}), openPanels: { [INS_SECTIONS[0].id]: true } };
     toast('✓ Copied last answers — update and re-save when ready', '#152168');
     setNav('insurance');
-  } else if (moduleId.startsWith('cis_')) {
-    const ig = moduleId.replace('cis_', '');
-    cisState = { ig, answers: Object.assign({}, last.answers || {}), openPanels: {} };
+  } else if (moduleId === 'cis') {
+    const rawAnswers = Object.assign({}, last.answers || {});
+    const answers = Object.fromEntries(Object.entries(rawAnswers).filter(([k]) => !k.startsWith('_')));
+    cisState = { answers, openPanels: {}, orgId: currentOrg?.id, view: 'form' };
     toast('✓ Copied last answers — update and re-save when ready', '#152168');
-    setNav(moduleId);
+    setNav('cis');
   } else if (moduleId === 'techstack') {
     toast('✓ Navigate to Technology Stack to review and re-run', '#152168');
     setNav('techstack');

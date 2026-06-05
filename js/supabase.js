@@ -26,6 +26,8 @@ const sb = {
   createOrg: (d) => sbFetch('organisations', 'POST', d),
   updateOrg: (id, patch) => sbFetch(`organisations?id=eq.${id}`, 'PATCH', patch, { Prefer: 'return=representation' }),
   deleteOrg: (id) => sbFetch(`organisations?id=eq.${id}`, 'DELETE', null, { Prefer: 'return=representation' }),
+  deleteAssessment: (id) => sbFetch(`assessments?id=eq.${id}`, 'DELETE'),
+  updateAssessment: (id, patch) => sbFetch(`assessments?id=eq.${id}`, 'PATCH', patch, { Prefer: 'return=representation' }),
 };
 
 // Organisation Profiles persistence layer
@@ -49,6 +51,20 @@ sb.tpra = {
   upsert: (row) => sbFetch('vendor_assessments', 'POST', row, { Prefer: 'resolution=merge-duplicates,return=representation' }),
   update: (id, patch) => sbFetch(`vendor_assessments?id=eq.${id}`, 'PATCH', patch, { Prefer: 'return=representation' }),
   delete: (id) => sbFetch(`vendor_assessments?id=eq.${id}`, 'DELETE'),
+};
+
+// CIS POAM persistence layer (PATCH_008)
+sb.cisPoam = {
+  getForAssessment: (assessmentId) => sbFetch(`cis_poam_items?assessment_id=eq.${assessmentId}&select=*`),
+  upsertAll: (rows) => sbFetch('cis_poam_items', 'POST', rows, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+  deleteAllForAssessment: (assessmentId) => sbFetch(`cis_poam_items?assessment_id=eq.${assessmentId}`, 'DELETE'),
+};
+
+// CIS Safeguard Notes persistence layer (PATCH_007)
+sb.cisNotes = {
+  getForAssessment: (assessmentId) => sbFetch(`cis_safeguard_notes?assessment_id=eq.${assessmentId}&select=*`),
+  upsertAll: (rows) => sbFetch('cis_safeguard_notes', 'POST', rows, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+  deleteAllForAssessment: (assessmentId) => sbFetch(`cis_safeguard_notes?assessment_id=eq.${assessmentId}`, 'DELETE'),
 };
 
 // Tabletop persistence layer — wraps Supabase calls for the operational tabletop module.

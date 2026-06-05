@@ -43,7 +43,10 @@ AbbottCyber GRC/
 ├── SUPABASE_PATCH_002.sql         ← Added techstack_responses (already run)
 ├── SUPABASE_PATCH_003.sql         ← Added organisation_profiles (already run)
 ├── SUPABASE_PATCH_004.sql         ← Unique constraint on tabletop role claiming (already run)
-└── SUPABASE_PATCH_005.sql         ← Added vendor_assessments (already run)
+├── SUPABASE_PATCH_005.sql         ← Added vendor_assessments (already run)
+├── SUPABASE_PATCH_006.sql         ← Added cis_goal to organisation_profiles (already run)
+├── SUPABASE_PATCH_007.sql         ← Added cis_safeguard_notes (already run)
+└── SUPABASE_PATCH_008.sql         ← Added cis_poam_items (already run)
 ```
 
 All patches have been run. The live database reflects the cumulative schema.
@@ -207,6 +210,7 @@ vendor_count_band text
 critical_vendor_dependency boolean
 notes text
 managed_by_org_id uuid → organisations(id)
+cis_goal text CHECK ('ig1','ig2','ig3')
 created_at, updated_at timestamptz
 ```
 
@@ -285,6 +289,7 @@ child        → self only
 | Tabletop Exercise Engine — Operational Track | ✅ Done |
 | Supabase connectivity (all modules wired, live) | ✅ Done |
 | Third-Party Risk Assessment (TPRA) — full 5-step wizard, list, detail, Supabase persistence | ✅ Done |
+| CIS Controls v8 — unified module, per-org IG goal, trend, Excel export/import with backdating (153 safeguards, all 18 controls) | ✅ Done |
 
 ### TPRA — what's inside
 - 5-step wizard: Vendor Intake → Vendor Profile → Risk Findings → Tier & Rationale → Review & Publish
@@ -328,11 +333,10 @@ child        → self only
 1. **Framework auto-scoping** — tech stack answers pre-populate CIS / NIST / Insurance survey questions via `derive_strategy`. Backlog: `ts9`.
 2. **MSP tool catalog** — `msp_tools` table, join on `tool_category`. Backlog: `ts8`.
 3. **Jackbox-style multiplayer for tabletop** — session code join flow, role selection, participant view, real-time inject delivery. Backlog: `mp1`–`mp15`.
-4. **CIS Controls v8 survey** — full questionnaire, shortened by tech-stack auto-scoping once #1 ships. Backlog: `s6`.
-5. **Optional tech stack categories** — Cloud Security Posture, Application Security. Backlog: `ts6`.
-6. **PDF export** — AAR and scorecard reports, Abbott Cyber branded. Backlog: `s10`, `t41`.
-7. **TPRA filter/sort** — filter vendor assessment list by tier, status, sensitivity. Backlog: `tp10`.
-8. **Fix org dropdown bug** — reported May 16; `toggleOrgDD()` is implemented but needs live verification.
+4. **Optional tech stack categories** — Cloud Security Posture, Application Security. Backlog: `ts6`.
+5. **PDF export** — AAR and scorecard reports, Abbott Cyber branded. Backlog: `s10`, `t41`.
+6. **TPRA filter/sort** — filter vendor assessment list by tier, status, sensitivity. Backlog: `tp10`.
+7. **Fix org dropdown bug** — reported May 16; `toggleOrgDD()` is implemented but needs live verification.
 
 Full backlog with phase numbers and done flags is in `backlog.json`. Do not invent features outside the backlog without asking Mark first. Do suggest additions if you see a gap.
 
@@ -418,4 +422,4 @@ New SQL goes in the next numbered `SUPABASE_PATCH_00N.sql` file. Write it, expla
 
 *This project has real commercial potential — future SaaS / white-label. Build accordingly: clean structure, maintainable code, no shortcuts that would hurt a future sale.*
 
-*Last updated: 4 June 2026 — TPRA module documented; backlog updated; .gitignore added; prototype file removed*
+*Last updated: 5 June 2026 — CIS Controls v8 unified module built (PATCH_006 run); backlog updated*
