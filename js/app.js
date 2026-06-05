@@ -6,17 +6,29 @@ async function loadOrgProfiles() {
   } catch (e) { console.warn('Profile load failed', e); }
 }
 
-async function init() {
+// bootApp — loads data and renders the app shell.
+// Called after auth is confirmed (either via stored session or fresh login).
+async function bootApp() {
   // Multiplayer URL routing — intercept before normal app boot
   if (_MP_JOIN) { mpBoot(_MP_JOIN); return; }
   if (_MP_DISP) { dispBoot(_MP_DISP); return; }
   try {
     allOrgs = await sb.orgs();
-    const platform = allOrgs.find(o => o.tier === 'platform') || allOrgs[0];
-    currentOrg = platform;
-    await Promise.all([loadAssessments(platform.id), loadOrgProfiles()]);
+
+    // Set initial org based on auth user's primary org (not always platform)
+    if (authState.profile) {
+      const homeOrg = allOrgs.find(o => o.id === authState.profile.org_id);
+      currentOrg = homeOrg || allOrgs.find(o => o.tier === 'platform') || allOrgs[0];
+    } else {
+      currentOrg = allOrgs.find(o => o.tier === 'platform') || allOrgs[0];
+    }
+
+    await Promise.all([loadAssessments(currentOrg.id), loadOrgProfiles()]);
+
     document.getElementById('dbStatus').className = 'db-status db-live';
     document.getElementById('dbStatus').textContent = '● Live';
+    document.getElementById('userChipContainer').innerHTML = renderUserChip();
+
     updateOrgUI(); buildNav(); renderMain();
   } catch (e) {
     document.getElementById('dbStatus').className = 'db-status db-error';
@@ -26,9 +38,21 @@ async function init() {
         <div style="font-size:28px;margin-bottom:0.75rem">⚠️</div>
         <div style="font-size:14px;font-weight:700;color:var(--red);margin-bottom:6px">Database connection failed</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:1rem;max-width:420px;margin-left:auto;margin-right:auto">${e.message}</div>
-        <button class="btn btn-primary btn-sm" onclick="init()">Retry</button>
+        <button class="btn btn-primary btn-sm" onclick="bootApp()">Retry</button>
       </div>`;
   }
+}
+
+// startApp — entry point. Checks auth, shows login screen or boots app.
+async function startApp() {
+  document.getElementById('appShell').style.display = 'none';
+  const authed = await authBootstrap();
+  if (!authed) {
+    document.body.insertAdjacentHTML('beforeend', renderLoginScreen());
+    return;
+  }
+  document.getElementById('appShell').style.display = '';
+  await bootApp();
 }
 
 function toast(msg, col = '#152168') {
@@ -79,7 +103,7 @@ function toggleOrgDD() {
 
 function buildOrgDropdown() {
   const dd = document.getElementById('orgDD');
-  const switchable = currentOrg.tier === 'platform' ? allOrgs : visibleOrgs();
+  const switchable = visibleOrgs();
   const sectionLabels = { platform: 'Platform Owner', grandfather: 'Grandfather', father: 'Father — Groups', child: 'Child — Clients' };
   let h = '';
   TIER_ORDER.forEach(tier => {
@@ -103,7 +127,7 @@ async function selectOrg(id) {
   document.getElementById('orgDD').style.display = 'none';
   document.getElementById('orgChev').textContent = '▾';
   insState = { answers: {}, openPanels: {} };
-  cisState = { answers: {}, openPanels: {}, orgId: null, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {} };
+  cisState = { answers: {}, openPanels: {}, orgId: null, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '' };
   tsState = null;  // tech stack state is per-org — force reload on next view
   tpraState = null;  // TPRA state is per-org — force reload on next view
   await loadAssessments(id);
@@ -129,8 +153,11 @@ function getModuleDot(id) {
 }
 
 function buildNav() {
+  const adminUser = typeof isAdmin === 'function' ? isAdmin() : true;
   document.getElementById('sidebarNav').innerHTML = NAV.map(g => {
     const isOpen = g.id === activeNavSection;
+    const visibleItems = g.items.filter(item => !item.adminOnly || adminUser);
+    if (!visibleItems.length) return '';
     return `
     <div class="nav-section">
       <div class="nav-section-hdr${isOpen ? ' open' : ''}" onclick="toggleNavSection('${g.id}')">
@@ -139,7 +166,7 @@ function buildNav() {
         <span class="nav-section-chevron">▶</span>
       </div>
       <div class="nav-section-children${isOpen ? ' open' : ''}">
-        ${g.items.map(item => `
+        ${visibleItems.map(item => `
         <div class="nav-item${item.id === activeNav ? ' active' : ''}" onclick="setNav('${item.id}')">
           <span class="nav-icon">${item.icon}</span>
           <span>${item.label}</span>
@@ -184,12 +211,22 @@ function renderTierBanner() {
 // ============================================================
 // MAIN RENDER ROUTER
 // ============================================================
+function viewOnlyBanner() {
+  if (!isViewOnly()) return '';
+  return `<div style="background:#fef3c7;border:1px solid #f59e0b;color:#92400e;padding:8px 14px;
+    border-radius:8px;font-size:12px;font-weight:600;margin-bottom:1rem;display:flex;align-items:center;gap:6px">
+    <span>👁</span> View-only access — assessments and data are read-only for your account
+  </div>`;
+}
+
 function renderMain() {
   const el = document.getElementById('mainContent');
+  const voB = viewOnlyBanner();  // empty string unless role=viewer
+  if (activeNav === 'users') { el.innerHTML = renderUserManagement(); return; }
   if (activeNav === 'home') { el.innerHTML = renderHome(); drawTrend(); return; }
-  if (activeNav === 'assessments') { el.innerHTML = renderAssessmentsHub(); setTimeout(drawAllHubTrends, 80); return; }
-  if (activeNav === 'insurance') { el.innerHTML = renderInsurance(); drawTrend(); return; }
-  if (activeNav === 'cis') { el.innerHTML = renderCIS(); setTimeout(() => { const c = document.getElementById('cisTrendChart'); if (c) cisTrendDraw(); }, 80); return; }  // trend draw covers both dashboard + form views
+  if (activeNav === 'assessments') { el.innerHTML = voB + renderAssessmentsHub(); setTimeout(drawAllHubTrends, 80); return; }
+  if (activeNav === 'insurance') { el.innerHTML = voB + renderInsurance(); drawTrend(); return; }
+  if (activeNav === 'cis') { el.innerHTML = voB + renderCIS(); setTimeout(() => { const c = document.getElementById('cisTrendChart'); if (c) cisTrendDraw(); if (cisState.view === 'report') drawReportCharts(); }, 80); return; }  // trend draw covers both dashboard + form views
   if (activeNav === 'orgs') { el.innerHTML = renderOrgManager(); setTimeout(updateParentOptions, 100); return; }
   if (activeNav === 'tabletop') { el.innerHTML = renderTabletop(); return; }
   if (activeNav === 'techstack') {
@@ -232,4 +269,4 @@ function escH(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-init();
+startApp();

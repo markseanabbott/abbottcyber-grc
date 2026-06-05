@@ -2,9 +2,19 @@ const SB_URL = 'https://sssyimtkvmtgjpusedvq.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzc3lpbXRrdm10Z2pwdXNlZHZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NzA1NTMsImV4cCI6MjA5NDU0NjU1M30.FxQaJn97YewSQi6s45nw1LgMRfBj8xhswLM47_Q2zXI';
 
 async function sbFetch(path, method = 'GET', body = null, extraHeaders = {}) {
+  // Block write operations for view-only users (role=viewer)
+  if (['POST','PATCH','PUT','DELETE'].includes(method) &&
+      typeof isViewOnly === 'function' && isViewOnly()) {
+    throw new Error('You have view-only access — changes are disabled for your account');
+  }
+
+  // Use the authenticated user's session token when available, fall back to anon key
+  const bearerToken = (typeof authState !== 'undefined' && authState?.session?.access_token)
+    ? authState.session.access_token
+    : SB_KEY;
   const headers = {
     'apikey': SB_KEY,
-    'Authorization': `Bearer ${SB_KEY}`,
+    'Authorization': `Bearer ${bearerToken}`,
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   };
@@ -65,6 +75,22 @@ sb.cisNotes = {
   getForAssessment: (assessmentId) => sbFetch(`cis_safeguard_notes?assessment_id=eq.${assessmentId}&select=*`),
   upsertAll: (rows) => sbFetch('cis_safeguard_notes', 'POST', rows, { Prefer: 'resolution=merge-duplicates,return=representation' }),
   deleteAllForAssessment: (assessmentId) => sbFetch(`cis_safeguard_notes?assessment_id=eq.${assessmentId}`, 'DELETE'),
+};
+
+// User management persistence layer
+sb.users = {
+  getAll: () => sbFetch('users?select=*&order=name.asc'),
+  getByOrg: (orgId) => sbFetch(`users?org_id=eq.${orgId}&select=*&order=name.asc`),
+  create: (row) => sbFetch('users', 'POST', row),
+  update: (id, patch) => sbFetch(`users?id=eq.${id}`, 'PATCH', patch, { Prefer: 'return=representation' }),
+  delete: (id) => sbFetch(`users?id=eq.${id}`, 'DELETE'),
+};
+
+// User org access — explicit org assignments for analyst/viewer roles
+sb.userOrgAccess = {
+  getForUser: (userId) => sbFetch(`user_org_access?user_id=eq.${userId}&select=*`),
+  upsertAll: (rows) => sbFetch('user_org_access', 'POST', rows, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+  deleteForUser: (userId) => sbFetch(`user_org_access?user_id=eq.${userId}`, 'DELETE'),
 };
 
 // Tabletop persistence layer — wraps Supabase calls for the operational tabletop module.

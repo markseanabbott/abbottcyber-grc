@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.4",
   "created": "2026-05-14",
-  "updated": "2026-06-05 (session 2)",
+  "updated": "2026-06-05 (session 4)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -238,8 +238,51 @@
           "done": false
         },
         {
+          "id": "cis_exec_report",
+          "text": "CIS Executive Report: per-assessment report view with gauge/speedometer chart, answer distribution donut, score trend line, IG tier progress bars, control group coverage bars, top gaps table, and executive commentary section with 'Generate AI Prompt' button to produce AI-written narrative via Claude.",
+          "done": true,
+          "notes": "Built. cisOpenReport() opens report view, renderCISReport() renders full layout. cisDrawGauge(), cisDrawDonut(), cisDrawReportTrend() draw Canvas charts. cisGenerateReportPrompt() copies data-rich prompt to clipboard. cisSaveCommentary() persists commentary to assessment answers._exec_commentary via PATCH. 📊 Report button added to each assessment row. Commentary preserved through re-edits of the full assessment form."
+        },
+        {
           "id": "cis4",
           "text": "CIS gap report: dedicated view listing all unanswered or 'No' safeguards for the selected IG goal, sorted by control group, with recommended remediation priority.",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "auth",
+      "title": "Authentication & User Management",
+      "phase": 1,
+      "description": "Supabase Auth email/password login, session management, role-based access control, and user management UI.",
+      "items": [
+        {
+          "id": "auth1",
+          "text": "Supabase Auth email/password login screen — gates entire app before init(). Session token stored in sessionStorage. Token refresh on expiry.",
+          "done": true,
+          "notes": "js/auth.js: authBootstrap(), authSignIn(), authSignOut(), loginSubmit(), renderLoginScreen(). sbFetch updated to use session token in Authorization header. startApp() replaces init() as entry point."
+        },
+        {
+          "id": "auth2",
+          "text": "4-role model: platform_admin, org_admin, analyst, viewer. Visibility scoping per role. Viewer role is read-only (write ops blocked at sbFetch level).",
+          "done": true,
+          "notes": "visibleOrgs() updated to be auth-aware. viewOnlyBanner() shown on assessment modules. sbFetch blocks POST/PATCH/DELETE for viewer role. adminOnly flag on User Management nav item."
+        },
+        {
+          "id": "auth3",
+          "text": "User Management module — list, create, edit, delete users. Multi-org access assignment for analyst/viewer. user_org_access junction table.",
+          "done": true,
+          "notes": "js/users.js: renderUserManagement(), openCreateUserModal(), openEditUserModal(). Auth account created via /auth/v1/signup (anon key). SUPABASE_PATCH_009.sql adds auth_id to users, user_org_access table, authenticated RLS policies."
+        },
+        {
+          "id": "auth4",
+          "text": "Remove anon RLS policies — tighten to authenticated-only once auth is confirmed stable.",
+          "done": false,
+          "notes": "PATCH_010 pending. Current state: both anon and authenticated policies active."
+        },
+        {
+          "id": "auth5",
+          "text": "First-run setup screen — allow platform admin account creation from login screen when no platform_admin users exist, eliminating need for Supabase dashboard bootstrap.",
           "done": false
         }
       ]

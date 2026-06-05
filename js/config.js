@@ -47,6 +47,32 @@ function tierInitials(name) { return name.split(' ').map(w => w[0]).join('').sub
 // ============================================================
 function visibleOrgs() {
   if (!currentOrg) return [];
+
+  // When authenticated, visibility is based on the auth user's role + home org,
+  // not whichever org is currently selected in the switcher.
+  if (typeof authState !== 'undefined' && authState?.profile) {
+    const role = authState.profile.role;
+    if (role === 'platform_admin') return allOrgs;
+
+    if (role === 'org_admin') {
+      const homeOrg = allOrgs.find(o => o.id === authState.profile.org_id);
+      if (!homeOrg) return [currentOrg];
+      if (homeOrg.tier === 'grandfather') {
+        const fathers = allOrgs.filter(o => o.parent_id === homeOrg.id);
+        const fatherIds = fathers.map(f => f.id);
+        return [homeOrg, ...fathers, ...allOrgs.filter(o => fatherIds.includes(o.parent_id))];
+      }
+      if (homeOrg.tier === 'father') {
+        return [homeOrg, ...allOrgs.filter(o => o.parent_id === homeOrg.id)];
+      }
+      return [homeOrg];
+    }
+
+    // analyst / viewer — only their explicitly assigned orgs
+    return (authState.accessOrgs || []).map(id => allOrgs.find(o => o.id === id)).filter(Boolean);
+  }
+
+  // Pre-auth fallback — tier-based from currentOrg
   if (currentOrg.tier === 'platform') return allOrgs;
   if (currentOrg.tier === 'grandfather') {
     const fathers = allOrgs.filter(o => o.parent_id === currentOrg.id);
@@ -67,6 +93,7 @@ const NAV = [
   { id: 'g_dashboard', group: 'Dashboard', icon: '🏠', items: [
     { id: 'home', icon: '🏠', label: 'Dashboard', live: true, phase: 1 },
     { id: 'orgs', icon: '🏢', label: 'Organisation Manager', live: true, phase: 1 },
+    { id: 'users', icon: '👥', label: 'User Management', live: true, phase: 1, adminOnly: true },
   ]},
   { id: 'g_assessments', group: 'Assessments', icon: '📋', items: [
     { id: 'assessments', icon: '📋', label: 'Assessments Hub', live: true, phase: 1 },
@@ -110,5 +137,5 @@ let insState = { answers: {}, openPanels: {} };
 let tsState = null;  // Technology Stack survey state; per-org, hydrated from Supabase on enter.
 let orgProfiles = {};  // keyed by org_id; hydrated at init + after profile saves
 let orgModalTab = 'details';  // 'details' | 'profile'
-let cisState = { answers: {}, openPanels: {}, orgId: null, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {} };  // CIS Controls survey state
+let cisState = { answers: {}, openPanels: {}, orgId: null, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '' };  // CIS Controls survey state
 let tpraState = null;  // Third-Party Risk Assessment state; per-org, hydrated on enter.

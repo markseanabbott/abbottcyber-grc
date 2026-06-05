@@ -1,0 +1,379 @@
+// ============================================================
+// USER MANAGEMENT MODULE
+// ============================================================
+let userMgmtState = { users: [], loading: false };
+
+async function userMgmtLoad() {
+  userMgmtState.loading = true;
+  try {
+    userMgmtState.users = await sb.users.getAll() || [];
+  } catch (e) {
+    console.warn('User load failed:', e);
+    userMgmtState.users = [];
+  }
+  userMgmtState.loading = false;
+}
+
+function renderUserManagement() {
+  if (!isAdmin()) return `<div class="card" style="padding:2rem;text-align:center;color:var(--muted)">
+    <div style="font-size:28px;margin-bottom:0.5rem">🔒</div>
+    <div style="font-size:13px;font-weight:700">Admin access required</div>
+  </div>`;
+
+  userMgmtLoad().then(() => {
+    const el = document.getElementById('userMgmtContent');
+    if (el) el.innerHTML = renderUserMgmtInner();
+  });
+
+  return renderTierBanner() + `
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+    <div>
+      <div style="font-size:18px;font-weight:700;color:var(--navy)">User Management</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">Manage platform accounts and org access</div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="openCreateUserModal()">+ Add User</button>
+  </div>
+  <div id="userMgmtContent">
+    <div style="text-align:center;padding:2rem;color:var(--muted)">
+      <div class="spinner" style="border-color:rgba(21,33,104,0.15);border-top-color:var(--navy);width:20px;height:20px;margin:0 auto 0.75rem"></div>
+      <div style="font-size:12px">Loading users…</div>
+    </div>
+  </div>`;
+}
+
+function renderUserMgmtInner() {
+  const users = userMgmtState.users;
+  // Filter: org_admin sees only users in their visibility scope
+  const visOrgIds = visibleOrgs().map(o => o.id);
+  const filtered = isPlatformAdmin() ? users : users.filter(u => visOrgIds.includes(u.org_id));
+
+  if (!filtered.length) return `<div class="card" style="padding:2rem;text-align:center;color:var(--muted)">
+    <div style="font-size:24px;margin-bottom:0.5rem">👥</div>
+    <div style="font-size:13px;font-weight:700;margin-bottom:4px">No users yet</div>
+    <div style="font-size:12px">Click <strong>Add User</strong> to create the first account.</div>
+  </div>`;
+
+  const roleColors = {
+    platform_admin: 'background:#152168;color:#fff',
+    org_admin: 'background:#4f46e5;color:#fff',
+    analyst: 'background:#0e7490;color:#fff',
+    viewer: 'background:#6b7280;color:#fff',
+  };
+  const roleLabels = {
+    platform_admin: 'Platform Admin', org_admin: 'Org Admin',
+    analyst: 'Analyst', viewer: 'View Only',
+  };
+
+  return `<div class="card" style="overflow:hidden;padding:0">
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="background:var(--bg)">
+          <th style="padding:10px 14px;font-size:10px;font-weight:700;color:var(--muted);text-align:left;
+            text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border)">Name</th>
+          <th style="padding:10px 14px;font-size:10px;font-weight:700;color:var(--muted);text-align:left;
+            text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border)">Email</th>
+          <th style="padding:10px 14px;font-size:10px;font-weight:700;color:var(--muted);text-align:left;
+            text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border)">Role</th>
+          <th style="padding:10px 14px;font-size:10px;font-weight:700;color:var(--muted);text-align:left;
+            text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border)">Organisation</th>
+          <th style="padding:10px 14px;font-size:10px;font-weight:700;color:var(--muted);text-align:left;
+            text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border)">Auth</th>
+          <th style="padding:10px 14px;border-bottom:1px solid var(--border)"></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${filtered.map((u, i) => {
+          const org = allOrgs.find(o => o.id === u.org_id);
+          const isMe = u.auth_id === authState.user?.id;
+          return `<tr style="border-bottom:1px solid var(--border);${isMe ? 'background:#f0f9ff' : ''}">
+            <td style="padding:10px 14px">
+              <div style="font-size:13px;font-weight:700;color:var(--text)">${escH(u.name || '—')}</div>
+              ${isMe ? '<div style="font-size:10px;color:var(--cyan);font-weight:600">You</div>' : ''}
+            </td>
+            <td style="padding:10px 14px;font-size:12px;color:var(--muted)">${escH(u.email)}</td>
+            <td style="padding:10px 14px">
+              <span style="padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;
+                ${roleColors[u.role] || 'background:#e5e7eb;color:#374151'}">${roleLabels[u.role] || u.role}</span>
+            </td>
+            <td style="padding:10px 14px;font-size:12px;color:var(--text)">${escH(org?.name || '—')}</td>
+            <td style="padding:10px 14px">
+              ${u.auth_id
+                ? '<span style="color:#16a34a;font-size:11px;font-weight:700">✓ Linked</span>'
+                : '<span style="color:#d97706;font-size:11px;font-weight:700">⚠ No login</span>'}
+            </td>
+            <td style="padding:10px 14px;text-align:right">
+              ${!isMe ? `<button class="btn btn-sm btn-outline" onclick="openEditUserModal('${u.id}')" style="margin-right:4px">Edit</button>
+              <button class="btn btn-sm btn-red" onclick="confirmDeleteUser('${u.id}','${escH(u.name||u.email)}')">Remove</button>` : ''}
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+// ============================================================
+// CREATE USER MODAL
+// ============================================================
+function openCreateUserModal() {
+  const visOrgs = visibleOrgs();
+  const roleOptions = isPlatformAdmin()
+    ? ['platform_admin','org_admin','analyst','viewer']
+    : ['org_admin','analyst','viewer'];
+
+  const roleLabels = {
+    platform_admin: 'Platform Admin — full access to all orgs',
+    org_admin: 'Org Admin — full access within their org scope',
+    analyst: 'Analyst — read/write on assigned orgs',
+    viewer: 'View Only — read-only on assigned orgs',
+  };
+
+  document.getElementById('userModalBox').innerHTML = `
+    <div style="padding:1.5rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+        <div style="font-size:16px;font-weight:700;color:var(--navy)">Add New User</div>
+        <button onclick="closeUserModal()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted)">✕</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div>
+          <label class="form-label">Full Name</label>
+          <input id="uName" type="text" class="form-input" placeholder="Jane Smith">
+        </div>
+        <div>
+          <label class="form-label">Email Address</label>
+          <input id="uEmail" type="email" class="form-input" placeholder="jane@example.com">
+        </div>
+      </div>
+      <div style="margin-bottom:12px">
+        <label class="form-label">Temporary Password</label>
+        <input id="uPassword" type="text" class="form-input" placeholder="Min. 8 characters — user should change on first login">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div>
+          <label class="form-label">Role</label>
+          <select id="uRole" class="form-input" onchange="userRoleChanged()">
+            ${roleOptions.map(r => `<option value="${r}">${roleLabels[r]}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Primary Organisation</label>
+          <select id="uOrgId" class="form-input">
+            ${visOrgs.map(o => `<option value="${o.id}">${o.name}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div id="uOrgAccessSection" style="display:none;margin-bottom:12px">
+        <label class="form-label">Accessible Organisations <span style="color:var(--muted);font-weight:400">(select all they can see)</span></label>
+        <div id="uOrgAccessList" style="border:1px solid var(--border);border-radius:8px;padding:8px;max-height:160px;overflow-y:auto">
+          ${visOrgs.map(o => `<label style="display:flex;align-items:center;gap:8px;padding:4px 6px;cursor:pointer;border-radius:4px;font-size:12px">
+            <input type="checkbox" class="uOrgCheck" value="${o.id}"> ${escH(o.name)}
+            <span style="font-size:10px;color:var(--muted)">${o.tier}</span>
+          </label>`).join('')}
+        </div>
+      </div>
+      <div id="uError" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;
+        padding:8px 10px;border-radius:6px;font-size:12px;margin-bottom:10px"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-outline btn-sm" onclick="closeUserModal()">Cancel</button>
+        <button class="btn btn-primary btn-sm" id="uCreateBtn" onclick="submitCreateUser()">Create User</button>
+      </div>
+    </div>`;
+  document.getElementById('userModal').style.display = 'flex';
+  userRoleChanged();
+}
+
+function userRoleChanged() {
+  const role = document.getElementById('uRole')?.value;
+  const section = document.getElementById('uOrgAccessSection');
+  if (!section) return;
+  section.style.display = ['analyst','viewer'].includes(role) ? '' : 'none';
+}
+
+async function submitCreateUser() {
+  const name = document.getElementById('uName').value.trim();
+  const email = document.getElementById('uEmail').value.trim();
+  const password = document.getElementById('uPassword').value;
+  const role = document.getElementById('uRole').value;
+  const orgId = document.getElementById('uOrgId').value;
+  const errEl = document.getElementById('uError');
+
+  if (!email || !password || !orgId) {
+    errEl.textContent = 'Email, password, and organisation are required.';
+    errEl.style.display = '';
+    return;
+  }
+  if (password.length < 8) {
+    errEl.textContent = 'Password must be at least 8 characters.';
+    errEl.style.display = '';
+    return;
+  }
+
+  const btn = document.getElementById('uCreateBtn');
+  btn.textContent = 'Creating…'; btn.disabled = true; errEl.style.display = 'none';
+
+  try {
+    // 1. Create Supabase auth account
+    const authUid = await authCreateAuthUser(email, password);
+
+    // 2. Insert app user record
+    const newUser = await sb.users.create({
+      name: name || null,
+      email,
+      role,
+      org_id: orgId,
+      auth_id: authUid,
+    });
+    const userId = Array.isArray(newUser) ? newUser[0]?.id : newUser?.id;
+
+    // 3. Save org access list for analyst/viewer
+    if (['analyst','viewer'].includes(role) && userId) {
+      const checked = [...document.querySelectorAll('.uOrgCheck:checked')].map(cb => cb.value);
+      if (checked.length) {
+        await sb.userOrgAccess.upsertAll(checked.map(orgId => ({ user_id: userId, org_id: orgId })));
+      }
+    }
+
+    closeUserModal();
+    toast(`User ${email} created successfully`, '#16a34a');
+    await userMgmtLoad();
+    const el = document.getElementById('userMgmtContent');
+    if (el) el.innerHTML = renderUserMgmtInner();
+  } catch (e) {
+    btn.textContent = 'Create User'; btn.disabled = false;
+    errEl.textContent = e.message;
+    errEl.style.display = '';
+  }
+}
+
+// ============================================================
+// EDIT USER MODAL
+// ============================================================
+async function openEditUserModal(userId) {
+  const user = userMgmtState.users.find(u => u.id === userId);
+  if (!user) return;
+
+  const visOrgs = visibleOrgs();
+  const roleOptions = isPlatformAdmin()
+    ? ['platform_admin','org_admin','analyst','viewer']
+    : ['org_admin','analyst','viewer'];
+  const roleLabels = {
+    platform_admin: 'Platform Admin', org_admin: 'Org Admin',
+    analyst: 'Analyst', viewer: 'View Only',
+  };
+
+  // Load existing org access
+  let existingAccess = [];
+  try {
+    const rows = await sb.userOrgAccess.getForUser(userId);
+    existingAccess = (rows || []).map(r => r.org_id);
+  } catch {}
+
+  document.getElementById('userModalBox').innerHTML = `
+    <div style="padding:1.5rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+        <div style="font-size:16px;font-weight:700;color:var(--navy)">Edit User — ${escH(user.name || user.email)}</div>
+        <button onclick="closeUserModal()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted)">✕</button>
+      </div>
+      <div style="margin-bottom:12px">
+        <label class="form-label">Full Name</label>
+        <input id="euName" type="text" class="form-input" value="${escH(user.name || '')}">
+      </div>
+      <div style="margin-bottom:12px;color:var(--muted);font-size:12px">
+        Email: <strong>${escH(user.email)}</strong> — email changes require the Supabase dashboard
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div>
+          <label class="form-label">Role</label>
+          <select id="euRole" class="form-input" onchange="editUserRoleChanged()">
+            ${roleOptions.map(r => `<option value="${r}" ${r===user.role?'selected':''}>${roleLabels[r]}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Primary Organisation</label>
+          <select id="euOrgId" class="form-input">
+            ${visOrgs.map(o => `<option value="${o.id}" ${o.id===user.org_id?'selected':''}>${escH(o.name)}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div id="euOrgAccessSection" style="${['analyst','viewer'].includes(user.role) ? '' : 'display:none'};margin-bottom:12px">
+        <label class="form-label">Accessible Organisations</label>
+        <div style="border:1px solid var(--border);border-radius:8px;padding:8px;max-height:160px;overflow-y:auto">
+          ${visOrgs.map(o => `<label style="display:flex;align-items:center;gap:8px;padding:4px 6px;cursor:pointer;border-radius:4px;font-size:12px">
+            <input type="checkbox" class="euOrgCheck" value="${o.id}" ${existingAccess.includes(o.id)?'checked':''}> ${escH(o.name)}
+            <span style="font-size:10px;color:var(--muted)">${o.tier}</span>
+          </label>`).join('')}
+        </div>
+      </div>
+      <div id="euError" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;
+        padding:8px 10px;border-radius:6px;font-size:12px;margin-bottom:10px"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-outline btn-sm" onclick="closeUserModal()">Cancel</button>
+        <button class="btn btn-primary btn-sm" id="euSaveBtn" onclick="submitEditUser('${userId}')">Save Changes</button>
+      </div>
+    </div>`;
+  document.getElementById('userModal').style.display = 'flex';
+}
+
+function editUserRoleChanged() {
+  const role = document.getElementById('euRole')?.value;
+  const section = document.getElementById('euOrgAccessSection');
+  if (!section) return;
+  section.style.display = ['analyst','viewer'].includes(role) ? '' : 'none';
+}
+
+async function submitEditUser(userId) {
+  const name = document.getElementById('euName').value.trim();
+  const role = document.getElementById('euRole').value;
+  const orgId = document.getElementById('euOrgId').value;
+  const errEl = document.getElementById('euError');
+  const btn = document.getElementById('euSaveBtn');
+  btn.textContent = 'Saving…'; btn.disabled = true; errEl.style.display = 'none';
+
+  try {
+    await sb.users.update(userId, { name: name || null, role, org_id: orgId });
+
+    // Update org access for analyst/viewer
+    await sb.userOrgAccess.deleteForUser(userId);
+    if (['analyst','viewer'].includes(role)) {
+      const checked = [...document.querySelectorAll('.euOrgCheck:checked')].map(cb => cb.value);
+      if (checked.length) {
+        await sb.userOrgAccess.upsertAll(checked.map(oid => ({ user_id: userId, org_id: oid })));
+      }
+    }
+
+    closeUserModal();
+    toast('User updated', '#16a34a');
+    await userMgmtLoad();
+    const el = document.getElementById('userMgmtContent');
+    if (el) el.innerHTML = renderUserMgmtInner();
+  } catch (e) {
+    btn.textContent = 'Save Changes'; btn.disabled = false;
+    errEl.textContent = e.message; errEl.style.display = '';
+  }
+}
+
+// ============================================================
+// DELETE USER
+// ============================================================
+function confirmDeleteUser(userId, displayName) {
+  if (!confirm(`Remove user "${displayName}"? This removes their platform access. Their Supabase auth account is not deleted — do that in the Supabase dashboard if needed.`)) return;
+  deleteUser(userId, displayName);
+}
+
+async function deleteUser(userId, displayName) {
+  try {
+    await sb.userOrgAccess.deleteForUser(userId);
+    await sb.users.delete(userId);
+    toast(`${displayName} removed`, '#d97706');
+    await userMgmtLoad();
+    const el = document.getElementById('userMgmtContent');
+    if (el) el.innerHTML = renderUserMgmtInner();
+  } catch (e) {
+    toast('Failed to remove user: ' + e.message, '#dc2626');
+  }
+}
+
+function closeUserModal() {
+  document.getElementById('userModal').style.display = 'none';
+}

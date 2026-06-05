@@ -26,7 +26,7 @@
   See backlog.json for full feature list in priority order.
 -->
 
-<div class="layout">
+<div class="layout" id="appShell">
   <!-- SIDEBAR -->
   <div class="sidebar">
     <div class="sidebar-brand">
@@ -65,6 +65,7 @@
           <div class="org-avatar av-platform" id="topAv" style="width:18px;height:18px;font-size:8px">AC</div>
           <span style="font-size:11px;font-weight:700;color:var(--text)" id="topOrgName">Loading…</span>
         </div>
+        <div id="userChipContainer" style="display:contents"></div>
       </div>
     </div>
     <div class="content" id="mainContent">
@@ -88,9 +89,15 @@
   <div class="modal-box" style="max-width:640px;width:92%" id="cisImportModalBox"></div>
 </div>
 
+<!-- USER MANAGEMENT MODAL -->
+<div class="modal-backdrop" id="userModal" style="display:none" onclick="if(event.target===this)closeUserModal()">
+  <div class="modal-box" style="max-width:560px;width:92%" id="userModalBox"></div>
+</div>
+
 <script src="js/xlsx.full.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/supabase.js"></script>
+<script src="js/auth.js"></script>
 <script src="js/home.js"></script>
 <script src="js/orgs.js"></script>
 <script src="js/insurance.js"></script>
@@ -99,6 +106,7 @@
 <script src="js/tpra.js"></script>
 <script src="js/tabletop.js"></script>
 <script src="js/multiplayer.js"></script>
+<script src="js/users.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

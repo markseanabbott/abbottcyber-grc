@@ -657,7 +657,7 @@ function cisHydrate() {
   const last = runs[cisLatestIdx(runs)] || null;
   const rawAnswers = last ? Object.assign({}, last.answers || {}) : {};
   const answers = Object.fromEntries(Object.entries(rawAnswers).filter(([k]) => !k.startsWith('_')));
-  cisState = { answers, openPanels: {}, orgId: currentOrg?.id, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {} };
+  cisState = { answers, openPanels: {}, orgId: currentOrg?.id, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '' };
 }
 
 // ── GOAL ──────────────────────────────────────────────────────────────────────
@@ -684,6 +684,7 @@ function renderCIS() {
   if (cisState.view === 'form') return renderCISForm();
   if (cisState.view === 'quick') return renderCISQuick();
   if (cisState.view === 'poam') return renderCISPoam();
+  if (cisState.view === 'report') return renderCISReport();
   return renderCISDashboard();
 }
 
@@ -847,6 +848,7 @@ function renderCISDashboard() {
         <td style="padding:8px 10px">${igGoal ? `<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:${igC.bg};color:${igC.txt}">${igGoal.toUpperCase()}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
         <td style="padding:8px 10px;color:var(--muted)">${by}</td>
         <td style="padding:8px 10px;text-align:right;white-space:nowrap">
+          <button class="btn btn-outline btn-sm" style="margin-right:4px" onclick="cisOpenReport(${i})">📊 Report</button>
           <button class="btn btn-outline btn-sm" style="margin-right:4px" onclick="cisOpenPoam(${i})">📋 POAM</button>
           <button class="btn btn-outline btn-sm" style="margin-right:4px" onclick="cisOpenAssessment(${i})">View / Edit</button>
           <button class="btn btn-red btn-sm" onclick="cisDeleteAssessment(${i})">Delete</button>
@@ -1483,6 +1485,7 @@ async function cisOpenAssessment(idx) {
   cisState.openComments = {};
   cisState.view = 'form';
   cisState.editId = run.id || null;
+  cisState.reportCommentary = (run.answers || {})._exec_commentary || '';
   if (run.id) {
     try {
       const rows = await sb.cisNotes.getForAssessment(run.id);
@@ -1658,6 +1661,7 @@ async function cisSave() {
     _goal: goal,
     _ig_level: cisDetectLevel(cisState.answers) || goal,
   });
+  if (cisState.reportCommentary) answersToSave._exec_commentary = cisState.reportCommentary;
   const btn = document.getElementById('cisSaveBtn');
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Saving…'; }
   const editId = cisState.editId;
@@ -1686,7 +1690,7 @@ async function cisSave() {
       await sb.cisNotes.deleteAllForAssessment(assessmentId);
       if (noteRows.length) await sb.cisNotes.upsertAll(noteRows);
     }
-    cisState = { answers: {}, openPanels: {}, orgId: currentOrg.id, view: 'dashboard', editId: null, notes: {}, openComments: {} };
+    cisState = { answers: {}, openPanels: {}, orgId: currentOrg.id, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '' };
     toast(editId ? `✓ Assessment updated` : `✓ CIS saved — score ${score} vs ${goal.toUpperCase()} goal`, '#15803d');
     buildNav(); renderMain();
     setTimeout(() => { const c = document.getElementById('cisTrendChart'); if (c) cisTrendDraw(); }, 80);
@@ -2032,7 +2036,7 @@ async function cisImportSave() {
 
     cisImportParsed = null;
     closeCisModal();
-    cisState = { answers: {}, openPanels: {}, orgId: null, view: 'dashboard' };
+    cisState = { answers: {}, openPanels: {}, orgId: null, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '' };
     toast(`✓ CIS imported — score ${score} vs ${ig.toUpperCase()}, dated ${date}`, '#15803d');
     buildNav(); renderMain();
     setTimeout(() => { const c = document.getElementById('cisTrendChart'); if (c) cisTrendDraw(); }, 80);
@@ -2040,4 +2044,605 @@ async function cisImportSave() {
     toast('Save failed: ' + e.message, '#dc2626');
     if (btn) { btn.disabled = false; btn.textContent = 'Save to Database'; }
   }
+}
+
+// ── EXECUTIVE REPORT ──────────────────────────────────────────────────────────
+
+function cisOpenReport(idx) {
+  const runs = (orgAssessments[currentOrg?.id] || {})['cis'] || [];
+  const run = runs[idx];
+  if (!run) return;
+  cisState.reportRun = run;
+  cisState.reportCommentary = (run.answers || {})._exec_commentary || '';
+  cisState.view = 'report';
+  renderMain();
+}
+
+function renderCISReport() {
+  const run = cisState.reportRun;
+  if (!run) { cisState.view = 'dashboard'; return renderCISDashboard(); }
+
+  const answers = Object.fromEntries(
+    Object.entries(run.answers || {}).filter(([k]) => !k.startsWith('_'))
+  );
+  const goal = (run.answers || {})._goal || null;
+
+  if (!goal) {
+    return `${renderTierBanner()}<div class="card" style="padding:2rem;text-align:center;color:var(--muted)">
+      <div style="font-size:28px;margin-bottom:8px">📊</div>
+      <div style="font-weight:700;color:var(--text)">No IG goal recorded for this assessment</div>
+      <div style="font-size:12px;margin:8px 0 16px">This assessment was saved before a goal was set. Set an IG goal on the dashboard and re-save to generate a report.</div>
+      <button class="btn btn-outline btn-sm" onclick="cisNavToDashboard()">← Back</button>
+    </div>`;
+  }
+
+  const goalN = { ig1: 1, ig2: 2, ig3: 3 }[goal] || 3;
+  const { score, yes: yesN, partial: partN, answered, total } = cisCalcScore(answers, goal);
+  const scopedSfs = cisGetSafeguards(goal);
+  const noN      = scopedSfs.filter(s => answers[s.sf] === 'no').length;
+  const fullImpl = Math.round(yesN / total * 100);
+  const covBand  = fullImpl >= 75 ? 'Mature' : fullImpl >= 50 ? 'Good' : fullImpl >= 25 ? 'Partial' : 'Minimal';
+  const band     = score >= 75 ? 'Strong' : score >= 60 ? 'Moderate' : score >= 40 ? 'Elevated' : 'High Risk';
+  const bandCol  = score >= 75 ? '#15803d' : score >= 60 ? '#b45309' : score >= 40 ? '#ea580c' : '#dc2626';
+
+  // Top gaps (No answers within IG scope)
+  const topGaps = scopedSfs.filter(s => answers[s.sf] === 'no').slice(0, 10);
+
+  const runs = (orgAssessments[currentOrg.id] || {})['cis'] || [];
+  const commentary = cisState.reportCommentary || '';
+
+  return `
+  ${renderTierBanner()}
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:17px;font-weight:700">📊 Executive Security Report</div>
+      <div style="font-size:12px;color:var(--muted)">${escH(currentOrg.name)} · CIS Controls v8 · ${run.date || '—'}${run.conductedBy ? ' · ' + escH(run.conductedBy) : ''}</div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn btn-outline btn-sm" onclick="cisNavToDashboard()">← Back</button>
+      <button class="btn btn-outline btn-sm" onclick="cisExportReportWord()">📄 Export Word</button>
+    </div>
+  </div>
+
+  <!-- Row 1: Score Gauge + Coverage Gauge + Summary Stats -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem">
+
+    <div class="card" style="padding:1.25rem;text-align:center">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Overall Score</div>
+      <canvas id="cisReportGauge" width="220" height="130" style="max-width:100%"></canvas>
+      <div style="font-size:10px;color:var(--muted);margin-top:6px">Weighted quality — Partial = 50% credit</div>
+    </div>
+
+    <div class="card" style="padding:1.25rem;text-align:center">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Fully Implemented</div>
+      <canvas id="cisReportCoverage" width="220" height="130" style="max-width:100%"></canvas>
+      <div style="font-size:10px;color:var(--muted);margin-top:6px">${yesN} of ${total} safeguards fully completed (Yes only)</div>
+    </div>
+
+    <div class="card" style="padding:1.25rem">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Assessment Summary</div>
+      ${[
+        { label: 'Score',       val: score + '%',         col: bandCol },
+        { label: 'Risk Band',   val: band,                col: bandCol },
+        { label: 'IG Goal',     val: goal.toUpperCase(),  col: 'var(--navy)' },
+        { label: 'Fully Impl.', val: fullImpl + '%',      col: fullImpl >= 70 ? '#15803d' : fullImpl >= 40 ? '#b45309' : '#dc2626' },
+        { label: 'Yes (full)',  val: yesN,                col: '#15803d' },
+        { label: 'Partial',     val: partN,               col: '#b45309' },
+        { label: 'Gaps (No)',   val: noN,                 col: noN > 0 ? '#dc2626' : '#15803d' },
+        { label: 'Date',        val: run.date || '—',     col: 'var(--text)' },
+      ].map(s => `
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:12px;color:var(--muted)">${s.label}</span>
+          <span style="font-size:12px;font-weight:700;color:${s.col}">${s.val}</span>
+        </div>`).join('')}
+    </div>
+
+  </div>
+
+  <!-- Row 2: Trend + IG progress -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+
+    <div class="card" style="padding:1.25rem">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Score Trend</div>
+      ${runs.length >= 2
+        ? `<canvas id="cisReportTrend" style="width:100%;height:80px;display:block"></canvas>`
+        : `<div style="font-size:12px;color:var(--muted);padding:1.5rem 0;text-align:center">Trend visible after 2+ assessments</div>`}
+    </div>
+
+    <div class="card" style="padding:1.25rem">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">IG Tier Coverage</div>
+      ${[1,2,3].map(n => {
+        const sfs = CIS_SAFEGUARDS.filter(s => s.ig === n);
+        const inScope = n <= goalN;
+        const y = sfs.filter(s => answers[s.sf] === 'yes').length;
+        const p = sfs.filter(s => answers[s.sf] === 'partial').length;
+        const pct = Math.round((y + p * 0.5) / sfs.length * 100);
+        const col = n === 1 ? '#15803d' : n === 2 ? '#1d4ed8' : '#6d28d9';
+        return `<div style="margin-bottom:10px;${inScope ? '' : 'opacity:.32'}">
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+            <span style="font-size:12px;font-weight:700;color:${col}">IG${n}${inScope ? '' : ' — out of scope'}</span>
+            <span style="font-size:12px;color:var(--muted)">${y+p}/${sfs.length} · ${pct}%</span>
+          </div>
+          <div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${col};border-radius:4px"></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+
+  </div>
+
+  <!-- Row 3: Top gaps -->
+  ${topGaps.length ? `
+  <div class="card" style="padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">
+      Priority Gaps — No Answers (${noN} total${noN > 10 ? ', first 10 shown' : ''})
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <tbody>
+        ${topGaps.map(s => `
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:6px 10px;font-weight:700;color:var(--navy);white-space:nowrap;width:48px">${s.sf}</td>
+            <td style="padding:6px 6px;width:38px"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:8px;background:${['','#dcfce7','#dbeafe','#ede9fe'][s.ig]};color:${['','#15803d','#1d4ed8','#6d28d9'][s.ig]}">IG${s.ig}</span></td>
+            <td style="padding:6px 10px;color:var(--text)">${escH(s.title)}</td>
+            <td style="padding:6px 10px;color:var(--muted);font-size:11px;white-space:nowrap">C${s.ctrl}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>` : `
+  <div class="card" style="padding:1.25rem;margin-bottom:1rem;text-align:center;color:#15803d">
+    <div style="font-size:18px;margin-bottom:4px">✅</div>
+    <div style="font-size:13px;font-weight:700">No gaps — all scoped safeguards are Yes or Partial</div>
+  </div>`}
+
+  <!-- Row 5: Commentary -->
+  <div class="card" style="padding:1.25rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Executive Commentary</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">Written narrative for client presentation</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-outline btn-sm" onclick="cisGenerateReportPrompt()" title="Generate a data-rich prompt to paste into Claude">✨ Generate AI Prompt</button>
+        <button class="btn btn-cyan btn-sm" onclick="cisSaveCommentary()">Save Commentary</button>
+      </div>
+    </div>
+    <textarea id="cisReportCommentary" rows="8"
+      placeholder="Type your executive commentary here, or click ✨ Generate AI Prompt — paste the output into Claude, copy the response back here, then Save."
+      style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border);font-family:Kanit,sans-serif;font-size:13px;color:var(--text);resize:vertical;line-height:1.7"
+    >${escH(commentary)}</textarea>
+    <div style="font-size:10px;color:var(--muted);margin-top:6px">
+      💡 <strong>Generate AI Prompt</strong> copies a pre-filled prompt (org name, score, gaps, trend data) to your clipboard. Paste into Claude → get polished commentary → paste back above → Save.
+    </div>
+  </div>`;
+}
+
+// ── REPORT CHARTS ─────────────────────────────────────────────────────────────
+
+function drawReportCharts() {
+  const run = cisState.reportRun;
+  if (!run || cisState.view !== 'report') return;
+
+  const answers = Object.fromEntries(
+    Object.entries(run.answers || {}).filter(([k]) => !k.startsWith('_'))
+  );
+  const goal = (run.answers || {})._goal;
+  if (!goal) return;
+
+  const { score, yes: yesN, partial: partN, total } = cisCalcScore(answers, goal);
+  const fullImpl = Math.round(yesN / total * 100);
+  const covBand  = fullImpl >= 75 ? 'Mature' : fullImpl >= 50 ? 'Good' : fullImpl >= 25 ? 'Partial' : 'Minimal';
+
+  cisDrawGauge('cisReportGauge', score);
+  cisDrawGauge('cisReportCoverage', fullImpl, covBand);
+
+  const runs = (orgAssessments[currentOrg?.id] || {})['cis'] || [];
+  if (runs.length >= 2) cisDrawReportTrend('cisReportTrend', runs);
+}
+
+function cisDrawGauge(canvasId, score, bandOverride = null) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H * 0.72;
+  const r  = Math.min(W, H) * 0.40;
+  ctx.clearRect(0, 0, W, H);
+
+  // Colored zone background arcs
+  [
+    { from: 0,  to: 40,  color: '#fecaca' },
+    { from: 40, to: 70,  color: '#fde68a' },
+    { from: 70, to: 100, color: '#bbf7d0' },
+  ].forEach(z => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, Math.PI + (z.from / 100) * Math.PI, Math.PI + (z.to / 100) * Math.PI);
+    ctx.lineWidth = 16;
+    ctx.strokeStyle = z.color;
+    ctx.lineCap = 'butt';
+    ctx.stroke();
+  });
+
+  // Score arc
+  const scoreColor = score >= 70 ? '#15803d' : score >= 40 ? '#b45309' : '#dc2626';
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, Math.PI, Math.PI + (score / 100) * Math.PI);
+  ctx.lineWidth = 16;
+  ctx.strokeStyle = scoreColor;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  // Needle
+  const ang = Math.PI + (score / 100) * Math.PI;
+  const nx = cx + (r - 20) * Math.cos(ang);
+  const ny = cy + (r - 20) * Math.sin(ang);
+  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(nx, ny);
+  ctx.lineWidth = 2.5; ctx.strokeStyle = scoreColor; ctx.lineCap = 'round'; ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2); ctx.fillStyle = scoreColor; ctx.fill();
+
+  // Score text
+  ctx.fillStyle = scoreColor;
+  ctx.font = `bold ${Math.round(r * 0.38)}px Kanit, sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(score + '%', cx, cy - r * 0.26);
+
+  // Band label
+  const band = bandOverride || (score >= 75 ? 'Strong' : score >= 60 ? 'Moderate' : score >= 40 ? 'Elevated' : 'High Risk');
+  ctx.fillStyle = '#5a6a8a';
+  ctx.font = `bold ${Math.round(r * 0.15)}px Kanit, sans-serif`;
+  ctx.fillText(band, cx, cy - r * 0.02);
+
+  // 0 / 100 axis labels
+  ctx.font = `${Math.round(r * 0.13)}px Kanit, sans-serif`; ctx.fillStyle = '#94a3b8';
+  ctx.textAlign = 'left';  ctx.fillText('0',   cx - r - 2, cy + 8);
+  ctx.textAlign = 'right'; ctx.fillText('100', cx + r + 2, cy + 8);
+}
+
+function cisDrawDonut(canvasId, segments) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const total = segments.reduce((s, g) => s + g.value, 0);
+  if (!total) return;
+
+  const cy = H * 0.45;
+  const cx = W / 2;
+  const outerR = Math.min(W * 0.45, cy * 0.88);
+  const innerR = outerR * 0.56;
+  ctx.clearRect(0, 0, W, H);
+
+  let angle = -Math.PI / 2;
+  segments.forEach(seg => {
+    const sweep = (seg.value / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, outerR, angle, angle + sweep);
+    ctx.arc(cx, cy, innerR, angle + sweep, angle, true);
+    ctx.closePath();
+    ctx.fillStyle = seg.color;
+    ctx.fill();
+    angle += sweep;
+  });
+
+  // Legend
+  const legY = cy + outerR + 12;
+  const itemW = W / segments.length;
+  segments.forEach((seg, i) => {
+    const lx = i * itemW + 4;
+    ctx.fillStyle = seg.color;
+    ctx.fillRect(lx, legY, 9, 9);
+    ctx.fillStyle = '#5a6a8a';
+    ctx.font = '9px Kanit, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${seg.label} (${seg.value})`, lx + 12, legY + 8);
+  });
+}
+
+function cisDrawReportTrend(canvasId, runs) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const sorted = [...runs].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const W = canvas.offsetWidth || 340;
+  canvas.width = W; canvas.height = 80;
+  const H = 80;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+
+  const scores = sorted.map(r => r.score);
+  const mn = Math.max(0, Math.min(...scores) - 10);
+  const mx = Math.min(100, Math.max(...scores) + 10);
+  const range = mx - mn || 1;
+  const px = i => Math.round(14 + i * (W - 28) / (scores.length - 1));
+  const py = v => Math.round(H - 12 - (v - mn) / range * (H - 24));
+
+  ctx.beginPath();
+  scores.forEach((s, i) => i === 0 ? ctx.moveTo(px(i), py(s)) : ctx.lineTo(px(i), py(s)));
+  ctx.lineTo(px(scores.length - 1), H); ctx.lineTo(px(0), H); ctx.closePath();
+  ctx.fillStyle = 'rgba(7,180,217,.08)'; ctx.fill();
+
+  ctx.beginPath(); ctx.strokeStyle = '#07B4D9'; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+  scores.forEach((s, i) => i === 0 ? ctx.moveTo(px(i), py(s)) : ctx.lineTo(px(i), py(s)));
+  ctx.stroke();
+
+  scores.forEach((s, i) => {
+    const col = s >= 75 ? '#15803d' : s >= 50 ? '#b45309' : '#b91c1c';
+    ctx.beginPath(); ctx.arc(px(i), py(s), 4, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill();
+    ctx.fillStyle = col; ctx.font = 'bold 9px Kanit,sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(s, px(i), py(s) - 6);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '9px Kanit,sans-serif';
+    ctx.fillText(sorted[i].date ? sorted[i].date.slice(5) : '', px(i), H);
+  });
+}
+
+// ── REPORT ACTIONS ────────────────────────────────────────────────────────────
+
+function cisGenerateReportPrompt() {
+  const run = cisState.reportRun;
+  if (!run) return;
+
+  const answers = Object.fromEntries(
+    Object.entries(run.answers || {}).filter(([k]) => !k.startsWith('_'))
+  );
+  const goal = (run.answers || {})._goal;
+  if (!goal) { toast('No IG goal recorded for this assessment', '#b45309'); return; }
+
+  const { score, yes: yesN, partial: partN } = cisCalcScore(answers, goal);
+  const noCount = cisGetSafeguards(goal).filter(s => answers[s.sf] === 'no').length;
+  const band = score >= 75 ? 'Strong' : score >= 60 ? 'Moderate' : score >= 40 ? 'Elevated' : 'High Risk';
+
+  const runs = (orgAssessments[currentOrg?.id] || {})['cis'] || [];
+  const trend = [...runs]
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+    .map(r => `${r.date}: ${r.score}%`)
+    .join(' → ');
+
+  const noGaps = cisGetSafeguards(goal)
+    .filter(s => answers[s.sf] === 'no').slice(0, 10)
+    .map(s => `- ${s.sf} [C${s.ctrl}: ${s.ctrlName}]: ${s.title}`)
+    .join('\n');
+
+  const partGaps = cisGetSafeguards(goal)
+    .filter(s => answers[s.sf] === 'partial').slice(0, 6)
+    .map(s => `- ${s.sf} [C${s.ctrl}: ${s.ctrlName}]: ${s.title}`)
+    .join('\n');
+
+  const prompt = `Please write a professional executive cybersecurity report summary. This will be presented to a non-technical CEO or board — avoid jargon, focus on business risk and practical outcomes.
+
+ORGANISATION: ${currentOrg.name}
+ASSESSMENT DATE: ${run.date || 'Unknown'}
+ASSESSOR: ${run.conductedBy || 'Not specified'}
+FRAMEWORK: CIS Controls v8 — ${goal.toUpperCase()} implementation group
+OVERALL SCORE: ${score}% — Risk Band: ${band}
+SAFEGUARDS ANSWERED: ${yesN} Yes, ${partN} Partial, ${noCount} No
+SCORE TREND: ${trend || 'First assessment — no trend available'}
+
+TOP CONTROL FAILURES (No answers — highest priority):
+${noGaps || '— None —'}
+
+PARTIALLY ADDRESSED CONTROLS:
+${partGaps || '— None —'}
+
+Please write:
+1. EXECUTIVE SUMMARY (2–3 paragraphs): Overall security posture, what the ${score}% score means in plain business terms, and the key message for leadership. Note any positive trend if scores are improving.
+2. KEY FINDINGS (3–4 bullets): The most significant risks, written as business exposure — what is the real-world impact if these gaps go unaddressed?
+3. PRIORITY RECOMMENDATIONS (3 actions): Each with a one-sentence business rationale explaining why it matters now.
+
+Keep the total to one printed page. Write in flowing professional prose under each heading — no labels like "Executive Summary:" in the output.`;
+
+  navigator.clipboard.writeText(prompt)
+    .then(() => toast('✓ AI prompt copied — paste into Claude to generate commentary', '#152168'))
+    .catch(() => {
+      const ta = document.getElementById('cisReportCommentary');
+      if (ta) { ta.value = prompt; ta.select(); ta.scrollIntoView(); }
+      toast('Clipboard blocked — prompt placed in commentary field', '#b45309');
+    });
+}
+
+async function cisSaveCommentary() {
+  const run = cisState.reportRun;
+  if (!run?.id) { toast('Cannot save — assessment ID missing', '#dc2626'); return; }
+  const commentary = (document.getElementById('cisReportCommentary')?.value || '').trim();
+  try {
+    const updatedAnswers = { ...(run.answers || {}), _exec_commentary: commentary };
+    await sb.updateAssessment(run.id, { answers: updatedAnswers });
+    cisState.reportRun = { ...run, answers: updatedAnswers };
+    cisState.reportCommentary = commentary;
+    // Keep in-memory cache consistent so re-open doesn't lose commentary
+    const runs = (orgAssessments[currentOrg?.id] || {})['cis'] || [];
+    const idx  = runs.findIndex(r => r.id === run.id);
+    if (idx !== -1) runs[idx] = { ...runs[idx], answers: updatedAnswers };
+    toast('✓ Commentary saved', '#15803d');
+  } catch(e) {
+    toast('Save failed: ' + e.message, '#dc2626');
+  }
+}
+
+// ── WORD EXPORT ───────────────────────────────────────────────────────────────
+
+function cisExportReportWord() {
+  const run = cisState.reportRun;
+  if (!run) return;
+
+  const answers = Object.fromEntries(
+    Object.entries(run.answers || {}).filter(([k]) => !k.startsWith('_'))
+  );
+  const goal = (run.answers || {})._goal;
+  if (!goal) { toast('No IG goal on this assessment', '#b45309'); return; }
+
+  const goalN = { ig1: 1, ig2: 2, ig3: 3 }[goal] || 3;
+  const { score, yes: yesN, partial: partN, answered, total } = cisCalcScore(answers, goal);
+  const noN      = cisGetSafeguards(goal).filter(s => answers[s.sf] === 'no').length;
+  const fullImpl = Math.round(yesN / total * 100);
+  const band     = score >= 75 ? 'Strong' : score >= 60 ? 'Moderate' : score >= 40 ? 'Elevated' : 'High Risk';
+  const bandCol  = score >= 75 ? '#15803d' : score >= 60 ? '#b45309' : score >= 40 ? '#ea580c' : '#dc2626';
+  const topGaps  = cisGetSafeguards(goal).filter(s => answers[s.sf] === 'no').slice(0, 10);
+  const commentary = cisState.reportCommentary || (run.answers || {})._exec_commentary || '';
+
+  const runs = (orgAssessments[currentOrg?.id] || {})['cis'] || [];
+  const sorted = [...runs].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+  const igProg = [1, 2, 3].map(n => {
+    const sfs = CIS_SAFEGUARDS.filter(s => s.ig === n);
+    const y = sfs.filter(s => answers[s.sf] === 'yes').length;
+    const p = sfs.filter(s => answers[s.sf] === 'partial').length;
+    return { n, y, p, total: sfs.length, inScope: n <= goalN,
+      score: Math.round((y + p * 0.5) / sfs.length * 100),
+      cov:   Math.round((y + p) / sfs.length * 100) };
+  });
+
+  const prevRun = sorted.length >= 2 ? sorted[sorted.length - 2] : null;
+  const scoreChange = prevRun ? score - prevRun.score : null;
+  const changeStr = scoreChange === null ? 'First assessment' : (scoreChange > 0 ? '+' + scoreChange + '%' : scoreChange + '%');
+
+  const html = `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+<head>
+<meta charset="utf-8">
+<title>CIS Executive Report — ${escH(currentOrg.name)}</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 11pt; color: #1a2340; margin: 0; padding: 0; }
+  .page { padding: 2.5cm; max-width: 19cm; margin: 0 auto; }
+  h1 { font-size: 20pt; color: #152168; margin: 0 0 4pt 0; font-weight: bold; }
+  h2 { font-size: 11pt; color: #152168; margin: 20pt 0 6pt 0; font-weight: bold;
+       border-bottom: 1.5pt solid #152168; padding-bottom: 3pt;
+       text-transform: uppercase; letter-spacing: .5pt; }
+  .sub { font-size: 10pt; color: #5a6a8a; margin: 0 0 20pt 0; }
+  .dial-row { display: flex; gap: 20pt; margin-bottom: 20pt; }
+  .dial-box { flex: 1; border: 1pt solid #dde3ef; border-radius: 4pt; padding: 12pt 16pt; text-align: center; }
+  .dial-label { font-size: 8pt; color: #5a6a8a; text-transform: uppercase; letter-spacing: .5pt; margin-bottom: 8pt; }
+  .dial-score { font-size: 32pt; font-weight: bold; line-height: 1; margin-bottom: 4pt; }
+  .dial-band  { font-size: 10pt; font-weight: bold; margin-bottom: 6pt; }
+  .dial-sub   { font-size: 9pt; color: #5a6a8a; }
+  .stats-box  { flex: 1.2; border: 1pt solid #dde3ef; border-radius: 4pt; padding: 12pt 16pt; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 10pt; font-size: 10pt; }
+  th { background: #152168; color: #fff; text-align: left; padding: 5pt 8pt;
+       font-size: 9pt; text-transform: uppercase; letter-spacing: .4pt; }
+  td { padding: 5pt 8pt; border-bottom: 1pt solid #e8ecf4; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .ig1 { background: #dcfce7; color: #15803d; padding: 1pt 6pt; border-radius: 8pt; font-size: 9pt; font-weight: bold; }
+  .ig2 { background: #dbeafe; color: #1d4ed8; padding: 1pt 6pt; border-radius: 8pt; font-size: 9pt; font-weight: bold; }
+  .ig3 { background: #ede9fe; color: #6d28d9; padding: 1pt 6pt; border-radius: 8pt; font-size: 9pt; font-weight: bold; }
+  .footer { margin-top: 28pt; padding-top: 8pt; border-top: 1pt solid #dde3ef; font-size: 8pt; color: #94a3b8; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>Cybersecurity Executive Report</h1>
+  <div class="sub">
+    ${escH(currentOrg.name)} &nbsp;&middot;&nbsp; CIS Controls v8 &nbsp;&middot;&nbsp; ${run.date || '&mdash;'}
+    ${run.conductedBy ? ' &nbsp;&middot;&nbsp; Assessed by: ' + escH(run.conductedBy) : ''}
+  </div>
+
+  <div class="dial-row">
+    <div class="dial-box">
+      <div class="dial-label">Overall Score</div>
+      <div class="dial-score" style="color:${bandCol}">${score}%</div>
+      <div class="dial-band" style="color:${bandCol}">${band}</div>
+      <div class="dial-sub">Weighted quality measure<br>Partial = 50% credit</div>
+    </div>
+    <div class="dial-box">
+      <div class="dial-label">Fully Implemented</div>
+      <div class="dial-score" style="color:#152168">${fullImpl}%</div>
+      <div class="dial-band" style="color:#152168">${fullImpl >= 75 ? 'Mature' : fullImpl >= 50 ? 'Good' : fullImpl >= 25 ? 'Partial' : 'Minimal'}</div>
+      <div class="dial-sub">${yesN} of ${total} safeguards<br>fully completed (Yes only)</div>
+    </div>
+    <div class="stats-box">
+      <table style="margin:0">
+        ${[
+          ['IG Goal',            goal.toUpperCase(),  '#152168'],
+          ['Scoped safeguards',  total,               '#1a2340'],
+          ['Fully implemented', yesN + ' (' + fullImpl + '%)', '#15803d'],
+          ['Partial',            partN,               '#b45309'],
+          ['Gaps (No)',          noN,                 noN > 0 ? '#dc2626' : '#15803d'],
+          ['vs Prior run',       changeStr,           '#1a2340'],
+          ['Date',               run.date || '—',     '#5a6a8a'],
+        ].map(([l, v, c]) => `<tr>
+          <td style="padding:3pt 8pt 3pt 0;border:none;color:#5a6a8a;font-size:9pt">${l}</td>
+          <td style="padding:3pt 0;border:none;font-weight:bold;font-size:9pt;color:${c}">${v}</td>
+        </tr>`).join('')}
+      </table>
+    </div>
+  </div>
+
+  ${sorted.length >= 2 ? `
+  <h2>Score Trend</h2>
+  <table>
+    <thead><tr><th>Date</th><th>Score</th><th>Coverage</th><th>Change</th><th>Conducted By</th></tr></thead>
+    <tbody>
+      ${sorted.map((r, i) => {
+        const rA = Object.fromEntries(Object.entries(r.answers || {}).filter(([k]) => !k.startsWith('_')));
+        const rG = (r.answers || {})._goal || goal;
+        const { score: rS, yes: rY, partial: rP, total: rT } = cisCalcScore(rA, rG);
+        const rCov = Math.round((rY + rP) / rT * 100);
+        const rPrev = sorted[i - 1];
+        const rChg = rPrev ? (rS - rPrev.score) : null;
+        const rCol = rS >= 75 ? '#15803d' : rS >= 50 ? '#b45309' : '#dc2626';
+        return `<tr>
+          <td>${r.date || '—'}</td>
+          <td style="font-weight:bold;color:${rCol}">${rS}%</td>
+          <td>${rCov}%</td>
+          <td>${rChg === null ? '—' : (rChg > 0 ? '+' + rChg + '%' : rChg + '%')}</td>
+          <td style="color:#5a6a8a">${escH(r.conductedBy || '—')}</td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>` : ''}
+
+  <h2>IG Tier Progress</h2>
+  <table>
+    <thead><tr><th>Tier</th><th>In Scope</th><th>Safeguards</th><th>Yes</th><th>Partial</th><th>No / Open</th><th>Score</th><th>Coverage</th></tr></thead>
+    <tbody>
+      ${igProg.map(t => `<tr style="${t.inScope ? '' : 'color:#94a3b8'}">
+        <td><span class="ig${t.n}">IG${t.n}</span></td>
+        <td>${t.inScope ? 'Yes' : 'No'}</td>
+        <td>${t.total}</td>
+        <td style="color:#15803d;font-weight:bold">${t.y}</td>
+        <td style="color:#b45309;font-weight:bold">${t.p}</td>
+        <td style="color:${(t.total - t.y - t.p) > 0 ? '#dc2626' : '#15803d'};font-weight:bold">${t.total - t.y - t.p}</td>
+        <td style="font-weight:bold">${t.score}%</td>
+        <td style="font-weight:bold">${t.cov}%</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>
+
+  ${topGaps.length ? `
+  <h2>Priority Gaps — No Answers (${noN} total${noN > 10 ? ', first 10 shown' : ''})</h2>
+  <table>
+    <thead><tr><th style="width:60pt">Safeguard</th><th style="width:36pt">IG</th><th style="width:36pt">Control</th><th>Title</th></tr></thead>
+    <tbody>
+      ${topGaps.map(s => `<tr>
+        <td style="font-weight:bold;color:#152168">${s.sf}</td>
+        <td><span class="ig${s.ig}">IG${s.ig}</span></td>
+        <td style="color:#5a6a8a">C${s.ctrl}</td>
+        <td>${escH(s.title)}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>` : `<p style="color:#15803d;font-weight:bold">&#10003; No gaps &mdash; all scoped safeguards are Yes or Partial.</p>`}
+
+  ${commentary ? `
+  <h2>Executive Commentary</h2>
+  ${commentary.split(/\n\n+/).map(p => `<p style="font-size:11pt;line-height:1.75;margin:0 0 10pt 0">${escH(p).replace(/\n/g, '<br>')}</p>`).join('')}` : ''}
+
+  <div class="footer">
+    Generated by Abbott Cyber Consulting GRC Platform &nbsp;&middot;&nbsp;
+    CIS Controls v8 &nbsp;&middot;&nbsp; ${run.date || '—'}
+  </div>
+
+</div>
+</body>
+</html>`;
+
+  const blob = new Blob(['﻿' + html], { type: 'application/msword' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `CIS_Exec_Report_${(currentOrg.name || 'Client').replace(/[^a-zA-Z0-9]/g, '_')}_${run.date || 'Unknown'}.doc`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('✓ Word report downloaded', '#152168');
 }
