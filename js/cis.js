@@ -657,7 +657,7 @@ function cisHydrate() {
   const last = runs[cisLatestIdx(runs)] || null;
   const rawAnswers = last ? Object.assign({}, last.answers || {}) : {};
   const answers = Object.fromEntries(Object.entries(rawAnswers).filter(([k]) => !k.startsWith('_')));
-  cisState = { answers, openPanels: {}, orgId: currentOrg?.id, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '' };
+  cisState = { answers, openPanels: {}, orgId: currentOrg?.id, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '', gapRun: null };
 }
 
 // ── GOAL ──────────────────────────────────────────────────────────────────────
@@ -685,6 +685,7 @@ function renderCIS() {
   if (cisState.view === 'quick') return renderCISQuick();
   if (cisState.view === 'poam') return renderCISPoam();
   if (cisState.view === 'report') return renderCISReport();
+  if (cisState.view === 'gap') return renderCISGapReport();
   return renderCISDashboard();
 }
 
@@ -849,6 +850,7 @@ function renderCISDashboard() {
         <td style="padding:8px 10px;color:var(--muted)">${by}</td>
         <td style="padding:8px 10px;text-align:right;white-space:nowrap">
           <button class="btn btn-outline btn-sm" style="margin-right:4px" onclick="cisOpenReport(${i})">📊 Report</button>
+          <button class="btn btn-outline btn-sm" style="margin-right:4px" onclick="cisOpenGapReport(${i})">🔍 Gaps</button>
           <button class="btn btn-outline btn-sm" style="margin-right:4px" onclick="cisOpenPoam(${i})">📋 POAM</button>
           <button class="btn btn-outline btn-sm" style="margin-right:4px" onclick="cisOpenAssessment(${i})">View / Edit</button>
           <button class="btn btn-red btn-sm" onclick="cisDeleteAssessment(${i})">Delete</button>
@@ -2044,6 +2046,221 @@ async function cisImportSave() {
     toast('Save failed: ' + e.message, '#dc2626');
     if (btn) { btn.disabled = false; btn.textContent = 'Save to Database'; }
   }
+}
+
+// ── GAP REPORT ────────────────────────────────────────────────────────────────
+
+function cisOpenGapReport(idx) {
+  const runs = (orgAssessments[currentOrg?.id] || {})['cis'] || [];
+  const run = runs[idx];
+  if (!run) return;
+  cisState.gapRun = run;
+  cisState.view = 'gap';
+  renderMain();
+}
+
+function cisGapPriority(ig, ans) {
+  if (ig === 1 && ans === 'no')        return { label: 'Critical', col: '#dc2626', bg: '#fee2e2', order: 1 };
+  if (ig === 1 && ans === 'partial')   return { label: 'High',     col: '#b45309', bg: '#fef3c7', order: 2 };
+  if (ig === 1)                        return { label: 'High',     col: '#b45309', bg: '#fef3c7', order: 2 };
+  if (ig === 2 && ans === 'no')        return { label: 'High',     col: '#b45309', bg: '#fef3c7', order: 2 };
+  if (ig === 2 && ans === 'partial')   return { label: 'Medium',   col: '#0369a1', bg: '#e0f2fe', order: 3 };
+  if (ig === 2)                        return { label: 'Medium',   col: '#0369a1', bg: '#e0f2fe', order: 3 };
+  if (ig === 3 && ans === 'no')        return { label: 'Medium',   col: '#0369a1', bg: '#e0f2fe', order: 3 };
+  return                                      { label: 'Low',      col: '#15803d', bg: '#dcfce7', order: 4 };
+}
+
+function cisGapGeneratePrompt(gaps, run, orgName, goal) {
+  const lines = gaps.map(g =>
+    `${g.sf} (IG${g.ig}, ${g.priority.label}): ${g.title} — ${g.ans === 'no' ? 'Not implemented' : g.ans === 'partial' ? 'Partially implemented' : 'Not assessed'}`
+  ).join('\n');
+  return `You are a cybersecurity advisor preparing a remediation roadmap for ${orgName}.
+
+Assessment date: ${run.date || 'Unknown'}
+CIS Controls v8 target level: ${goal ? goal.toUpperCase() : 'Not set'}
+Conducted by: ${run.conductedBy || 'Unknown'}
+
+The following safeguards are gaps (No, Partial, or Not Assessed) sorted by remediation priority:
+
+${lines}
+
+Please produce a concise remediation roadmap:
+1. Group the Critical and High items into a 90-day sprint plan
+2. Group Medium items into a 6-month plan
+3. Group Low items into a 12-month plan
+4. For each item, suggest a practical first step suited to a small-to-medium business
+5. Identify any quick wins (low effort / high impact) that should be done immediately
+6. Note any items that could be addressed together as a single project
+
+Write in plain English suitable for a non-technical business owner.`;
+}
+
+function renderCISGapReport() {
+  const run = cisState.gapRun;
+  if (!run) return renderCISDashboard();
+
+  const answers = Object.fromEntries(
+    Object.entries(run.answers || {}).filter(([k]) => !k.startsWith('_'))
+  );
+  const goal  = (run.answers || {})._goal || null;
+  const goalN = { ig1: 1, ig2: 2, ig3: 3 }[goal] || 3;
+
+  const igBg  = ['', '#dcfce7', '#dbeafe', '#ede9fe'];
+  const igTxt = ['', '#15803d', '#1d4ed8', '#6d28d9'];
+
+  // Build gap list: No, Partial, or unanswered within the IG scope
+  const scope = CIS_SAFEGUARDS.filter(s => goal ? s.ig <= goalN : true);
+  const gaps  = scope
+    .filter(s => {
+      const a = answers[s.sf];
+      return !a || a === 'no' || a === 'partial';
+    })
+    .map(s => {
+      const ans = answers[s.sf] || 'unanswered';
+      return { ...s, ans, priority: cisGapPriority(s.ig, ans) };
+    })
+    .sort((a, b) => {
+      if (a.ctrl !== b.ctrl) return a.ctrl - b.ctrl;
+      return parseFloat(a.sf) - parseFloat(b.sf);
+    });
+
+  const critical = gaps.filter(g => g.priority.label === 'Critical').length;
+  const high     = gaps.filter(g => g.priority.label === 'High').length;
+  const medium   = gaps.filter(g => g.priority.label === 'Medium').length;
+  const low      = gaps.filter(g => g.priority.label === 'Low').length;
+  const noAns    = gaps.filter(g => g.ans === 'no').length;
+  const partial  = gaps.filter(g => g.ans === 'partial').length;
+  const unans    = gaps.filter(g => g.ans === 'unanswered').length;
+
+  // Group by control for the table
+  const byCtrl = {};
+  gaps.forEach(g => {
+    if (!byCtrl[g.ctrl]) byCtrl[g.ctrl] = { ctrl: g.ctrl, ctrlName: g.ctrlName, items: [] };
+    byCtrl[g.ctrl].items.push(g);
+  });
+
+  const ansBadge = a =>
+    a === 'no'         ? `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:#fee2e2;color:#dc2626">No</span>`
+    : a === 'partial'  ? `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:#fef3c7;color:#b45309">Partial</span>`
+                       : `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:#f1f5f9;color:#5a6a8a">—</span>`;
+
+  const priBadge = p =>
+    `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:${p.bg};color:${p.col}">${p.label}</span>`;
+
+  let html = `
+  ${renderTierBanner()}
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:17px;font-weight:700">🔍 CIS Gap Report</div>
+      <div style="font-size:12px;color:var(--muted)">${escH(currentOrg.name)} · ${run.date || '—'}${run.conductedBy ? ' · ' + escH(run.conductedBy) : ''}${goal ? ' · Goal: ' + goal.toUpperCase() : ''}</div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn btn-outline btn-sm" onclick="cisNavToDashboard()">← Back</button>
+      <button class="btn btn-outline btn-sm" onclick="cisGapCopyPrompt()">📋 Copy AI Prompt</button>
+      <button class="btn btn-cyan btn-sm" onclick="cisOpenPoam(${(orgAssessments[currentOrg?.id] || {})['cis']?.indexOf(run) ?? -1})">Open POAM →</button>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem">
+    ${[
+      { label: 'Total Gaps',  val: gaps.length, col: 'var(--navy)' },
+      { label: 'Critical',    val: critical,    col: '#dc2626'     },
+      { label: 'High',        val: high,        col: '#b45309'     },
+      { label: 'Medium',      val: medium,      col: '#0369a1'     },
+      { label: 'Low',         val: low,         col: '#15803d'     },
+      { label: 'No',          val: noAns,       col: '#dc2626'     },
+      { label: 'Partial',     val: partial,     col: '#b45309'     },
+      { label: 'Not Assessed',val: unans,       col: '#5a6a8a'     },
+    ].map(s => `<div style="padding:8px 14px;border-radius:8px;background:var(--card);border:1px solid var(--border);text-align:center;min-width:72px">
+      <div style="font-size:20px;font-weight:800;color:${s.col}">${s.val}</div>
+      <div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:1px">${s.label}</div>
+    </div>`).join('')}
+  </div>
+
+  <div style="font-size:11px;color:var(--muted);margin-bottom:.75rem;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px">
+    <strong style="color:var(--text)">Priority logic:</strong>&nbsp;
+    IG1 gaps are highest priority (foundational baseline). No = stronger signal than Partial or Not Assessed.
+    <span style="display:inline-flex;gap:6px;margin-left:8px;align-items:center">
+      <span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:8px;background:#fee2e2;color:#dc2626">Critical</span> IG1 No ·
+      <span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:8px;background:#fef3c7;color:#b45309">High</span> IG1 Partial/Unassessed · IG2 No ·
+      <span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:8px;background:#e0f2fe;color:#0369a1">Medium</span> IG2 Partial/Unassessed · IG3 No ·
+      <span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:8px;background:#dcfce7;color:#15803d">Low</span> IG3 Partial/Unassessed
+    </span>
+  </div>`;
+
+  if (gaps.length === 0) {
+    html += `<div class="card" style="text-align:center;padding:3rem 1rem">
+      <div style="font-size:32px;margin-bottom:.75rem">🎉</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:4px">No gaps found</div>
+      <div style="font-size:12px;color:var(--muted)">All in-scope safeguards are answered Yes or N/A for this assessment.</div>
+    </div>`;
+  } else {
+    Object.values(byCtrl).forEach(group => {
+      html += `
+      <div class="card" style="margin-bottom:.75rem;padding:0;overflow:hidden">
+        <div style="padding:10px 16px;background:linear-gradient(135deg,var(--navy),var(--navy2));display:flex;align-items:center;gap:10px">
+          <span style="font-size:13px;font-weight:700;color:#fff">CIS ${group.ctrl}: ${escH(group.ctrlName)}</span>
+          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.8);margin-left:auto">${group.items.length} gap${group.items.length !== 1 ? 's' : ''}</span>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border);background:#f8fafc">
+              <th style="padding:7px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;width:54px">ID</th>
+              <th style="padding:7px 6px;text-align:center;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;width:44px">IG</th>
+              <th style="padding:7px 6px;text-align:center;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;width:44px">Ans</th>
+              <th style="padding:7px 6px;text-align:center;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;width:80px">Priority</th>
+              <th style="padding:7px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Safeguard</th>
+              <th style="padding:7px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${group.items.map(g => {
+              const rowBg = g.priority.label === 'Critical' ? 'background:rgba(220,38,38,.02)' :
+                            g.priority.label === 'High'     ? 'background:rgba(180,83,9,.02)'   : '';
+              return `<tr style="border-bottom:1px solid var(--border);${rowBg}">
+                <td style="padding:8px 10px;font-weight:700;color:var(--navy);white-space:nowrap;vertical-align:top">${g.sf}</td>
+                <td style="padding:8px 6px;text-align:center;vertical-align:top"><span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:${igBg[g.ig]};color:${igTxt[g.ig]}">IG${g.ig}</span></td>
+                <td style="padding:8px 6px;text-align:center;vertical-align:top">${ansBadge(g.ans)}</td>
+                <td style="padding:8px 6px;text-align:center;vertical-align:top">${priBadge(g.priority)}</td>
+                <td style="padding:8px 10px;font-size:12px;font-weight:600;color:var(--text);vertical-align:top;max-width:220px">${escH(g.title)}</td>
+                <td style="padding:8px 10px;font-size:11px;color:var(--muted);vertical-align:top;line-height:1.4">${escH(g.sub)}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    });
+
+    html += `
+    <div style="margin-top:.75rem;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:11px;color:var(--muted)">${gaps.length} gap${gaps.length !== 1 ? 's' : ''} across ${Object.keys(byCtrl).length} control group${Object.keys(byCtrl).length !== 1 ? 's' : ''}</span>
+      <button class="btn btn-outline btn-sm" onclick="cisNavToDashboard()">← Back</button>
+      <button class="btn btn-outline btn-sm" onclick="cisGapCopyPrompt()">📋 Copy AI Prompt</button>
+      <button class="btn btn-cyan btn-sm" onclick="cisOpenPoam(${(orgAssessments[currentOrg?.id] || {})['cis']?.indexOf(run) ?? -1})">Open POAM →</button>
+    </div>`;
+  }
+
+  return html;
+}
+
+function cisGapCopyPrompt() {
+  const run = cisState.gapRun;
+  if (!run) return;
+  const answers = Object.fromEntries(
+    Object.entries(run.answers || {}).filter(([k]) => !k.startsWith('_'))
+  );
+  const goal  = (run.answers || {})._goal || null;
+  const goalN = { ig1: 1, ig2: 2, ig3: 3 }[goal] || 3;
+  const scope = CIS_SAFEGUARDS.filter(s => goal ? s.ig <= goalN : true);
+  const gaps  = scope
+    .filter(s => { const a = answers[s.sf]; return !a || a === 'no' || a === 'partial'; })
+    .map(s => { const ans = answers[s.sf] || 'unanswered'; return { ...s, ans, priority: cisGapPriority(s.ig, ans) }; })
+    .sort((a, b) => a.priority.order - b.priority.order || a.ctrl - b.ctrl || parseFloat(a.sf) - parseFloat(b.sf));
+  const prompt = cisGapGeneratePrompt(gaps, run, currentOrg?.name || 'the organisation', goal);
+  navigator.clipboard.writeText(prompt).then(
+    () => toast('✓ Remediation roadmap prompt copied', '#15803d'),
+    () => toast('Clipboard failed — try a different browser', '#dc2626')
+  );
 }
 
 // ── EXECUTIVE REPORT ──────────────────────────────────────────────────────────
