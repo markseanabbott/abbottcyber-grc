@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting \u2014 GRC Security Scorecard",
   "version": "1.3",
   "created": "2026-05-14",
-  "updated": "2026-06-04",
+  "updated": "2026-06-05",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -254,6 +254,36 @@
           "id": "tp10",
           "text": "Vendor register: filter and sort assessment list by tier, status, data sensitivity, or assessor",
           "done": false
+        },
+        {
+          "id": "tp11",
+          "text": "Technical OSINT Layer: structured sub-step for active public-surface checks — port/TLS exposure (Shodan/Censys), certificate hygiene (crt.sh), email security records (SPF/DKIM/DMARC DNS lookup), and credential leak history (HIBP). Makes technical findings independently defensible rather than reliant on vendor self-reporting.",
+          "done": false,
+          "priority": null
+        },
+        {
+          "id": "tp12",
+          "text": "Structured CVE Pass: dedicated NVD/CVE search step against the product name, GitHub security advisories, and vendor changelog. Current skill catches CVEs opportunistically; a structured pass catches quieter vulnerabilities.",
+          "done": false,
+          "priority": null
+        },
+        {
+          "id": "tp13",
+          "text": "Risk Rating Framework Anchor: add one methodology note anchoring the impact/likelihood matrix to NIST SP 800-30. No workflow change — purely a defensibility and audit-readiness addition.",
+          "done": false,
+          "priority": null
+        },
+        {
+          "id": "tp14",
+          "text": "Data Taxonomy Expansion: add CUI, ITAR-controlled technical data, IP/source code, and OT/SCADA to the default data category checklist. Expands TAM to CMMC clients, defense-adjacent, and industrial verticals. ITAR and Canadian frameworks are currently absent from all competing platforms.",
+          "done": false,
+          "priority": null
+        },
+        {
+          "id": "tp15",
+          "text": "Periodic Reassessment Tracking: add a next-review date field and documented re-trigger conditions (ownership change, breach disclosure, major version release) to the report output. Converts a point-in-time artifact into a recurring program item.",
+          "done": false,
+          "priority": null
         }
       ]
     },
@@ -817,6 +847,12 @@
           "id": "t10a",
           "text": "Email delivery option for remote participants (notify by email instead of dashboard)",
           "done": false
+        },
+        {
+          "id": "t10b",
+          "text": "Scenario Library (platform-layer): pre-built scenarios by threat profile and vertical — ransomware, BEC/wire fraud, AiTM credential theft, supply chain compromise, regulatory audit surprise. Scenarios include timed injects, role mapping pre-populated from client onboarding data, and frequency tracking for compliance programs (HIPAA, CMMC, cyber insurance).",
+          "done": false,
+          "priority": null
         }
       ]
     },
@@ -1044,6 +1080,18 @@
           "id": "t43",
           "text": "Compliance evidence: mark exercises as evidence for NIST / ISO / SOC 2 audit readiness",
           "done": false
+        },
+        {
+          "id": "t44",
+          "text": "Vendor Breach Scenario Inject: post-TPRA, offer to generate a one-page tabletop scenario pre-populated from the assessment — data categories exposed, regulatory notification clock (jurisdiction already captured at intake), decision-maker identification, cyber insurance trigger, and DPA contractual rights. No manual prep required.",
+          "done": false,
+          "priority": null
+        },
+        {
+          "id": "t45",
+          "text": "Findings-to-Remediation Loop: tabletop gaps (missing DPA, unknown notification timeline, no IR decision tree) output as structured action items in the same format as TPRA findings — feeding directly into the client's risk register and remediation roadmap. Closes the loop no competing platform currently closes.",
+          "done": false,
+          "priority": null
         }
       ]
     },

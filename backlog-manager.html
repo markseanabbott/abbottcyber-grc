@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Abbott Cyber — Backlog Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:   #152168;
+    --navy2:  #1a2a7a;
+    --cyan:   #07B4D9;
+    --cyan2:  #07D1F2;
+    --bg:     #f0f4fa;
+    --card:   #fff;
+    --border: #dde3ef;
+    --text:   #1a2340;
+    --muted:  #5a6a8a;
+    --green:  #16a34a;
+    --amber:  #d97706;
+    --red:    #dc2626;
+    --indigo: #4f46e5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Kanit', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+  /* TOP BAR */
+  .topbar {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 60%, #0e3a5c 100%);
+    color: #fff;
+    padding: 0 28px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar-title { font-size: 18px; font-weight: 700; letter-spacing: .5px; }
+  .topbar-sub { font-size: 12px; color: var(--cyan2); margin-top: 1px; }
+  .topbar-actions { display: flex; gap: 10px; align-items: center; }
+  .btn { padding: 7px 16px; border-radius: 6px; font-family: 'Kanit', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all .15s; }
+  .btn-cyan { background: var(--cyan); color: #fff; }
+  .btn-cyan:hover { background: var(--cyan2); }
+  .btn-outline { background: transparent; border: 1.5px solid rgba(255,255,255,.4); color: #fff; }
+  .btn-outline:hover { border-color: var(--cyan); color: var(--cyan); }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+  /* LAYOUT */
+  .layout { display: flex; min-height: calc(100vh - 56px); }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 260px;
+    min-width: 260px;
+    background: #fff;
+    border-right: 1px solid var(--border);
+    padding: 16px 0;
+    position: sticky;
+    top: 56px;
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+  }
+  .sidebar-section { padding: 6px 0; }
+  .sidebar-header {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 18px 4px;
+  }
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 18px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all .12s;
+    font-size: 13px;
+  }
+  .sidebar-item:hover { background: var(--bg); }
+  .sidebar-item.active { border-left-color: var(--cyan); background: #e8f7fc; color: var(--navy); font-weight: 600; }
+  .sidebar-phase-badge {
+    margin-left: auto;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 700;
+  }
+  .phase-1 { background: #dbeafe; color: #1d4ed8; }
+  .phase-2 { background: #ede9fe; color: #5b21b6; }
+  .phase-3 { background: #fce7f3; color: #9d174d; }
+  .sidebar-count { font-size: 11px; color: var(--muted); }
+
+  /* MAIN */
+  .main { flex: 1; padding: 24px 32px; max-width: 1000px; }
+
+  /* FILTER BAR */
+  .filter-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .filter-bar input {
+    flex: 1;
+    min-width: 200px;
+    padding: 8px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    font-family: 'Kanit', sans-serif;
+    font-size: 13px;
+    background: #fff;
+    color: var(--text);
+  }
+  .filter-bar input:focus { outline: none; border-color: var(--cyan); }
+  .filter-bar select {
+    padding: 8px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    font-family: 'Kanit', sans-serif;
+    font-size: 13px;
+    background: #fff;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .filter-bar select:focus { outline: none; border-color: var(--cyan); }
+
+  /* SECTION HEADER */
+  .section-header {
+    background: linear-gradient(135deg, var(--navy), var(--navy2));
+    color: #fff;
+    border-radius: 10px 10px 0 0;
+    padding: 14px 20px;
+    margin-bottom: 0;
+  }
+  .section-header h2 { font-size: 16px; font-weight: 700; }
+  .section-header .section-meta { font-size: 12px; color: var(--cyan2); margin-top: 2px; }
+  .section-desc { font-size: 12px; color: rgba(255,255,255,.7); margin-top: 6px; line-height: 1.5; }
+
+  /* ITEM CARDS */
+  .items-container {
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    overflow: hidden;
+    margin-bottom: 28px;
+    background: #fff;
+  }
+  .item-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    transition: background .1s;
+  }
+  .item-row:last-child { border-bottom: none; }
+  .item-row:hover { background: #fafbfe; }
+  .item-row.done-row { opacity: .55; }
+  .item-row.done-row .item-text { text-decoration: line-through; }
+
+  .item-check {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--cyan);
+    cursor: pointer;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+  .item-body { flex: 1; min-width: 0; }
+  .item-id { font-size: 10px; color: var(--muted); font-weight: 700; letter-spacing: .5px; margin-bottom: 2px; }
+  .item-text { font-size: 13px; line-height: 1.5; color: var(--text); }
+  .item-notes { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.4; font-style: italic; }
+
+  .item-controls { display: flex; gap: 8px; align-items: center; flex-shrink: 0; margin-top: 1px; }
+
+  /* PRIORITY BADGE */
+  .priority-select {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-family: 'Kanit', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    border: 1.5px solid var(--border);
+    cursor: pointer;
+    background: #fff;
+    color: var(--muted);
+    transition: all .12s;
+  }
+  .priority-select:focus { outline: none; }
+  .priority-select.p-critical { background: #fef2f2; border-color: var(--red); color: var(--red); }
+  .priority-select.p-high { background: #fff7ed; border-color: #ea580c; color: #ea580c; }
+  .priority-select.p-medium { background: #fffbeb; border-color: var(--amber); color: var(--amber); }
+  .priority-select.p-low { background: #f0fdf4; border-color: var(--green); color: var(--green); }
+  .priority-select.p-none { background: #fff; border-color: var(--border); color: var(--muted); }
+
+  /* EDIT INLINE */
+  .item-text-edit {
+    width: 100%;
+    font-family: 'Kanit', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 4px 6px;
+    border: 1.5px solid var(--cyan);
+    border-radius: 4px;
+    resize: vertical;
+    color: var(--text);
+    background: #f8fdff;
+  }
+  .item-text-edit:focus { outline: none; }
+  .edit-actions { display: flex; gap: 6px; margin-top: 6px; }
+  .btn-save { background: var(--cyan); color: #fff; }
+  .btn-save:hover { background: var(--cyan2); }
+  .btn-cancel { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+  .btn-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted);
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: all .12s;
+  }
+  .btn-icon:hover { background: var(--bg); color: var(--navy); }
+
+  /* STATS BAR */
+  .stats-bar {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .stat-chip {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    min-width: 110px;
+  }
+  .stat-val { font-size: 22px; font-weight: 700; color: var(--navy); }
+  .stat-label { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+  /* PRIORITY VIEW */
+  .priority-group { margin-bottom: 24px; }
+  .priority-group-header {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    padding: 8px 16px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .pg-critical { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; }
+  .pg-high { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+  .pg-medium { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+  .pg-low { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+  .pg-unset { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+  .pg-count { margin-left: auto; font-size: 11px; }
+
+  /* TOAST */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--navy);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0,0,0,.3);
+    z-index: 9999;
+    display: none;
+    animation: fadein .2s ease;
+  }
+  @keyframes fadein { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+  /* VIEW TABS */
+  .view-tabs { display: flex; gap: 6px; margin-bottom: 20px; }
+  .view-tab {
+    padding: 7px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    background: #fff;
+    border: 1.5px solid var(--border);
+    color: var(--muted);
+    transition: all .12s;
+  }
+  .view-tab.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .view-tab:hover:not(.active) { border-color: var(--cyan); color: var(--navy); }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="topbar-title">Abbott Cyber — Backlog Manager</div>
+    <div class="topbar-sub">GRC Platform Feature Backlog</div>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-outline" onclick="exportJSON()">Export JSON</button>
+    <button class="btn btn-cyan" onclick="saveAll()">Save Changes</button>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar"></div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+    <div class="stats-bar" id="statsBar"></div>
+
+    <div class="view-tabs">
+      <div class="view-tab active" data-view="section" onclick="switchView('section')">By Section</div>
+      <div class="view-tab" data-view="priority" onclick="switchView('priority')">By Priority</div>
+    </div>
+
+    <div class="filter-bar">
+      <input type="text" id="searchInput" placeholder="Search items…" oninput="renderMain()">
+      <select id="phaseFilter" onchange="renderMain()">
+        <option value="">All Phases</option>
+        <option value="1">Phase 1</option>
+        <option value="2">Phase 2</option>
+        <option value="3">Phase 3</option>
+      </select>
+      <select id="statusFilter" onchange="renderMain()">
+        <option value="">All Status</option>
+        <option value="open">Open</option>
+        <option value="done">Done</option>
+      </select>
+      <select id="priorityFilter" onchange="renderMain()">
+        <option value="">All Priorities</option>
+        <option value="Critical">Critical</option>
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
+        <option value="none">Unset</option>
+      </select>
+    </div>
+
+    <div id="mainContent"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+let backlog = null;
+let activeSectionId = null;
+let activeView = 'section';
+let editingItemId = null;
+
+const BACKLOG_PATH = 'backlog.json';
+const PRIORITY_LEVELS = ['Critical', 'High', 'Medium', 'Low'];
+const PRIORITY_CLASS = { Critical: 'p-critical', High: 'p-high', Medium: 'p-medium', Low: 'p-low' };
+
+async function loadBacklog() {
+  try {
+    const r = await fetch(BACKLOG_PATH + '?t=' + Date.now());
+    backlog = await r.json();
+    activeSectionId = backlog.sections[0].id;
+    renderSidebar();
+    renderStats();
+    renderMain();
+  } catch(e) {
+    document.getElementById('mainContent').innerHTML =
+      `<div style="color:red;padding:20px">Could not load backlog.json — open this file from the same folder as backlog.json.</div>`;
+  }
+}
+
+// ── SIDEBAR ───────────────────────────────────────────────────────────────────
+function renderSidebar() {
+  const phases = [1, 2, 3];
+  let html = '';
+  for (const ph of phases) {
+    const sections = backlog.sections.filter(s => s.phase === ph);
+    if (!sections.length) continue;
+    html += `<div class="sidebar-section">
+      <div class="sidebar-header">Phase ${ph}</div>`;
+    for (const sec of sections) {
+      const total = sec.items.length;
+      const done = sec.items.filter(i => i.done).length;
+      const active = sec.id === activeSectionId ? 'active' : '';
+      html += `<div class="sidebar-item ${active}" onclick="selectSection('${sec.id}')">
+        <span style="flex:1;line-height:1.3">${sec.title}</span>
+        <span class="sidebar-phase-badge phase-${ph}">${done}/${total}</span>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+  document.getElementById('sidebar').innerHTML = html;
+}
+
+function selectSection(id) {
+  activeSectionId = id;
+  renderSidebar();
+  renderMain();
+  document.getElementById('mainContent').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────────
+function renderStats() {
+  const allItems = backlog.sections.flatMap(s => s.items);
+  const total = allItems.length;
+  const done = allItems.filter(i => i.done).length;
+  const open = total - done;
+  const prioritised = allItems.filter(i => i.priority && i.priority !== 'none').length;
+  const critical = allItems.filter(i => i.priority === 'Critical').length;
+  document.getElementById('statsBar').innerHTML = `
+    <div class="stat-chip"><div class="stat-val">${total}</div><div class="stat-label">Total Items</div></div>
+    <div class="stat-chip"><div class="stat-val" style="color:var(--green)">${done}</div><div class="stat-label">Completed</div></div>
+    <div class="stat-chip"><div class="stat-val" style="color:var(--amber)">${open}</div><div class="stat-label">Open</div></div>
+    <div class="stat-chip"><div class="stat-val" style="color:var(--indigo)">${prioritised}</div><div class="stat-label">Prioritised</div></div>
+    <div class="stat-chip"><div class="stat-val" style="color:var(--red)">${critical}</div><div class="stat-label">Critical</div></div>
+  `;
+}
+
+// ── MAIN CONTENT ──────────────────────────────────────────────────────────────
+function switchView(v) {
+  activeView = v;
+  document.querySelectorAll('.view-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.view === v);
+  });
+  renderMain();
+}
+
+function getFilters() {
+  return {
+    search: document.getElementById('searchInput').value.toLowerCase(),
+    phase: document.getElementById('phaseFilter').value,
+    status: document.getElementById('statusFilter').value,
+    priority: document.getElementById('priorityFilter').value,
+  };
+}
+
+function itemMatchesFilters(item, section, f) {
+  if (f.search && !item.text.toLowerCase().includes(f.search) && !item.id.includes(f.search)) return false;
+  if (f.phase && String(section.phase) !== f.phase) return false;
+  if (f.status === 'open' && item.done) return false;
+  if (f.status === 'done' && !item.done) return false;
+  if (f.priority) {
+    const ip = item.priority || 'none';
+    if (f.priority === 'none' && ip !== 'none') return false;
+    if (f.priority !== 'none' && ip !== f.priority) return false;
+  }
+  return true;
+}
+
+function renderMain() {
+  if (!backlog) return;
+  const f = getFilters();
+  if (activeView === 'section') renderSectionView(f);
+  else renderPriorityView(f);
+}
+
+function renderSectionView(f) {
+  const sections = f.phase || f.search || f.status || f.priority
+    ? backlog.sections
+    : backlog.sections.filter(s => s.id === activeSectionId);
+
+  let html = '';
+  for (const sec of sections) {
+    const items = sec.items.filter(item => itemMatchesFilters(item, sec, f));
+    if (!items.length) continue;
+    html += renderSection(sec, items);
+  }
+  if (!html) html = `<div style="color:var(--muted);padding:20px">No items match the current filters.</div>`;
+  document.getElementById('mainContent').innerHTML = html;
+}
+
+function renderSection(sec, items) {
+  const done = sec.items.filter(i => i.done).length;
+  const pct = Math.round(done / sec.items.length * 100);
+  let html = `
+    <div class="section-header">
+      <div style="display:flex;align-items:center;gap:12px">
+        <h2>${sec.title}</h2>
+        <span class="sidebar-phase-badge phase-${sec.phase}">Phase ${sec.phase}</span>
+        <span style="font-size:11px;color:rgba(255,255,255,.6);margin-left:auto">${done}/${sec.items.length} done · ${pct}%</span>
+      </div>
+      ${sec.description ? `<div class="section-desc">${sec.description}</div>` : ''}
+    </div>
+    <div class="items-container">`;
+  for (const item of items) {
+    html += renderItem(item, sec);
+  }
+  html += `</div>`;
+  return html;
+}
+
+function renderItem(item, sec) {
+  const pClass = item.priority ? PRIORITY_CLASS[item.priority] || 'p-none' : 'p-none';
+  const doneClass = item.done ? 'done-row' : '';
+  const isEditing = editingItemId === item.id;
+
+  let textHtml;
+  if (isEditing) {
+    textHtml = `
+      <textarea class="item-text-edit" id="edit-${item.id}" rows="3">${escHtml(item.text)}</textarea>
+      <div class="edit-actions">
+        <button class="btn btn-sm btn-save" onclick="saveItemText('${item.id}')">Save</button>
+        <button class="btn btn-sm btn-cancel" onclick="cancelEdit()">Cancel</button>
+      </div>`;
+  } else {
+    textHtml = `<div class="item-text">${escHtml(item.text)}</div>`;
+  }
+
+  const notesHtml = item.notes ? `<div class="item-notes">${escHtml(item.notes)}</div>` : '';
+
+  const priorityOptions = ['', ...PRIORITY_LEVELS].map(p => {
+    const sel = (item.priority || '') === p ? 'selected' : '';
+    const label = p || '— Priority';
+    return `<option value="${p}" ${sel}>${label}</option>`;
+  }).join('');
+
+  return `
+    <div class="item-row ${doneClass}" id="row-${item.id}">
+      <input type="checkbox" class="item-check" ${item.done ? 'checked' : ''}
+        onchange="toggleDone('${item.id}', this.checked)" title="Mark done">
+      <div class="item-body">
+        <div class="item-id">${item.id}</div>
+        ${textHtml}
+        ${notesHtml}
+      </div>
+      <div class="item-controls">
+        <select class="priority-select ${pClass}" onchange="setPriority('${item.id}', this.value)" title="Set priority">
+          ${priorityOptions}
+        </select>
+        ${!isEditing ? `<button class="btn-icon" onclick="startEdit('${item.id}')" title="Edit text">✏️</button>` : ''}
+      </div>
+    </div>`;
+}
+
+function renderPriorityView(f) {
+  const groups = { Critical: [], High: [], Medium: [], Low: [], '': [] };
+  for (const sec of backlog.sections) {
+    for (const item of sec.items) {
+      if (!itemMatchesFilters(item, sec, f)) continue;
+      const p = item.priority || '';
+      groups[p].push({ item, sec });
+    }
+  }
+
+  const pgMeta = {
+    Critical: { cls: 'pg-critical', label: 'Critical' },
+    High:     { cls: 'pg-high',     label: 'High' },
+    Medium:   { cls: 'pg-medium',   label: 'Medium' },
+    Low:      { cls: 'pg-low',      label: 'Low' },
+    '':       { cls: 'pg-unset',    label: 'Unset / No Priority' },
+  };
+
+  let html = '';
+  for (const [p, entries] of Object.entries(groups)) {
+    if (!entries.length) continue;
+    const m = pgMeta[p];
+    html += `<div class="priority-group">
+      <div class="priority-group-header ${m.cls}">
+        ${m.label}
+        <span class="pg-count">${entries.length} item${entries.length !== 1 ? 's' : ''}</span>
+      </div>
+      <div class="items-container">`;
+    for (const { item, sec } of entries) {
+      html += renderItem(item, sec);
+    }
+    html += `</div></div>`;
+  }
+  if (!html) html = `<div style="color:var(--muted);padding:20px">No items match the current filters.</div>`;
+  document.getElementById('mainContent').innerHTML = html;
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────────────────────
+function toggleDone(id, val) {
+  const item = findItem(id);
+  if (item) item.done = val;
+  renderStats();
+  renderMain();
+  showToast(val ? '✅ Marked done' : '↩️ Marked open');
+}
+
+function setPriority(id, val) {
+  const item = findItem(id);
+  if (item) item.priority = val || null;
+  renderStats();
+  renderMain();
+  showToast('Priority updated');
+}
+
+function startEdit(id) {
+  editingItemId = id;
+  renderMain();
+  const el = document.getElementById(`edit-${id}`);
+  if (el) { el.focus(); el.selectionStart = el.value.length; }
+}
+
+function saveItemText(id) {
+  const el = document.getElementById(`edit-${id}`);
+  if (!el) return;
+  const item = findItem(id);
+  if (item) item.text = el.value.trim();
+  editingItemId = null;
+  renderMain();
+  showToast('Item updated');
+}
+
+function cancelEdit() {
+  editingItemId = null;
+  renderMain();
+}
+
+function findItem(id) {
+  for (const sec of backlog.sections) {
+    const item = sec.items.find(i => i.id === id);
+    if (item) return item;
+  }
+  return null;
+}
+
+// ── SAVE / EXPORT ─────────────────────────────────────────────────────────────
+function saveAll() {
+  const json = JSON.stringify(backlog, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'backlog.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('💾 backlog.json downloaded — replace the file in your project folder');
+}
+
+function exportJSON() {
+  saveAll();
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.display = 'none'; }, 2500);
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+loadBacklog();
+</script>
+</body>
+</html>
