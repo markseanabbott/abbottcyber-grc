@@ -1,8 +1,8 @@
 {
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
-  "version": "1.4",
+  "version": "1.5",
   "created": "2026-05-14",
-  "updated": "2026-06-05 (session 4)",
+  "updated": "2026-06-10 (session 7)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1341,6 +1341,28 @@
       ]
     },
     {
+      "id": "ai_tools",
+      "title": "AI Tools",
+      "phase": null,
+      "description": "AI-specific assessment and inventory capabilities. No timeline set.",
+      "items": [
+        {
+          "id": "ai1",
+          "text": "AI Assessment tool — assess an organisation's use of AI tools against risk, governance, and compliance criteria",
+          "done": false,
+          "priority": null,
+          "notes": "In backlog, no timeline"
+        },
+        {
+          "id": "ai2",
+          "text": "AI Tool inventory — catalogue the AI tools in use across an organisation (vendor, data inputs, risk tier, approved status)",
+          "done": false,
+          "priority": null,
+          "notes": "In backlog, no timeline"
+        }
+      ]
+    },
+    {
       "id": "tabletop_bcdr",
       "title": "Tabletop — BCDR Track",
       "phase": 3,
@@ -1379,6 +1401,61 @@
         {
           "id": "tb7",
           "text": "AAR maps to BC Plan gaps same as cyber tabletop",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "ai_readiness",
+      "title": "AI Readiness",
+      "phase": 1,
+      "description": "AI governance and management system assessments. AI-specific readiness modules that aggregate into a combined AI Readiness score on the hub dashboard.",
+      "items": [
+        {
+          "id": "ai1",
+          "text": "NIST AI RMF v1.0 assessment — 68 sub-categories across GOVERN, MAP, MEASURE, MANAGE functions; dashboard, accordion form, gap report, exec report, AI prompt export",
+          "done": true
+        },
+        {
+          "id": "ai2",
+          "text": "ISO/IEC 42001:2023 assessment — 53 items across clauses 4–10 and Annex A; dashboard, accordion form, gap report, exec report, AI prompt export",
+          "done": true
+        },
+        {
+          "id": "ai3",
+          "text": "AI Readiness Hub — aggregated view of NIST AI RMF + ISO 42001 scores with combined score, per-framework score cards, clause/function bars, quick-start buttons",
+          "done": true
+        },
+        {
+          "id": "ai4",
+          "text": "framework_notes table (PATCH_010) — generic org-scoped notes for AI framework controls; ai_rmf_profile column on organisation_profiles",
+          "done": true,
+          "note": "SQL written; must be run manually in Supabase SQL Editor before notes will persist"
+        },
+        {
+          "id": "ai5",
+          "text": "Unified AI Governance Assessment — 44-question NIST AI RMF × ISO 42001 cross-walk module; weighted gap prioritisation (weight × deficit), top-5 gap view, POAM, exec report, framework toggles (NIST on/off, ISO on/off), AI prompt export; replaces separate NIST and ISO modules in nav",
+          "done": true,
+          "notes": "js/ai_unified.js (AI_UNIFIED_CONTROLS 44q, 9 groups, aiuCalcScore/aiuWeightedGaps/aiuCalcGroupScores, full render suite). ai_hub.js updated to read from ai_unified. Saves to assessments with module=ai_unified. POAM stored in answers._poam blob."
+        },
+        {
+          "id": "ai6",
+          "text": "Sidebar score dot for ai_unified — getModuleDot() currently skips ai_unified; wire it to show green/amber/red based on latest unified score",
+          "done": false
+        },
+        {
+          "id": "ai7",
+          "text": "EU AI Act assessment module — risk classification, prohibited uses, high-risk system obligations",
+          "done": false
+        },
+        {
+          "id": "ai7",
+          "text": "AI Readiness Hub — consolidated visual dashboard with radar/spider chart across all AI frameworks",
+          "done": false
+        },
+        {
+          "id": "ai8",
+          "text": "AI framework auto-scoping — cross-map ISO 42001 and NIST AI RMF findings to identify overlapping gaps and common remediation",
           "done": false
         }
       ]

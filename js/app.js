@@ -130,6 +130,9 @@ async function selectOrg(id) {
   cisState = { answers: {}, openPanels: {}, orgId: null, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '' };
   tsState = null;  // tech stack state is per-org — force reload on next view
   tpraState = null;  // TPRA state is per-org — force reload on next view
+  nistAiState = { answers: {}, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '' };
+  iso42001State = { answers: {}, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '' };
+  aiUnifiedState = { answers: {}, frameworks: { nist: true, iso: true }, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '', poamRun: null, poamItems: {} };
   await loadAssessments(id);
   updateOrgUI(); buildNav(); renderMain();
 }
@@ -240,6 +243,10 @@ function renderMain() {
     }
     return;
   }
+  if (activeNav === 'ai_readiness') { el.innerHTML = voB + renderAiHub(); return; }
+  if (activeNav === 'ai_unified') { el.innerHTML = voB + renderAiUnified(); setTimeout(() => { const c = document.getElementById('aiuTrendChart'); if (c) aiuTrendDraw(); }, 80); return; }
+  if (activeNav === 'nist_ai') { el.innerHTML = voB + renderNistAi(); setTimeout(() => { const c = document.getElementById('nistAiTrendChart'); if (c) nistAiTrendDraw(); }, 80); return; }
+  if (activeNav === 'iso42001') { el.innerHTML = voB + renderIso42001(); setTimeout(() => { const c = document.getElementById('iso42001TrendChart'); if (c) iso42001TrendDraw(); }, 80); return; }
   if (activeNav === 'tpra') {
     if (!tpraState || tpraState.orgId !== currentOrg.id) {
       tpraInit();

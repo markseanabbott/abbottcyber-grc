@@ -70,6 +70,12 @@ sb.cisPoam = {
   deleteAllForAssessment: (assessmentId) => sbFetch(`cis_poam_items?assessment_id=eq.${assessmentId}`, 'DELETE'),
 };
 
+// Framework Notes persistence layer (PATCH_010) — generic, reusable across AI frameworks
+sb.frameworkNotes = {
+  get: (orgId, module) => sbFetch(`framework_notes?org_id=eq.${orgId}&module=eq.${module}&select=*`),
+  upsert: (rows) => sbFetch('framework_notes', 'POST', rows, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+};
+
 // CIS Safeguard Notes persistence layer (PATCH_007)
 sb.cisNotes = {
   getForAssessment: (assessmentId) => sbFetch(`cis_safeguard_notes?assessment_id=eq.${assessmentId}&select=*`),

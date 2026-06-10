@@ -4,6 +4,12 @@
 
 ---
 
+## Who I am and how to write for me
+@C:\Users\marks\.claude\projects\c--Users-marks-about-me\memory\user_profile.md
+@C:\Users\marks\.claude\projects\c--Users-marks-about-me\memory\feedback-voice-and-tone.md
+
+---
+
 ## Who Mark Is
 
 Mark Abbott is the founder of **Abbott Cyber Consulting** — a virtual CISO / CIO consulting firm in Surrey, BC, Canada. He is not a developer. Claude builds; Mark reviews, approves, and directs. Build for a non-technical founder who will use this tool live with real clients.

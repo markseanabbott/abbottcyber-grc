@@ -123,6 +123,10 @@ const NAV = [
     { id: 'exec_report', icon: '📄', label: 'Executive Reports', live: false, phase: 2 },
     { id: 'portfolio', icon: '🌐', label: 'Portfolio View', live: false, phase: 2 },
   ]},
+  { id: 'g_ai_readiness', group: 'AI Readiness', icon: '🤖', items: [
+    { id: 'ai_readiness', icon: '🤖', label: 'AI Readiness Hub', live: true, phase: 1 },
+    { id: 'ai_unified', icon: '🧩', label: 'AI Governance Assessment', live: true, phase: 1 },
+  ]},
 ];
 
 // ============================================================
@@ -139,3 +143,6 @@ let orgProfiles = {};  // keyed by org_id; hydrated at init + after profile save
 let orgModalTab = 'details';  // 'details' | 'profile'
 let cisState = { answers: {}, openPanels: {}, orgId: null, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '' };  // CIS Controls survey state
 let tpraState = null;  // Third-Party Risk Assessment state; per-org, hydrated on enter.
+let nistAiState = { answers: {}, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '' };
+let iso42001State = { answers: {}, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '' };
+let aiUnifiedState = { answers: {}, frameworks: { nist: true, iso: true }, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '', poamRun: null, poamItems: {} };
