@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5",
   "created": "2026-05-14",
-  "updated": "2026-06-10 (session 7)",
+  "updated": "2026-06-11 (session 8)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -243,7 +243,7 @@
           "id": "cis_exec_report",
           "text": "CIS Executive Report: per-assessment report view with gauge/speedometer chart, answer distribution donut, score trend line, IG tier progress bars, control group coverage bars, top gaps table, and executive commentary section with 'Generate AI Prompt' button to produce AI-written narrative via Claude.",
           "done": true,
-          "notes": "Built. cisOpenReport() opens report view, renderCISReport() renders full layout. cisDrawGauge(), cisDrawDonut(), cisDrawReportTrend() draw Canvas charts. cisGenerateReportPrompt() copies data-rich prompt to clipboard. cisSaveCommentary() persists commentary to assessment answers._exec_commentary via PATCH. 📊 Report button added to each assessment row. Commentary preserved through re-edits of the full assessment form."
+          "notes": "Built. cisOpenReport() opens report view, renderCISReport() renders full layout. cisDrawGauge(), cisDrawDonut(), cisDrawReportTrend() draw Canvas charts. cisGenerateReportPrompt() copies data-rich prompt to clipboard. cisSaveCommentary() persists commentary to assessment answers._exec_commentary via PATCH. 📊 Report button added to each assessment row. Commentary preserved through re-edits of the full assessment form. Session 8 overhaul: replaced gauge+donut with score strip (yes/partial/not-done/N/A counts + coverage bar + maturity% + fully-implemented%); added 18-spoke canvas radar chart (cisDrawRadar()); accordion redesigned with CIS_REPORT_LAYERS (6 layers) — each layer header shows per-control columns (short name, dot grid, ctrl%) side-by-side. Both trend charts (cisTrendDraw + cisDrawReportTrend) rewritten as stacked bar charts — bars split into IG1/IG2/IG3 segments with legend. Assessment history now sorts newest-first and shows % columns instead of raw counts. Assessor name pre-fills from most recent run on new assessments."
         },
         {
           "id": "cis4",

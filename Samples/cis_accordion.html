@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CIS Controls Audit</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --ig1:#0e7490; --ig1s:#0c5f77; --ig1bg:rgba(14,116,144,.1);
+  --ig2:#1d4ed8; --ig2s:#1e3a8a; --ig2bg:rgba(29,78,216,.1);
+  --ig3:#7c3aed; --ig3s:#5b21b6; --ig3bg:rgba(124,58,237,.1);
+  --nc:#4b5563;  --ncs:#374151;  --ncbg:rgba(75,85,99,.1);
+  --red:#c00000; --red-d:#960000;
+  --amber:#d97706; --amber-d:#b45309;
+  --blue:#2563eb; --blue-d:#1d4ed8;
+  --green:#059669; --green-d:#047857;
+  --bg:#f0f4f8; --bg2:#ffffff; --bg3:#e8edf4; --bg4:#f8fafc;
+  --border:#dde3ec; --border2:#c8d0dc;
+  --text:#0f172a; --text2:#475569; --text3:#94a3b8;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);
+  --shadow-lg:0 4px 16px rgba(0,0,0,.1);
+}
+body.dark {
+  --bg:#0d1117; --bg2:#161b22; --bg3:#1e2736; --bg4:#1a2030;
+  --border:#2d3748; --border2:#3d4a5c;
+  --text:#e2e8f0; --text2:#94a3b8; --text3:#4a5568;
+  --ig1:#0891b2; --ig1s:#0e7490; --ig1bg:rgba(8,145,178,.12);
+  --ig2:#3b82f6; --ig2s:#2563eb; --ig2bg:rgba(59,130,246,.12);
+  --ig3:#8b5cf6; --ig3s:#7c3aed; --ig3bg:rgba(139,92,246,.12);
+  --nc:#6b7280; --ncs:#4b5563; --ncbg:rgba(107,114,128,.12);
+  --red:#dc2626; --amber:#d97706; --blue:#3b82f6; --green:#10b981;
+  --shadow:0 1px 3px rgba(0,0,0,.3);
+  --shadow-lg:0 4px 20px rgba(0,0,0,.4);
+}
+body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; transition:background .2s,color .2s; }
+
+/* NAV */
+.topnav { display:flex; align-items:center; justify-content:space-between; padding:0 24px; height:52px; background:var(--bg2); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:300; gap:16px; transition:background .2s; }
+.brand { display:flex; align-items:center; gap:10px; font-size:15px; font-weight:600; letter-spacing:-.02em; flex-shrink:0; }
+.brand-icon { width:28px; height:28px; background:linear-gradient(135deg,var(--ig1) 0%,var(--ig3) 100%); border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:15px; }
+.nav-center { display:flex; align-items:center; gap:4px; background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:3px; }
+.ig-btn { padding:5px 18px; border-radius:6px; border:none; font-family:'DM Sans',sans-serif; font-size:12px; font-weight:600; cursor:pointer; transition:all .15s; background:transparent; color:var(--text2); letter-spacing:.03em; white-space:nowrap; }
+.ig-btn:hover { color:var(--text); }
+.ig-btn.a1 { background:var(--ig1); color:#fff; box-shadow:0 1px 4px rgba(14,116,144,.4); }
+.ig-btn.a2 { background:var(--ig2); color:#fff; box-shadow:0 1px 4px rgba(29,78,216,.4); }
+.ig-btn.a3 { background:var(--ig3); color:#fff; box-shadow:0 1px 4px rgba(124,58,237,.4); }
+.nav-right { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.nav-sep { width:1px; height:18px; background:var(--border); }
+.ig-legend { display:flex; align-items:center; gap:10px; }
+.igl { display:flex; align-items:center; gap:4px; font-size:11px; color:var(--text2); white-space:nowrap; }
+.igl-dot { width:9px; height:9px; border-radius:2px; }
+.theme-toggle { display:flex; align-items:center; gap:5px; cursor:pointer; user-select:none; padding:4px 9px; border-radius:6px; border:1px solid var(--border); background:var(--bg3); font-size:11px; }
+.theme-toggle:hover { border-color:var(--ig2); }
+.toggle-track { width:32px; height:16px; background:var(--border); border-radius:8px; position:relative; transition:background .2s; }
+.toggle-thumb { position:absolute; top:2px; left:2px; width:12px; height:12px; border-radius:50%; background:var(--text2); transition:transform .2s,background .2s; }
+.is-dark .toggle-track { background:rgba(59,130,246,.3); }
+.is-dark .toggle-thumb { transform:translateX(16px); background:var(--blue); }
+
+/* SCORES BAR */
+.scores-bar { display:flex; align-items:center; gap:0; background:var(--bg2); border-bottom:1px solid var(--border); padding:0 24px; height:44px; position:sticky; top:52px; z-index:200; overflow-x:auto; }
+.score-item { display:flex; align-items:center; gap:7px; padding:0 16px; border-right:1px solid var(--border); flex-shrink:0; }
+.score-item:first-child { padding-left:0; }
+.score-dot { width:10px; height:10px; border-radius:2px; }
+.score-val { font-size:18px; font-weight:700; font-family:'DM Mono',monospace; line-height:1; }
+.score-lbl { font-size:10px; color:var(--text3); line-height:1.2; }
+.score-r .score-val { color:var(--red); }
+.score-a .score-val { color:var(--amber); }
+.score-b .score-val { color:var(--blue); }
+.score-g .score-val { color:var(--green); }
+.mat-section { display:flex; align-items:center; gap:10px; padding:0 16px; flex:1; min-width:160px; }
+.mat-lbl { font-size:10px; color:var(--text3); font-family:'DM Mono',monospace; white-space:nowrap; }
+.mat-bar { flex:1; height:6px; background:var(--bg3); border-radius:3px; overflow:hidden; }
+.mat-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,var(--red),var(--amber),var(--blue),var(--green)); transition:width .4s ease; }
+.mat-pct { font-size:13px; font-weight:700; font-family:'DM Mono',monospace; min-width:36px; text-align:right; }
+.expand-all-btn { margin-left:auto; padding:4px 12px; border-radius:6px; border:1px solid var(--border); background:var(--bg3); font-family:'DM Sans',sans-serif; font-size:11px; font-weight:600; color:var(--text2); cursor:pointer; white-space:nowrap; flex-shrink:0; }
+.expand-all-btn:hover { border-color:var(--ig2); color:var(--ig2); }
+
+/* PAGE */
+.page { max-width:1100px; margin:0 auto; padding:20px 24px 40px; }
+
+/* PYRAMID NAV */
+.pyramid-nav { display:flex; flex-direction:column; gap:4px; margin-bottom:24px; }
+.pyr-tier { display:flex; align-items:stretch; cursor:pointer; border-radius:8px; overflow:hidden; border:1.5px solid transparent; transition:border-color .15s,box-shadow .15s; box-shadow:var(--shadow); }
+.pyr-tier:hover { box-shadow:var(--shadow-lg); }
+.pyr-tier.active { border-color:var(--border2); box-shadow:var(--shadow-lg); }
+.pyr-label-col { width:180px; flex-shrink:0; display:flex; flex-direction:column; justify-content:center; padding:12px 16px; background:var(--bg2); border-right:1px solid var(--border); }
+.pyr-tier-num { font-size:9px; font-weight:700; font-family:'DM Mono',monospace; color:var(--text3); letter-spacing:.1em; text-transform:uppercase; margin-bottom:2px; }
+.pyr-tier-name { font-size:13px; font-weight:700; color:var(--text); letter-spacing:.04em; }
+.pyr-tier-sub { font-size:10px; color:var(--text2); font-style:italic; margin-top:1px; }
+.pyr-groups-col { flex:1; display:flex; gap:0; background:var(--bg2); }
+.pyr-group-cell { flex:1; border-right:1px solid var(--border); padding:8px 10px; display:flex; flex-direction:column; gap:3px; min-width:0; }
+.pyr-group-cell:last-child { border-right:none; }
+.pyr-group-name { font-size:9px; font-weight:700; font-family:'DM Mono',monospace; color:var(--text3); text-transform:uppercase; letter-spacing:.08em; margin-bottom:3px; }
+.pyr-dots { display:flex; flex-wrap:wrap; gap:3px; }
+.pyr-dot { width:14px; height:14px; border-radius:3px; flex-shrink:0; transition:transform .1s; cursor:pointer; }
+.pyr-dot:hover { transform:scale(1.3); }
+.pyr-chevron-col { width:36px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:var(--bg3); border-left:1px solid var(--border); font-size:14px; color:var(--text3); user-select:none; }
+.pyr-tier.active .pyr-chevron-col { color:var(--ig2); }
+.pyr-tier.active .pyr-chevron { transform:rotate(90deg); }
+.pyr-chevron { display:inline-block; transition:transform .2s; }
+
+/* ACCORDION */
+.acc-panel { overflow:hidden; max-height:0; transition:max-height .35s cubic-bezier(.4,0,.2,1); margin-bottom:4px; }
+.acc-panel.open { max-height:2000px; }
+.acc-inner { background:var(--bg2); border:1.5px solid var(--border2); border-top:none; border-radius:0 0 8px 8px; padding:16px 16px 20px; margin-top:-4px; }
+.panel-groups { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; }
+.ctrl-group { }
+.ctrl-group-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+.ctrl-group-name { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--text2); font-family:'DM Mono',monospace; }
+.ctrl-cis-num { font-size:10px; font-weight:600; font-family:'DM Mono',monospace; color:var(--text3); }
+.ctrl-cards { display:flex; flex-direction:column; gap:4px; }
+.ctrl-card { border-radius:6px; border:1.5px solid var(--border); background:var(--bg4); cursor:pointer; transition:all .12s; overflow:hidden; }
+.ctrl-card:hover { border-color:var(--border2); box-shadow:0 1px 6px rgba(0,0,0,.08); }
+.ctrl-card.selected { border-color:var(--ig2); box-shadow:0 0 0 2px rgba(29,78,216,.15); }
+.ctrl-card.out-of-scope { opacity:0.35; }
+.ctrl-card-top { display:flex; align-items:center; gap:8px; padding:8px 10px; }
+.ctrl-status-bar { width:4px; flex-shrink:0; border-radius:2px; align-self:stretch; min-height:24px; }
+.ctrl-card-body { flex:1; min-width:0; }
+.ctrl-id { font-size:9px; font-weight:600; font-family:'DM Mono',monospace; color:var(--text3); letter-spacing:.06em; }
+.ctrl-name { font-size:12px; font-weight:600; color:var(--text); line-height:1.3; margin-top:1px; }
+.ctrl-ig-badge { flex-shrink:0; font-size:9px; font-weight:700; font-family:'DM Mono',monospace; padding:2px 6px; border-radius:3px; border:1px solid; }
+.ib1 { color:var(--ig1); border-color:var(--ig1); background:var(--ig1bg); }
+.ib2 { color:var(--ig2); border-color:var(--ig2); background:var(--ig2bg); }
+.ib3 { color:var(--ig3); border-color:var(--ig3); background:var(--ig3bg); }
+.ibn { color:var(--nc); border-color:var(--nc); background:var(--ncbg); }
+.ctrl-detail { max-height:0; overflow:hidden; transition:max-height .25s ease; }
+.ctrl-detail.open { max-height:400px; border-top:1px solid var(--border); }
+.ctrl-detail-inner { padding:10px 10px 12px 22px; }
+.ctrl-desc { font-size:12px; color:var(--text2); line-height:1.7; margin-bottom:10px; }
+.ctrl-scope-note { font-size:10px; color:var(--text3); font-family:'DM Mono',monospace; margin-bottom:10px; line-height:1.5; }
+.status-row { display:flex; gap:5px; flex-wrap:wrap; }
+.st-btn { padding:4px 10px; border-radius:5px; border:1.5px solid var(--border); background:transparent; cursor:pointer; font-size:11px; font-weight:500; font-family:'DM Sans',sans-serif; color:var(--text2); transition:all .12s; }
+.st-btn:hover { color:var(--text); border-color:var(--text2); }
+.st-btn.ar { background:var(--red); border-color:var(--red-d); color:#fff; }
+.st-btn.ay { background:var(--amber); border-color:var(--amber-d); color:#fff; }
+.st-btn.ab { background:var(--blue); border-color:var(--blue-d); color:#fff; }
+.st-btn.ag { background:var(--green); border-color:var(--green-d); color:#fff; }
+
+/* RADAR SECTION */
+.radar-section {
+  background:var(--bg2); border:1px solid var(--border); border-radius:12px;
+  padding:24px; margin-top:8px;
+  box-shadow:var(--shadow);
+}
+.radar-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:20px; flex-wrap:wrap; gap:10px;
+}
+.radar-title { font-size:13px; font-weight:700; color:var(--text); letter-spacing:.04em; }
+.radar-subtitle { font-size:11px; color:var(--text3); font-family:'DM Mono',monospace; margin-top:2px; }
+.radar-legend { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.rl-item { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text2); }
+.rl-swatch { width:24px; height:3px; border-radius:2px; }
+.radar-wrap { display:flex; justify-content:center; }
+#radar-svg { width:100%; max-width:700px; height:auto; }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="brand"><div class="brand-icon">🔒</div>CIS Controls v8 Audit</div>
+  <div class="nav-center">
+    <button class="ig-btn a1" id="btn-ig1" onclick="setIG(1)">IG1 — Basic</button>
+    <button class="ig-btn" id="btn-ig2" onclick="setIG(2)">IG2 — Foundational</button>
+    <button class="ig-btn" id="btn-ig3" onclick="setIG(3)">IG3 — Organisational</button>
+  </div>
+  <div class="nav-right">
+    <div class="ig-legend">
+      <div class="igl"><div class="igl-dot" style="background:#0e7490"></div>IG1</div>
+      <div class="igl"><div class="igl-dot" style="background:#1d4ed8"></div>IG2</div>
+      <div class="igl"><div class="igl-dot" style="background:#7c3aed"></div>IG3</div>
+      <div class="igl"><div class="igl-dot" style="background:#4b5563"></div>Non-CIS</div>
+    </div>
+    <div class="nav-sep"></div>
+    <div class="theme-toggle" id="themeBtn">
+      <span>☀️</span><div class="toggle-track"><div class="toggle-thumb"></div></div><span>🌙</span>
+    </div>
+  </div>
+</nav>
+
+<div class="scores-bar">
+  <div class="score-item score-r">
+    <div class="score-dot" style="background:var(--red)"></div>
+    <div><div class="score-val" id="s-r">0</div><div class="score-lbl">Not Impl.</div></div>
+  </div>
+  <div class="score-item score-a">
+    <div class="score-dot" style="background:var(--amber)"></div>
+    <div><div class="score-val" id="s-y">0</div><div class="score-lbl">Partial</div></div>
+  </div>
+  <div class="score-item score-b">
+    <div class="score-dot" style="background:var(--blue)"></div>
+    <div><div class="score-val" id="s-b">0</div><div class="score-lbl">Unmanaged</div></div>
+  </div>
+  <div class="score-item score-g">
+    <div class="score-dot" style="background:var(--green)"></div>
+    <div><div class="score-val" id="s-g">0</div><div class="score-lbl">Implemented</div></div>
+  </div>
+  <div class="mat-section">
+    <div class="mat-lbl" id="mat-lbl">IG1 SCORE</div>
+    <div class="mat-bar"><div class="mat-fill" id="mat-fill" style="width:0%"></div></div>
+    <div class="mat-pct" id="mat-pct">0%</div>
+  </div>
+  <button class="expand-all-btn" id="expandAllBtn" onclick="toggleAll()">Expand All</button>
+</div>
+
+<div class="page">
+  <div class="pyramid-nav" id="pyramid-nav"></div>
+
+  <!-- RADAR -->
+  <div class="radar-section">
+    <div class="radar-header">
+      <div>
+        <div class="radar-title">CIS Controls Maturity — Radar View</div>
+        <div class="radar-subtitle">18 control groups · scored 0–7 by safeguard implementation · updates live</div>
+      </div>
+      <div class="radar-legend">
+        <div class="rl-item"><div class="rl-swatch" style="background:#059669"></div>Implemented</div>
+        <div class="rl-item"><div class="rl-swatch" style="background:#2563eb"></div>Unmanaged</div>
+        <div class="rl-item"><div class="rl-swatch" style="background:#d97706"></div>Partial</div>
+        <div class="rl-item"><div class="rl-swatch" style="background:#e2e8f0; border:1px solid #94a3b8"></div>Max possible</div>
+      </div>
+    </div>
+    <div class="radar-wrap">
+      <svg id="radar-svg" viewBox="0 0 700 620" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════
+   DATA
+═══════════════════════════════════ */
+const LAYERS = [
+  {
+    id:'foundation', num:'Layer 1', label:'FOUNDATION', sub:'Know What You Have',
+    groups:[
+      { id:'assets', name:'Assets', cis:'CIS 1', radarId:1, segs:[
+        {id:'1.1',name:'Asset Inventory',ig:1,desc:'Establish and maintain a detailed inventory of all enterprise assets with the potential to store or process data.'},
+        {id:'1.2',name:'Address Unauthorized Assets',ig:1,desc:'Ensure a process exists to address unauthorised assets on a weekly basis — remove, deny remote connection, or quarantine.'},
+        {id:'1.3',name:'Active Discovery',ig:2,desc:'Utilise an active discovery tool to identify assets connected to the network and update the asset inventory.'},
+        {id:'1.4',name:'Asset Ownership',ig:2,desc:'Ensure all assets have an identified owner and responsible team via automated inventory tooling.'},
+        {id:'1.5',name:'Asset Classification',ig:2,desc:'Classify discovered assets based on data classification categories using automated tooling.'},
+        {id:'1.6',name:'Network Inventory',ig:2,desc:'Establish and maintain the network infrastructure inventory including physical and virtual hardware.'},
+      ]},
+      { id:'software', name:'Software', cis:'CIS 2', radarId:2, segs:[
+        {id:'2.1',name:'Software Inventory',ig:1,desc:'Establish and maintain a list of all authorised software and versions with business purpose and owners.'},
+        {id:'2.2',name:'Authorized Software',ig:1,desc:'Ensure only currently supported software is designated authorised. Remove or remediate unsupported software.'},
+        {id:'2.3',name:'Unauthorized Software',ig:1,desc:'Ensure unauthorised software is removed or receives a documented and approved exception.'},
+        {id:'2.4',name:'Application Inventory',ig:2,desc:'Utilise software inventory tools to automate documentation of all software on business assets.'},
+        {id:'2.5',name:'Allowlisting',ig:3,desc:'Use application allowlisting to ensure only authorised software can execute or be accessed.'},
+      ]},
+      { id:'data', name:'Data', cis:'CIS 3', radarId:3, segs:[
+        {id:'3.1',name:'Data Inventory',ig:1,desc:'Establish and maintain a data management process for enterprise data. Review annually.'},
+        {id:'3.2',name:'Data Classification',ig:1,desc:'Establish and maintain a data classification scheme based on sensitivity. Review annually.'},
+        {id:'3.3',name:'Data Handling',ig:1,desc:'Establish data handling procedures covering creation, storage, access, and disposal.'},
+        {id:'3.4',name:'Retention',ig:2,desc:'Retain enterprise data per the data management process using secure disposal when no longer required.'},
+        {id:'3.5',name:'Disposal',ig:2,desc:'Securely dispose of data per the data management process. Review the disposal log annually.'},
+        {id:'3.6',name:'Encryption at Rest',ig:2,desc:'Encrypt data on end-user devices containing sensitive data. Implement full-disk encryption.'},
+      ]},
+      { id:'config', name:'Configuration', cis:'CIS 4', radarId:4, segs:[
+        {id:'4.1',name:'Secure Standards',ig:1,desc:'Establish and maintain a documented secure configuration process for assets and software.'},
+        {id:'4.2',name:'Baseline Configurations',ig:1,desc:'Establish a secure configuration process for network infrastructure.'},
+        {id:'4.3',name:'Change Control',ig:2,desc:'Perform configuration change control with security impact analysis of all proposed changes.'},
+        {id:'4.4',name:'Configuration Reviews',ig:2,desc:'Perform automated OS patch management to keep all assets updated with latest security patches.'},
+      ]},
+    ]
+  },
+  {
+    id:'control', num:'Layer 2', label:'CONTROL', sub:'Control Access and Trust',
+    groups:[
+      { id:'accounts', name:'Accounts', cis:'CIS 5', radarId:5, segs:[
+        {id:'5.1',name:'Account Inventory',ig:1,desc:'Establish and maintain an inventory of all accounts including user and administrator accounts. Review quarterly.'},
+        {id:'5.2',name:'Account Management',ig:1,desc:'Use a centralised directory service or identity provider for managing all user accounts.'},
+        {id:'5.3',name:'Dormant Accounts',ig:1,desc:'Delete or disable dormant accounts after 45 days of inactivity where supported.'},
+        {id:'5.4',name:'Service Accounts',ig:2,desc:'Create and use dedicated service accounts for application and system services.'},
+        {id:'5.5',name:'Account Review',ig:2,desc:'Review all administrative accounts, limiting access to documented business needs.'},
+      ]},
+      { id:'access', name:'Access Control', cis:'CIS 6', radarId:6, segs:[
+        {id:'6.1',name:'Access Control Process',ig:1,desc:'Establish a formal request and approval process for all new accounts and privileges.'},
+        {id:'6.2',name:'MFA',ig:1,desc:'Establish MFA for all accounts, prioritising remote access, administrative, and privileged accounts.'},
+        {id:'6.3',name:'Access Reviews',ig:2,desc:'Require MFA for externally-exposed applications and maintain periodic access reviews.'},
+        {id:'6.4',name:'Segregation of Duties',ig:2,desc:'Ensure individuals cannot unilaterally subvert security controls through permission separation.'},
+        {id:'6.5',name:'Remote Access MFA',ig:2,desc:'Require MFA for all remote network access. Centralise controls and audit logs.'},
+        {id:'6.7',name:'Privileged Access Inventory',ig:3,desc:'Maintain an inventory of all elevated privilege accounts on a regular review cycle.'},
+        {id:'6.8',name:'PAM Controls',ig:3,desc:'Define and maintain role-based access control with documented rights for each role.'},
+        {id:'6.9',name:'Admin Workstations',ig:3,desc:'Establish dedicated computing resources, physically or logically separated, for administrative tasks.'},
+      ]},
+    ]
+  },
+  {
+    id:'hardening', num:'Layer 3', label:'HARDENING', sub:'Reduce Exposure',
+    groups:[
+      { id:'vulns', name:'Vulnerability Mgmt', cis:'CIS 7', radarId:7, segs:[
+        {id:'7.1',name:'Vulnerability Process',ig:1,desc:'Establish and maintain a documented vulnerability management process. Review annually.'},
+        {id:'7.2',name:'Vulnerability Scanning',ig:2,desc:'Perform automated vulnerability scans of internal assets quarterly using a SCAP-compliant tool.'},
+        {id:'7.3',name:'Remediation',ig:2,desc:'Remediate detected vulnerabilities monthly or more frequently through documented processes.'},
+        {id:'7.4',name:'External Testing',ig:3,desc:'Conduct application penetration testing both externally and from within the security perimeter.'},
+        {id:'7.5',name:'Remediation Metrics',ig:3,desc:'Maintain a risk-based remediation strategy with monthly reviews and mean-time-to-remediate tracking.'},
+      ]},
+      { id:'secconfig', name:'Secure Config', cis:'CIS 4+', radarId:null, segs:[
+        {id:'sc.1',name:'Secure Build Standards',ig:2,desc:'Establish secure configuration standards for all operating systems and software in use.'},
+        {id:'sc.2',name:'Change Monitoring',ig:2,desc:'Monitor configuration changes against secure baselines to detect unauthorised deviations.'},
+        {id:'sc.3',name:'Drift Detection',ig:3,desc:'Automate detection and remediation of configuration drift from secure baselines.'},
+      ]},
+    ]
+  },
+  {
+    id:'visibility', num:'Layer 4', label:'VISIBILITY', sub:'See What Is Happening',
+    groups:[
+      { id:'logging', name:'Logging', cis:'CIS 8', radarId:8, segs:[
+        {id:'8.1',name:'Audit Logging Policy',ig:1,desc:'Establish and maintain an audit log management process defining logging requirements.'},
+        {id:'8.2',name:'Log Collection',ig:2,desc:'Collect audit logs from all enterprise assets to establish centralised log management.'},
+        {id:'8.3',name:'Log Retention',ig:2,desc:'Retain audit logs for a minimum of 90 days. Manage retention, archival, and disposal.'},
+        {id:'8.4',name:'Time Synchronisation',ig:2,desc:'Standardise time synchronisation across all assets through a consistent, secure time service.'},
+      ]},
+      { id:'email_web', name:'Email & Web', cis:'CIS 9+', radarId:9, segs:[
+        {id:'9.1',name:'Email Gateway',ig:1,desc:'Use DNS filtering services on all enterprise assets to block access to known malicious domains.'},
+        {id:'9.2',name:'Web Content Filtering',ig:2,desc:'Use DNS filtering and web proxies to restrict access to known malicious or high-risk URLs.'},
+        {id:'9.3',name:'Email Anti-Malware',ig:2,desc:'Implement anti-malware solutions specifically targeting email threats including attachments and links.'},
+        {id:'9.4',name:'DMARC',ig:2,desc:'Implement DMARC policy to reduce the risk of spoofed or modified emails from your domains.'},
+      ]},
+      { id:'netvis', name:'Network Visibility', cis:'CIS 12', radarId:12, segs:[
+        {id:'12.1',name:'Infrastructure Inventory',ig:1,desc:'Ensure network infrastructure is kept up-to-date on latest stable releases.'},
+        {id:'12.2',name:'Network Architecture',ig:2,desc:'Establish a secure network architecture addressing segmentation, least privilege, and availability.'},
+        {id:'12.3',name:'Network Segmentation',ig:2,desc:'Segment the network based on data classification. Place sensitive data on separated VLANs.'},
+        {id:'12.4',name:'Flow Monitoring',ig:3,desc:'Collect NetFlow and other traffic flow logs and alert on anomalous patterns.'},
+      ]},
+      { id:'monitoring', name:'Monitoring', cis:'CIS 13', radarId:13, segs:[
+        {id:'13.1',name:'Centralised Alerting',ig:2,desc:'Centralise security event alerting across enterprise assets for correlation and analysis via SIEM.'},
+        {id:'13.2',name:'Host-Based IDS',ig:2,desc:'Deploy a host-based intrusion detection solution on enterprise assets where appropriate.'},
+        {id:'13.3',name:'Network-Based IDS',ig:3,desc:'Deploy a network-based intrusion detection solution. Review alerts at minimum weekly.'},
+      ]},
+    ]
+  },
+  {
+    id:'resilience', num:'Layer 5', label:'RESILIENCE', sub:'Respond and Recover',
+    groups:[
+      { id:'recovery', name:'Recovery', cis:'CIS 11', radarId:11, segs:[
+        {id:'11.1',name:'Data Recovery Process',ig:1,desc:'Establish and maintain a data recovery process covering scope, prioritisation, and backup security.'},
+        {id:'11.2',name:'Automated Backups',ig:1,desc:'Perform automated backups weekly or more frequently. Store backups separate from production.'},
+        {id:'11.3',name:'Recovery Validation',ig:2,desc:'Test backup recovery quarterly for a sampling of in-scope backup targets.'},
+      ]},
+      { id:'response', name:'Incident Response', cis:'CIS 17', radarId:17, segs:[
+        {id:'17.1',name:'IR Plan',ig:1,desc:'Establish a process for workforce to report security incidents with timeframes and reporting mechanism.'},
+        {id:'17.2',name:'IR Training',ig:2,desc:'Train workforce on IR policy and procedures upon hire and annually thereafter.'},
+        {id:'17.3',name:'IR Exercises',ig:2,desc:'Test incident response through tabletop and simulated attack exercises.'},
+        {id:'17.4',name:'Communications Plan',ig:2,desc:'Define incident thresholds, severity levels, escalation paths, and stakeholder communications.'},
+        {id:'17.5',name:'Post-Incident Reviews',ig:3,desc:'Conduct post-incident reviews and update the IR plan with lessons learned.'},
+      ]},
+      { id:'secops', name:'Security Ops', cis:'Non-CIS', radarId:null, segs:[
+        {id:'so.1',name:'SOC',ig:0,desc:'A Security Operations Centre provides 24/7 monitoring and triage — the human layer operationalising CIS visibility controls.'},
+        {id:'so.2',name:'MDR',ig:0,desc:'Managed Detection and Response extends SOC capability with threat hunting, advanced analytics, and rapid containment.'},
+        {id:'so.3',name:'Threat Hunting',ig:0,desc:'Proactive threat hunting searches for adversary activity that has evaded existing controls.'},
+      ]},
+    ]
+  },
+  {
+    id:'governance', num:'Layer 6', label:'GOVERNANCE', sub:'Manage Risk',
+    groups:[
+      { id:'awareness', name:'Awareness', cis:'CIS 14', radarId:14, segs:[
+        {id:'14.1',name:'Security Awareness',ig:1,desc:'Establish a security awareness programme covering phishing, password management, and privacy. Train all staff annually.'},
+        {id:'14.2',name:'Phishing Simulations',ig:2,desc:'Conduct regular phishing simulations to measure and improve workforce security awareness effectiveness.'},
+        {id:'14.3',name:'Role-Based Training',ig:3,desc:'Provide role-specific security training to staff with elevated risk responsibilities or access.'},
+      ]},
+      { id:'appdev', name:'App Security', cis:'CIS 16', radarId:16, segs:[
+        {id:'16.1',name:'SDLC Security',ig:2,desc:'Establish and maintain a secure application development policy that addresses security practices throughout the SDLC.'},
+        {id:'16.2',name:'Threat Modelling',ig:2,desc:'Perform threat modelling for new applications and significant changes to existing applications.'},
+        {id:'16.3',name:'SAST/DAST',ig:3,desc:'Apply automated static and dynamic analysis to identify vulnerabilities in code prior to deployment.'},
+      ]},
+      { id:'gov', name:'Governance', cis:'CIS 18+', radarId:18, segs:[
+        {id:'18.1',name:'Penetration Testing',ig:3,desc:'Establish a penetration testing programme appropriate to enterprise size, complexity, and maturity.'},
+        {id:'gov.1',name:'Risk Management',ig:2,desc:'Establish an enterprise risk management programme addressing identification, assessment, and management of risks.'},
+        {id:'gov.2',name:'Metrics & Reporting',ig:2,desc:'Establish, document, and review security metrics monthly and report to executive leadership.'},
+        {id:'gov.3',name:'Vendor Risk',ig:3,desc:'Evaluate the security practices of third-party vendors relied upon for critical services.'},
+        {id:'ass.1',name:'Independent Assessments',ig:3,desc:'Commission independent security assessments for objective assurance of control effectiveness.'},
+        {id:'ass.2',name:'Compliance Validation',ig:3,desc:'Validate compliance with applicable frameworks, industry standards, and contractual obligations.'},
+      ]},
+    ]
+  },
+  {
+    id:'optimization', num:'Layer 7', label:'OPTIMIZATION', sub:'Continuous Improvement',
+    groups:[
+      { id:'opt', name:'Continuous Improvement', cis:'Strategic', radarId:null, segs:[
+        {id:'opt.1',name:'AI Governance',ig:0,desc:'Establish policies for safe and responsible AI use including shadow AI detection and data handling.'},
+        {id:'opt.2',name:'Risk Quantification',ig:0,desc:'Implement quantitative risk techniques (e.g. FAIR) to express cyber risk in financial terms.'},
+        {id:'opt.3',name:'Executive Metrics',ig:0,desc:'Translate technical security data into business-relevant KPIs and KRIs for executive and board consumption.'},
+        {id:'opt.4',name:'Business Alignment',ig:0,desc:'Formally align security strategy to business objectives, reviewed in the enterprise planning cycle.'},
+        {id:'opt.5',name:'Strategic Planning',ig:0,desc:'Maintain a multi-year security roadmap anticipating threats, regulatory changes, and business evolution.'},
+      ]},
+    ]
+  },
+];
+
+/* The 18 canonical CIS control labels for radar spokes */
+const RADAR_CONTROLS = [
+  {id:1,  label:'CIS 1\nAssets'},
+  {id:2,  label:'CIS 2\nSoftware'},
+  {id:3,  label:'CIS 3\nData'},
+  {id:4,  label:'CIS 4\nConfig'},
+  {id:5,  label:'CIS 5\nAccounts'},
+  {id:6,  label:'CIS 6\nAccess'},
+  {id:7,  label:'CIS 7\nVulns'},
+  {id:8,  label:'CIS 8\nLogging'},
+  {id:9,  label:'CIS 9\nEmail/Web'},
+  {id:10, label:'CIS 10\nMalware'},
+  {id:11, label:'CIS 11\nRecovery'},
+  {id:12, label:'CIS 12\nNetwork'},
+  {id:13, label:'CIS 13\nMonitor'},
+  {id:14, label:'CIS 14\nAwareness'},
+  {id:15, label:'CIS 15\nService Prov.'},
+  {id:16, label:'CIS 16\nApp Sec'},
+  {id:17, label:'CIS 17\nIR'},
+  {id:18, label:'CIS 18\nPen Test'},
+];
+
+/* CIS 10 and 15 — add minimal placeholders so radar has all 18 spokes */
+/* They won't have accordion groups but will appear on radar at score 0 */
+const CIS10_SEGS = [
+  {id:'10.1',name:'Anti-Malware',ig:1,desc:'Deploy and maintain anti-malware software on all enterprise assets that support it.', radarId:10},
+  {id:'10.2',name:'Centrally Managed',ig:1,desc:'Centrally manage anti-malware software to push scheduled scans and remediation updates.', radarId:10},
+  {id:'10.3',name:'Portable Media Controls',ig:1,desc:'Disable autorun and autoplay for removable media. Scan removable media on insertion.', radarId:10},
+  {id:'10.4',name:'Browser Filtering',ig:2,desc:'Enforce and manage a browser-based URL-allow list. Only permit approved browsers on assets.', radarId:10},
+  {id:'10.5',name:'EDR',ig:3,desc:'Use active endpoint detection and response (EDR) tools to continuously monitor and analyse endpoint activity.', radarId:10},
+];
+const CIS15_SEGS = [
+  {id:'15.1',name:'Service Provider Inventory',ig:1,desc:'Establish and maintain an inventory of service providers that hold or process enterprise data.', radarId:15},
+  {id:'15.2',name:'Service Provider Requirements',ig:2,desc:'Establish and maintain a policy requiring all service providers to meet defined security requirements.', radarId:15},
+  {id:'15.3',name:'Service Provider Contracts',ig:2,desc:'Establish and maintain contracts with service providers that include security and privacy requirements.', radarId:15},
+  {id:'15.4',name:'Service Provider Monitoring',ig:3,desc:'Routinely monitor service providers and report findings to appropriate staff.', radarId:15},
+];
+
+/* inject CIS 10 + 15 into visibility and governance layers for accordion */
+LAYERS[3].groups.push({ id:'malware', name:'Malware Defence', cis:'CIS 10', radarId:10, segs: CIS10_SEGS });
+LAYERS[5].groups.push({ id:'svcprov', name:'Service Providers', cis:'CIS 15', radarId:15, segs: CIS15_SEGS });
+
+/* flatten */
+const ALL_SEGS = [];
+LAYERS.forEach(layer => layer.groups.forEach(group => group.segs.forEach(seg => {
+  ALL_SEGS.push({...seg, layerId:layer.id, layerLabel:layer.label, groupLabel:group.name, cisNum:group.cis, radarId: seg.radarId || group.radarId || null});
+})));
+
+const state = {};
+ALL_SEGS.forEach(s => { state[s.id] = 'red'; });
+let currentIG = 1, dark = false, allExpanded = false;
+const openLayers = new Set();
+const openCards = new Set();
+
+/* ── IG TOGGLE ── */
+function setIG(n) {
+  currentIG = n;
+  [1,2,3].forEach(i => {
+    document.getElementById('btn-ig'+i).className = 'ig-btn'+(i===n?' a'+n:'');
+  });
+  document.getElementById('mat-lbl').textContent = `IG${n} SCORE`;
+  refreshAll(); updateStats(); drawRadar();
+}
+
+/* ── THEME ── */
+document.getElementById('themeBtn').addEventListener('click', () => {
+  dark = !dark;
+  document.body.classList.toggle('dark', dark);
+  document.getElementById('themeBtn').classList.toggle('is-dark', dark);
+  drawRadar();
+});
+
+/* ── HELPERS ── */
+function inScope(seg) { return seg.ig === 0 || seg.ig <= currentIG; }
+function statusColor(s) { return {red:'var(--red)',yellow:'var(--amber)',blue:'var(--blue)',green:'var(--green)'}[s]; }
+function statusColorHex(s) {
+  const m = dark
+    ? {red:'#dc2626',yellow:'#d97706',blue:'#3b82f6',green:'#10b981'}
+    : {red:'#c00000',yellow:'#d97706',blue:'#2563eb',green:'#059669'};
+  return m[s];
+}
+function igBadgeClass(ig) { return ['ibn','ib1','ib2','ib3','ibn'][ig]||'ibn'; }
+function igBadgeText(ig) { return ['Non-CIS','IG1','IG2','IG3',''][ig]||'Non-CIS'; }
+
+/* ── RADAR SCORE COMPUTATION ── */
+/* Score for a CIS control group (0–7): weighted sum of in-scope segs */
+function radarScore(cisId) {
+  const segs = ALL_SEGS.filter(s => s.radarId === cisId && inScope(s));
+  if (!segs.length) return 0;
+  /* Count green=1, blue=0.75, yellow=0.5, red=0 */
+  const raw = segs.reduce((acc, s) => {
+    const v = {green:1, blue:0.75, yellow:0.5, red:0}[state[s.id]] || 0;
+    return acc + v;
+  }, 0);
+  /* Scale to 0–7 */
+  return Math.min(7, (raw / segs.length) * 7);
+}
+
+/* Max possible score for a group (capped at 7) */
+function radarMax(cisId) {
+  const segs = ALL_SEGS.filter(s => s.radarId === cisId && inScope(s));
+  return segs.length > 0 ? 7 : 0;
+}
+
+/* ── RADAR DRAW ── */
+function drawRadar() {
+  const svg = document.getElementById('radar-svg');
+  svg.innerHTML = '';
+  const ns = t => document.createElementNS('http://www.w3.org/2000/svg', t);
+
+  const cx = 350, cy = 295, R = 220;
+  const N = 18;
+  const MAX = 7;
+  const labelPad = 38;
+
+  const isDark = dark;
+  const gridColor = isDark ? '#2d3748' : '#e2e8f0';
+  const gridColorStrong = isDark ? '#3d4a5c' : '#c8d0dc';
+  const textColor = isDark ? '#94a3b8' : '#475569';
+  const textColorBright = isDark ? '#e2e8f0' : '#0f172a';
+  const bgFill = isDark ? '#1e2736' : '#f8fafc';
+
+  /* background circle */
+  const bgc = ns('circle');
+  bgc.setAttribute('cx', cx); bgc.setAttribute('cy', cy); bgc.setAttribute('r', R + labelPad - 8);
+  bgc.setAttribute('fill', bgFill); bgc.setAttribute('stroke', gridColor); bgc.setAttribute('stroke-width', '1');
+  svg.appendChild(bgc);
+
+  function angle(i) { return (Math.PI * 2 * i / N) - Math.PI / 2; }
+  function pt(i, val, max) {
+    const r = (val / max) * R;
+    return [cx + r * Math.cos(angle(i)), cy + r * Math.sin(angle(i))];
+  }
+  function ptR(i, r) { return [cx + r * Math.cos(angle(i)), cy + r * Math.sin(angle(i))]; }
+
+  /* grid rings 1–7 */
+  for (let level = 1; level <= MAX; level++) {
+    const pts = [];
+    for (let i = 0; i < N; i++) { const p = ptR(i, (level/MAX)*R); pts.push(p[0]+','+p[1]); }
+    const poly = ns('polygon');
+    poly.setAttribute('points', pts.join(' '));
+    poly.setAttribute('fill', 'none');
+    poly.setAttribute('stroke', level === MAX ? gridColorStrong : gridColor);
+    poly.setAttribute('stroke-width', level === MAX ? '1.5' : '0.8');
+    svg.appendChild(poly);
+    /* level label at top spoke */
+    if (level > 0) {
+      const t = ns('text');
+      const lp = ptR(0, (level/MAX)*R - 3);
+      t.setAttribute('x', lp[0]+4); t.setAttribute('y', lp[1]);
+      t.setAttribute('font-size', '8'); t.setAttribute('fill', isDark?'#4a5568':'#94a3b8');
+      t.setAttribute('font-family', 'DM Mono, monospace'); t.setAttribute('font-weight', '500');
+      t.textContent = level;
+      svg.appendChild(t);
+    }
+  }
+
+  /* spokes */
+  for (let i = 0; i < N; i++) {
+    const outerPt = ptR(i, R);
+    const line = ns('line');
+    line.setAttribute('x1', cx); line.setAttribute('y1', cy);
+    line.setAttribute('x2', outerPt[0]); line.setAttribute('y2', outerPt[1]);
+    line.setAttribute('stroke', gridColor); line.setAttribute('stroke-width', '0.8');
+    svg.appendChild(line);
+  }
+
+  /* max-possible polygon (faint) */
+  const maxPts = RADAR_CONTROLS.map((c, i) => {
+    const m = radarMax(c.id);
+    return ptR(i, (m / MAX) * R);
+  });
+  const maxPoly = ns('polygon');
+  maxPoly.setAttribute('points', maxPts.map(p=>p[0]+','+p[1]).join(' '));
+  maxPoly.setAttribute('fill', isDark?'rgba(255,255,255,.04)':'rgba(0,0,0,.04)');
+  maxPoly.setAttribute('stroke', isDark?'#3d4a5c':'#c8d0dc');
+  maxPoly.setAttribute('stroke-width', '1.5');
+  maxPoly.setAttribute('stroke-dasharray', '4 3');
+  svg.appendChild(maxPoly);
+
+  /* score polygon — coloured by dominant status */
+  const scores = RADAR_CONTROLS.map(c => radarScore(c.id));
+  const scorePts = scores.map((s, i) => ptR(i, (s / MAX) * R));
+
+  /* gradient fill — use green fill with opacity */
+  const fillPoly = ns('polygon');
+  fillPoly.setAttribute('points', scorePts.map(p=>p[0]+','+p[1]).join(' '));
+  fillPoly.setAttribute('fill', isDark?'rgba(16,185,129,.15)':'rgba(5,150,105,.12)');
+  fillPoly.setAttribute('stroke', 'none');
+  svg.appendChild(fillPoly);
+
+  const strokePoly = ns('polygon');
+  strokePoly.setAttribute('points', scorePts.map(p=>p[0]+','+p[1]).join(' '));
+  strokePoly.setAttribute('fill', 'none');
+  strokePoly.setAttribute('stroke', isDark?'#10b981':'#059669');
+  strokePoly.setAttribute('stroke-width', '2');
+  strokePoly.setAttribute('stroke-linejoin', 'round');
+  svg.appendChild(strokePoly);
+
+  /* dots at each spoke tip with colour by dominant status in that group */
+  RADAR_CONTROLS.forEach((ctrl, i) => {
+    const s = scores[i];
+    const p = ptR(i, (s / MAX) * R);
+    const segs = ALL_SEGS.filter(sg => sg.radarId === ctrl.id && inScope(sg));
+
+    /* dominant colour: most common status */
+    let dominant = 'red';
+    if (segs.length) {
+      const counts = {green:0, blue:0, yellow:0, red:0};
+      segs.forEach(sg => { counts[state[sg.id]] = (counts[state[sg.id]]||0) + 1; });
+      dominant = ['green','blue','yellow','red'].find(k => counts[k] > 0 && counts[k] === Math.max(...Object.values(counts))) || 'red';
+    }
+
+    const dot = ns('circle');
+    dot.setAttribute('cx', p[0]); dot.setAttribute('cy', p[1]); dot.setAttribute('r', '5');
+    dot.setAttribute('fill', statusColorHex(dominant));
+    dot.setAttribute('stroke', isDark?'#161b22':'#ffffff'); dot.setAttribute('stroke-width', '2');
+    svg.appendChild(dot);
+
+    /* score label inside dot area */
+    if (s > 0.3) {
+      const st = ns('text');
+      const lp = ptR(i, (s / MAX) * R + 12);
+      st.setAttribute('x', lp[0]); st.setAttribute('y', lp[1]+4);
+      st.setAttribute('text-anchor', 'middle'); st.setAttribute('font-size', '9');
+      st.setAttribute('font-weight', '700'); st.setAttribute('fill', statusColorHex(dominant));
+      st.setAttribute('font-family', 'DM Mono, monospace');
+      st.textContent = s.toFixed(1);
+      svg.appendChild(st);
+    }
+  });
+
+  /* spoke labels */
+  RADAR_CONTROLS.forEach((ctrl, i) => {
+    const ang = angle(i);
+    const lp = [cx + (R + labelPad) * Math.cos(ang), cy + (R + labelPad) * Math.sin(ang)];
+    const lines = ctrl.label.split('\n');
+
+    let anchor = 'middle';
+    const xOff = Math.cos(ang);
+    if (xOff > 0.15) anchor = 'start';
+    else if (xOff < -0.15) anchor = 'end';
+
+    lines.forEach((line, li) => {
+      const t = ns('text');
+      t.setAttribute('x', lp[0]);
+      t.setAttribute('y', lp[1] + li * 12 - (lines.length - 1) * 6);
+      t.setAttribute('text-anchor', anchor);
+      t.setAttribute('font-size', li === 0 ? '10' : '9');
+      t.setAttribute('font-weight', li === 0 ? '700' : '400');
+      t.setAttribute('fill', li === 0 ? textColorBright : textColor);
+      t.setAttribute('font-family', li === 0 ? 'DM Mono, monospace' : 'DM Sans, sans-serif');
+      t.textContent = line;
+      svg.appendChild(t);
+    });
+  });
+
+  /* centre score */
+  const allScoped = ALL_SEGS.filter(s => inScope(s));
+  const overall = allScoped.length
+    ? allScoped.reduce((acc,s) => acc + ({green:1,blue:0.75,yellow:0.5,red:0}[state[s.id]]||0), 0) / allScoped.length
+    : 0;
+  const pct = Math.round(overall * 100);
+
+  const ct = ns('text');
+  ct.setAttribute('x', cx); ct.setAttribute('y', cy - 8);
+  ct.setAttribute('text-anchor', 'middle'); ct.setAttribute('font-size', '26');
+  ct.setAttribute('font-weight', '700'); ct.setAttribute('fill', textColorBright);
+  ct.setAttribute('font-family', 'DM Mono, monospace');
+  ct.textContent = pct + '%';
+  svg.appendChild(ct);
+
+  const cs = ns('text');
+  cs.setAttribute('x', cx); cs.setAttribute('y', cy + 10);
+  cs.setAttribute('text-anchor', 'middle'); cs.setAttribute('font-size', '10');
+  cs.setAttribute('fill', textColor); cs.setAttribute('font-family', 'DM Sans, sans-serif');
+  cs.textContent = 'IG' + currentIG + ' maturity';
+  svg.appendChild(cs);
+}
+
+/* ── BUILD ACCORDION ── */
+function build() {
+  const nav = document.getElementById('pyramid-nav');
+  nav.innerHTML = '';
+  LAYERS.forEach(layer => {
+    const tier = document.createElement('div');
+    tier.className = 'pyr-tier' + (openLayers.has(layer.id) ? ' active' : '');
+    tier.id = 'tier-' + layer.id;
+
+    const labelCol = document.createElement('div');
+    labelCol.className = 'pyr-label-col';
+    labelCol.innerHTML = `<div class="pyr-tier-num">${layer.num}</div><div class="pyr-tier-name">${layer.label}</div><div class="pyr-tier-sub">${layer.sub}</div>`;
+
+    const groupsCol = document.createElement('div');
+    groupsCol.className = 'pyr-groups-col';
+    layer.groups.forEach(group => {
+      const cell = document.createElement('div');
+      cell.className = 'pyr-group-cell';
+      const nameEl = document.createElement('div');
+      nameEl.className = 'pyr-group-name';
+      nameEl.textContent = group.name;
+      const dots = document.createElement('div');
+      dots.className = 'pyr-dots';
+      group.segs.forEach(seg => {
+        const dot = document.createElement('div');
+        dot.className = 'pyr-dot';
+        dot.id = 'dot-'+seg.id;
+        dot.title = seg.name;
+        dot.style.background = inScope(seg) ? statusColor(state[seg.id]) : (dark?'#2a3142':'#dce3ed');
+        dot.addEventListener('click', e => { e.stopPropagation(); toggleLayer(layer.id, true); setTimeout(()=>toggleCard(seg.id),350); });
+        dots.appendChild(dot);
+      });
+      cell.appendChild(nameEl);
+      cell.appendChild(dots);
+      groupsCol.appendChild(cell);
+    });
+
+    const chevCol = document.createElement('div');
+    chevCol.className = 'pyr-chevron-col';
+    chevCol.innerHTML = '<span class="pyr-chevron">›</span>';
+
+    tier.appendChild(labelCol);
+    tier.appendChild(groupsCol);
+    tier.appendChild(chevCol);
+    tier.addEventListener('click', () => toggleLayer(layer.id));
+    nav.appendChild(tier);
+
+    const panel = document.createElement('div');
+    panel.className = 'acc-panel' + (openLayers.has(layer.id) ? ' open' : '');
+    panel.id = 'panel-' + layer.id;
+    const inner = document.createElement('div');
+    inner.className = 'acc-inner';
+    const panelGroups = document.createElement('div');
+    panelGroups.className = 'panel-groups';
+    layer.groups.forEach(group => {
+      const grpEl = document.createElement('div');
+      grpEl.className = 'ctrl-group';
+      grpEl.innerHTML = `<div class="ctrl-group-header"><div class="ctrl-group-name">${group.name}</div><div class="ctrl-cis-num">${group.cis}</div></div>`;
+      const cards = document.createElement('div');
+      cards.className = 'ctrl-cards';
+      group.segs.forEach(seg => cards.appendChild(buildCard(seg)));
+      grpEl.appendChild(cards);
+      panelGroups.appendChild(grpEl);
+    });
+    inner.appendChild(panelGroups);
+    panel.appendChild(inner);
+    nav.appendChild(panel);
+  });
+}
+
+function buildCard(seg) {
+  const oos = !inScope(seg);
+  const isOpen = openCards.has(seg.id);
+  const card = document.createElement('div');
+  card.className = 'ctrl-card' + (oos?' out-of-scope':'') + (isOpen?' selected':'');
+  card.id = 'card-'+seg.id;
+  const isNum = /^\d/.test(seg.id);
+  card.innerHTML = `
+    <div class="ctrl-card-top">
+      <div class="ctrl-status-bar" id="bar-${seg.id}" style="background:${inScope(seg)?statusColor(state[seg.id]):(dark?'#2a3142':'#dce3ed')}"></div>
+      <div class="ctrl-card-body">
+        ${isNum ? `<div class="ctrl-id">${seg.id}</div>` : ''}
+        <div class="ctrl-name">${seg.name}</div>
+      </div>
+      <div class="ctrl-ig-badge ${igBadgeClass(seg.ig)}">${igBadgeText(seg.ig)}</div>
+    </div>
+    <div class="ctrl-detail${isOpen?' open':''}" id="detail-${seg.id}">
+      <div class="ctrl-detail-inner">
+        <div class="ctrl-desc">${seg.desc}</div>
+        <div class="ctrl-scope-note" id="scope-${seg.id}">${scopeNote(seg)}</div>
+        <div class="status-row" id="strow-${seg.id}">${buildStatusBtns(seg.id)}</div>
+      </div>
+    </div>`;
+  card.addEventListener('click', () => toggleCard(seg.id));
+  return card;
+}
+
+function buildStatusBtns(id) {
+  const st = state[id];
+  return [['red','Not Implemented','ar'],['yellow','Partial','ay'],['blue','Unmanaged','ab'],['green','Implemented','ag']]
+    .map(([v,lbl,cls]) => `<button class="st-btn${st===v?' '+cls:''}" onclick="event.stopPropagation();setStatus('${id}','${v}')">${lbl}</button>`)
+    .join('');
+}
+
+function scopeNote(seg) {
+  const ins = inScope(seg);
+  const base = seg.ig===0?'Not a direct CIS control — a capability that CIS safeguards build toward.'
+    :seg.ig===1?'Required for all organisations: IG1, IG2, and IG3.'
+    :seg.ig===2?'Applies to IG2 and IG3. Not required for IG1.'
+    :'Applies to IG3 organisations only.';
+  return base + (!ins ? ` [Outside current IG${currentIG} scope]` : '');
+}
+
+/* ── INTERACTIONS ── */
+function toggleLayer(id, forceOpen) {
+  if (forceOpen && openLayers.has(id)) return;
+  if (forceOpen) openLayers.add(id);
+  else if (openLayers.has(id)) openLayers.delete(id);
+  else openLayers.add(id);
+  const tier = document.getElementById('tier-'+id);
+  const panel = document.getElementById('panel-'+id);
+  const isOpen = openLayers.has(id);
+  if (tier) tier.classList.toggle('active', isOpen);
+  if (panel) panel.classList.toggle('open', isOpen);
+}
+
+function toggleCard(id) {
+  if (openCards.has(id)) openCards.delete(id);
+  else openCards.add(id);
+  const card = document.getElementById('card-'+id);
+  const detail = document.getElementById('detail-'+id);
+  if (card) card.classList.toggle('selected', openCards.has(id));
+  if (detail) detail.classList.toggle('open', openCards.has(id));
+}
+
+function toggleAll() {
+  allExpanded = !allExpanded;
+  document.getElementById('expandAllBtn').textContent = allExpanded ? 'Collapse All' : 'Expand All';
+  LAYERS.forEach(l => {
+    if (allExpanded) openLayers.add(l.id); else openLayers.delete(l.id);
+    const tier = document.getElementById('tier-'+l.id);
+    const panel = document.getElementById('panel-'+l.id);
+    if (tier) tier.classList.toggle('active', allExpanded);
+    if (panel) panel.classList.toggle('open', allExpanded);
+  });
+}
+
+function setStatus(id, val) {
+  state[id] = val;
+  const seg = ALL_SEGS.find(s => s.id === id);
+  const bar = document.getElementById('bar-'+id);
+  if (bar && seg) bar.style.background = inScope(seg) ? statusColor(val) : (dark?'#2a3142':'#dce3ed');
+  const dot = document.getElementById('dot-'+id);
+  if (dot && seg) dot.style.background = inScope(seg) ? statusColor(val) : (dark?'#2a3142':'#dce3ed');
+  const strow = document.getElementById('strow-'+id);
+  if (strow) strow.innerHTML = buildStatusBtns(id);
+  updateStats();
+  drawRadar();
+}
+
+function refreshAll() {
+  ALL_SEGS.forEach(seg => {
+    const dot = document.getElementById('dot-'+seg.id);
+    if (dot) dot.style.background = inScope(seg) ? statusColor(state[seg.id]) : (dark?'#2a3142':'#dce3ed');
+    const bar = document.getElementById('bar-'+seg.id);
+    if (bar) bar.style.background = inScope(seg) ? statusColor(state[seg.id]) : (dark?'#2a3142':'#dce3ed');
+    const card = document.getElementById('card-'+seg.id);
+    if (card) card.classList.toggle('out-of-scope', !inScope(seg));
+    const scopeEl = document.getElementById('scope-'+seg.id);
+    if (scopeEl) scopeEl.textContent = scopeNote(seg);
+    const strow = document.getElementById('strow-'+seg.id);
+    if (strow) strow.innerHTML = buildStatusBtns(seg.id);
+  });
+}
+
+function updateStats() {
+  const scoped = ALL_SEGS.filter(s => inScope(s));
+  const vals = scoped.map(s => state[s.id]);
+  document.getElementById('s-r').textContent = vals.filter(v=>v==='red').length;
+  document.getElementById('s-y').textContent = vals.filter(v=>v==='yellow').length;
+  document.getElementById('s-b').textContent = vals.filter(v=>v==='blue').length;
+  document.getElementById('s-g').textContent = vals.filter(v=>v==='green').length;
+  const g=vals.filter(v=>v==='green').length, b=vals.filter(v=>v==='blue').length, y=vals.filter(v=>v==='yellow').length;
+  const pct = vals.length>0 ? Math.round((g+b*0.5+y*0.25)/vals.length*100) : 0;
+  document.getElementById('mat-pct').textContent = pct+'%';
+  document.getElementById('mat-fill').style.width = pct+'%';
+}
+
+build();
+updateStats();
+drawRadar();
+</script>
+</body>
+</html>

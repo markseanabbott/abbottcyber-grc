@@ -197,10 +197,10 @@ function drawTrend() {
     scores.forEach((s, i) => {
       ctx.beginPath(); ctx.arc(px(i), py(s), 4, 0, Math.PI * 2);
       ctx.fillStyle = s >= 75 ? '#15803d' : s >= 50 ? '#b45309' : '#b91c1c'; ctx.fill();
-      ctx.fillStyle = '#fff'; ctx.font = 'bold 9px Kanit,sans-serif'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 9px Inter,sans-serif'; ctx.textAlign = 'center';
       ctx.fillText(s, px(i), py(s) - 7);
     });
-    ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '9px Kanit,sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '9px Inter,sans-serif';
     runs.forEach((r, i) => { ctx.textAlign = 'center'; ctx.fillText(r.date.slice(5), px(i), H); });
   }, 80);
 }

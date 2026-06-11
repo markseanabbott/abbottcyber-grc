@@ -142,7 +142,7 @@ function renderLoginScreen(errorMsg = '') {
       display:flex;align-items:center;justify-content:center;z-index:9999;
     ">
     <div style="background:#fff;border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:380px;
-      box-shadow:0 24px 64px rgba(0,0,0,0.35);font-family:'Kanit',sans-serif">
+      box-shadow:0 24px 64px rgba(0,0,0,0.35);font-family:'Inter',sans-serif">
       <div style="text-align:center;margin-bottom:2rem">
         <div style="width:54px;height:54px;background:linear-gradient(135deg,#152168,#07B4D9);border-radius:14px;
           display:flex;align-items:center;justify-content:center;margin:0 auto 0.75rem;font-size:24px">🛡️</div>
@@ -157,7 +157,7 @@ function renderLoginScreen(errorMsg = '') {
             text-transform:uppercase;letter-spacing:0.06em">Email Address</label>
           <input id="loginEmail" type="email" required autocomplete="email" placeholder="you@example.com"
             style="width:100%;padding:10px 12px;border:1.5px solid #dde3ef;border-radius:8px;
-            font-family:'Kanit',sans-serif;font-size:13px;color:#1a2340;outline:none;box-sizing:border-box"
+            font-family:'Inter',sans-serif;font-size:13px;color:#1a2340;outline:none;box-sizing:border-box"
             onfocus="this.style.borderColor='#07B4D9'" onblur="this.style.borderColor='#dde3ef'">
         </div>
         <div style="margin-bottom:1.75rem">
@@ -165,12 +165,12 @@ function renderLoginScreen(errorMsg = '') {
             text-transform:uppercase;letter-spacing:0.06em">Password</label>
           <input id="loginPassword" type="password" required autocomplete="current-password"
             style="width:100%;padding:10px 12px;border:1.5px solid #dde3ef;border-radius:8px;
-            font-family:'Kanit',sans-serif;font-size:13px;color:#1a2340;outline:none;box-sizing:border-box"
+            font-family:'Inter',sans-serif;font-size:13px;color:#1a2340;outline:none;box-sizing:border-box"
             onfocus="this.style.borderColor='#07B4D9'" onblur="this.style.borderColor='#dde3ef'">
         </div>
         <button type="submit" id="loginBtn" style="width:100%;padding:12px;
           background:linear-gradient(135deg,#152168,#1a2a7a);color:#fff;border:none;border-radius:8px;
-          font-family:'Kanit',sans-serif;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.02em">
+          font-family:'Inter',sans-serif;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.02em">
           Sign In →
         </button>
       </form>
@@ -238,7 +238,7 @@ function renderUserChip() {
       align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0">${ini}</div>
     <button onclick="doSignOut()" style="background:var(--bg);color:var(--muted);
       border:1px solid var(--border);padding:4px 10px;border-radius:6px;font-size:10px;
-      font-family:'Kanit',sans-serif;cursor:pointer;white-space:nowrap"
+      font-family:'Inter',sans-serif;cursor:pointer;white-space:nowrap"
       onmouseover="this.style.background='#e8ecf5';this.style.color='var(--text)'"
       onmouseout="this.style.background='var(--bg)';this.style.color='var(--muted)'">Sign out</button>
   </div>`;

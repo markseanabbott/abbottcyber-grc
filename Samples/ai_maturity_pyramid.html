@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Maturity Dashboard — NIST AI RMF</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --purple:       #6b35c8;
+  --purple-dark:  #4e228f;
+  --purple-light: #9b6de0;
+  --teal:         #0d9488;
+  --teal-dark:    #0f766e;
+  --teal-light:   #2dd4bf;
+  --amber:        #d97706;
+  --amber-dark:   #b45309;
+  --amber-light:  #fbbf24;
+  --blue:         #2e7ab0;
+  --blue-dark:    #1e5a8a;
+  --blue-light:   #5b9dc8;
+  --red:          #c00000;
+  --red-dark:     #960000;
+  --yellow:       #e8a000;
+  --yellow-dark:  #b87800;
+  --green:        #00af50;
+  --green-dark:   #007a38;
+  --bg:           #f8f9fa;
+  --bg2:          #ffffff;
+  --bg3:          #f0f2f5;
+  --border:       #d8dce2;
+  --text:         #1a1e24;
+  --text2:        #4a5568;
+  --text3:        #9aa5b4;
+  --label-blue:   #4a7fb5;
+  --accent:       #6b35c8;
+}
+
+body.dark {
+  --bg:       #0d1117;
+  --bg2:      #161b22;
+  --bg3:      #21262d;
+  --border:   #30363d;
+  --text:     #e6edf3;
+  --text2:    #8b949e;
+  --text3:    #484f58;
+  --label-blue: #9b6de0;
+  --accent:   #9b6de0;
+  --purple:       #8b5cf6;
+  --purple-dark:  #6d28d9;
+  --teal:         #14b8a6;
+  --teal-dark:    #0d9488;
+  --amber:        #f59e0b;
+  --amber-dark:   #d97706;
+  --blue:         #4a90c8;
+  --blue-dark:    #2e6a9e;
+  --red:          #d43f3f;
+  --red-dark:     #a82020;
+  --yellow:       #e8a000;
+  --yellow-dark:  #b87800;
+  --green:        #1dba5f;
+  --green-dark:   #0f8040;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background .2s, color .2s;
+}
+
+.topnav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; height: 52px;
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 200;
+  transition: background .2s, border-color .2s;
+}
+.brand {
+  display: flex; align-items: center; gap: 9px;
+  font-size: 15px; font-weight: 600; letter-spacing: -.02em; color: var(--text);
+}
+.brand-icon {
+  width: 26px; height: 26px;
+  background: linear-gradient(135deg, var(--purple) 0%, var(--teal) 100%);
+  border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px;
+}
+.brand-sub {
+  font-size: 10px; font-weight: 400; color: var(--text3);
+  font-family: 'DM Mono', monospace; letter-spacing: .08em;
+  text-transform: uppercase; margin-left: 2px;
+}
+.nav-right { display: flex; align-items: center; gap: 8px; }
+.nav-sep { width: 1px; height: 18px; background: var(--border); margin: 0 2px; }
+
+.status-legend { display: flex; align-items: center; gap: 12px; }
+.sleg { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--text2); white-space: nowrap; }
+.sleg-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+.theme-toggle {
+  display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;
+  padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--bg3); transition: border-color .15s;
+}
+.theme-toggle:hover { border-color: var(--accent); }
+.toggle-icon { font-size: 12px; line-height: 1; }
+.toggle-track {
+  width: 34px; height: 17px; background: var(--border); border-radius: 9px;
+  position: relative; transition: background .2s;
+}
+.toggle-thumb {
+  position: absolute; top: 2px; left: 2px; width: 13px; height: 13px;
+  border-radius: 50%; background: var(--text2); transition: transform .2s, background .2s;
+}
+.is-dark .toggle-track { background: #6b35c844; }
+.is-dark .toggle-thumb { transform: translateX(17px); background: var(--purple); }
+
+.main { display: grid; grid-template-columns: 1fr 380px; height: calc(100vh - 52px); }
+
+.pyramid-panel {
+  padding: 12px 16px; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center;
+  background: var(--bg); height: 100%;
+}
+.panel-header {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px; flex-wrap: wrap; gap: 8px; flex-shrink: 0;
+}
+.panel-title {
+  font-size: 11px; font-weight: 500; color: var(--text2);
+  text-transform: uppercase; letter-spacing: .1em; font-family: 'DM Mono', monospace;
+}
+.rmf-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.rmf-chip {
+  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px;
+  font-family: 'DM Mono', monospace; letter-spacing: .05em; text-transform: uppercase;
+  border: 1px solid; opacity: .75;
+}
+#pyr { width: 100%; height: 100%; flex: 1; min-height: 0; display: block; }
+.click-hint { font-size: 10px; color: var(--text3); margin-top: 4px; font-family: 'DM Mono', monospace; flex-shrink: 0; }
+
+.sidebar {
+  background: var(--bg2); border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+  transition: background .2s, border-color .2s;
+}
+
+.detail-panel { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+.detail-empty {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 8px; color: var(--text3);
+  font-size: 12px; font-family: 'DM Mono', monospace; padding: 24px; text-align: center;
+}
+.detail-empty-icon { font-size: 32px; opacity: .25; }
+
+.detail-content { padding: 18px; flex: 1; display: flex; flex-direction: column; gap: 14px; }
+.detail-name { font-size: 16px; font-weight: 600; color: var(--text); line-height: 1.3; }
+.detail-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.detail-tier-badge {
+  font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 5px;
+  font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .06em;
+  border: 1px solid;
+}
+.detail-rmf-badge {
+  font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 4px;
+  font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .05em;
+  border: 1px solid; color: var(--text3); border-color: var(--border); background: var(--bg3);
+}
+.detail-status-row { display: flex; align-items: flex-start; gap: 8px; }
+.detail-status-label { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--text3); font-family: 'DM Mono', monospace; min-width: 52px; padding-top: 5px; }
+.status-btns { display: flex; gap: 5px; flex-wrap: wrap; }
+.status-btn {
+  padding: 4px 10px; border-radius: 5px; border: 1.5px solid var(--border);
+  background: transparent; cursor: pointer; font-size: 11px; font-weight: 500;
+  font-family: 'DM Sans', sans-serif; color: var(--text2); transition: all .12s;
+}
+.status-btn:hover { color: var(--text); border-color: var(--text2); }
+.status-btn.active-red    { background: var(--red);    border-color: var(--red-dark);    color: #fff; }
+.status-btn.active-yellow { background: var(--yellow); border-color: var(--yellow-dark); color: #fff; }
+.status-btn.active-blue   { background: var(--blue);   border-color: var(--blue-dark);   color: #fff; }
+.status-btn.active-green  { background: var(--green);  border-color: var(--green-dark);  color: #fff; }
+
+.detail-divider { height: 1px; background: var(--border); }
+.detail-section-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--text3); font-family: 'DM Mono', monospace; margin-bottom: 6px; }
+.detail-commentary { font-size: 13px; color: var(--text2); line-height: 1.75; }
+
+.sidebar-footer { border-top: 1px solid var(--border); padding: 12px 18px; flex-shrink: 0; }
+.score-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px; }
+.score-card {
+  border-radius: 6px; padding: 8px 4px; text-align: center;
+  border: 2px solid transparent;
+}
+.score-card.r { background: var(--red);    border-color: var(--red-dark); }
+.score-card.y { background: var(--yellow); border-color: var(--yellow-dark); }
+.score-card.b { background: var(--blue);   border-color: var(--blue-dark); }
+.score-card.g { background: var(--green);  border-color: var(--green-dark); }
+.score-n { font-size: 18px; font-weight: 600; font-family: 'DM Mono', monospace; color: #fff; }
+.score-l { font-size: 9px; color: rgba(255,255,255,.8); margin-top: 1px; line-height: 1.2; }
+
+.mat-row { display: flex; align-items: center; gap: 8px; }
+.mat-bar { flex: 1; height: 5px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+.mat-fill {
+  height: 100%; border-radius: 3px;
+  background: linear-gradient(90deg, var(--red), var(--yellow), var(--blue), var(--green));
+  transition: width .35s ease; width: 0%;
+}
+.mat-pct { font-size: 12px; font-weight: 600; font-family: 'DM Mono', monospace; color: var(--text); min-width: 32px; text-align: right; }
+
+.tip {
+  position: fixed; background: var(--bg2); border: 1px solid var(--border);
+  color: var(--text); font-size: 12px; padding: 5px 9px; border-radius: 5px;
+  pointer-events: none; display: none; z-index: 9999;
+  box-shadow: 0 4px 14px rgba(0,0,0,.15); max-width: 220px; line-height: 1.4;
+}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="brand">
+    <div class="brand-icon">🤖</div>
+    AI Maturity
+    <span class="brand-sub">NIST AI RMF</span>
+  </div>
+  <div class="nav-right">
+    <div class="status-legend">
+      <div class="sleg"><div class="sleg-dot" style="background:#c00000"></div>Not Addressed</div>
+      <div class="sleg"><div class="sleg-dot" style="background:#e8a000"></div>Partial</div>
+      <div class="sleg"><div class="sleg-dot" style="background:#2e7ab0"></div>In Progress</div>
+      <div class="sleg"><div class="sleg-dot" style="background:#00af50"></div>Implemented</div>
+    </div>
+    <div class="nav-sep"></div>
+    <div class="theme-toggle" id="themeBtn">
+      <span class="toggle-icon">☀️</span>
+      <div class="toggle-track"><div class="toggle-thumb"></div></div>
+      <span class="toggle-icon">🌙</span>
+    </div>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="pyramid-panel">
+    <div class="panel-header">
+      <div class="panel-title">AI Governance Maturity — NIST AI RMF Alignment</div>
+      <div class="rmf-chips">
+        <div class="rmf-chip" style="color:#6b35c8;border-color:#6b35c8;background:rgba(107,53,200,.08)">GOVERN</div>
+        <div class="rmf-chip" style="color:#0d9488;border-color:#0d9488;background:rgba(13,148,136,.08)">MAP</div>
+        <div class="rmf-chip" style="color:#d97706;border-color:#d97706;background:rgba(217,119,6,.08)">MEASURE</div>
+        <div class="rmf-chip" style="color:#2e7ab0;border-color:#2e7ab0;background:rgba(46,122,176,.08)">MANAGE</div>
+      </div>
+    </div>
+    <svg id="pyr" viewBox="-120 0 1540 710" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" style="height:100%;width:100%"></svg>
+    <p class="click-hint">click any segment to view details and set maturity status</p>
+  </div>
+
+  <div class="sidebar">
+    <div class="detail-panel" id="detail-panel">
+      <div class="detail-empty" id="detail-empty">
+        <div class="detail-empty-icon">🤖</div>
+        <div>Select a segment from the pyramid</div>
+        <div style="font-size:10px;margin-top:4px;opacity:.6">to view NIST AI RMF details and set maturity status</div>
+      </div>
+      <div class="detail-content" id="detail-content" style="display:none">
+        <div class="detail-name" id="d-name"></div>
+        <div class="detail-meta">
+          <div class="detail-tier-badge" id="d-tier-badge"></div>
+          <div class="detail-rmf-badge" id="d-rmf-badge"></div>
+          <div class="detail-rmf-badge" id="d-iso-badge" style="color:#0d9488;border-color:#0d9488;background:rgba(13,148,136,.08)"></div>
+        </div>
+        <div class="detail-status-row">
+          <div class="detail-status-label">Status</div>
+          <div class="status-btns" id="d-status-btns"></div>
+        </div>
+        <div class="detail-divider"></div>
+        <div>
+          <div class="detail-section-label">Why this matters</div>
+          <div class="detail-commentary" id="d-commentary"></div>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="score-grid">
+        <div class="score-card r"><div class="score-n" id="s-r">0</div><div class="score-l">Not Addressed</div></div>
+        <div class="score-card y"><div class="score-n" id="s-y">0</div><div class="score-l">Partial</div></div>
+        <div class="score-card b"><div class="score-n" id="s-b">0</div><div class="score-l">In Progress</div></div>
+        <div class="score-card g"><div class="score-n" id="s-g">0</div><div class="score-l">Implemented</div></div>
+      </div>
+      <div class="mat-row">
+        <div class="mat-bar"><div class="mat-fill" id="mat-fill"></div></div>
+        <div class="mat-pct" id="mat-pct">0%</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tip" id="tip"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   NIST AI RMF CATALOGUE
+   Functions: GOVERN | MAP | MEASURE | MANAGE
+═══════════════════════════════════════════════════════ */
+
+const CATALOGUE = {
+  'AI Policy & Accountability': {
+    rmf: 'GOVERN 1.1', iso: 'ISO 42001 §5.2 / §6.1', tier: 'Governing',
+    commentary: `The foundation of responsible AI begins with formal policy. Without documented policies that assign clear accountability for AI systems — who owns them, who is responsible when they fail, and what values they must uphold — risk cannot be systematically managed. NIST AI RMF GOVERN 1.1 requires organisations to establish and maintain policies covering AI risk management roles, responsibilities, and authorities. This means naming an AI owner for each deployed system, defining acceptable use, and establishing a process for escalating AI-related concerns. For businesses deploying AI in customer-facing or operational roles, a policy gap is a liability gap.`
+  },
+  'AI Roles & Training': {
+    rmf: 'GOVERN 2.2', iso: 'ISO 42001 §7.2 / §7.3', tier: 'Governing',
+    commentary: `AI systems are only as trustworthy as the people overseeing them. NIST AI RMF GOVERN 2.2 requires that staff with AI responsibilities receive appropriate training to understand AI risks, limitations, and their own role in governance. This covers everyone from procurement staff evaluating AI tools, to operators running AI-assisted workflows, to executives making investment decisions. Without role-appropriate AI literacy, policies become paper exercises and risks go unrecognised. Building foundational AI awareness across the organisation is the single most scalable investment in responsible AI you can make.`
+  },
+  'AI Inventory & Use-Case Register': {
+    rmf: 'MAP 1.1', iso: 'ISO 42001 §8.2 / Annex A.5.1', tier: 'Mapping',
+    commentary: `You cannot govern what you have not mapped. NIST AI RMF MAP 1.1 requires organisations to identify and document all AI systems in use — including third-party AI embedded in SaaS tools — along with their intended purpose, data inputs, and decision scope. Many organisations are surprised to discover how many AI-enabled capabilities are already active across their stack. An AI inventory is not bureaucracy; it is the prerequisite for every other governance activity. Without it, impact assessments, bias audits, and incident response are impossible to execute systematically.`
+  },
+  'Contextual Risk & Impact Assessment': {
+    rmf: 'MAP 2.1 / MAP 3.5', iso: 'ISO 42001 §6.1 / Annex A.5.4', tier: 'Mapping',
+    commentary: `Not all AI risk is equal, and not all AI contexts carry the same stakes. NIST AI RMF MAP 2.1 and MAP 3.5 require organisations to assess the context in which each AI system operates — including the potential for harm to individuals, groups, or operations if the system behaves unexpectedly. For a hospitality business, this might mean evaluating an AI-driven pricing engine for fairness, or assessing a guest-facing chatbot for accuracy and data handling risks. Impact assessments ground risk management in real-world consequences rather than abstract checklists.`
+  },
+  'Third-Party AI Risk': {
+    rmf: 'MAP 5.1', iso: 'ISO 42001 §8.4 / Annex A.10.1', tier: 'Mapping',
+    commentary: `Most organisations use far more third-party AI than they build themselves — through SaaS platforms, embedded analytics, and vendor-supplied tools. NIST AI RMF MAP 5.1 requires organisations to assess AI risk in their supply chain, including the transparency, documentation, and risk posture of AI provided by vendors. If a vendor's AI model makes a consequential decision about your guests or operations, your organisation shares accountability for the outcome. Third-party AI risk assessments should be part of every vendor onboarding and renewal process.`
+  },
+  'Bias & Fairness Testing': {
+    rmf: 'MEASURE 2.5', iso: 'ISO 42001 §9.1 / Annex A.6.1', tier: 'Measuring',
+    commentary: `AI systems can encode and amplify biases present in training data, producing outcomes that are unfair, discriminatory, or simply inaccurate for certain groups. NIST AI RMF MEASURE 2.5 requires organisations to test AI systems for bias and fairness relevant to their deployment context. In hospitality, this might mean auditing a hiring-assist tool for demographic bias, or checking a recommendation engine for equitable treatment across guest segments. Bias testing is not a one-time exercise — models drift, data changes, and context evolves. Regular testing is the only way to maintain confidence in AI outputs over time.`
+  },
+  'Explainability & Transparency': {
+    rmf: 'MEASURE 2.6', iso: 'ISO 42001 §8.5 / Annex A.6.2', tier: 'Measuring',
+    commentary: `When an AI system makes or informs a consequential decision, the people affected and those accountable for outcomes need to understand why. NIST AI RMF MEASURE 2.6 addresses explainability — the ability to describe, in meaningful terms, how an AI system reached an output. This does not necessarily mean mathematical transparency; it means decision-makers can understand the basis for AI-assisted conclusions and exercise appropriate judgement. Explainability also supports compliance with privacy regulations that require meaningful information about automated decision-making.`
+  },
+  'Performance Monitoring & KPIs': {
+    rmf: 'MEASURE 1.1 / MEASURE 2.1', iso: 'ISO 42001 §9.1 / §10.1', tier: 'Measuring',
+    commentary: `AI systems degrade. Models trained on yesterday's data may perform poorly on today's reality — a phenomenon known as model drift. NIST AI RMF MEASURE 1.1 and MEASURE 2.1 require organisations to establish measurable performance indicators for AI systems and monitor them on an ongoing basis. This includes accuracy metrics, error rates, and outcome quality — tracked over time and compared against defined thresholds. For AI embedded in operational workflows, performance degradation may not be obvious until significant harm has already occurred. Proactive monitoring is the difference between catching drift early and discovering it through a failure.`
+  },
+  'AI Incident Response': {
+    rmf: 'MANAGE 3.1', iso: 'ISO 42001 §10.1 / Annex A.9.3', tier: 'Managing',
+    commentary: `AI systems will fail, behave unexpectedly, or produce harmful outputs — the question is whether your organisation is prepared to respond. NIST AI RMF MANAGE 3.1 requires organisations to have documented processes for detecting, escalating, and responding to AI incidents, including the ability to disable or override AI systems when necessary. An AI incident response plan should cover: who gets notified, what constitutes a reportable event, how affected parties are informed, and how the system is corrected or taken offline. Without this, AI failures become crises rather than managed events.`
+  },
+  'Decommission & Model Lifecycle': {
+    rmf: 'MANAGE 4.1', iso: 'ISO 42001 §8.6 / Annex A.9.4', tier: 'Managing',
+    commentary: `AI systems have lifecycles. Models that were fit for purpose when deployed may become outdated, biased, or misaligned with changed business context over time. NIST AI RMF MANAGE 4.1 requires organisations to have processes for retiring AI systems that no longer meet performance, fairness, or risk standards — including data disposal, access revocation, and documentation of the decommissioning rationale. Without lifecycle management, organisations accumulate technical debt in the form of AI systems that continue operating beyond their safe or effective lifespan.`
+  },
+  'Human Oversight Controls': {
+    rmf: 'MANAGE 2.4', iso: 'ISO 42001 §8.5 / Annex A.8.1', tier: 'Managing',
+    commentary: `Automation should amplify human judgement, not replace it in contexts where human oversight is critical. NIST AI RMF MANAGE 2.4 requires organisations to implement controls ensuring that humans can intervene in AI-assisted decisions — particularly where outcomes are high-stakes or irreversible. This includes meaningful override capabilities, clear escalation paths, and workflow design that does not create pressure to accept AI outputs without review. In customer-facing contexts, human oversight controls are both an ethical requirement and a reputational safeguard.`
+  },
+  'Continuous Improvement & Feedback Loops': {
+    rmf: 'GOVERN (continuous)', iso: 'ISO 42001 §10.2 / §10.3', tier: 'Optimizing',
+    commentary: `Mature AI governance is not static. NIST AI RMF's GOVERN function includes requirements for continuous improvement — using incident data, audit findings, stakeholder feedback, and performance metrics to iteratively refine both AI systems and the governance processes surrounding them. Organisations at the optimising level have closed-loop processes where lessons from AI failures and near-misses are systematically fed back into risk assessments, policy updates, and model improvements. This is the hallmark of an AI programme that treats governance as an ongoing practice rather than a one-time certification.`
+  },
+  'AI Governance Board / RACI': {
+    rmf: 'GOVERN 1.2', iso: 'ISO 42001 §5.3 / §6.2', tier: 'Optimizing',
+    commentary: `At the optimising level of AI maturity, governance is embedded in organisational structure. NIST AI RMF GOVERN 1.2 calls for defined, cross-functional accountability for AI risk — including executive sponsorship, legal and compliance involvement, and operational representation. A formal AI governance body, with a clear RACI, regular cadence, and board-level reporting, ensures that AI risk receives the strategic attention it warrants. For organisations deploying AI at scale, ad hoc oversight is insufficient. Structural governance is what makes AI accountability durable, not dependent on individual champions.`
+  },
+  'AI Supplier Transparency Requirements': {
+    rmf: 'GOVERN 6.1', iso: 'ISO 42001 §8.4 / Annex A.10.2', tier: 'Governing',
+    commentary: `Organisations deploying AI are increasingly responsible for ensuring the systems they procure meet minimum transparency and documentation standards. NIST AI RMF GOVERN 6.1 requires that AI risk management expectations be flowed down to AI providers — through contractual requirements, due diligence questionnaires, and ongoing attestation. This includes requesting model cards, data provenance documentation, bias testing results, and incident notification commitments. Supplier transparency requirements formalise what is often an informal expectation, creating accountability across the AI supply chain rather than leaving risk to accumulate silently.`
+  },
+  'Trustworthy AI Principles': {
+    rmf: 'GOVERN 1.7', iso: 'ISO 42001 §4.1 / Annex A.2.2', tier: 'Governing',
+    commentary: `NIST AI RMF is built on a framework of AI trustworthiness characteristics: valid, reliable, safe, secure, explainable, fair, privacy-preserving, and accountable. GOVERN 1.7 requires organisations to formally adopt and communicate their AI values and principles — not as aspirational marketing language, but as operational commitments that shape how AI is evaluated, deployed, and retired. Documented principles create a reference point for all other governance activities and signal to customers, regulators, and partners the standards your organisation holds itself to in its use of AI.`
+  },
+  'Data Governance for AI': {
+    rmf: 'MAP 3.2', iso: 'ISO 42001 §8.4 / Annex A.8.3', tier: 'Mapping',
+    commentary: `AI systems are only as trustworthy as the data they are built on and operate with. NIST AI RMF MAP 3.2 requires organisations to understand the provenance, quality, and representativeness of data used in AI systems. Poor data governance leads to biased models, inaccurate outputs, and privacy violations. For organisations in hospitality, where AI may ingest guest behavioural data, operational records, and third-party datasets, data governance for AI means knowing what data each AI system uses, where it came from, how it was prepared, and whether it is fit for the purpose to which the AI applies it.`
+  },
+  'Red-Teaming & Adversarial Testing': {
+    rmf: 'MEASURE 2.7 / MEASURE 2.9', iso: 'ISO 42001 §9.1 / Annex A.9.2', tier: 'Measuring',
+    commentary: `AI systems can be deliberately manipulated through adversarial inputs — crafted data designed to cause misclassification, extract sensitive information, or trigger harmful outputs. NIST AI RMF MEASURE 2.7 and MEASURE 2.9 address the need for adversarial testing — structured attempts to find and exploit weaknesses in AI systems before they are discovered by malicious actors. Red-teaming AI systems, particularly those in customer-facing or high-stakes operational roles, is an emerging best practice that moves AI security assurance beyond passive monitoring into active stress-testing.`
+  },
+  'AI Risk Register': {
+    rmf: 'MAP 5.2', iso: 'ISO 42001 §6.1', tier: 'Mapping',
+    commentary: `Risk cannot be managed from memory. NIST AI RMF MAP 5.2 requires organisations to document identified AI risks in a structured register — capturing the risk description, likelihood, potential impact, current controls, and ownership. ISO/IEC 42001 clause 6.1 similarly mandates a structured approach to identifying and treating AI-related risks within the management system. An AI risk register is the operational backbone of an AI governance programme: it makes risk visible, assignable, and trackable over time. For organisations subject to regulatory scrutiny or cyber insurance review, a maintained AI risk register demonstrates that AI governance is active and substantive rather than aspirational.`
+  },
+  'AI Acceptable Use Policy': {
+    rmf: 'GOVERN 1.1', iso: 'ISO 42001 §5.2 / §6.1.2', tier: 'Governing',
+    commentary: `An AI Acceptable Use Policy defines the boundaries within which staff, contractors, and systems may deploy or interact with AI tools — covering permitted use cases, prohibited applications, data handling expectations, and accountability for outputs. NIST AI RMF GOVERN 1.1 requires that policies governing AI risk management be established, communicated, and maintained. ISO/IEC 42001 clause 5.2 requires top management to establish an AI policy aligned to the organisation's context, while clause 6.1.2 addresses risk treatment obligations. Without an acceptable use policy, AI adoption outpaces governance — staff make consequential decisions about AI use without a framework, and the organisation bears liability it cannot demonstrate it managed.`
+  },
+  'Data Classification Policy': {
+    rmf: 'GOVERN 1.6 / MAP 3.2', iso: 'ISO 42001 §8.4 / Annex A.8.3', tier: 'Governing',
+    commentary: `AI systems are only as trustworthy as the data they consume. A data classification policy establishes categories of data sensitivity — defining what constitutes personal, confidential, regulated, or public information — and sets handling rules for each category. NIST AI RMF GOVERN 1.6 addresses the need for data governance as a foundation for AI risk management, and MAP 3.2 requires understanding of data provenance and fitness for purpose. ISO/IEC 42001 clause 8.4 addresses data management for AI systems, and Annex A.8.3 provides controls for data quality and representativeness. For organisations in hospitality, where AI may process guest PII, payment data, and behavioural analytics simultaneously, data classification is the policy layer that determines what AI systems are permitted to access and what protections apply.`
+  },
+  'Information Security Policy (AI scope)': {
+    rmf: 'GOVERN 1.1', iso: 'ISO 42001 §5.1 / Annex A.6.2', tier: 'Governing',
+    commentary: `Existing information security policies — covering access control, incident response, data protection, and acceptable use — must be explicitly scoped to address AI systems. AI introduces unique security considerations: model extraction attacks, adversarial inputs, training data poisoning, and the risk of sensitive data being embedded in model weights. NIST AI RMF GOVERN 1.1 requires that AI risk management be integrated with existing organisational security and risk frameworks rather than treated in isolation. ISO/IEC 42001 clause 5.1 calls for leadership commitment to establishing an AI management system aligned with organisational objectives, while Annex A.6.2 addresses resources and competencies for AI security. Extending your information security policy to explicitly cover AI ensures that security controls keep pace with the rapid expansion of AI in operations.`
+  },
+  'AI Ethics & Principles Statement': {
+    rmf: 'GOVERN 1.7', iso: 'ISO 42001 §4.1 / Annex A.2.2', tier: 'Governing',
+    commentary: `An AI Ethics and Principles Statement articulates the values that govern how your organisation develops, deploys, and retires AI — covering fairness, transparency, accountability, privacy, and human oversight. NIST AI RMF GOVERN 1.7 requires organisations to formally document and communicate AI values and principles as operational commitments, not aspirational language. ISO/IEC 42001 clause 4.1 requires organisations to understand the internal and external context shaping their AI management system, and Annex A.2.2 provides guidance on establishing an ethical framework for AI use. A published principles statement serves as the reference point for all governance decisions, signals your commitment to responsible AI to customers, regulators, and partners, and creates accountability when AI deployments deviate from stated values.`
+  }
+};
+
+/* ═══════════════════════════════════════════════════════
+   TIER DATA  (base → apex = index 4 → 0)
+═══════════════════════════════════════════════════════ */
+const TIERS = [
+  {
+    label: 'Optimizing',
+    rmfColor: '#6b35c8',
+    cols: [
+      { type:'seg', id:'cont_improve',  name:'Continuous Improvement',   sku:'Continuous Improvement & Feedback Loops' },
+      { type:'seg', id:'gov_board',     name:'Board RACI',                sku:'AI Governance Board / RACI' }
+    ]
+  },
+  {
+    label: 'Managing',
+    rmfColor: '#2e7ab0',
+    cols: [
+      { type:'seg', id:'ai_irt',        name:'AI Incident Response',           sku:'AI Incident Response' },
+      { type:'seg', id:'human_ctl',     name:'Human Oversight Controls',       sku:'Human Oversight Controls' },
+      { type:'seg', id:'decom',         name:'Decommission & Model Lifecycle', sku:'Decommission & Model Lifecycle' }
+    ]
+  },
+  {
+    label: 'Measuring',
+    rmfColor: '#d97706',
+    cols: [
+      { type:'seg', id:'bias_fair',     name:'Bias & Fairness Testing',            sku:'Bias & Fairness Testing' },
+      { type:'seg', id:'explain',       name:'Explainability & Transparency',      sku:'Explainability & Transparency' },
+      { type:'seg', id:'perf_mon',      name:'Performance Monitoring & KPIs',      sku:'Performance Monitoring & KPIs' },
+      { type:'seg', id:'red_team',      name:'Red-Teaming & Adversarial Testing',  sku:'Red-Teaming & Adversarial Testing' }
+    ]
+  },
+  {
+    label: 'Mapping',
+    rmfColor: '#0d9488',
+    cols: [
+      { type:'seg', id:'ai_inv',        name:'AI Inventory & Use-Case Register',    sku:'AI Inventory & Use-Case Register' },
+      { type:'seg', id:'ctx_risk',      name:'Contextual Risk & Impact Assessment', sku:'Contextual Risk & Impact Assessment' },
+      { type:'seg', id:'tp_ai',         name:'Third-Party AI Risk',                 sku:'Third-Party AI Risk' },
+      { type:'seg', id:'data_gov',      name:'Data Governance for AI',              sku:'Data Governance for AI' },
+      { type:'seg', id:'ai_reg',        name:'AI Risk Register',                    sku:'AI Risk Register' }
+    ]
+  },
+  {
+    label: 'Governing',
+    rmfColor: '#6b35c8',
+    cols: [
+      { type:'seg', id:'ai_policy',     name:'AI Policy & Accountability',              sku:'AI Policy & Accountability' },
+      { type:'seg', id:'ai_roles',      name:'AI Roles & Training',                     sku:'AI Roles & Training' },
+      { type:'seg', id:'ai_princ',      name:'Trustworthy AI Principles',               sku:'Trustworthy AI Principles' },
+      { type:'seg', id:'ai_supplier',   name:'AI Supplier Transparency Requirements',   sku:'AI Supplier Transparency Requirements' },
+      { type:'seg', id:'ai_aup',        name:'AI Acceptable Use Policy',                sku:'AI Acceptable Use Policy' },
+      { type:'seg', id:'data_class',    name:'Data Classification Policy',              sku:'Data Classification Policy' },
+      { type:'seg', id:'infosec_ai',    name:'Information Security Policy (AI scope)',  sku:'Information Security Policy (AI scope)' },
+      { type:'seg', id:'ai_ethics',     name:'AI Ethics & Principles Statement',        sku:'AI Ethics & Principles Statement' }
+    ]
+  }
+];
+
+// tier colour palettes — each tier has its own hue family
+const TIER_FILLS = [
+  // Optimizing — purple family
+  { base:'#6b35c8', dark:'#4e228f', light:'#8b5cf6' },
+  // Managing — blue family
+  { base:'#2e7ab0', dark:'#1e5a8a', light:'#4a90c8' },
+  // Measuring — amber family
+  { base:'#b45309', dark:'#92400e', light:'#d97706' },
+  // Mapping — teal family
+  { base:'#0d9488', dark:'#0f766e', light:'#14b8a6' },
+  // Governing — indigo family
+  { base:'#3730a3', dark:'#1e1a78', light:'#6366f1' }
+];
+const TIER_FILLS_DARK = [
+  { base:'#8b5cf6', dark:'#6d28d9', light:'#a78bfa' },
+  { base:'#4a90c8', dark:'#2e6a9e', light:'#7ab5dc' },
+  { base:'#f59e0b', dark:'#d97706', light:'#fbbf24' },
+  { base:'#14b8a6', dark:'#0d9488', light:'#2dd4bf' },
+  { base:'#6366f1', dark:'#4338ca', light:'#818cf8' }
+];
+
+const ALL_SEGS = [];
+TIERS.forEach(tier => tier.cols.forEach(col => {
+  if (col.type==='seg') ALL_SEGS.push({ id:col.id, name:col.name, sku:col.sku });
+  else col.segs.forEach(s => ALL_SEGS.push(s));
+}));
+
+const state = {};
+ALL_SEGS.forEach(s => { state[s.id] = 'red'; });
+let selectedId = null;
+
+let dark = false;
+document.getElementById('themeBtn').addEventListener('click', () => {
+  dark = !dark;
+  document.body.classList.toggle('dark', dark);
+  document.getElementById('themeBtn').classList.toggle('is-dark', dark);
+  renderPyramid();
+});
+
+function getTierPalette(ti) { return dark ? TIER_FILLS_DARK[ti] : TIER_FILLS[ti]; }
+
+// status overlay blended onto tier colour
+function getStatusFill(status, ti) {
+  const p = getTierPalette(ti);
+  if (status === 'red')    return dark ? '#d43f3f' : '#c00000';
+  if (status === 'yellow') return dark ? '#e8a000' : '#e8a000';
+  if (status === 'blue')   return dark ? '#4a90c8' : '#2e7ab0';
+  if (status === 'green')  return dark ? '#1dba5f' : '#00af50';
+  return p.base;
+}
+function getStatusStroke(status) {
+  return { red:'#960000', yellow:'#b87800', blue:'#1e5a8a', green:'#007a38' }[status];
+}
+function getLblColor()     { return dark ? '#9b6de0' : '#5a3a9a'; }
+function getGroupBg()      { return dark ? '#1c2128' : '#e8ecf0'; }
+function getGroupBorder()  { return dark ? '#3d4450' : '#c0c8d4'; }
+function getGroupHdrBg()   { return dark ? '#2d3748' : '#d0d8e4'; }
+function getGroupLblColor(){ return dark ? '#a0aec0' : '#4a5e7a'; }
+function selectedRing()    { return dark ? '#ffffff' : '#1a1e24'; }
+
+const W=1400, H=710, TIP_Y=28, BASE_Y=690, HALF_W=460, PAD=5;
+const NT=TIERS.length, TH=(BASE_Y-TIP_Y)/NT;
+
+function tierBounds(ti) {
+  const topY=TIP_Y+ti*TH, botY=topY+TH;
+  const ft=(topY-TIP_Y)/(BASE_Y-TIP_Y), fb=(botY-TIP_Y)/(BASE_Y-TIP_Y);
+  return { topY, botY, topHW:ft*HALF_W, botHW:fb*HALF_W };
+}
+
+function ns(tag) { return document.createElementNS('http://www.w3.org/2000/svg',tag); }
+
+function wrap(text, maxW, fs) {
+  const max=Math.max(4,Math.floor(maxW/(fs*0.52)));
+  const words=text.split(' '); const lines=[]; let cur='';
+  words.forEach(w=>{ const t=cur?cur+' '+w:w; if(t.length>max&&cur){lines.push(cur);cur=w;}else cur=t; });
+  if(cur)lines.push(cur); return lines;
+}
+
+function drawWrapped(g, cx, cy, text, maxW, fs, fill, weight) {
+  const lines=wrap(text,maxW,fs);
+  const lh=fs*1.25, tot=lines.length*lh;
+  lines.forEach((line,li)=>{
+    const t=ns('text');
+    t.setAttribute('x',cx); t.setAttribute('y',cy-tot/2+li*lh+lh*0.78);
+    t.setAttribute('text-anchor','middle'); t.setAttribute('fill',fill);
+    t.setAttribute('font-size',fs); t.setAttribute('font-weight',weight||'600');
+    t.setAttribute('font-family','DM Sans,sans-serif'); t.style.pointerEvents='none';
+    t.textContent=line; g.appendChild(t);
+  });
+}
+
+const tipEl = document.getElementById('tip');
+function moveTip(e){ tipEl.style.left=(e.clientX+14)+'px'; tipEl.style.top=(e.clientY-32)+'px'; }
+
+function addSeg(g, id, name) {
+  g.style.cursor='pointer';
+  g.addEventListener('click', ()=>selectSeg(id));
+  g.addEventListener('mouseenter', e=>{ tipEl.style.display='block'; tipEl.textContent=name; moveTip(e); });
+  g.addEventListener('mousemove', moveTip);
+  g.addEventListener('mouseleave', ()=>{ tipEl.style.display='none'; });
+}
+
+const svg = document.getElementById('pyr');
+
+function renderPyramid() {
+  svg.innerHTML='';
+  const cx=W/2;
+
+  TIERS.forEach((tier, ti) => {
+    const {topY,botY,topHW,botHW}=tierBounds(ti);
+    const tierWtop=topHW*2, tierWbot=botHW*2;
+    const nCols=tier.cols.length;
+    const colXtop=[], colXbot=[];
+    for(let i=0;i<=nCols;i++){
+      colXtop.push(cx-topHW+(i/nCols)*tierWtop);
+      colXbot.push(cx-botHW+(i/nCols)*tierWbot);
+    }
+    const yt=topY+PAD, yb=botY-PAD;
+
+    const APEX_GAP=12;
+    tier.cols.forEach((col,ci)=>{
+      const colFracL = ci/nCols - 0.5;
+      const colFracR = (ci+1)/nCols - 0.5;
+      const apexOffL = colFracL * APEX_GAP * 2;
+      const apexOffR = colFracR * APEX_GAP * 2;
+      const _xtl = colXtop[ci]+PAD + apexOffL * Math.max(0, 1 - topHW/40);
+      const _xtr = colXtop[ci+1]-PAD + apexOffR * Math.max(0, 1 - topHW/40);
+      const xtl = Math.min(_xtl, _xtr), xtr = Math.max(_xtl, _xtr);
+      const xbl=colXbot[ci]+PAD, xbr=colXbot[ci+1]-PAD;
+      const midX=(xtl+xtr+xbl+xbr)/4;
+      const colW=(xtr-xtl+xbr-xbl)/2;
+
+      if (col.type==='seg') {
+        const status=state[col.id];
+        const isSelected=selectedId===col.id;
+        const g=ns('g');
+
+        const poly=ns('polygon');
+        poly.setAttribute('points',`${xtl},${yt} ${xtr},${yt} ${xbr},${yb} ${xbl},${yb}`);
+        poly.setAttribute('fill', getStatusFill(status,ti));
+        poly.setAttribute('stroke', isSelected ? selectedRing() : getStatusStroke(status));
+        poly.setAttribute('stroke-width', isSelected ? '3.5' : '1');
+        g.appendChild(poly);
+
+        const midY=(yt+yb)/2;
+        const fs=Math.min(11,Math.max(7,(yb-yt)/4.5));
+        drawWrapped(g,midX,midY,col.name,colW-6,fs,'#ffffff','600');
+        addSeg(g,col.id,col.name);
+        svg.appendChild(g);
+      } else {
+        const nSegs=col.segs.length;
+        const headerH=Math.max(20,(yb-yt)*0.18);
+        const segH=(yb-yt-headerH)/nSegs;
+
+        const gpoly=ns('polygon');
+        gpoly.setAttribute('points',`${xtl},${yt} ${xtr},${yt} ${xbr},${yb} ${xbl},${yb}`);
+        gpoly.setAttribute('fill',getGroupBg());
+        gpoly.setAttribute('stroke',getGroupBorder());
+        gpoly.setAttribute('stroke-width','1');
+        svg.appendChild(gpoly);
+
+        const lbotY=yt+headerH;
+        const frac=(lbotY-topY)/(botY-topY);
+        const lxl=xtl+frac*(xbl-xtl), lxr=xtr+frac*(xbr-xtr);
+        const lbar=ns('polygon');
+        lbar.setAttribute('points',`${xtl},${yt} ${xtr},${yt} ${lxr},${lbotY} ${lxl},${lbotY}`);
+        lbar.setAttribute('fill',getGroupHdrBg());
+        lbar.setAttribute('stroke',getGroupBorder());
+        lbar.setAttribute('stroke-width','0.5');
+        svg.appendChild(lbar);
+
+        const glfs=Math.min(10,Math.max(7,headerH*0.44));
+        const glt=ns('text');
+        glt.setAttribute('x',midX); glt.setAttribute('y',yt+headerH*0.65);
+        glt.setAttribute('text-anchor','middle'); glt.setAttribute('fill',getGroupLblColor());
+        glt.setAttribute('font-size',glfs); glt.setAttribute('font-weight','700');
+        glt.setAttribute('font-style','italic'); glt.setAttribute('font-family','DM Sans,sans-serif');
+        glt.style.pointerEvents='none'; glt.textContent=col.label;
+        svg.appendChild(glt);
+
+        col.segs.forEach((seg,si)=>{
+          const sy_top=yt+headerH+si*segH, sy_bot=sy_top+segH;
+          const ft2=(sy_top-topY)/(botY-topY), fb2=(sy_bot-topY)/(botY-topY);
+          const sxtl=xtl+ft2*(xbl-xtl)+PAD, sxtr=xtr+ft2*(xbr-xtr)-PAD;
+          const sxbl=xtl+fb2*(xbl-xtl)+PAD, sxbr=xtr+fb2*(xbr-xtr)-PAD;
+          const status=state[seg.id];
+          const isSelected=selectedId===seg.id;
+          const g2=ns('g');
+          const poly2=ns('polygon');
+          poly2.setAttribute('points',`${sxtl},${sy_top} ${sxtr},${sy_top} ${sxbr},${sy_bot} ${sxbl},${sy_bot}`);
+          poly2.setAttribute('fill',getStatusFill(status,ti));
+          poly2.setAttribute('stroke', isSelected ? selectedRing() : getStatusStroke(status));
+          poly2.setAttribute('stroke-width', isSelected ? '3' : '0.8');
+          g2.appendChild(poly2);
+
+          const smidX=(sxtl+sxtr+sxbl+sxbr)/4, smidY=(sy_top+sy_bot)/2;
+          const sW=(sxtr-sxtl+sxbr-sxbl)/2-4;
+          const sfs=Math.min(10,Math.max(6,segH/4));
+          drawWrapped(g2,smidX,smidY,seg.name,sW,sfs,'#ffffff','600');
+          addSeg(g2,seg.id,seg.name);
+          svg.appendChild(g2);
+        });
+      }
+    });
+
+    // Labels pushed well left of pyramid edge — matching working file
+    const {topY:ty,botY:by,topHW:thw}=tierBounds(ti), lblY=(ty+by)/2;
+    const lblAnchorX = cx - Math.max(thw, 0) - 80;
+    const lt=ns('text');
+    lt.setAttribute('x',lblAnchorX); lt.setAttribute('y',lblY+4);
+    lt.setAttribute('text-anchor','end'); lt.setAttribute('fill',getLblColor());
+    lt.setAttribute('font-size','13'); lt.setAttribute('font-weight','700');
+    lt.setAttribute('font-family','DM Sans,sans-serif'); lt.setAttribute('letter-spacing','0.06em');
+    lt.textContent=tier.label.toUpperCase(); svg.appendChild(lt);
+  });
+}
+
+/* ── DETAIL PANEL ── */
+const STATUS_CYCLE = ['red','yellow','blue','green'];
+
+function selectSeg(id) {
+  // Cycle status on click
+  const current = state[id];
+  const nextIdx = (STATUS_CYCLE.indexOf(current) + 1) % STATUS_CYCLE.length;
+  state[id] = STATUS_CYCLE[nextIdx];
+  selectedId = id;
+  renderPyramid();
+  updateStats();
+  showDetail(id);
+}
+
+function getTierForId(id) {
+  for (let ti=0; ti<TIERS.length; ti++) {
+    const tier=TIERS[ti];
+    for (const col of tier.cols) {
+      if (col.type==='seg' && col.id===id) return tier;
+      if (col.type==='group' && col.segs.find(s=>s.id===id)) return tier;
+    }
+  }
+  return null;
+}
+
+const TIER_COLORS = {
+  'Optimizing': { bg:'#6b35c8', border:'#4e228f', text:'#fff' },
+  'Managing':   { bg:'#2e7ab0', border:'#1e5a8a', text:'#fff' },
+  'Measuring':  { bg:'#b45309', border:'#92400e', text:'#fff' },
+  'Mapping':    { bg:'#0d9488', border:'#0f766e', text:'#fff' },
+  'Governing':  { bg:'#3730a3', border:'#1e1a78', text:'#fff' }
+};
+
+function showDetail(id) {
+  const seg=ALL_SEGS.find(s=>s.id===id);
+  if(!seg)return;
+  const cat=CATALOGUE[seg.sku]||{};
+  const tier=getTierForId(id);
+  const status=state[id];
+
+  document.getElementById('detail-empty').style.display='none';
+  document.getElementById('detail-content').style.display='flex';
+  document.getElementById('d-name').textContent=seg.name;
+
+  const tierBadge=document.getElementById('d-tier-badge');
+  const tc = TIER_COLORS[tier?.label] || { bg:'#666', border:'#444', text:'#fff' };
+  tierBadge.textContent=tier?.label||'';
+  tierBadge.style.background=tc.bg;
+  tierBadge.style.borderColor=tc.border;
+  tierBadge.style.color=tc.text;
+
+  document.getElementById('d-rmf-badge').textContent = cat.rmf || '';
+  const isoBadge = document.getElementById('d-iso-badge');
+  if (cat.iso) { isoBadge.textContent = cat.iso; isoBadge.style.display = ''; }
+  else { isoBadge.style.display = 'none'; }
+
+  const btns=document.getElementById('d-status-btns');
+  btns.innerHTML='';
+  [['red','Not Addressed'],['yellow','Partial'],['blue','In Progress'],['green','Implemented']].forEach(([v,label])=>{
+    const btn=document.createElement('button');
+    btn.className='status-btn'+(status===v?' active-'+v:'');
+    btn.textContent=label;
+    btn.onclick=()=>setStatus(id,v);
+    btns.appendChild(btn);
+  });
+
+  document.getElementById('d-commentary').textContent=cat.commentary||'Select this control to view its NIST AI RMF alignment and implementation guidance.';
+}
+
+function setStatus(id,val) {
+  state[id]=val;
+  renderPyramid();
+  updateStats();
+  if(selectedId===id)showDetail(id);
+}
+
+function updateStats() {
+  const vals=ALL_SEGS.map(s=>state[s.id]);
+  document.getElementById('s-r').textContent=vals.filter(v=>v==='red').length;
+  document.getElementById('s-y').textContent=vals.filter(v=>v==='yellow').length;
+  document.getElementById('s-b').textContent=vals.filter(v=>v==='blue').length;
+  document.getElementById('s-g').textContent=vals.filter(v=>v==='green').length;
+  const g=vals.filter(v=>v==='green').length;
+  const b=vals.filter(v=>v==='blue').length;
+  const y=vals.filter(v=>v==='yellow').length;
+  const pct=Math.round((g+b*0.5+y*0.25)/vals.length*100);
+  document.getElementById('mat-pct').textContent=pct+'%';
+  document.getElementById('mat-fill').style.width=pct+'%';
+}
+
+renderPyramid();
+updateStats();
+</script>
+</body>
+</html>

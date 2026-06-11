@@ -167,7 +167,7 @@ function drawAllHubTrends() {
     // Last score label
     const last = scores[scores.length - 1];
     ctx.fillStyle = last >= 75 ? '#15803d' : last >= 50 ? '#b45309' : '#b91c1c';
-    ctx.font = 'bold 8px Kanit,sans-serif'; ctx.textAlign = 'right';
+    ctx.font = 'bold 8px Inter,sans-serif'; ctx.textAlign = 'right';
     ctx.fillText(last, W - 2, 9);
   });
 }
