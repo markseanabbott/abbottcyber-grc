@@ -1576,6 +1576,7 @@ async function cisSavePoam() {
     }
     cisState.poamItems = {};
     items.forEach(it => { cisState.poamItems[it.safeguard_id] = it; });
+    auditLog('poam_saved', 'poam', 'CIS POAM', { item_count: items.length });
     toast(`✓ POAM saved — ${items.length} item${items.length !== 1 ? 's' : ''}`, '#15803d');
     if (btn) { btn.disabled = false; btn.textContent = 'Save POAM'; }
   } catch(e) {
@@ -1748,6 +1749,7 @@ async function cisDeleteAssessment(idx) {
     buildNav();
     renderMain();
     setTimeout(() => { const c = document.getElementById('cisTrendChart'); if (c) cisTrendDraw(); }, 80);
+    auditLog('assessment_deleted', 'assessment', 'CIS Controls v8', { date: run?.date || null });
     toast('Assessment deleted', '#15803d');
   } catch(e) {
     toast('Delete failed: ' + e.message, '#dc2626');
@@ -1961,6 +1963,7 @@ async function cisSave() {
       if (noteRows.length) await sb.cisNotes.upsertAll(noteRows);
     }
     cisState = { answers: {}, openPanels: {}, orgId: currentOrg.id, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '' };
+    auditLog(editId ? 'assessment_updated' : 'assessment_saved', 'assessment', 'CIS Controls v8', { score, goal });
     toast(editId ? `✓ Assessment updated` : `✓ CIS saved — score ${score} vs ${goal.toUpperCase()} goal`, '#15803d');
     buildNav(); renderMain();
     setTimeout(() => { const c = document.getElementById('cisTrendChart'); if (c) cisTrendDraw(); }, 80);

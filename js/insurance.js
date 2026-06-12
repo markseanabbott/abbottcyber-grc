@@ -171,6 +171,7 @@ async function insSave() {
     if (!orgAssessments[currentOrg.id].insurance) orgAssessments[currentOrg.id].insurance = [];
     orgAssessments[currentOrg.id].insurance.push({ date: today, score: r.score, secPct: r.secPct, insPct: r.insPct });
     insState = { answers: {}, openPanels: {} };
+    auditLog('assessment_saved', 'assessment', 'Insurance Readiness', { score: r.score, sec_pct: r.secPct, ins_pct: r.insPct });
     toast(`✓ Score saved for ${currentOrg.name}`, '#15803d');
     buildNav(); renderMain();
   } catch (e) {

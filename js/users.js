@@ -1,7 +1,7 @@
 // ============================================================
 // USER MANAGEMENT MODULE
 // ============================================================
-let userMgmtState = { users: [], loading: false };
+let userMgmtState = { users: [], loading: false, tab: 'users', auditDays: 30, auditLogs: [], auditLoading: false };
 
 async function userMgmtLoad() {
   userMgmtState.loading = true;
@@ -20,10 +20,14 @@ function renderUserManagement() {
     <div style="font-size:13px;font-weight:700">Admin access required</div>
   </div>`;
 
-  userMgmtLoad().then(() => {
-    const el = document.getElementById('userMgmtContent');
-    if (el) el.innerHTML = renderUserMgmtInner();
-  });
+  if (userMgmtState.tab === 'audit') {
+    auditTabLoad(userMgmtState.auditDays);
+  } else {
+    userMgmtLoad().then(() => {
+      const el = document.getElementById('userMgmtContent');
+      if (el) el.innerHTML = renderUserMgmtInner();
+    });
+  }
 
   return renderTierBanner() + `
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
@@ -31,12 +35,16 @@ function renderUserManagement() {
       <div style="font-size:18px;font-weight:700;color:var(--navy)">User Management</div>
       <div style="font-size:12px;color:var(--muted);margin-top:2px">Manage platform accounts and org access</div>
     </div>
-    <button class="btn btn-primary btn-sm" onclick="openCreateUserModal()">+ Add User</button>
+    ${userMgmtState.tab === 'users' ? '<button class="btn btn-primary btn-sm" onclick="openCreateUserModal()">+ Add User</button>' : ''}
+  </div>
+  <div class="view-tabs" style="margin-bottom:1rem">
+    <div class="view-tab ${userMgmtState.tab === 'users' ? 'active' : ''}" onclick="switchUserTab('users')">Users</div>
+    <div class="view-tab ${userMgmtState.tab === 'audit' ? 'active' : ''}" onclick="switchUserTab('audit')">Audit Log</div>
   </div>
   <div id="userMgmtContent">
     <div style="text-align:center;padding:2rem;color:var(--muted)">
       <div class="spinner" style="border-color:rgba(21,33,104,0.15);border-top-color:var(--navy);width:20px;height:20px;margin:0 auto 0.75rem"></div>
-      <div style="font-size:12px">Loading users…</div>
+      <div style="font-size:12px">Loading…</div>
     </div>
   </div>`;
 }
@@ -234,6 +242,7 @@ async function submitCreateUser() {
       }
     }
 
+    auditLog('user_created', 'user', email, { name: name || null, role, org_id: orgId });
     closeUserModal();
     toast(`User ${email} created successfully`, '#16a34a');
     await userMgmtLoad();
@@ -342,6 +351,8 @@ async function submitEditUser(userId) {
       }
     }
 
+    const editedUser = userMgmtState.users.find(u => u.id === userId);
+    auditLog('user_edited', 'user', editedUser?.email || userId, { name: name || null, role, org_id: orgId });
     closeUserModal();
     toast('User updated', '#16a34a');
     await userMgmtLoad();
@@ -365,6 +376,7 @@ async function deleteUser(userId, displayName) {
   try {
     await sb.userOrgAccess.deleteForUser(userId);
     await sb.users.delete(userId);
+    auditLog('user_deleted', 'user', displayName, {});
     toast(`${displayName} removed`, '#d97706');
     await userMgmtLoad();
     const el = document.getElementById('userMgmtContent');
@@ -376,4 +388,131 @@ async function deleteUser(userId, displayName) {
 
 function closeUserModal() {
   document.getElementById('userModal').style.display = 'none';
+}
+
+// ============================================================
+// AUDIT LOG TAB
+// ============================================================
+function switchUserTab(tab) {
+  userMgmtState.tab = tab;
+  renderMain();
+}
+
+async function auditTabLoad(days) {
+  userMgmtState.auditLoading = true;
+  const el = document.getElementById('userMgmtContent');
+  if (el) el.innerHTML = renderAuditShell(days, [], true);
+  try {
+    const orgIds = isPlatformAdmin() ? null : visibleOrgs().map(o => o.id);
+    const rows = await sb.auditLog.getRecent(days, orgIds);
+    userMgmtState.auditLogs = rows || [];
+  } catch (e) {
+    userMgmtState.auditLogs = [];
+  }
+  userMgmtState.auditLoading = false;
+  if (el) el.innerHTML = renderAuditShell(days, userMgmtState.auditLogs, false);
+}
+
+function setAuditDays(days) {
+  userMgmtState.auditDays = days;
+  auditTabLoad(days);
+}
+
+function renderAuditShell(days, rows, loading) {
+  const EVENT_LABELS = {
+    user_created:        'User Created',
+    user_edited:         'User Edited',
+    user_deleted:        'User Deleted',
+    assessment_saved:    'Assessment Saved',
+    assessment_updated:  'Assessment Updated',
+    assessment_deleted:  'Assessment Deleted',
+    poam_saved:          'POAM Saved',
+    tpra_published:      'TPRA Published',
+    tpra_deleted:        'TPRA Deleted',
+    org_created:         'Org Created',
+    org_updated:         'Org Updated',
+    org_deleted:         'Org Deleted',
+  };
+  const EVENT_COLORS = {
+    user_created:       '#15803d', assessment_saved:   '#15803d',
+    assessment_updated: '#15803d', tpra_published:     '#0e7490',
+    org_created:        '#15803d', poam_saved:         '#4f46e5',
+    user_edited:        '#4f46e5', org_updated:        '#4f46e5',
+    user_deleted:       '#b91c1c', assessment_deleted: '#b91c1c',
+    tpra_deleted:       '#b91c1c', org_deleted:        '#b91c1c',
+  };
+
+  const pills = [7, 30, 90].map(d =>
+    `<button onclick="setAuditDays(${d})" style="padding:4px 12px;border-radius:99px;font-size:11px;font-weight:700;
+      cursor:pointer;border:1px solid ${days===d?'var(--navy)':'var(--border)'};
+      background:${days===d?'var(--navy)':'#fff'};color:${days===d?'#fff':'var(--muted)'}">
+      ${d}d
+    </button>`
+  ).join('');
+
+  const header = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div style="font-size:13px;color:var(--muted)">Events in the last <strong>${days} days</strong></div>
+      <div style="display:flex;gap:6px">${pills}</div>
+    </div>`;
+
+  if (loading) return header + `<div style="text-align:center;padding:3rem;color:var(--muted)">
+    <div class="spinner" style="border-color:rgba(21,33,104,0.15);border-top-color:var(--navy);width:20px;height:20px;margin:0 auto 0.75rem"></div>
+    <div style="font-size:12px">Loading audit log…</div>
+  </div>`;
+
+  if (!rows.length) return header + `<div class="card" style="padding:2rem;text-align:center;color:var(--muted)">
+    <div style="font-size:24px;margin-bottom:0.5rem">📋</div>
+    <div style="font-size:13px;font-weight:700;margin-bottom:4px">No events recorded</div>
+    <div style="font-size:12px">Changes will appear here as actions are taken in the platform.</div>
+  </div>`;
+
+  const orgMap = {};
+  (typeof allOrgs !== 'undefined' ? allOrgs : []).forEach(o => { orgMap[o.id] = o.name; });
+
+  const tableRows = rows.map(r => {
+    const ts = new Date(r.created_at);
+    const dateStr = ts.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
+    const timeStr = ts.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit' });
+    const color = EVENT_COLORS[r.event_type] || '#6b7280';
+    const label = EVENT_LABELS[r.event_type] || r.event_type;
+    const orgName = r.org_id ? (orgMap[r.org_id] || '—') : '—';
+    let detailStr = '';
+    if (r.details && Object.keys(r.details).length) {
+      detailStr = Object.entries(r.details)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(' · ');
+    }
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:9px 14px;white-space:nowrap">
+        <div style="font-size:12px;font-weight:600;color:var(--text)">${dateStr}</div>
+        <div style="font-size:11px;color:var(--muted)">${timeStr}</div>
+      </td>
+      <td style="padding:9px 14px">
+        <div style="font-size:12px;font-weight:600;color:var(--text)">${escH(r.actor_name || '—')}</div>
+        <div style="font-size:11px;color:var(--muted)">${escH(r.actor_email || '')}</div>
+      </td>
+      <td style="padding:9px 14px">
+        <span style="padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;
+          background:${color}18;color:${color};border:1px solid ${color}40">${escH(label)}</span>
+      </td>
+      <td style="padding:9px 14px;font-size:12px;color:var(--text)">${escH(r.target_name || '—')}</td>
+      <td style="padding:9px 14px;font-size:12px;color:var(--muted)">${escH(orgName)}</td>
+      <td style="padding:9px 14px;font-size:11px;color:var(--muted);max-width:220px;word-break:break-word">${escH(detailStr)}</td>
+    </tr>`;
+  }).join('');
+
+  return header + `<div class="card" style="overflow:hidden;padding:0">
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="background:var(--bg)">
+          ${['Time','Actor','Event','Target','Organisation','Details'].map(h =>
+            `<th style="padding:9px 14px;font-size:10px;font-weight:700;color:var(--muted);text-align:left;
+              text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border)">${h}</th>`
+          ).join('')}
+        </tr>
+      </thead>
+      <tbody>${tableRows}</tbody>
+    </table>
+  </div>`;
 }

@@ -552,7 +552,8 @@ async function tpraComplete() {
     const rows = await sb.tpra.getAll(currentOrg.id);
     tpraState.assessments = rows || [];
     tpraState.view = 'detail';
-    toast('Assessment completed âœ“', '#15803d');
+    auditLog('tpra_published', 'tpra', d.vendor_name, { tier: d.tier });
+    toast('Assessment completed âœ”', '#15803d');
     tpraRender();
   } catch (e) { toast('Error: ' + e.message, '#b91c1c'); }
 }
@@ -574,10 +575,12 @@ async function tpraEdit(id) {
 
 async function tpraDeleteConfirm(id) {
   if (!confirm('Delete this vendor assessment? This cannot be undone.')) return;
+  const deletedVendor = (tpraState.assessments.find(function(a) { return a.id === id; }) || {}).vendor_name || id;
   try {
     await sb.tpra.delete(id);
     tpraState.assessments = tpraState.assessments.filter(function(a) { return a.id !== id; });
     if (tpraState.view === 'detail' && tpraState.detailId === id) tpraState.view = 'list';
+    auditLog('tpra_deleted', 'tpra', deletedVendor, {});
     toast('Assessment deleted'); tpraRender();
   } catch (e) { toast('Delete failed', '#b91c1c'); }
 }

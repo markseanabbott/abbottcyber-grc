@@ -117,6 +117,7 @@ async function addOrg() {
   try {
     const result = await sb.createOrg({ name, tier, parent_id: parent || null, industry });
     allOrgs.push(result[0]);
+    auditLog('org_created', 'org', name, { tier });
     toast(`✓ ${name} added`, '#15803d');
     buildNav(); renderMain();
   } catch (e) {
@@ -483,6 +484,7 @@ async function saveOrgEdit(orgId) {
       await sb.profiles.upsert({ org_id: orgId, managed_by_org_id: managedBy || null });
       await loadOrgProfiles();
 
+      auditLog('org_updated', 'org', patch.name, { tier: patch.tier || null });
       toast(`✓ ${patch.name} updated`, '#15803d');
     } else {
       // Save profile fields
@@ -575,6 +577,7 @@ async function deleteOrgConfirmed(orgId) {
     if (currentOrg && idsToRemove.has(currentOrg.id)) {
       currentOrg = allOrgs.find(o => o.tier === 'platform') || allOrgs[0];
     }
+    auditLog('org_deleted', 'org', org?.name || orgId, { tier: org?.tier || null });
     toast(`✓ ${org?.name || 'Organisation'} deleted`, '#15803d');
     closeOrgModal();
     updateOrgUI(); buildNav(); renderMain();

@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5",
   "created": "2026-05-14",
-  "updated": "2026-06-11 (session 8)",
+  "updated": "2026-06-12 (session 9)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -286,6 +286,22 @@
         {
           "id": "auth5",
           "text": "First-run setup screen — allow platform admin account creation from login screen when no platform_admin users exist, eliminating need for Supabase dashboard bootstrap.",
+          "done": false
+        },
+        {
+          "id": "auth6",
+          "text": "Audit log — cross-module activity tracking with 7/30/90 day filter. Covers user, assessment, TPRA, org, and POAM events. Displayed as a tab in User Management.",
+          "done": true,
+          "notes": "SUPABASE_PATCH_011.sql: audit_log table (org_id, actor_name, actor_email, event_type, target_type, target_name, details jsonb, created_at). js/supabase.js: sb.auditLog.insert(), sb.auditLog.getRecent(), global auditLog() fire-and-forget helper. js/users.js: Audit Log tab with renderAuditShell(), auditTabLoad(), setAuditDays(). Audit calls wired in users.js (create/edit/delete), cis.js (save/update/POAM/delete), insurance.js (save), tpra.js (publish/delete), orgs.js (create/update/delete)."
+        },
+        {
+          "id": "auth7",
+          "text": "Wire auditLog() into Technology Stack save — currently the only module without an audit call.",
+          "done": false
+        },
+        {
+          "id": "auth8",
+          "text": "Export audit log to CSV — allow platform admins to download the filtered audit log as a spreadsheet.",
           "done": false
         }
       ]

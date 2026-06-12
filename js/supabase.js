@@ -92,6 +92,34 @@ sb.users = {
   delete: (id) => sbFetch(`users?id=eq.${id}`, 'DELETE'),
 };
 
+// Audit Log persistence layer (PATCH_011)
+sb.auditLog = {
+  insert: (row) => sbFetch('audit_log', 'POST', row, { Prefer: 'return=minimal' }),
+  getRecent: (days, orgIds) => {
+    const since = new Date(Date.now() - days * 86400000).toISOString();
+    let q = `audit_log?created_at=gte.${encodeURIComponent(since)}&order=created_at.desc&limit=500`;
+    if (orgIds && orgIds.length) q += `&org_id=in.(${orgIds.join(',')})`;
+    return sbFetch(q);
+  },
+};
+
+// Fire-and-forget audit log writer. Never throws, never blocks the calling action.
+function auditLog(eventType, targetType, targetName, details) {
+  try {
+    const actor = (typeof authState !== 'undefined') ? authState.user : null;
+    const org   = (typeof currentOrg !== 'undefined') ? currentOrg : null;
+    sb.auditLog.insert({
+      org_id:      org?.id   || null,
+      actor_name:  actor?.user_metadata?.name || actor?.email || 'Unknown',
+      actor_email: actor?.email || null,
+      event_type:  eventType,
+      target_type: targetType,
+      target_name: targetName || null,
+      details:     details || null,
+    }).catch(() => {});
+  } catch (_) {}
+}
+
 // User org access — explicit org assignments for analyst/viewer roles
 sb.userOrgAccess = {
   getForUser: (userId) => sbFetch(`user_org_access?user_id=eq.${userId}&select=*`),
