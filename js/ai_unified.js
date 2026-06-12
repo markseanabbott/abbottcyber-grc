@@ -419,7 +419,7 @@ function renderAiUnifiedDashboard() {
   const prevScores = prevRun ? aiuCalcScore(
     Object.fromEntries(Object.entries(prevRun.answers||{}).filter(([k])=>!k.startsWith('_'))), fw
   ) : null;
-  const scoreChange = (scores.overall !== null && prevScores?.overall !== null) ? scores.overall - prevScores.overall : null;
+  const scoreChange = (scores.overall !== null && prevScores?.overall != null) ? scores.overall - prevScores.overall : null;
 
   const groupBarsHtml = groupScores.filter(g => g.pct !== null).map(g => {
     const m = AI_GROUP_META[g.grp];
@@ -956,7 +956,7 @@ function renderAiUnifiedExecReport() {
   const sorted = [...runs].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   const prevRun = sorted.length>=2 ? sorted[sorted.length-2] : null;
   const prevScores = prevRun ? aiuCalcScore(Object.fromEntries(Object.entries(prevRun.answers||{}).filter(([k])=>!k.startsWith('_'))), fw) : null;
-  const scoreChange = (scores.overall!==null && prevScores?.overall!==null) ? scores.overall - prevScores.overall : null;
+  const scoreChange = (scores.overall!==null && prevScores?.overall!=null) ? scores.overall - prevScores.overall : null;
 
   return `
   ${renderTierBanner()}

@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5",
   "created": "2026-05-14",
-  "updated": "2026-06-12 (session 9)",
+  "updated": "2026-06-12 (session 10)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1457,6 +1457,17 @@
         {
           "id": "ai6",
           "text": "Sidebar score dot for ai_unified — getModuleDot() currently skips ai_unified; wire it to show green/amber/red based on latest unified score",
+          "done": false
+        },
+        {
+          "id": "ai9",
+          "text": "AI Governance Maturity Pyramid — interactive SVG pyramid in AI Readiness Hub; 22 NIST AI RMF segments across 5 tiers (Governing→Optimizing); click-to-cycle status (Not Addressed/Partial/In Progress/Implemented); detail panel with NIST/ISO standard links; live score footer",
+          "done": true,
+          "notes": "js/ai_hub.js: pyramid HTML injected into renderAiHub(), initAiMaturityPyramid() scoped init function at bottom of file. js/app.js: setTimeout(initAiMaturityPyramid,50) added to ai_readiness nav branch. NIST links → airc.nist.gov/Home, ISO links → iso.org/standard/81230.html."
+        },
+        {
+          "id": "ai10",
+          "text": "AI Maturity Pyramid — persist segment statuses per org to Supabase so state is saved between sessions and can be used in reporting",
           "done": false
         },
         {

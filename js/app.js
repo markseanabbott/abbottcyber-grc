@@ -243,7 +243,7 @@ function renderMain() {
     }
     return;
   }
-  if (activeNav === 'ai_readiness') { el.innerHTML = voB + renderAiHub(); return; }
+  if (activeNav === 'ai_readiness') { el.innerHTML = voB + renderAiHub(); setTimeout(initAiMaturityPyramid, 50); return; }
   if (activeNav === 'ai_unified') { el.innerHTML = voB + renderAiUnified(); setTimeout(() => { const c = document.getElementById('aiuTrendChart'); if (c) aiuTrendDraw(); }, 80); return; }
   if (activeNav === 'nist_ai') { el.innerHTML = voB + renderNistAi(); setTimeout(() => { const c = document.getElementById('nistAiTrendChart'); if (c) nistAiTrendDraw(); }, 80); return; }
   if (activeNav === 'iso42001') { el.innerHTML = voB + renderIso42001(); setTimeout(() => { const c = document.getElementById('iso42001TrendChart'); if (c) iso42001TrendDraw(); }, 80); return; }
