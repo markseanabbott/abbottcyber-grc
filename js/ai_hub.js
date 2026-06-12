@@ -224,6 +224,7 @@ function renderAiHub() {
             </div>
             <div id="aihub-mat-pct" style="font-size:11px;font-weight:700;font-family:monospace;color:var(--text);min-width:28px;text-align:right">0%</div>
           </div>
+          <div id="aihub-data-src" style="font-size:9px;color:var(--muted);margin-top:5px;text-align:center;font-style:italic"></div>
         </div>
       </div>
     </div>
@@ -361,8 +362,50 @@ function initAiMaturityPyramid() {
     if (col.type === 'seg') ALL_SEGS.push({ id: col.id, name: col.name, sku: col.sku });
   }));
 
+  // Map each pyramid segment to the most relevant ai_unified control ID
+  const PYRAMID_MAP = {
+    'ai_policy':    'AIG-1.1',  // AI governance policy documented
+    'ai_roles':     'AIG-3.3',  // AI competence and awareness program
+    'ai_princ':     'AIG-3.2',  // Responsible AI culture and ethics
+    'ai_supplier':  'AIG-2.5',  // AI vendor and supply chain risks evaluated
+    'ai_aup':       'AIG-1.1',  // AI governance policy (AUP is part of it)
+    'data_class':   'AIG-4.1',  // Data governance for AI inputs
+    'infosec_ai':   'AIG-4.4',  // AI infrastructure secured and managed
+    'ai_ethics':    'AIG-3.2',  // Responsible AI culture and ethics
+    'ai_inv':       'AIG-1.5',  // AI program scope and context established
+    'ctx_risk':     'AIG-2.4',  // AI impact assessment conducted
+    'tp_ai':        'AIG-2.5',  // AI vendor and supply chain risks
+    'data_gov':     'AIG-4.1',  // Data governance for AI inputs
+    'ai_reg':       'AIG-2.2',  // AI risks documented and tracked
+    'bias_fair':    'AIG-6.4',  // Bias and fairness testing conducted
+    'explain':      'AIG-3.1',  // Human review of AI outputs
+    'perf_mon':     'AIG-5.4',  // AI system performance monitored post-deployment
+    'red_team':     'AIG-6.3',  // Adversarial testing and red-teaming
+    'ai_irt':       'AIG-7.1',  // AI incident detection and response
+    'human_ctl':    'AIG-3.1',  // Human review of AI outputs
+    'decom':        'AIG-5.5',  // AI system decommissioning managed
+    'cont_improve': 'AIG-7.4',  // Continual improvement of AI practices
+    'gov_board':    'AIG-1.3',  // AI roles and accountability assigned
+  };
+
+  // Load latest ai_unified assessment answers to pre-populate state
+  const _orgId = currentOrg?.id;
+  const _runs = (orgAssessments[_orgId] || {})['ai_unified'] || [];
+  const _latest = _runs.length ? [..._runs].sort((a, b) => (b.date||'').localeCompare(a.date||''))[0] : null;
+  const _answers = _latest
+    ? Object.fromEntries(Object.entries(_latest.answers||{}).filter(([k]) => !k.startsWith('_')))
+    : {};
+
+  const ANSWER_STATUS = { yes: 'green', partial: 'yellow', no: 'red' };
+
   const state = {};
-  ALL_SEGS.forEach(s => { state[s.id] = 'red'; });
+  ALL_SEGS.forEach(s => {
+    const ctrlId = PYRAMID_MAP[s.id];
+    const answer = ctrlId ? _answers[ctrlId] : null;
+    state[s.id] = ANSWER_STATUS[answer] || 'red';
+  });
+
+  const hasAssessment = _latest !== null;
   let selectedId = null;
 
   const STATUS_CYCLE = ['red','yellow','blue','green'];
@@ -534,6 +577,12 @@ function initAiMaturityPyramid() {
     const pct = Math.round((g + b * 0.5 + y * 0.25) / vals.length * 100);
     document.getElementById('aihub-mat-pct').textContent = pct + '%';
     document.getElementById('aihub-mat-fill').style.width = pct + '%';
+    const srcEl = document.getElementById('aihub-data-src');
+    if (srcEl) {
+      srcEl.textContent = hasAssessment
+        ? `Auto-populated from AI Governance assessment (${_latest.date || 'latest'}) — click segments to adjust`
+        : 'No assessment on file — click segments to set status manually';
+    }
   }
 
   renderPyramid();
