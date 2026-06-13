@@ -90,7 +90,7 @@ const AI_PYR_MAP = {
 // ============================================================
 function renderAiPyramidCard(idPrefix, editable) {
   const hintText = editable
-    ? 'click a segment to select it — use the panel buttons to set status'
+    ? 'click any segment to cycle status · use the panel buttons to set a specific status'
     : 'click any segment to view NIST AI RMF details and remediation guidance';
   return `
   <div class="card" style="padding:1.1rem;margin-bottom:1.25rem">
@@ -507,8 +507,12 @@ function initAiPyramid(idPrefix, editable, externalState, autoLoad) {
     return null;
   }
 
-  // Click selects segment and shows detail — no cycling regardless of mode
+  // Click selects segment; in editable mode also cycles status for quick entry
+  const STATUS_CYCLE = ['red','yellow','blue','green'];
   function selectSeg(id) {
+    if (editable) {
+      state[id] = STATUS_CYCLE[(STATUS_CYCLE.indexOf(state[id]) + 1) % STATUS_CYCLE.length];
+    }
     selectedId = id;
     renderPyramid();
     updateStats();
