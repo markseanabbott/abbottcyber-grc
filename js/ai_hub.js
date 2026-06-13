@@ -647,6 +647,7 @@ function renderRapidPreAssessment() {
 
   <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-bottom:1.25rem">
     <button id="rapid-save-btn" class="btn btn-cyan">📥 Save Pre-Assessment</button>
+    <button class="btn btn-primary" onclick="promoteCurrentRapidToFull()" title="Copy pyramid statuses into a new AI Governance Assessment and open the evidence-based form">🔼 Promote to Full Assessment</button>
   </div>`;
 
   if (runs.length) {
@@ -671,6 +672,7 @@ function renderRapidPreAssessment() {
               <td style="padding:7px 10px;color:var(--muted)">${escH(r.conductedBy||'—')}</td>
               <td style="padding:7px 10px;text-align:right;display:flex;gap:4px;justify-content:flex-end">
                 <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px" onclick="loadRapidRun('${r.id}')">Load →</button>
+                <button class="btn btn-primary btn-sm" style="font-size:11px;padding:3px 8px" onclick="promoteRunToFull('${r.id}')" title="Open a new full AI Governance Assessment pre-populated from this run">🔼 Promote</button>
                 <button class="btn btn-red btn-sm" style="font-size:11px;padding:3px 8px" onclick="deleteRapidRun('${r.id}')">Delete</button>
               </td>
             </tr>`;
@@ -752,4 +754,52 @@ async function deleteRapidRun(runId) {
     el.innerHTML = viewOnlyBanner() + renderRapidPreAssessment();
     setTimeout(() => initRapidPyramid(), 50);
   } catch(e) { toast('Delete failed: ' + e.message, '#c00000'); }
+}
+
+// Promote a rapid pre-assessment state into a new AI Governance Assessment (evidence-based)
+function promoteRapidToFull(stateObj, conductedBy, date) {
+  const STATUS_TO_ANSWER = { green: 'yes', blue: 'partial', yellow: 'partial', red: 'no' };
+  const STATUS_RANK = { yes: 3, partial: 2, no: 1 };
+  // Multiple pyramid segments can map to the same control — take the best answer
+  const controlBest = {};
+  AI_PYR_SEGS.forEach(s => {
+    const ctrlId = AI_PYR_MAP[s.id];
+    if (!ctrlId) return;
+    const answer = STATUS_TO_ANSWER[stateObj[s.id] || 'red'] || 'no';
+    if (!controlBest[ctrlId] || STATUS_RANK[answer] > STATUS_RANK[controlBest[ctrlId]]) {
+      controlBest[ctrlId] = answer;
+    }
+  });
+  const prePopCount = Object.keys(controlBest).length;
+  // Inject into ai_unified state and open the form
+  aiUnifiedState.answers        = { ...controlBest };
+  aiUnifiedState.frameworks     = { nist: true, iso: true };
+  aiUnifiedState.openPanels     = {};
+  aiUnifiedState.openComments   = {};
+  aiUnifiedState.notes          = {};
+  aiUnifiedState.editId         = null;
+  aiUnifiedState.date           = date || new Date().toISOString().slice(0, 10);
+  aiUnifiedState.conductedBy    = conductedBy || '';
+  aiUnifiedState.view           = 'form';
+  aiUnifiedState.reportRun      = null;
+  aiUnifiedState.reportCommentary = '';
+  aiUnifiedState.poamRun        = null;
+  aiUnifiedState.poamItems      = {};
+  setNav('ai_unified');
+  toast(`${prePopCount} controls pre-populated from rapid assessment — add evidence to complete`);
+}
+
+function promoteCurrentRapidToFull() {
+  if (!_rapidState) { toast('No rapid assessment in progress', '#c00000'); return; }
+  const assessor = document.getElementById('rapid-assessor')?.value?.trim() || '';
+  const date = document.getElementById('rapid-date')?.value || '';
+  promoteRapidToFull(_rapidState, assessor, date);
+}
+
+function promoteRunToFull(runId) {
+  const orgId = currentOrg?.id;
+  const runs = (orgAssessments[orgId] || {})['rapid_pyramid'] || [];
+  const run = runs.find(r => r.id === runId);
+  if (!run) return;
+  promoteRapidToFull(run.answers || {}, run.conductedBy || '', run.date || '');
 }
