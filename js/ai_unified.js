@@ -252,6 +252,53 @@ const AI_GROUP_META = {
 
 const AI_GROUP_ORDER = ['g1','g2','g3','g4','g5','g6','g7','g8','g9'];
 
+const AI_REMEDIATION = {
+  'AIG-1.1': 'Draft and publish an AI Acceptable Use Policy. Use an industry template (NIST AI RMF or ISO 42001 aligned), get legal/leadership sign-off, and communicate it to all staff.',
+  'AIG-1.2': 'Schedule quarterly AI risk briefings for leadership. Assign a senior sponsor, include AI risk on exec/board agendas, and set annual AI governance goals.',
+  'AIG-1.3': 'Define AI responsibilities in your RACI. Assign a named AI Risk Owner and document who is accountable for each AI system in use.',
+  'AIG-1.4': 'Define your AI risk appetite in writing. Specify permitted, conditional, and prohibited AI use cases and align this to your enterprise risk framework.',
+  'AIG-1.5': 'Run an AI inventory exercise. List every AI tool in use, document its purpose, affected stakeholders, and applicable regulatory requirements.',
+  'AIG-2.1': 'Implement a repeatable AI risk assessment template. Assess technical, ethical, operational, and third-party risks for each AI system before and during deployment.',
+  'AIG-2.2': 'Add an AI section to your risk register. Record each identified AI risk with owner, likelihood, impact, and current treatment status.',
+  'AIG-2.3': 'Create an AI risk treatment plan. For each risk, document the chosen treatment (accept/mitigate/transfer/avoid), assign an owner, and set a target completion date.',
+  'AIG-2.4': 'Conduct AI impact assessments before deploying AI in client-facing or decision-making contexts. Document potential harms and mitigations.',
+  'AIG-2.5': 'Integrate AI vendor evaluation into procurement. Assess each AI vendor\'s security posture, data handling, jurisdiction, and contractual protections before signing.',
+  'AIG-3.1': 'Establish a human-in-the-loop policy. Require review and sign-off by a qualified person before any AI output is used in client work or high-stakes decisions.',
+  'AIG-3.2': 'Run AI ethics and awareness sessions. Publish guidelines on responsible AI use and foster a culture of constructive skepticism about AI outputs.',
+  'AIG-3.3': 'Create an AI awareness training module covering risks, limitations, ethical use, and your AI policy. Track completions and refresh annually.',
+  'AIG-3.4': 'Add an AI use disclosure to engagement letters or terms of service. Be transparent about what AI is used for and how human review is applied.',
+  'AIG-3.5': 'Add an AI feedback channel (shared inbox or survey). Review feedback quarterly and use findings to improve AI governance practices.',
+  'AIG-4.1': 'Classify data before feeding it to AI tools. Restrict sensitive or regulated data from public AI platforms and document your AI data handling policy.',
+  'AIG-4.2': 'Conduct a privacy impact assessment for each AI system that handles personal data. Apply data minimization controls and document risks.',
+  'AIG-4.3': 'Implement data lineage tracking for AI inputs. Document data sources, transformations applied, and any known quality or bias limitations.',
+  'AIG-4.4': 'Extend your information security program to cover AI infrastructure. Ensure AI endpoints, APIs, and pipelines have appropriate access controls and a patching cadence.',
+  'AIG-5.1': 'Create an AI system register. For each AI tool in use, document intended purpose, authorized use cases, known limitations, and who is permitted to use it.',
+  'AIG-5.2': 'Define acceptance criteria before deploying AI. Specify performance thresholds and require documented sign-off before any AI system goes to production.',
+  'AIG-5.3': 'Validate AI systems before use. Test for accuracy, reliability, and fitness for the intended context; document results and address failures before deployment.',
+  'AIG-5.4': 'Set up AI performance monitoring. Define KPIs for each deployed AI system, establish alert thresholds, and review metrics on a scheduled cadence.',
+  'AIG-5.5': 'Create an AI decommissioning procedure. Define how tools are retired, how data is handled at end-of-life, and who approves decommissioning.',
+  'AIG-6.1': 'Define measurable AI risk indicators. Track error rates, bias metrics, governance coverage, and control effectiveness on a regular basis.',
+  'AIG-6.2': 'Formalize AI system evaluation. Conduct structured testing against known failure modes and post-deployment evaluations; document results and track trends.',
+  'AIG-6.3': 'Conduct regular adversarial testing on AI systems. Test for prompt injection, misuse scenarios, and evasion; document findings and remediate before the next cycle.',
+  'AIG-6.4': 'Conduct bias and fairness testing on AI systems that inform decisions about people. Use a structured framework and document findings with remediation actions.',
+  'AIG-6.5': 'Periodically evaluate whether AI risk mitigations are working as intended. Revise or escalate controls that are ineffective.',
+  'AIG-6.6': 'Schedule an annual independent review of AI practices. Use an external reviewer or a cross-functional internal team to assess governance objectively.',
+  'AIG-7.1': 'Extend your incident response playbook to cover AI incidents. Define what constitutes an AI incident, assign an IR owner, and run a tabletop exercise.',
+  'AIG-7.2': 'Monitor AI vendor changelogs and model updates. Subscribe to vendor notifications and assess the impact of material changes on your risk posture.',
+  'AIG-7.3': 'Establish a process for communicating AI risks to clients and partners. Define disclosure triggers and assign responsibility for stakeholder communications.',
+  'AIG-7.4': 'Implement a lessons-learned process for AI incidents. Conduct retrospectives after each significant event and formally update governance documentation.',
+  'AIG-7.5': 'Schedule annual management reviews of the AI program. Cover risk status, audit results, performance against objectives, and improvement priorities.',
+  'AIG-7.6': 'Define AI program effectiveness metrics. Assess annually whether AI systems are delivering intended value and whether governance controls are functioning.',
+  'AIG-8.1': 'Establish an AIMS documentation set. Create and maintain the scope statement, AI policy, risk register, objectives, and treatment plans required by ISO 42001.',
+  'AIG-8.2': 'Set measurable AI management objectives. Align them to your AI policy, assign owners, and report on progress at management reviews.',
+  'AIG-8.3': 'Formally allocate resources for AI management. Document the budget, roles, and tools dedicated to the AI management system in your resource planning.',
+  'AIG-8.4': 'Schedule and conduct internal audits of the AI management system. Report findings to management and address nonconformities through corrective action.',
+  'AIG-9.1': 'Subscribe to AI risk research feeds (NIST, ENISA, MITRE ATLAS). Assign someone to monitor developments and update governance practices at least annually.',
+  'AIG-9.2': 'Formally allocate time and budget for AI risk management. Create a dedicated role or assign explicit hours rather than treating it as an afterthought.',
+  'AIG-9.3': 'Implement structured end-user feedback for AI systems. Use surveys or check-ins to collect insights and feed them into your evaluation cycle.',
+  'AIG-9.4': 'Tailor AI risk metrics to each deployment context. Avoid generic indicators — define measures that reflect the actual risks in your operational environment.',
+};
+
 const AI_WEIGHT_LABELS = { 5: 'Critical', 4: 'High', 3: 'Medium', 2: 'Low', 1: 'Info' };
 const AI_WEIGHT_COLORS = { 5: '#dc2626', 4: '#ea580c', 3: '#b45309', 2: '#4f46e5', 1: '#6b7280' };
 
@@ -889,6 +936,7 @@ function renderAiUnifiedPoam() {
           const status = item.status || 'open';
           const wColor = AI_WEIGHT_COLORS[g.weight];
           const m = AI_GROUP_META[g.grp];
+          const remediation = AI_REMEDIATION[g.id] || '';
           return `<tr style="border-bottom:1px solid var(--border);background:${statColors[status]||'#fff'}">
             <td style="padding:8px 10px;vertical-align:top;white-space:nowrap">
               <div style="font-size:16px;font-weight:900;color:${AI_WEIGHT_COLORS[g.weight]};text-align:center">#${rank+1}</div>
@@ -904,6 +952,7 @@ function renderAiUnifiedPoam() {
                 ${g.nist ? g.nist.map(id=>`<span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;background:#dbeafe;color:#1e40af">${id}</span>`).join('') : ''}
                 ${g.iso  ? g.iso.map(id =>`<span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;background:#ccfbf1;color:#0f766e">${id}</span>`).join('') : ''}
               </div>
+              ${remediation ? `<div style="font-size:10px;color:#0369a1;background:#f0f9ff;border:1px solid #bae6fd;border-radius:4px;padding:4px 6px;margin-top:5px"><strong>💡 Suggested Action:</strong> ${escH(remediation)}</div>` : ''}
             </td>
             <td style="padding:8px 8px;vertical-align:top;text-align:center">
               <select onchange="aiuPoamUpdate('${g.id}','status',this.value)"
@@ -988,21 +1037,14 @@ function renderAiUnifiedExecReport() {
       </div>
     </div>
     <div class="card" style="padding:1.25rem">
-      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Group Breakdown</div>
-      ${groupScores.filter(g=>g.pct!==null).map(g => {
-        const m = AI_GROUP_META[g.grp];
-        return `<div style="margin-bottom:7px">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px">
-            <span style="font-size:11px;font-weight:700;color:var(--text)">${m.icon} ${m.label}</span>
-            <span style="font-size:11px;font-weight:700;color:${aiuScoreColor(g.pct)}">${g.pct}%</span>
-          </div>
-          <div style="height:6px;background:var(--bg);border-radius:3px;overflow:hidden">
-            <div style="height:100%;width:${g.pct}%;background:${m.color};border-radius:3px;transition:width .4s"></div>
-          </div>
-        </div>`;
-      }).join('')||`<div style="font-size:12px;color:var(--muted)">No data yet</div>`}
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Domain Breakdown</div>
+      ${groupScores.filter(g=>g.pct!==null).length
+        ? `<canvas id="aiurep-radar" width="340" height="280" style="width:100%;display:block;margin:0 auto"></canvas>`
+        : `<div style="font-size:12px;color:var(--muted);padding:2rem 0;text-align:center">No data yet</div>`}
     </div>
   </div>
+
+  ${renderAiPyramidCard('aiurep', false)}
 
   <div class="card" style="padding:1.25rem;margin-bottom:1rem">
     <div style="font-size:13px;font-weight:700;margin-bottom:.75rem">⭐ Top Priority Gaps</div>
@@ -1209,6 +1251,96 @@ function aiuOpenReport(idx) {
   aiUnifiedState.reportCommentary = (run.answers||{})._exec_commentary || '';
   aiUnifiedState.view = 'report';
   renderMain();
+}
+
+// ── RADAR + PYRAMID HELPERS ───────────────────────────────────────────────────
+
+function aiuDrawRadar(canvasId, groupScores) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const valid = groupScores.filter(g => g.pct !== null);
+  const N = valid.length;
+  if (!N) return;
+
+  const cx = W / 2, cy = H / 2 + 10;
+  const R = Math.min(W, H) * 0.3;
+  const labelPad = 52;
+
+  function angle(i) { return (Math.PI * 2 * i / N) - Math.PI / 2; }
+  function ptR(i, r) { return [cx + r * Math.cos(angle(i)), cy + r * Math.sin(angle(i))]; }
+  function pt(i, val) { return ptR(i, (val / 100) * R); }
+
+  // Grid rings
+  [0.25, 0.5, 0.75, 1].forEach(level => {
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      const p = ptR(i, level * R);
+      i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = level === 1 ? '#9ca3af' : '#e5e7eb';
+    ctx.lineWidth = level === 1 ? 1.5 : 0.8;
+    if (level === 1) ctx.setLineDash([4, 3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    if (level < 1) {
+      const lp = ptR(0, level * R);
+      ctx.fillStyle = '#9ca3af'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(Math.round(level * 100) + '%', lp[0] + 14, lp[1] + 3);
+    }
+  });
+
+  // Spokes
+  for (let i = 0; i < N; i++) {
+    const op = ptR(i, R);
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(op[0], op[1]);
+    ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 0.8; ctx.stroke();
+  }
+
+  // Score polygon
+  ctx.beginPath();
+  valid.forEach((g, i) => {
+    const p = pt(i, g.pct ?? 0);
+    i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]);
+  });
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(21, 33, 104, 0.1)'; ctx.fill();
+  ctx.strokeStyle = '#152168'; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
+
+  // Score dots
+  valid.forEach((g, i) => {
+    const p = pt(i, g.pct ?? 0);
+    ctx.beginPath(); ctx.arc(p[0], p[1], 4, 0, Math.PI * 2);
+    ctx.fillStyle = g.pct >= 70 ? '#15803d' : g.pct >= 40 ? '#d97706' : '#dc2626';
+    ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+  });
+
+  // Spoke labels
+  for (let i = 0; i < N; i++) {
+    const m = AI_GROUP_META[valid[i].grp];
+    const ang = angle(i);
+    const lp = [cx + (R + labelPad) * Math.cos(ang), cy + (R + labelPad) * Math.sin(ang)];
+    const xOff = Math.cos(ang);
+    ctx.textAlign = xOff > 0.15 ? 'left' : xOff < -0.15 ? 'right' : 'center';
+    ctx.font = 'bold 9px Inter, sans-serif'; ctx.fillStyle = '#374151';
+    ctx.fillText(m.label.split(' ')[0], lp[0], lp[1]);
+    ctx.font = 'bold 10px Inter, sans-serif';
+    ctx.fillStyle = valid[i].pct >= 70 ? '#15803d' : valid[i].pct >= 40 ? '#d97706' : '#dc2626';
+    ctx.fillText((valid[i].pct ?? '—') + '%', lp[0], lp[1] + 12);
+  }
+}
+
+function aiuBuildPyramidState(answers) {
+  const ANSWER_TO_STATUS = { yes: 'green', partial: 'yellow', no: 'red' };
+  const state = {};
+  Object.entries(AI_PYR_MAP).forEach(([segId, ctrlId]) => {
+    state[segId] = ANSWER_TO_STATUS[answers[ctrlId]] || 'red';
+  });
+  return state;
 }
 
 async function aiuSaveCommentary() {

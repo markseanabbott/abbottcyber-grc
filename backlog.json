@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5",
   "created": "2026-05-14",
-  "updated": "2026-06-12 (session 12)",
+  "updated": "2026-06-12 (session 13)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -228,6 +228,12 @@
           "text": "CIS POAM (Plan of Action & Milestones): per-assessment gap report with Assigned To, Target Date, Risk Decision (Remediate/Accept/Transfer), Rationale, Status columns. Excel export with logo placeholder row. POAM button on each assessment history row.",
           "done": true,
           "notes": "Built. cis_poam_items table (PATCH_008). renderCISPoam(), cisOpenPoam(), cisSavePoam(), cisExportPoam(). Logo row placeholder in Excel export (row 1) — full logo upload is backlogged."
+        },
+        {
+          "id": "cis_poam_rem",
+          "text": "CIS POAM remediation suggestions — add a '💡 Suggested Action' block to each safeguard row in the CIS POAM, giving practitioners specific implementation guidance rather than just a gap reference. Same pattern as AI Unified POAM (AI_REMEDIATION lookup). Requires a CIS_REMEDIATION object or per-safeguard field added to CIS_SAFEGUARDS.",
+          "done": false,
+          "priority": "Medium"
         },
         {
           "id": "cis_poam_logo",
@@ -1452,7 +1458,7 @@
           "id": "ai5",
           "text": "Unified AI Governance Assessment — 44-question NIST AI RMF × ISO 42001 cross-walk module; weighted gap prioritisation (weight × deficit), top-5 gap view, POAM, exec report, framework toggles (NIST on/off, ISO on/off), AI prompt export; replaces separate NIST and ISO modules in nav",
           "done": true,
-          "notes": "js/ai_unified.js (AI_UNIFIED_CONTROLS 44q, 9 groups, aiuCalcScore/aiuWeightedGaps/aiuCalcGroupScores, full render suite). ai_hub.js updated to read from ai_unified. Saves to assessments with module=ai_unified. POAM stored in answers._poam blob."
+          "notes": "js/ai_unified.js (AI_UNIFIED_CONTROLS 44q, 9 groups, aiuCalcScore/aiuWeightedGaps/aiuCalcGroupScores, full render suite). ai_hub.js updated to read from ai_unified. Saves to assessments with module=ai_unified. POAM stored in answers._poam blob. Session 13: AI_REMEDIATION lookup added (all 44 controls); POAM rows now show '💡 Suggested Action' block with concrete remediation guidance inline under each gap."
         },
         {
           "id": "ai6",
@@ -1463,7 +1469,13 @@
           "id": "ai9",
           "text": "AI Governance Maturity Pyramid — interactive SVG pyramid in AI Readiness Hub; 22 NIST AI RMF segments across 5 tiers (Governing→Optimizing); click-to-cycle status (Not Addressed/Partial/In Progress/Implemented); detail panel with NIST/ISO standard links; live score footer",
           "done": true,
-          "notes": "Session 12 refactor: module-level AI_PYR_CATALOGUE (22 entries, each with commentary + remediation fields), AI_PYR_TIERS, AI_PYR_SEGS, AI_PYR_MAP. renderAiPyramidCard(idPrefix,editable) reusable HTML. initAiPyramid(idPrefix,editable,externalState,autoLoad) generic init — no click-to-cycle; click selects segment only; detail panel shows readonly status badge (hub) or 4 interactive buttons (rapid); 'How to Address This' remediation section added to detail panel; returns live state ref. initAiMaturityPyramid() wrapper calls initAiPyramid('aihub',false,null,true). Hub pyramid is read-only display. Rapid Pre-Assessment is editable + saves to DB as module=rapid_pyramid."
+          "notes": "Session 12 refactor: module-level AI_PYR_CATALOGUE (22 entries, each with commentary + remediation fields), AI_PYR_TIERS, AI_PYR_SEGS, AI_PYR_MAP. renderAiPyramidCard(idPrefix,editable) reusable HTML. initAiPyramid(idPrefix,editable,externalState,autoLoad) generic init — no click-to-cycle; click selects segment only; detail panel shows readonly status badge (hub) or 4 interactive buttons (rapid); 'How to Address This' remediation section added to detail panel; returns live state ref. initAiMaturityPyramid() wrapper calls initAiPyramid('aihub',false,null,true). Hub pyramid is read-only display. Rapid Pre-Assessment is editable + saves to DB as module=rapid_pyramid. Session 13: Hub Domain Breakdown bar chart replaced with radar/spider chart (aihub-domain-radar canvas, aiuDrawRadar()). initAiReadinessHub() now calls both pyramid init and radar draw."
+        },
+        {
+          "id": "ai12",
+          "text": "AI Governance Executive Report — maturity pyramid (read-only, status derived from AIG answers) + 9-spoke domain radar chart replacing group breakdown bars; pyramid and radar both init from app.js setTimeout on report view load",
+          "done": true,
+          "notes": "Session 13: renderAiUnifiedExecReport() updated — Group Breakdown card replaced with aiurep-radar canvas (aiuDrawRadar()); renderAiPyramidCard('aiurep',false) inserted between radar and Top Priority Gaps. aiuBuildPyramidState(answers) maps AIG answers to pyramid statuses (yes→green, partial→yellow, no→red) via AI_PYR_MAP. app.js setTimeout extended to draw radar + init pyramid when aiUnifiedState.view==='report'."
         },
         {
           "id": "ai10",

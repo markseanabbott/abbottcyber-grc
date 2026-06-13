@@ -253,18 +253,7 @@ function renderAiHub() {
     <div class="card" style="padding:1.1rem">
       <div style="font-size:13px;font-weight:700;margin-bottom:.9rem">Domain Breakdown</div>
       ${groupScores.filter(g => g.pct !== null).length
-        ? groupScores.filter(g => g.pct !== null).map(g => {
-            const m = AI_GROUP_META[g.grp];
-            return `<div style="margin-bottom:7px">
-              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px">
-                <span style="font-size:10px;font-weight:700;color:var(--text)">${m.icon} ${m.label}</span>
-                <span style="font-size:10px;font-weight:700;color:${scoreColor(g.pct)}">${g.pct}% <span style="font-size:9px;color:var(--muted);font-weight:400">${g.answered}/${g.total}</span></span>
-              </div>
-              <div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden">
-                <div style="height:100%;width:${g.pct}%;background:${m.color};border-radius:3px;transition:width .4s"></div>
-              </div>
-            </div>`;
-          }).join('')
+        ? `<canvas id="aihub-domain-radar" width="300" height="260" style="width:100%;display:block"></canvas>`
         : `<div style="text-align:center;padding:1.5rem 0;color:var(--muted)">
             <div style="font-size:24px;margin-bottom:.5rem">🤖</div>
             <div style="font-size:11px">No assessments yet</div>
@@ -601,6 +590,17 @@ function initAiPyramid(idPrefix, editable, externalState, autoLoad) {
 
 // Hub wrapper — read-only, auto-loads from latest ai_unified
 function initAiMaturityPyramid() { initAiPyramid('aihub', false, null, true); }
+
+function initAiReadinessHub() {
+  initAiMaturityPyramid();
+  const runs = (orgAssessments[currentOrg?.id]||{})['ai_unified']||[];
+  const sorted = [...runs].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const latest = sorted[0];
+  if (!latest) return;
+  const answers = Object.fromEntries(Object.entries(latest.answers||{}).filter(([k])=>!k.startsWith('_')));
+  const fw = aiuFrameworksFromRun(latest);
+  aiuDrawRadar('aihub-domain-radar', aiuCalcGroupScores(answers, fw));
+}
 
 // ============================================================
 // Rapid Pre-Assessment — interactive pyramid that saves to DB
