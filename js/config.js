@@ -126,6 +126,7 @@ const NAV = [
   { id: 'g_ai_readiness', group: 'AI Readiness', icon: '🤖', items: [
     { id: 'ai_readiness', icon: '🤖', label: 'AI Readiness Hub', live: true, phase: 1 },
     { id: 'ai_unified', icon: '🧩', label: 'AI Governance Assessment', live: true, phase: 1 },
+    { id: 'rapid_pyramid', icon: '🔺', label: 'Rapid Pre-Assessment', live: true, phase: 1 },
   ]},
 ];
 

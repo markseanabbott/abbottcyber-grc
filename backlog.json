@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5",
   "created": "2026-05-14",
-  "updated": "2026-06-12 (session 11)",
+  "updated": "2026-06-12 (session 12)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1463,12 +1463,18 @@
           "id": "ai9",
           "text": "AI Governance Maturity Pyramid — interactive SVG pyramid in AI Readiness Hub; 22 NIST AI RMF segments across 5 tiers (Governing→Optimizing); click-to-cycle status (Not Addressed/Partial/In Progress/Implemented); detail panel with NIST/ISO standard links; live score footer",
           "done": true,
-          "notes": "js/ai_hub.js: pyramid HTML injected into renderAiHub(), initAiMaturityPyramid() scoped init function at bottom of file. js/app.js: setTimeout(initAiMaturityPyramid,50) added to ai_readiness nav branch. NIST links → airc.nist.gov/Home, ISO links → iso.org/standard/81230.html. Session 11: pyramid now auto-populates segment statuses from latest ai_unified assessment — PYRAMID_MAP maps each of 22 segments to a primary AIG-x.x control; yes→green, partial→yellow, no→red. Source label below score bar shows assessment date or 'no assessment on file'. Segments remain click-to-override during live client sessions."
+          "notes": "Session 12 refactor: module-level AI_PYR_CATALOGUE (22 entries, each with commentary + remediation fields), AI_PYR_TIERS, AI_PYR_SEGS, AI_PYR_MAP. renderAiPyramidCard(idPrefix,editable) reusable HTML. initAiPyramid(idPrefix,editable,externalState,autoLoad) generic init — no click-to-cycle; click selects segment only; detail panel shows readonly status badge (hub) or 4 interactive buttons (rapid); 'How to Address This' remediation section added to detail panel; returns live state ref. initAiMaturityPyramid() wrapper calls initAiPyramid('aihub',false,null,true). Hub pyramid is read-only display. Rapid Pre-Assessment is editable + saves to DB as module=rapid_pyramid."
         },
         {
           "id": "ai10",
           "text": "AI Maturity Pyramid — persist segment statuses per org to Supabase so state is saved between sessions and can be used in reporting",
           "done": false
+        },
+        {
+          "id": "ai11",
+          "text": "Rapid Pre-Assessment — interactive pyramid, click segments to set maturity status, save to DB as module=rapid_pyramid, history with load/delete, no comments or evidence required",
+          "done": true,
+          "notes": "js/ai_hub.js: renderRapidPreAssessment(), initRapidPyramid(preloadRunId), doSaveRapidPyramid(), loadRapidRun(id), deleteRapidRun(id), calcPyramidPct(stateObj). Saves to assessments table with module=rapid_pyramid. History shows date, maturity%, assessor with load/delete actions. config.js: rapid_pyramid nav item added. app.js: render route added."
         },
         {
           "id": "ai7",
