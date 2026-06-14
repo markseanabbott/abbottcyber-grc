@@ -282,6 +282,7 @@ function aittInit() {
     discussionNotes: {},
     notifChecks: {},
     startTime: null,
+    savedId: null,   // set when viewing a historical run
   };
 }
 
@@ -391,7 +392,69 @@ function aittRenderSetup() {
     <div style="margin-top:14px;display:flex;justify-content:flex-end">
       <button class="btn btn-primary" onclick="aittLaunch()">Begin exercise →</button>
     </div>
+  </div>
+  ${aittRenderHistory()}`;
+
+}
+
+function aittRenderHistory() {
+  const runs = ((orgAssessments[currentOrg?.id] || {})['ai_tabletop'] || []).slice().reverse();
+  if (!runs.length) return '';
+  return `<div class="card">
+    <div class="card-title">Exercise history</div>
+    ${runs.map(r => {
+      const sc = AITT_SCENARIOS.find(s => s.id === r.answers?.scenarioId);
+      const noteCount = Object.values(r.answers?.injectNotes || {}).filter(n => n?.trim()).length
+                      + Object.values(r.answers?.discussionNotes || {}).filter(n => n?.trim()).length;
+      const checked   = Object.values(r.answers?.notifChecks || {}).filter(Boolean).length;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            <span class="badge b-cyan" style="margin-right:5px;font-size:9px">${escH(r.answers?.scenarioId || '—')}</span>${escH(r.answers?.scenarioName || 'Unknown scenario')}
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">
+            ${escH(r.date)} · ${escH(r.conductedBy || '—')}
+            ${noteCount ? ` · ${noteCount} note${noteCount !== 1 ? 's' : ''}` : ''}
+            ${checked ? ` · ${checked}/${AITT_NOTIF_ITEMS.length} regulatory items` : ''}
+          </div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="aittLoadRun('${r.id}')">View AAR</button>
+        <button class="btn btn-red btn-sm" onclick="aittDeleteRun('${r.id}')">Delete</button>
+      </div>`;
+    }).join('')}
   </div>`;
+}
+
+function aittLoadRun(id) {
+  const runs = (orgAssessments[currentOrg?.id] || {})['ai_tabletop'] || [];
+  const r = runs.find(x => x.id === id);
+  if (!r) return;
+  const a = r.answers || {};
+  aittState = {
+    view: 'aar',
+    scenarioId: a.scenarioId || null,
+    facilitatorName: a.facilitator || r.conductedBy || '',
+    currentInject: 0,
+    injectNotes: a.injectNotes || {},
+    discussionNotes: a.discussionNotes || {},
+    notifChecks: a.notifChecks || {},
+    startTime: null,
+    savedId: id,
+  };
+  aittRender();
+}
+
+async function aittDeleteRun(id) {
+  if (!confirm('Delete this exercise record? This cannot be undone.')) return;
+  try {
+    await sb.deleteAssessment(id);
+    delete orgAssessments[currentOrg.id];
+    await loadAssessments(currentOrg.id);
+    toast('Exercise deleted', '#16a34a');
+    aittRender();
+  } catch (e) {
+    toast('Delete failed — ' + e.message, '#dc2626');
+  }
 }
 
 function aittPickScenario(id) { aittSnapshot(); aittState.scenarioId = id; aittRender(); }
@@ -559,24 +622,113 @@ function aittToggleNotif(id) {
 function aittRenderAAR() {
   const sc = AITT_SCENARIOS.find(s => s.id === aittState.scenarioId);
   if (!sc) return aittRenderSetup();
-  const checkedCount  = AITT_NOTIF_ITEMS.filter(i => aittState.notifChecks[i.id]).length;
-  const capturedNotes = [...Object.values(aittState.injectNotes), ...Object.values(aittState.discussionNotes)].filter(n => n?.trim()).length;
+  const checkedCount   = AITT_NOTIF_ITEMS.filter(i => aittState.notifChecks[i.id]).length;
+  const injectNoted    = sc.injects.filter((_, i) => (aittState.injectNotes[i] || '').trim()).length;
+  const discussNoted   = sc.discussion.filter((_, i) => (aittState.discussionNotes[i] || '').trim()).length;
+  const totalNotes     = injectNoted + discussNoted;
+  const notifPct       = Math.round((checkedCount / AITT_NOTIF_ITEMS.length) * 100);
+  const injectPct      = Math.round((injectNoted  / sc.injects.length) * 100);
+  const discussPct     = Math.round((discussNoted / sc.discussion.length) * 100);
+  const today          = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  const statBox = (val, label, sub) => `
+    <div style="text-align:center;padding:10px 8px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
+      <div style="font-size:20px;font-weight:800;color:var(--navy);line-height:1">${val}</div>
+      <div style="font-size:10px;font-weight:700;color:var(--text);margin-top:3px">${label}</div>
+      ${sub ? `<div style="font-size:9px;color:var(--muted);margin-top:1px">${sub}</div>` : ''}
+    </div>`;
 
   return `${aittHeaderBar()}${aittPhaseBar('AAR')}
-  <div class="commentary-card">
-    <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--cyan2);margin-bottom:4px">Exercise complete</div>
-    <div style="font-size:13px;color:#fff;font-weight:700;margin-bottom:6px">${escH(sc.name)}</div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <span style="font-size:11px;color:rgba(255,255,255,0.55)">${sc.injectCount} injects</span>
-      <span style="color:rgba(255,255,255,0.2)">·</span>
-      <span style="font-size:11px;color:rgba(255,255,255,0.55)">${sc.discussion.length} discussion questions</span>
-      <span style="color:rgba(255,255,255,0.2)">·</span>
-      <span style="font-size:11px;color:rgba(255,255,255,0.55)">${checkedCount}/${AITT_NOTIF_ITEMS.length} regulatory items reviewed</span>
-      <span style="color:rgba(255,255,255,0.2)">·</span>
-      <span style="font-size:11px;color:rgba(255,255,255,0.55)">${capturedNotes} captured notes</span>
+
+  <!-- STAT STRIP -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:0.75rem">
+    ${statBox(sc.injectCount, 'Injects', 'delivered')}
+    ${statBox(`${injectNoted}/${sc.injects.length}`, 'Inject notes', `${injectPct}% captured`)}
+    ${statBox(`${discussNoted}/${sc.discussion.length}`, 'Discussion Qs', `${discussPct}% noted`)}
+    ${statBox(`${checkedCount}/${AITT_NOTIF_ITEMS.length}`, 'Regulatory', `${notifPct}% reviewed`)}
+  </div>
+
+  <!-- REPORT HEADER -->
+  <div class="card" style="border-top:4px solid var(--navy)">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">After Action Report — AI Governance Tabletop</div>
+        <div style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:6px">${escH(sc.name)}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <span class="badge b-cyan">${escH(sc.id)}</span>
+          <span class="badge b-gray">${escH(sc.tag)}</span>
+          <span class="badge ${sc.difficulty === 'Hard' ? 'b-red' : 'b-amber'}">${sc.difficulty}</span>
+          <span class="badge b-purple">${sc.duration}</span>
+        </div>
+      </div>
+      <div style="text-align:right;font-size:11px;color:var(--muted);white-space:nowrap">
+        <div><strong style="color:var(--text)">${escH(currentOrg?.name || '—')}</strong></div>
+        <div>Facilitator: ${escH(aittState.facilitatorName || '—')}</div>
+        <div>${today}</div>
+      </div>
+    </div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Scenario</div>
+      <div style="font-size:13px;color:var(--text);line-height:1.65">${escH(sc.setup)}</div>
     </div>
   </div>
 
+  <!-- INJECT RECAP -->
+  <div class="card">
+    <div class="card-title">Inject recap &amp; group notes</div>
+    ${sc.injects.map((inj, i) => {
+      const note = (aittState.injectNotes[i] || '').trim();
+      return `<div style="margin-bottom:14px;padding-bottom:14px;${i < sc.injects.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <div style="width:22px;height:22px;min-width:22px;border-radius:50%;background:var(--navy);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center">${i + 1}</div>
+          <div style="font-size:12px;color:var(--text);font-weight:500;line-height:1.5">${escH(inj)}</div>
+        </div>
+        ${note
+          ? `<div style="margin-left:30px;font-size:12px;color:var(--text);background:var(--bg);border-radius:6px;padding:8px 10px;line-height:1.5;border-left:3px solid var(--cyan)">${escH(note)}</div>`
+          : `<div style="margin-left:30px;font-size:11px;color:var(--muted);font-style:italic">No notes captured for this inject.</div>`}
+      </div>`;
+    }).join('')}
+  </div>
+
+  <!-- DISCUSSION OUTCOMES -->
+  <div class="card">
+    <div class="card-title">Discussion outcomes</div>
+    ${sc.discussion.map((q, qi) => {
+      const note = (aittState.discussionNotes[qi] || '').trim();
+      return `<div style="margin-bottom:14px;padding-bottom:14px;${qi < sc.discussion.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
+        <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:6px">
+          <div style="width:22px;height:22px;min-width:22px;border-radius:50%;background:var(--cyan);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center">${qi + 1}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);line-height:1.5">${escH(q)}</div>
+        </div>
+        ${note
+          ? `<div style="margin-left:30px;font-size:12px;color:var(--text);background:var(--bg);border-radius:6px;padding:8px 10px;line-height:1.5;border-left:3px solid var(--cyan)">${escH(note)}</div>`
+          : `<div style="margin-left:30px;font-size:11px;color:var(--muted);font-style:italic">No notes captured for this question.</div>`}
+      </div>`;
+    }).join('')}
+  </div>
+
+  <!-- US REGULATORY REVIEW -->
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="card-title" style="margin:0">US regulatory items reviewed</div>
+      <span class="badge ${checkedCount === AITT_NOTIF_ITEMS.length ? 'b-green' : checkedCount > 0 ? 'b-amber' : 'b-red'}">${checkedCount}/${AITT_NOTIF_ITEMS.length} confirmed</span>
+    </div>
+    ${AITT_NOTIF_ITEMS.map(item => {
+      const chk = !!aittState.notifChecks[item.id];
+      return `<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);align-items:flex-start">
+        <div style="width:18px;height:18px;min-width:18px;border-radius:4px;border:2px solid ${chk ? 'var(--cyan)' : 'var(--border)'};background:${chk ? 'var(--cyan)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">
+          ${chk ? '<span style="color:#fff;font-size:10px;line-height:1;font-weight:700">✓</span>' : ''}
+        </div>
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:700;color:${chk ? 'var(--text)' : 'var(--muted)'}">${escH(item.label)}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:1px;line-height:1.3">${escH(item.detail)}</div>
+        </div>
+        <span class="badge ${chk ? 'b-cyan' : 'b-gray'}" style="flex-shrink:0;font-size:9px;white-space:nowrap;align-self:center">${escH(item.clock)}</span>
+      </div>`;
+    }).join('')}
+  </div>
+
+  <!-- FRAMEWORK MAPPING -->
   <div class="card">
     <div class="card-title">Framework areas triggered</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
@@ -597,31 +749,13 @@ function aittRenderAAR() {
     </div>
   </div>
 
-  ${Object.values(aittState.injectNotes).some(n => n?.trim()) ? `
-  <div class="card">
-    <div class="card-title">Inject notes</div>
-    ${sc.injects.map((inj, i) => (aittState.injectNotes[i] || '').trim() ? `
-      <div style="margin-bottom:12px;padding-bottom:12px;${i < sc.injects.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
-        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px">Inject ${i + 1}</div>
-        <div style="font-size:11px;color:var(--muted);font-style:italic;margin-bottom:5px;line-height:1.4">"${escH(inj)}"</div>
-        <div style="font-size:12px;color:var(--text);background:var(--bg);border-radius:6px;padding:8px 10px;line-height:1.5">${escH(aittState.injectNotes[i])}</div>
-      </div>` : '').join('')}
-  </div>` : ''}
-
-  ${Object.values(aittState.discussionNotes).some(n => n?.trim()) ? `
-  <div class="card">
-    <div class="card-title">Discussion notes</div>
-    ${sc.discussion.map((q, qi) => (aittState.discussionNotes[qi] || '').trim() ? `
-      <div style="margin-bottom:12px;padding-bottom:12px;${qi < sc.discussion.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
-        <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:5px;line-height:1.4">${escH(q)}</div>
-        <div style="font-size:12px;color:var(--text);background:var(--bg);border-radius:6px;padding:8px 10px;line-height:1.5">${escH(aittState.discussionNotes[qi])}</div>
-      </div>` : '').join('')}
-  </div>` : ''}
-
+  <!-- ACTIONS -->
   <div class="card">
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <button class="btn btn-cyan" onclick="aittCopyPrompt()">📋 Copy AAR prompt for Claude</button>
-      <button class="btn btn-outline" onclick="aittSaveAndNew()">✓ Save &amp; run another</button>
+      ${aittState.savedId
+        ? `<button class="btn btn-outline" onclick="aittInit();aittRender()">← Back to history</button>`
+        : `<button class="btn btn-outline" onclick="aittSaveAndNew()">✓ Save &amp; run another</button>`}
     </div>
     <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5">The AAR prompt bundles your scenario, captured inject notes, discussion takeaways, and framework references. Paste it into Claude to generate a formatted client-ready After Action Report.</div>
   </div>`;
@@ -687,7 +821,7 @@ async function aittSaveAndNew() {
       await sb.saveAssessment({
         org_id: currentOrg.id,
         module: 'ai_tabletop',
-        score: null,
+        score: 0,
         answers: {
           scenarioId: sc.id,
           scenarioName: sc.name,

@@ -884,14 +884,19 @@ function cisHydrate() {
 
 async function cisSetGoal(goal) {
   if (!currentOrg) return;
+  const prev = cisGetGoal();
+  // Optimistic update — render immediately so the button responds
+  if (!orgProfiles[currentOrg.id]) orgProfiles[currentOrg.id] = {};
+  orgProfiles[currentOrg.id].cis_goal = goal;
+  renderMain();
   try {
     await sb.profiles.upsert({ org_id: currentOrg.id, cis_goal: goal });
-    if (!orgProfiles[currentOrg.id]) orgProfiles[currentOrg.id] = {};
-    orgProfiles[currentOrg.id].cis_goal = goal;
     const labels = { ig1: 'IG1', ig2: 'IG2', ig3: 'IG3' };
-    toast(`✓ CIS goal set to ${labels[goal]}`, '#15803d');
-    renderMain();
+    toast(`Goal updated to ${labels[goal]}`, '#15803d');
   } catch(e) {
+    // Revert local state if server rejected
+    orgProfiles[currentOrg.id].cis_goal = prev;
+    renderMain();
     toast('Failed to save goal: ' + e.message, '#dc2626');
   }
 }

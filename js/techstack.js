@@ -621,16 +621,18 @@ async function tsSaveAllResponses() {
   if (tsState.saving) return;
   tsState.saving = true; tsRender();
   let saved = 0, failed = 0;
-  const allQs = TS_CATS.flatMap(c => c.questions);
+  const allQs = TS_CATS.flatMap(c => c.questions.map(q => ({ ...q, category_id: c.id })));
   for (const q of allQs) {
     const a = tsState.answers[q.id];
     if (!a || !a.ans) continue;
     try {
       await sb.techstack.upsertResponse({
         org_id: currentOrg.id, question_id: q.id,
+        category_id: q.category_id,
         tool_category: q.tool_category, question_type: q.question_type,
         derive_strategy: q.derive_strategy, answer: a.ans,
         partial_detail: a.ans==='partial'?(a.detail||null):null,
+        assessed_at: new Date().toISOString().slice(0, 10),
         updated_at: new Date().toISOString(),
       });
       saved++;

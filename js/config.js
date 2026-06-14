@@ -118,6 +118,7 @@ const NAV = [
     { id: 'pentest', icon: '🐛', label: 'Pen Test Findings', live: false, phase: 3 },
   ]},
   { id: 'g_exercises', group: 'Exercises', icon: '🎯', items: [
+    { id: 'ex_hub', icon: '📋', label: 'Exercise Hub', live: true, phase: 1 },
     { id: 'tabletop', icon: '🎯', label: 'Tabletop — Operational', live: true, phase: 3 },
     { id: 'tt_ai', icon: '🤖', label: 'Tabletop — AI Governance', live: true, phase: 1 },
     { id: 'tt_exec', icon: '💼', label: 'Tabletop — Executive', live: false, phase: 3 },

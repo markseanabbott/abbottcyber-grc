@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // TABLETOP — Operational Track (full engine, wired to Supabase)
 // ============================================================
 // State persists across re-renders via in-memory ttState; Supabase rows mirror it.
@@ -6,11 +6,11 @@
 // next backlog item (mp1..mp15) and will add code-based session rehydration.
 
 const TT_ROLES = [
-  { id: 'ic', name: 'Incident Commander', icon: 'ðŸ§­', desc: 'vCISO. Owns coordination, calls the shots, signs the breach.' },
-  { id: 'tl', name: 'Technical Lead',     icon: 'ðŸ› ï¸', desc: 'Senior tech. Drives containment, eradication, root cause.' },
-  { id: 'cl', name: 'Communications Lead',icon: 'ðŸ“£', desc: 'Internal + external messaging, holding statements.' },
-  { id: 'lc', name: 'Legal / Compliance', icon: 'âš–ï¸', desc: 'Privacy regs, breach clocks, evidence preservation.' },
-  { id: 'es', name: 'Executive Sponsor',  icon: 'ðŸ‘”', desc: 'Assumed role. Business decisions, co-signs the breach.' },
+  { id: 'ic', name: 'Incident Commander', icon: '&#x1F9ED;', desc: 'vCISO. Owns coordination, calls the shots, signs the breach.' },
+  { id: 'tl', name: 'Technical Lead',     icon: '&#x1F6E0;&#xFE0F;', desc: 'Senior tech. Drives containment, eradication, root cause.' },
+  { id: 'cl', name: 'Communications Lead',icon: '&#x1F4E3;', desc: 'Internal + external messaging, holding statements.' },
+  { id: 'lc', name: 'Legal / Compliance', icon: '&#x2696;&#xFE0F;', desc: 'Privacy regs, breach clocks, evidence preservation.' },
+  { id: 'es', name: 'Executive Sponsor',  icon: '&#x1F454;', desc: 'Assumed role. Business decisions, co-signs the breach.' },
 ];
 
 const TT_NIST_PHASES = ['Preparation','Detection & Analysis','Containment','Eradication','Recovery','Post-Incident'];
@@ -598,7 +598,7 @@ const TT_NOTIF_ITEMS = [
 let ttState = null;
 function ttInit() {
   ttState = {
-    view: 'setup',                     // setup | commentary | declaration | inject | breach | notif | aar
+    view: 'setup',                     // setup | commentary | declaration | inject | breach | notif | aar | history_aar
     scenarioId: null,
     facilitatorName: '',
     sessionId: null,
@@ -610,6 +610,8 @@ function ttInit() {
     notifChecks: {},                   // { [itemId]: { checked, checkedAt } }
     notifStartTime: null,
     exerciseLog: [],
+    completedSessions: null,           // null = not yet loaded; [] = loaded, empty
+    historicalSession: null,           // set when view = 'history_aar'
   };
 }
 
@@ -659,6 +661,7 @@ function renderTabletop() {
     case 'breach':      return ttRenderBreachGate();
     case 'notif':       return ttRenderNotif();
     case 'aar':         return ttRenderAAR();
+    case 'history_aar': return ttRenderHistoryAAR();
     default:            return '<div class="card">Unknown tabletop view.</div>';
   }
 }
@@ -667,7 +670,7 @@ function renderTabletop() {
 function ttHeaderBar() {
   const scenario = TT_SCENARIOS[ttState.scenarioId];
   return `<div class="card" style="padding:0.7rem 1rem;margin-bottom:0.5rem;display:flex;align-items:center;gap:10px">
-    <span style="font-size:14px">ðŸŽ¯</span>
+    <span style="font-size:14px">&#x1F3AF;</span>
     <div style="flex:1">
       <div style="font-size:13px;font-weight:700">${scenario ? scenario.title : 'Tabletop'}</div>
       <div style="font-size:10px;color:var(--muted)">Facilitator: ${ttState.facilitatorName || '—'}</div>
@@ -693,7 +696,7 @@ function ttBack(view) { ttSnapshot(); ttState.view = view; ttRender(); }
 function ttRenderSetup() {
   const orgOk = !!currentOrg;
   return `${renderTierBanner()}
-  <div style="font-size:17px;font-weight:700;margin-bottom:0.85rem">ðŸŽ¯ Tabletop — Operational</div>
+  <div style="font-size:17px;font-weight:700;margin-bottom:0.85rem">&#x1F3AF; Tabletop — Operational</div>
   <div class="commentary-card">
     <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--cyan2);margin-bottom:6px">vCISO facilitator console</div>
     <div style="font-size:14px;color:#fff;font-weight:700;margin-bottom:0.4rem">Operational track — IT / security team</div>
@@ -724,7 +727,9 @@ function ttRenderSetup() {
     <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end">
       <button class="btn btn-primary" onclick="ttLaunchSession()" ${!orgOk ? 'disabled' : ''}>Create session →</button>
     </div>
-  </div>`;
+  </div>
+  ${ttRenderHistoryList()}`;
+
 }
 
 function ttPickScenario(id) { ttSnapshot(); ttState.scenarioId = id; ttRender(); }
@@ -782,7 +787,7 @@ function ttRenderCommentary() {
   </div>
   ${ttRenderLobbyPanel()}
   <div style="display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:10px;flex-wrap:wrap">
-    <button class="btn btn-outline btn-sm" id="ttDemoBtn" onclick="ttAddDemoPlayers()">âž• Add demo players</button>
+    <button class="btn btn-outline btn-sm" id="ttDemoBtn" onclick="ttAddDemoPlayers()">&#x2795; Add demo players</button>
     <div style="display:flex;gap:8px">
       <button class="btn btn-outline" onclick="ttBack('setup')">← Back to setup</button>
       <button class="btn btn-primary" onclick="ttGoto('declaration')">Begin Step 0 →</button>
@@ -888,7 +893,7 @@ function ttRenderInject() {
         </div>`;
       }).join('')}
     </div>
-    ${inj.triggersBreach && !ttState.breach.declared ? `<div class="fn-box" style="font-size:12px"><b>âš ï¸ Breach trigger.</b> This inject contains a breach indicator. After responses are saved, the breach declaration gate opens.</div>` : ''}
+    ${inj.triggersBreach && !ttState.breach.declared ? `<div class="fn-box" style="font-size:12px"><b>&#x26A0;&#xFE0F; Breach trigger.</b> This inject contains a breach indicator. After responses are saved, the breach declaration gate opens.</div>` : ''}
     <div style="display:flex;gap:8px;justify-content:space-between;align-items:center">
       <button class="btn btn-outline btn-sm" onclick="ttPrevInject()" ${idx === 0 ? 'disabled' : ''}>← Previous inject</button>
       <div style="display:flex;gap:6px">
@@ -968,14 +973,14 @@ function ttRenderBreachGate() {
     <textarea id="ttBreachRat" placeholder="Why are we declaring? Cite the indicator (e.g. confirmed exfiltration of guest PII)." style="background:rgba(255,255,255,0.05);color:#fff;border-color:rgba(255,255,255,0.2)">${b.rationale || ''}</textarea>
     <div class="co-sign-grid" style="margin-top:10px">
       <div class="co-sign-card">
-        <div style="font-size:11px;font-weight:700;color:#fff;margin-bottom:3px">ðŸ§­ Incident Commander</div>
+        <div style="font-size:11px;font-weight:700;color:#fff;margin-bottom:3px">&#x1F9ED; Incident Commander</div>
         <div style="font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:5px">${b.ic_sign_time ? 'Signed ' + new Date(b.ic_sign_time).toLocaleTimeString() : 'Not signed'}</div>
-        <button class="btn ${b.ic_sign_time ? 'btn-green' : 'btn-cyan'} btn-sm" onclick="ttSignBreach('ic')" ${b.ic_sign_time ? 'disabled' : ''}>${b.ic_sign_time ? 'âœ“ Signed' : 'Sign as IC'}</button>
+        <button class="btn ${b.ic_sign_time ? 'btn-green' : 'btn-cyan'} btn-sm" onclick="ttSignBreach('ic')" ${b.ic_sign_time ? 'disabled' : ''}>${b.ic_sign_time ? '&#x2713; Signed' : 'Sign as IC'}</button>
       </div>
       <div class="co-sign-card">
-        <div style="font-size:11px;font-weight:700;color:#fff;margin-bottom:3px">ðŸ‘” Executive Sponsor</div>
+        <div style="font-size:11px;font-weight:700;color:#fff;margin-bottom:3px">&#x1F454; Executive Sponsor</div>
         <div style="font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:5px">${b.es_sign_time ? 'Signed ' + new Date(b.es_sign_time).toLocaleTimeString() : 'Not signed'}</div>
-        <button class="btn ${b.es_sign_time ? 'btn-green' : 'btn-cyan'} btn-sm" onclick="ttSignBreach('es')" ${b.es_sign_time ? 'disabled' : ''}>${b.es_sign_time ? 'âœ“ Signed' : 'Sign as ES'}</button>
+        <button class="btn ${b.es_sign_time ? 'btn-green' : 'btn-cyan'} btn-sm" onclick="ttSignBreach('es')" ${b.es_sign_time ? 'disabled' : ''}>${b.es_sign_time ? '&#x2713; Signed' : 'Sign as ES'}</button>
       </div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
@@ -1050,13 +1055,13 @@ function ttRenderNotif() {
       const c = ttState.notifChecks[it.id];
       const checked = c && c.checked;
       return `<div class="notif-item">
-        <div class="notif-check ${checked ? 'checked' : ''}" onclick="ttToggleNotif('${it.id}')">${checked ? 'âœ“' : ''}</div>
+        <div class="notif-check ${checked ? 'checked' : ''}" onclick="ttToggleNotif('${it.id}')">${checked ? '&#x2713;' : ''}</div>
         <div style="flex:1">
           <div style="font-size:12px;font-weight:700">${it.label}</div>
           <div style="font-size:10px;color:var(--muted)">${it.detail}</div>
           <div style="font-size:10px;color:var(--muted);margin-top:2px">Target window: ${it.clockHr}h</div>
         </div>
-        ${checked && c.checkedAt ? `<span class="badge b-green">âœ“ ${new Date(c.checkedAt).toLocaleTimeString()}</span>` : ''}
+        ${checked && c.checkedAt ? `<span class="badge b-green">&#x2713; ${new Date(c.checkedAt).toLocaleTimeString()}</span>` : ''}
       </div>`;
     }).join('')}
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
@@ -1113,7 +1118,7 @@ function ttRenderAAR() {
   const score = Math.round((sevMatch ? 25 : 0) + (declMatch ? 25 : 0) + (critAccPct * 0.5));
   return `${renderTierBanner()}
   ${ttHeaderBar()}
-  <div style="font-size:17px;font-weight:700;margin-bottom:0.85rem">ðŸ“„ After Action Report — ${scenario.title}</div>
+  <div style="font-size:17px;font-weight:700;margin-bottom:0.85rem">&#x1F4C4; After Action Report — ${scenario.title}</div>
   <div class="summary-metrics">
     <div class="sm-card"><div class="sm-val">${score}</div><div class="sm-lbl">Exercise score</div></div>
     <div class="sm-card"><div class="sm-val">${critAccPct}%</div><div class="sm-lbl">Criticality acc.</div></div>
@@ -1127,13 +1132,13 @@ function ttRenderAAR() {
       <div>
         <div style="font-size:11px;color:var(--muted)">TL severity called</div>
         <div style="font-size:14px;font-weight:700">${ttState.declaration.severity || '—'}
-          <span style="font-size:11px;color:${sevMatch ? 'var(--green)' : 'var(--red)'};font-weight:700">${sevMatch ? 'âœ“ matches' : 'âœ— correct was ' + scenario.declaration.correctSeverity}</span>
+          <span style="font-size:11px;color:${sevMatch ? 'var(--green)' : 'var(--red)'};font-weight:700">${sevMatch ? '&#x2713; matches' : '&#x2717; correct was ' + scenario.declaration.correctSeverity}</span>
         </div>
       </div>
       <div>
         <div style="font-size:11px;color:var(--muted)">TL recommendation</div>
         <div style="font-size:14px;font-weight:700">${ttState.declaration.declare === null ? '—' : (ttState.declaration.declare ? 'Declare' : 'Monitor')}
-          <span style="font-size:11px;color:${declMatch ? 'var(--green)' : 'var(--red)'};font-weight:700">${declMatch ? 'âœ“ matches' : 'âœ— correct was ' + (scenario.declaration.correctDeclare ? 'Declare' : 'Monitor')}</span>
+          <span style="font-size:11px;color:${declMatch ? 'var(--green)' : 'var(--red)'};font-weight:700">${declMatch ? '&#x2713; matches' : '&#x2717; correct was ' + (scenario.declaration.correctDeclare ? 'Declare' : 'Monitor')}</span>
         </div>
       </div>
     </div>
@@ -1163,7 +1168,7 @@ function ttRenderAAR() {
             const cr = r[role.id] && r[role.id].criticality;
             if (!cr) return `<span style="font-size:10px;color:var(--muted)">${role.icon} ${role.id.toUpperCase()}: —</span>`;
             const ok = cr === inj.correctCriticality;
-            return `<span class="badge ${ok ? 'b-green' : 'b-red'}">${role.icon} ${role.id.toUpperCase()}: ${cr}${ok ? ' âœ“' : ' âœ—'}</span>`;
+            return `<span class="badge ${ok ? 'b-green' : 'b-red'}">${role.icon} ${role.id.toUpperCase()}: ${cr}${ok ? ' &#x2713;' : ' &#x2717;'}</span>`;
           }).join(' ')}
         </div>
       </div>`;
@@ -1186,7 +1191,7 @@ function ttRenderAAR() {
     ${TT_NOTIF_ITEMS.map(it => {
       const c = ttState.notifChecks[it.id];
       return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">
-        <span style="font-size:14px">${c && c.checked ? 'âœ…' : 'â¬œ'}</span>
+        <span style="font-size:14px">${c && c.checked ? '&#x2705;' : '&#x2B1C;'}</span>
         <span style="flex:1">${it.label}</span>
         <span style="font-size:11px;color:var(--muted)">${c && c.checked && c.checkedAt ? new Date(c.checkedAt).toLocaleTimeString() : 'Not filed'}</span>
       </div>`;
@@ -1230,4 +1235,161 @@ async function ttFinalise() {
 }
 
 function ttRestart() { ttInit(); ttRender(); }
+
+// ---- EXERCISE HISTORY ----
+
+function ttRenderHistoryList() {
+  if (!currentOrg) return '';
+  // Trigger load if not yet fetched
+  if (ttState.completedSessions === null) {
+    ttEnsureHistory();
+    return '';
+  }
+  const sessions = ttState.completedSessions;
+  if (!sessions.length) return '';
+
+  return `<div style="margin-top:1.5rem">
+    <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:0.75rem">Past exercises</div>
+    ${sessions.map(s => {
+      const scenario = TT_SCENARIOS[s.scenario_id];
+      const date = s.created_at ? new Date(s.created_at).toLocaleDateString('en-CA') : '—';
+      const sev = s.tl_severity || '—';
+      const sevColor = sev === 'P1' ? '#dc2626' : sev === 'P2' ? '#d97706' : '#5a6a8a';
+      const breachBadge = s.breach_declared
+        ? `<span class="badge b-red">Breach declared</span>`
+        : `<span class="badge b-gray">No breach</span>`;
+      const logLen = Array.isArray(s.exercise_log) ? s.exercise_log.length : 0;
+      return `<div class="card" style="margin-bottom:0.5rem;padding:0.85rem 1rem">
+        <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">${s.scenario_title || scenario?.title || s.scenario_id}</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:6px">${date} · ${s.facilitator_name || '—'} · Code: <code style="font-size:10px;background:#f0f4fa;padding:1px 4px;border-radius:3px">${s.session_code}</code></div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap">
+              <span class="badge" style="background:${sevColor};color:#fff">${sev}</span>
+              ${s.tl_declare ? `<span class="badge b-red">Declared</span>` : `<span class="badge b-gray">Monitor</span>`}
+              ${breachBadge}
+              ${s.notif_filed ? `<span class="badge b-green">Notifications filed</span>` : ''}
+              <span class="badge b-navy">${logLen} log entries</span>
+            </div>
+          </div>
+          <button class="btn btn-sm btn-outline" onclick="ttViewHistoricalAAR('${s.id}')">View AAR →</button>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+async function ttEnsureHistory() {
+  if (!currentOrg || ttState.completedSessions !== null) return;
+  try {
+    ttState.completedSessions = await sb.tt.listCompletedForOrg(currentOrg.id);
+  } catch(e) {
+    ttState.completedSessions = [];
+  }
+  ttRender();
+}
+
+function ttViewHistoricalAAR(sessionId) {
+  const session = (ttState.completedSessions || []).find(s => s.id === sessionId);
+  if (!session) return;
+  ttState.historicalSession = session;
+  ttState.view = 'history_aar';
+  ttRender();
+}
+
+function ttRenderHistoryAAR() {
+  const s = ttState.historicalSession;
+  if (!s) return '<div class="card">Session not found.</div>';
+  const scenario = TT_SCENARIOS[s.scenario_id];
+  const date = s.created_at ? new Date(s.created_at).toLocaleDateString('en-CA') : '—';
+  const sev = s.tl_severity || '—';
+  const sevColor = sev === 'P1' ? '#dc2626' : sev === 'P2' ? '#d97706' : '#5a6a8a';
+  const sevMatch = scenario && sev === scenario.declaration?.correctSeverity;
+  const declareMatch = scenario && (s.tl_declare === scenario.declaration?.correctDeclare);
+  const log = Array.isArray(s.exercise_log) ? s.exercise_log : (typeof s.exercise_log === 'string' ? JSON.parse(s.exercise_log) : []);
+
+  return `${renderTierBanner()}
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:0.85rem;flex-wrap:wrap">
+    <button class="btn btn-sm btn-outline" onclick="ttState.view='setup';ttRender()">← Back</button>
+    <div style="font-size:17px;font-weight:700">After Action Report</div>
+  </div>
+
+  <div class="commentary-card" style="margin-bottom:1rem">
+    <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--cyan2);margin-bottom:6px">Historical record · ${date}</div>
+    <div style="font-size:15px;color:#fff;font-weight:700;margin-bottom:4px">${s.scenario_title || scenario?.title || s.scenario_id}</div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.6)">Facilitator: ${s.facilitator_name || '—'} · Session code: <strong style="color:rgba(255,255,255,0.85)">${s.session_code}</strong></div>
+  </div>
+
+  <div class="summary-metrics" style="margin-bottom:1rem">
+    <div class="sm-card">
+      <div class="sm-val" style="color:${sevColor}">${sev}</div>
+      <div class="sm-lbl">Severity called${scenario ? (sevMatch ? ' ✓' : ' ✗') : ''}</div>
+    </div>
+    <div class="sm-card">
+      <div class="sm-val">${s.tl_declare ? 'Declare' : 'Monitor'}</div>
+      <div class="sm-lbl">TL decision${scenario ? (declareMatch ? ' ✓' : ' ✗') : ''}</div>
+    </div>
+    <div class="sm-card">
+      <div class="sm-val" style="color:${s.breach_declared ? '#dc2626' : '#15803d'}">${s.breach_declared ? 'Yes' : 'No'}</div>
+      <div class="sm-lbl">Breach declared</div>
+    </div>
+    <div class="sm-card">
+      <div class="sm-val">${log.length}</div>
+      <div class="sm-lbl">Log entries</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:0.75rem">
+    <div class="card-title">Step 0 — Technical Lead assessment</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">
+      <div>
+        <div style="font-size:11px;color:var(--muted)">Severity called</div>
+        <div style="font-size:14px;font-weight:700;color:${sevColor}">${sev}
+          ${scenario ? `<span style="font-size:11px;font-weight:700;color:${sevMatch ? '#15803d' : '#dc2626'}">${sevMatch ? '✓ correct' : '✗ correct: ' + scenario.declaration.correctSeverity}</span>` : ''}
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--muted)">Decision</div>
+        <div style="font-size:14px;font-weight:700">${s.tl_declare ? 'Declare' : 'Monitor'}
+          ${scenario ? `<span style="font-size:11px;font-weight:700;color:${declareMatch ? '#15803d' : '#dc2626'}">${declareMatch ? '✓ correct' : '✗ correct: ' + (scenario.declaration.correctDeclare ? 'Declare' : 'Monitor')}</span>` : ''}
+        </div>
+      </div>
+    </div>
+    ${s.tl_assessment ? `<div style="font-size:12px;color:var(--muted);line-height:1.5;border-top:1px solid var(--border);padding-top:8px"><b>Written assessment:</b><br/>${s.tl_assessment}</div>` : ''}
+  </div>
+
+  ${s.breach_declared ? `<div class="card" style="margin-bottom:0.75rem">
+    <div class="card-title">Breach declaration record</div>
+    <div style="font-size:12px;line-height:1.8">
+      <div><b>Declared:</b> ${s.breach_timestamp ? new Date(s.breach_timestamp).toLocaleString() : '—'}</div>
+      ${s.ic_sign_time ? `<div><b>IC signed:</b> ${new Date(s.ic_sign_time).toLocaleString()}</div>` : ''}
+      ${s.es_sign_time ? `<div><b>ES signed:</b> ${new Date(s.es_sign_time).toLocaleString()}</div>` : ''}
+      ${s.breach_rationale ? `<div style="margin-top:6px"><b>Rationale:</b> ${s.breach_rationale}</div>` : ''}
+    </div>
+  </div>` : ''}
+
+  ${scenario ? `<div class="card" style="margin-bottom:0.75rem">
+    <div class="card-title">MITRE ATT&CK mapping</div>
+    ${scenario.injects.map((inj, i) => `
+      <div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
+        <div><b>Inject ${i+1}</b> — ${inj.title}</div>
+        <div style="color:var(--muted);font-size:11px;margin-top:2px">${inj.mitre.tactic} · ${inj.mitre.technique}</div>
+      </div>`).join('')}
+  </div>` : ''}
+
+  <div class="card">
+    <div class="card-title">Exercise timeline</div>
+    ${log.length ? log.map(e => {
+      // Handle both seed format {time, role, action} and live format {ts, type, detail}
+      const timeStr = e.time || (e.ts ? new Date(e.ts).toLocaleTimeString() : '—');
+      const roleStr = e.role || e.type || '';
+      const actionStr = e.action || (typeof e.detail === 'object' ? JSON.stringify(e.detail) : (e.detail || ''));
+      return `<div class="aar-log-item">
+        <div style="font-weight:600;white-space:nowrap">${timeStr}</div>
+        <div style="color:var(--muted);text-transform:uppercase;font-size:10px;letter-spacing:0.06em;white-space:nowrap">${roleStr}</div>
+        <div style="font-size:12px">${actionStr}</div>
+      </div>`;
+    }).join('') : '<div style="font-size:12px;color:var(--muted)">No log entries recorded.</div>'}
+  </div>`;
+}
 

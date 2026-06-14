@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5",
   "created": "2026-05-14",
-  "updated": "2026-06-14 (session 17)",
+  "updated": "2026-06-14 (session 18)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -315,6 +315,13 @@
           "id": "auth8",
           "text": "Export audit log to CSV — allow platform admins to download the filtered audit log as a spreadsheet.",
           "done": false
+        },
+        {
+          "id": "auth13",
+          "text": "Verify RLS UPDATE policy on organisation_profiles — CIS IG goal uses an optimistic UI update (cisSetGoal), but if the authenticated RLS policy is missing an UPDATE permission for the profiles table, the server silently rejects the save and goal won't persist across reloads. Check PATCH_006/009 policies and add UPDATE if needed.",
+          "done": false,
+          "priority": "High",
+          "notes": "Session 18: cisSetGoal() was fixed to use optimistic update (render before await, revert on error). But server-side rejection means the goal reverts on next page load. Must verify via Supabase SQL editor: SELECT * FROM pg_policies WHERE tablename='organisation_profiles'."
         },
         {
           "id": "auth9",
@@ -1264,8 +1271,9 @@
         {
           "id": "t38",
           "text": "Exercise history: full log of all exercises run per org with AAR attached",
-          "done": false,
-          "priority": "High"
+          "done": true,
+          "priority": "High",
+          "notes": "Session 18: js/ex_hub.js — Exercise Hub unified view combining Operational tabletop (from tabletop_sessions table via sb.tt.listCompletedForOrg) and AI Governance tabletop (from orgAssessments[id]['ai_tabletop']). Stat strip (total/op/ai/breach count), sortable table with date/track badge/scenario/facilitator/outcome/activity/View AAR. exHubViewOpAAR() and exHubViewAiAAR() navigate to respective modules with history pre-loaded. Operational tabletop history also added inline below the New Exercise card in ttRenderSetup(). Nav item ex_hub added to g_exercises group in config.js."
         },
         {
           "id": "t39",
@@ -1493,7 +1501,8 @@
         {
           "id": "ai6",
           "text": "Sidebar score dot for ai_unified — getModuleDot() currently skips ai_unified; wire it to show green/amber/red based on latest unified score",
-          "done": false
+          "done": true,
+          "notes": "Already functional — ai_unified is not in the dot-none exclusion list and saves score as a number (scores.overall ?? 0). Backlog item was written before the module was stable; no code change needed."
         },
         {
           "id": "ai9",
@@ -1555,8 +1564,9 @@
         {
           "id": "ai15a",
           "text": "AI tabletop exercise history — list view of completed exercises per org (scenario name, date, facilitator) with load/view and delete. Same pattern as TPRA list. Reads from assessments table where module=ai_tabletop.",
-          "done": false,
-          "priority": "Medium"
+          "done": true,
+          "priority": "Medium",
+          "notes": "History section added to aittRenderSetup() via aittRenderHistory(). Each row shows scenario badge, name, date, facilitator, note count, regulatory items checked. 'View AAR' loads run into read-only AAR view (aittLoadRun). Delete via aittDeleteRun with confirm. AAR rebuilt as full report: 4-stat strip (injects/inject notes/discussion notes/regulatory%), report header with org+facilitator+date, inject recap (all injects shown, notes or 'no notes' fallback), discussion outcomes (all questions shown), full regulatory checklist with check state, framework mapping. Historical AAR shows 'Back to history' instead of 'Save & run another'."
         },
         {
           "id": "ai15b",

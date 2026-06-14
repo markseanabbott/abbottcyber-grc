@@ -128,6 +128,8 @@ async function selectOrg(id) {
   nistAiState = { answers: {}, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '' };
   iso42001State = { answers: {}, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '' };
   aiUnifiedState = { answers: {}, frameworks: { nist: true, iso: true }, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '', poamRun: null, poamItems: {} };
+  if (ttState) { ttState.completedSessions = null; ttState.historicalSession = null; }
+  exHubState = { opSessions: null };
   await loadAssessments(id);
   updateOrgUI(); buildNav(); renderMain();
 }
@@ -407,6 +409,7 @@ function renderMain() {
   if (activeNav === 'insurance') { el.innerHTML = voB + renderInsurance(); drawTrend(); return; }
   if (activeNav === 'cis') { el.innerHTML = voB + renderCIS(); setTimeout(() => { const c = document.getElementById('cisTrendChart'); if (c) cisTrendDraw(); if (cisState.view === 'report') drawReportCharts(); }, 80); return; }  // trend draw covers both dashboard + form views
   if (activeNav === 'orgs') { el.innerHTML = renderOrgManager(); setTimeout(updateParentOptions, 100); return; }
+  if (activeNav === 'ex_hub') { el.innerHTML = renderExHub(); return; }
   if (activeNav === 'tabletop') { el.innerHTML = renderTabletop(); return; }
   if (activeNav === 'tt_ai') { el.innerHTML = renderAiTabletop(); return; }
   if (activeNav === 'techstack') {

@@ -201,4 +201,8 @@ sb.tt = {
     const r = await sbFetch(`tabletop_responses?session_id=eq.${sessionId}&inject_index=eq.${injectIdx}&select=*`);
     return r || [];
   },
+  listCompletedForOrg: async (orgId) => {
+    const r = await sbFetch(`tabletop_sessions?org_id=eq.${orgId}&status=eq.complete&order=created_at.desc`);
+    return r || [];
+  },
 };
