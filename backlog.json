@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5",
   "created": "2026-05-14",
-  "updated": "2026-06-14 (session 16)",
+  "updated": "2026-06-14 (session 17)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1548,8 +1548,21 @@
         {
           "id": "ai15",
           "text": "AI tabletop exercises — scenario track focused on AI-specific incidents: AI model producing harmful output, prompt injection leading to data exfiltration, AI vendor breach, AI-generated misinformation impacting operations. Complements the operational tabletop track with AI-specific injects and role considerations.",
+          "done": true,
+          "priority": null,
+          "notes": "js/ai_tabletop.js: full discussion-based engine with 10 scenarios (AI-01 through AI-10). US data privacy law focus — CCPA/CPRA, FTC Act §5, state breach notification, HIPAA, SEC 8-K, FBI/IC3. 5-stage flow: Setup → Briefing → Injects → Discussion → US Regulatory → AAR. AITT_SCENARIOS (10 scenarios with sequential injects), AITT_NOTIF_ITEMS (10-item US regulatory checklist), AITT_NIST_LABELS/AITT_ISO_LABELS reference maps. Per-inject + per-question note capture, toggle-to-confirm regulatory checklist, AAR with NIST AI RMF + ISO 42001 framework refs per scenario, 'Copy AAR prompt for Claude' prompt builder. Saves to assessments table with module=ai_tabletop (no new SQL). Nav item tt_ai added to g_exercises in config.js. Render route + dot exclusion added in app.js. Script tag added to index.html."
+        },
+        {
+          "id": "ai15a",
+          "text": "AI tabletop exercise history — list view of completed exercises per org (scenario name, date, facilitator) with load/view and delete. Same pattern as TPRA list. Reads from assessments table where module=ai_tabletop.",
           "done": false,
-          "priority": null
+          "priority": "Medium"
+        },
+        {
+          "id": "ai15b",
+          "text": "AI tabletop PDF/Word export — export the AAR as a branded Word or PDF document directly from the AAR view, without requiring the user to paste into Claude. Same output as the Claude-generated report but produced natively.",
+          "done": false,
+          "priority": "Low"
         },
         {
           "id": "ai16",

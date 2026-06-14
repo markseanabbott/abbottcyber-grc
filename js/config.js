@@ -119,6 +119,7 @@ const NAV = [
   ]},
   { id: 'g_exercises', group: 'Exercises', icon: '🎯', items: [
     { id: 'tabletop', icon: '🎯', label: 'Tabletop — Operational', live: true, phase: 3 },
+    { id: 'tt_ai', icon: '🤖', label: 'Tabletop — AI Governance', live: true, phase: 1 },
     { id: 'tt_exec', icon: '💼', label: 'Tabletop — Executive', live: false, phase: 3 },
     { id: 'tt_vendor', icon: '🚛', label: 'Tabletop — Vendor', live: false, phase: 3 },
     { id: 'tt_bcdr', icon: '🔄', label: 'Tabletop — BCDR', live: false, phase: 3 },
