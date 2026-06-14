@@ -23,13 +23,14 @@ async function bootApp() {
       currentOrg = allOrgs.find(o => o.tier === 'platform') || allOrgs[0];
     }
 
-    await Promise.all([loadAssessments(currentOrg.id), loadOrgProfiles()]);
+    await Promise.all([loadAssessments(currentOrg.id), loadOrgProfiles(), loadPlatformSettings()]);
 
     document.getElementById('dbStatus').className = 'db-status db-live';
     document.getElementById('dbStatus').textContent = '● Live';
     document.getElementById('userChipContainer').innerHTML = renderUserMenu();
 
     updateOrgUI(); buildNav(); renderMain();
+    idleStart();
   } catch (e) {
     document.getElementById('dbStatus').className = 'db-status db-error';
     document.getElementById('dbStatus').textContent = 'DB Error';
@@ -145,6 +146,76 @@ document.addEventListener('click', e => {
 });
 
 // ============================================================
+// PLATFORM SETTINGS LOADER
+// ============================================================
+async function loadPlatformSettings() {
+  try {
+    const rows = await sb.settings.get();
+    if (rows?.[0]) Object.assign(platformSettings, rows[0]);
+  } catch (e) { console.warn('Platform settings load failed — using defaults', e); }
+}
+
+// ============================================================
+// IDLE TIMEOUT ENGINE
+// ============================================================
+let _idleTimer = null;
+let _idleWarnTimer = null;
+let _idleCountdownInterval = null;
+
+function idleReset() {
+  if (!platformSettings.session_timeout_minutes) return;
+  clearTimeout(_idleTimer);
+  clearTimeout(_idleWarnTimer);
+  clearInterval(_idleCountdownInterval);
+  const modal = document.getElementById('idleWarningModal');
+  if (modal) modal.style.display = 'none';
+
+  const totalMs = platformSettings.session_timeout_minutes * 60 * 1000;
+  const warnMs  = totalMs - (2 * 60 * 1000);
+
+  if (warnMs > 0) _idleWarnTimer = setTimeout(idleShowWarning, warnMs);
+  _idleTimer = setTimeout(idleSignOut, totalMs);
+}
+
+function idleShowWarning() {
+  const modal = document.getElementById('idleWarningModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  let secs = 120;
+  const el = document.getElementById('idleCountdown');
+  if (el) el.textContent = secs;
+  _idleCountdownInterval = setInterval(() => {
+    secs--;
+    const el2 = document.getElementById('idleCountdown');
+    if (el2) el2.textContent = secs;
+    if (secs <= 0) clearInterval(_idleCountdownInterval);
+  }, 1000);
+}
+
+function idleExtend() { idleReset(); }
+
+async function idleSignOut() {
+  clearInterval(_idleCountdownInterval);
+  const modal = document.getElementById('idleWarningModal');
+  if (modal) modal.style.display = 'none';
+  await doSignOut();
+}
+
+function idleStart() {
+  if (!platformSettings.session_timeout_minutes) return;
+  ['mousemove','keydown','click','scroll','touchstart'].forEach(ev =>
+    document.addEventListener(ev, idleReset, { passive: true })
+  );
+  idleReset();
+}
+
+function idleStop() {
+  clearTimeout(_idleTimer);
+  clearTimeout(_idleWarnTimer);
+  clearInterval(_idleCountdownInterval);
+}
+
+// ============================================================
 // SIDEBAR
 // ============================================================
 function getModuleDot(id) {
@@ -240,8 +311,10 @@ function buildNav() {
   const vEl = document.getElementById('sidebarVersion');
   if (vEl) vEl.textContent = `v${APP_VERSION}`;
   const adminUser = typeof isAdmin === 'function' ? isAdmin() : true;
+  const platformAdmin = typeof isPlatformAdmin === 'function' ? isPlatformAdmin() : true;
   document.getElementById('sidebarNav').innerHTML = NAV.map(g => {
     if (!hasModuleAccess(g.id)) return '';
+    if (g.platformAdminOnly && !platformAdmin) return '';
     const visibleItems = g.items.filter(item => !item.adminOnly || adminUser);
     if (!visibleItems.length) return '';
     // Single-item groups render as flat items (no accordion wrapper)
@@ -328,6 +401,7 @@ function renderMain() {
   const el = document.getElementById('mainContent');
   const voB = viewOnlyBanner();  // empty string unless role=viewer
   if (activeNav === 'users') { el.innerHTML = renderUserManagement(); return; }
+  if (activeNav === 'settings') { el.innerHTML = renderSettings(); setTimeout(settingsLoad, 50); return; }
   if (activeNav === 'home') { el.innerHTML = renderHome(); drawTrend(); return; }
   if (activeNav === 'assessments') { el.innerHTML = voB + renderAssessmentsHub(); setTimeout(drawAllHubTrends, 80); return; }
   if (activeNav === 'insurance') { el.innerHTML = voB + renderInsurance(); drawTrend(); return; }

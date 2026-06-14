@@ -233,8 +233,9 @@ async function submitCreateUser() {
     errEl.style.display = '';
     return;
   }
-  if (password.length < 8) {
-    errEl.textContent = 'Password must be at least 8 characters.';
+  const pwdErrors = (typeof validatePassword === 'function') ? validatePassword(password) : [];
+  if (pwdErrors.length) {
+    errEl.textContent = 'Password must contain: ' + pwdErrors.join(', ') + '.';
     errEl.style.display = '';
     return;
   }

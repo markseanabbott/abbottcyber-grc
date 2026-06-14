@@ -130,7 +130,21 @@ const NAV = [
     { id: 'portfolio', icon: '🌐', label: 'Portfolio View', live: false, phase: 2 },
     { id: 'audit', icon: '📜', label: 'Audit Readiness', live: false, phase: 3 },
   ]},
+  { id: 'g_settings', group: 'Settings', icon: '⚙️', platformAdminOnly: true, items: [
+    { id: 'settings', icon: '⚙️', label: 'Platform Settings', live: true, phase: 1 },
+  ]},
 ];
+
+// ============================================================
+// PLATFORM SETTINGS — defaults; overwritten from Supabase at boot
+// ============================================================
+let platformSettings = {
+  session_timeout_minutes:  60,
+  password_min_length:      8,
+  password_require_upper:   true,
+  password_require_number:  true,
+  password_require_special: false,
+};
 
 // ============================================================
 // APP STATE

@@ -124,6 +124,12 @@ sb.users = {
   delete: (id) => sbFetch(`users?id=eq.${id}`, 'DELETE'),
 };
 
+// Platform Settings persistence layer (PATCH_013)
+sb.settings = {
+  get:  ()      => sbFetch('platform_settings?singleton=eq.true&select=*'),
+  save: (patch) => sbFetch('platform_settings?singleton=eq.true', 'PATCH', patch, { Prefer: 'return=representation' }),
+};
+
 // Audit Log persistence layer (PATCH_011)
 sb.auditLog = {
   insert: (row) => sbFetch('audit_log', 'POST', row, { Prefer: 'return=minimal' }),
