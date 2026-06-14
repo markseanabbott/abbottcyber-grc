@@ -237,6 +237,8 @@ function updateViewAsBanner() {
 }
 
 function buildNav() {
+  const vEl = document.getElementById('sidebarVersion');
+  if (vEl) vEl.textContent = `v${APP_VERSION}`;
   const adminUser = typeof isAdmin === 'function' ? isAdmin() : true;
   document.getElementById('sidebarNav').innerHTML = NAV.map(g => {
     if (!hasModuleAccess(g.id)) return '';
