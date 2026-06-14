@@ -205,18 +205,19 @@ function openCreateUserModal() {
 
 function userRoleChanged() {
   const role = document.getElementById('uRole')?.value;
-  const restricted = ['analyst','viewer'].includes(role);
+  const hasOrgAccess = ['analyst','viewer'].includes(role);
+  const hasModuleConfig = role !== 'platform_admin';
   const s1 = document.getElementById('uOrgAccessSection');
-  if (s1) s1.style.display = restricted ? '' : 'none';
+  if (s1) s1.style.display = hasOrgAccess ? '' : 'none';
   const checks = document.querySelectorAll('.uModuleCheck');
   const note = document.getElementById('uModuleNote');
   checks.forEach(cb => {
-    cb.disabled = !restricted;
+    cb.disabled = !hasModuleConfig;
     cb.checked = true;
-    cb.closest('label').style.opacity = restricted ? '1' : '0.45';
-    cb.closest('label').style.cursor = restricted ? 'pointer' : 'default';
+    cb.closest('label').style.opacity = hasModuleConfig ? '1' : '0.45';
+    cb.closest('label').style.cursor = hasModuleConfig ? 'pointer' : 'default';
   });
-  if (note) note.textContent = restricted ? 'Uncheck sections to remove from their navigation.' : 'Platform Admin and Org Admin always have full access to all modules.';
+  if (note) note.textContent = hasModuleConfig ? 'Uncheck sections to remove from their navigation.' : 'Platform Admin always has full access to all modules.';
 }
 
 async function submitCreateUser() {
@@ -246,7 +247,7 @@ async function submitCreateUser() {
     const authUid = await authCreateAuthUser(email, password);
 
     // 2. Insert app user record
-    const isRestricted = ['analyst','viewer'].includes(role);
+    const isRestricted = role !== 'platform_admin';
     let moduleAccess = null;
     if (isRestricted) {
       const checked = [...document.querySelectorAll('.uModuleCheck:checked')].map(cb => cb.value);
@@ -263,7 +264,7 @@ async function submitCreateUser() {
     const userId = Array.isArray(newUser) ? newUser[0]?.id : newUser?.id;
 
     // 3. Save org access list for analyst/viewer
-    if (isRestricted && userId) {
+    if (['analyst','viewer'].includes(role) && userId) {
       const checked = [...document.querySelectorAll('.uOrgCheck:checked')].map(cb => cb.value);
       if (checked.length) {
         await sb.userOrgAccess.upsertAll(checked.map(orgId => ({ user_id: userId, org_id: orgId })));
@@ -346,13 +347,13 @@ async function openEditUserModal(userId) {
         <label class="form-label">Module Access</label>
         <div id="euModuleSection" style="border:1px solid var(--border);border-radius:8px;padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:2px">
           ${[['assessments','📋 Assessments'],['ai','🤖 AI Readiness'],['risk','⚠️ Risk &amp; Vendors'],['exercises','🎯 Exercises'],['reports','📊 Reports']].map(([val,lbl]) => {
-            const restricted = ['analyst','viewer'].includes(user.role);
+            const canConfig = user.role !== 'platform_admin';
             const ma = user.module_access;
             const chk = !ma || ma[val] !== false;
-            return `<label style="display:flex;align-items:center;gap:6px;padding:5px 6px;border-radius:4px;font-size:12px;cursor:${restricted?'pointer':'default'};opacity:${restricted?'1':'0.45'}"><input type="checkbox" class="euModuleCheck" value="${val}" ${chk?'checked':''} ${restricted?'':'disabled'}> ${lbl}</label>`;
+            return `<label style="display:flex;align-items:center;gap:6px;padding:5px 6px;border-radius:4px;font-size:12px;cursor:${canConfig?'pointer':'default'};opacity:${canConfig?'1':'0.45'}"><input type="checkbox" class="euModuleCheck" value="${val}" ${chk?'checked':''} ${canConfig?'':'disabled'}> ${lbl}</label>`;
           }).join('')}
         </div>
-        <div id="euModuleNote" style="font-size:10px;color:var(--muted);margin-top:4px">${['analyst','viewer'].includes(user.role) ? 'Uncheck sections to remove from their navigation.' : 'Platform Admin and Org Admin always have full access to all modules.'}</div>
+        <div id="euModuleNote" style="font-size:10px;color:var(--muted);margin-top:4px">${user.role !== 'platform_admin' ? 'Uncheck sections to remove from their navigation.' : 'Platform Admin always has full access to all modules.'}</div>
       </div>
       <div id="euError" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;
         padding:8px 10px;border-radius:6px;font-size:12px;margin-bottom:10px"></div>
@@ -366,17 +367,18 @@ async function openEditUserModal(userId) {
 
 function editUserRoleChanged() {
   const role = document.getElementById('euRole')?.value;
-  const restricted = ['analyst','viewer'].includes(role);
+  const canConfigModules = role !== 'platform_admin';
+  const hasOrgAccess = ['analyst','viewer'].includes(role);
   const s1 = document.getElementById('euOrgAccessSection');
-  if (s1) s1.style.display = restricted ? '' : 'none';
+  if (s1) s1.style.display = hasOrgAccess ? '' : 'none';
   const checks = document.querySelectorAll('.euModuleCheck');
   const note = document.getElementById('euModuleNote');
   checks.forEach(cb => {
-    cb.disabled = !restricted;
-    cb.closest('label').style.opacity = restricted ? '1' : '0.45';
-    cb.closest('label').style.cursor = restricted ? 'pointer' : 'default';
+    cb.disabled = !canConfigModules;
+    cb.closest('label').style.opacity = canConfigModules ? '1' : '0.45';
+    cb.closest('label').style.cursor = canConfigModules ? 'pointer' : 'default';
   });
-  if (note) note.textContent = restricted ? 'Uncheck sections to remove from their navigation.' : 'Platform Admin and Org Admin always have full access to all modules.';
+  if (note) note.textContent = canConfigModules ? 'Uncheck sections to remove from their navigation.' : 'Platform Admin always has full access to all modules.';
 }
 
 async function submitEditUser(userId) {
@@ -388,7 +390,7 @@ async function submitEditUser(userId) {
   btn.textContent = 'Saving…'; btn.disabled = true; errEl.style.display = 'none';
 
   try {
-    const isRestricted = ['analyst','viewer'].includes(role);
+    const isRestricted = role !== 'platform_admin';
     let moduleAccess = null;
     if (isRestricted) {
       const checked = [...document.querySelectorAll('.euModuleCheck:checked')].map(cb => cb.value);
@@ -398,7 +400,7 @@ async function submitEditUser(userId) {
 
     // Update org access for analyst/viewer
     await sb.userOrgAccess.deleteForUser(userId);
-    if (isRestricted) {
+    if (['analyst','viewer'].includes(role)) {
       const checked = [...document.querySelectorAll('.euOrgCheck:checked')].map(cb => cb.value);
       if (checked.length) {
         await sb.userOrgAccess.upsertAll(checked.map(oid => ({ user_id: userId, org_id: oid })));

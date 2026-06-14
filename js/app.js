@@ -165,11 +165,11 @@ const _GROUP_MODULE = {
 
 function hasModuleAccess(groupId) {
   const role = viewAsState?.role || authState?.profile?.role;
-  if (!role || role === 'platform_admin' || role === 'org_admin') return true;
+  if (!role || role === 'platform_admin') return true; // only platform_admin bypasses module access
   const access = viewAsState?.module_access ?? authState?.profile?.module_access;
-  if (!access) return true;
+  if (!access) return true; // NULL = full access (existing users unaffected)
   const key = _GROUP_MODULE[groupId];
-  if (!key) return true;
+  if (!key) return true; // g_home always visible
   return access[key] !== false;
 }
 

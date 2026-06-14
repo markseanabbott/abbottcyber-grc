@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5",
   "created": "2026-05-14",
-  "updated": "2026-06-14 (session 15b)",
+  "updated": "2026-06-14 (session 16)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -320,7 +320,7 @@
           "id": "auth9",
           "text": "Module-level access control — add module_access jsonb column to users table (PATCH_012); restrict nav group visibility per analyst/viewer based on assigned modules (AI Readiness, Assessments, Risk & Vendors, Exercises, Reports). platform_admin and org_admin always see all. UI reads module_access in buildNav() to filter groups.",
           "done": true,
-          "notes": "SUPABASE_PATCH_012.sql adds module_access jsonb to users. js/app.js: _GROUP_MODULE map, hasModuleAccess(groupId) checks viewAsState then profile.module_access. buildNav() calls hasModuleAccess() per group. js/users.js: Module Access checkbox section in create and edit modals (visible only for analyst/viewer roles). submitCreateUser/submitEditUser save module_access jsonb. NULL = full access (existing users unaffected). Run PATCH_012 in Supabase SQL Editor to activate."
+          "notes": "SUPABASE_PATCH_012.sql adds module_access jsonb to users. js/app.js: _GROUP_MODULE map, hasModuleAccess(groupId) — only platform_admin bypasses unconditionally; all other roles (including org_admin) are gated by module_access jsonb. NULL = full access (existing users unaffected). buildNav() calls hasModuleAccess() per group. js/users.js: Module Access checkboxes always visible in create/edit modals — active for all roles except platform_admin (greyed/disabled for platform_admin only). submitCreateUser/submitEditUser save module_access for role !== 'platform_admin'. Org access (user_org_access) still only saved for analyst/viewer. Run PATCH_012 in Supabase SQL Editor to activate."
         },
         {
           "id": "auth10",
