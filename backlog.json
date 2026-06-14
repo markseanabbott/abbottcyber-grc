@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5",
   "created": "2026-05-14",
-  "updated": "2026-06-12 (session 13)",
+  "updated": "2026-06-14 (session 14)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -79,6 +79,12 @@
           "id": "d7",
           "text": "Per-org assessment history with trend line (2+ assessments)",
           "done": true
+        },
+        {
+          "id": "d8",
+          "text": "Nav rebuild — topbar org switcher, user avatar dropdown, regrouped nav sections",
+          "done": true,
+          "notes": "Nav regrouped into 6 groups (Home/Assessments/AI Readiness/Risk & Vendors/Exercises/Reports). Home rendered as flat single-item nav (no accordion). Org/company switcher moved from sidebar footer to topbar. User chip replaced with avatar dropdown containing Org Manager, User Management (admin only), and Sign Out. Admin pages removed from sidebar nav. js/config.js (NAV structure), js/app.js (buildNav flat items, _ADMIN_PAGES breadcrumb, setNav, click-outside), js/auth.js (renderUserMenu, toggleUserMenu, closeUserMenu), index.html (topbar org switcher, sidebar footer removed), css/core.css (.user-menu*, .nav-item-flat, .topbar-org-selector)."
         }
       ]
     },
@@ -309,6 +315,12 @@
           "id": "auth8",
           "text": "Export audit log to CSV — allow platform admins to download the filtered audit log as a spreadsheet.",
           "done": false
+        },
+        {
+          "id": "auth9",
+          "text": "Module-level access control — add module_access jsonb column to users table (PATCH_012); restrict nav group visibility per analyst/viewer based on assigned modules (AI Readiness, Assessments, Risk & Vendors, Exercises, Reports). platform_admin and org_admin always see all. UI reads module_access in buildNav() to filter groups.",
+          "done": false,
+          "priority": "Medium"
         }
       ]
     },

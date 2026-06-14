@@ -219,7 +219,7 @@ async function doSignOut() {
   document.body.insertAdjacentHTML('beforeend', renderLoginScreen());
 }
 
-function renderUserChip() {
+function renderUserMenu() {
   if (!authState.profile) return '';
   const ini = (authState.profile.name || authState.profile.email || '?')
     .split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
@@ -228,18 +228,35 @@ function renderUserChip() {
     analyst: 'Analyst', viewer: 'View Only',
   };
   const roleLbl = roleLabels[authState.profile.role] || authState.profile.role;
-  return `<div style="display:flex;align-items:center;gap:8px;padding:0 4px 0 12px;
-    border-left:1px solid var(--border)">
-    <div style="text-align:right">
-      <div style="font-size:11px;font-weight:700;color:var(--text);line-height:1.3">${escH(authState.profile.name || authState.profile.email)}</div>
-      <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">${roleLbl}</div>
+  const isAdminUser = authState.profile.role === 'platform_admin' || authState.profile.role === 'org_admin';
+  const displayName = escH(authState.profile.name || authState.profile.email);
+  return `<div class="user-menu" id="userMenuWrapper">
+    <button class="user-menu-btn" onclick="toggleUserMenu()">
+      <div style="text-align:right">
+        <div style="font-size:11px;font-weight:700;color:var(--text);line-height:1.3">${displayName}</div>
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">${roleLbl}</div>
+      </div>
+      <div class="user-avatar">${ini}</div>
+    </button>
+    <div class="user-menu-dropdown" id="userMenuDD" style="display:none">
+      <div class="user-menu-header">
+        <div class="user-menu-name">${displayName}</div>
+        <div class="user-menu-role">${roleLbl}</div>
+      </div>
+      ${isAdminUser ? `<button class="user-menu-item" onclick="closeUserMenu();setNav('orgs')">🏢 Organisation Manager</button>` : ''}
+      ${isAdminUser ? `<button class="user-menu-item" onclick="closeUserMenu();setNav('users')">👥 User Management</button>` : ''}
+      ${isAdminUser ? `<div class="user-menu-divider"></div>` : ''}
+      <button class="user-menu-item danger" onclick="doSignOut()">🚪 Sign Out</button>
     </div>
-    <div style="width:28px;height:28px;background:var(--navy);border-radius:50%;display:flex;
-      align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0">${ini}</div>
-    <button onclick="doSignOut()" style="background:var(--bg);color:var(--muted);
-      border:1px solid var(--border);padding:4px 10px;border-radius:6px;font-size:10px;
-      font-family:'Inter',sans-serif;cursor:pointer;white-space:nowrap"
-      onmouseover="this.style.background='#e8ecf5';this.style.color='var(--text)'"
-      onmouseout="this.style.background='var(--bg)';this.style.color='var(--muted)'">Sign out</button>
   </div>`;
+}
+
+function toggleUserMenu() {
+  const dd = document.getElementById('userMenuDD');
+  if (dd) dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+
+function closeUserMenu() {
+  const dd = document.getElementById('userMenuDD');
+  if (dd) dd.style.display = 'none';
 }

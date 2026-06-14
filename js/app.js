@@ -27,7 +27,7 @@ async function bootApp() {
 
     document.getElementById('dbStatus').className = 'db-status db-live';
     document.getElementById('dbStatus').textContent = '● Live';
-    document.getElementById('userChipContainer').innerHTML = renderUserChip();
+    document.getElementById('userChipContainer').innerHTML = renderUserMenu();
 
     updateOrgUI(); buildNav(); renderMain();
   } catch (e) {
@@ -78,16 +78,10 @@ function updateOrgUI() {
   if (!currentOrg) return;
   const av = tierAvClass(currentOrg.tier);
   const ini = tierInitials(currentOrg.name);
-  const lbl = TIER_LABELS[currentOrg.tier] || currentOrg.tier;
-  ['orgAv', 'topAv'].forEach(id => {
-    const el = document.getElementById(id);
-    el.className = 'org-avatar ' + av;
-    el.textContent = ini;
-    if (id === 'topAv') el.style.cssText = 'width:18px;height:18px;font-size:8px';
-  });
-  document.getElementById('orgNameEl').textContent = currentOrg.name;
-  document.getElementById('orgTierEl').textContent = lbl;
-  document.getElementById('topOrgName').textContent = currentOrg.name;
+  const topAv = document.getElementById('topAv');
+  if (topAv) { topAv.className = 'org-avatar ' + av; topAv.textContent = ini; }
+  const topName = document.getElementById('topOrgName');
+  if (topName) topName.textContent = currentOrg.name;
 }
 
 // ============================================================
@@ -139,8 +133,14 @@ async function selectOrg(id) {
 
 document.addEventListener('click', e => {
   if (!e.target.closest('.org-selector')) {
-    document.getElementById('orgDD').style.display = 'none';
-    document.getElementById('orgChev').textContent = '▾';
+    const dd = document.getElementById('orgDD');
+    if (dd) dd.style.display = 'none';
+    const chev = document.getElementById('orgChev');
+    if (chev) chev.textContent = '▾';
+  }
+  if (!e.target.closest('.user-menu')) {
+    const udd = document.getElementById('userMenuDD');
+    if (udd) udd.style.display = 'none';
   }
 });
 
@@ -158,9 +158,18 @@ function getModuleDot(id) {
 function buildNav() {
   const adminUser = typeof isAdmin === 'function' ? isAdmin() : true;
   document.getElementById('sidebarNav').innerHTML = NAV.map(g => {
-    const isOpen = g.id === activeNavSection;
     const visibleItems = g.items.filter(item => !item.adminOnly || adminUser);
     if (!visibleItems.length) return '';
+    // Single-item groups render as flat items (no accordion wrapper)
+    if (visibleItems.length === 1) {
+      const item = visibleItems[0];
+      return `<div class="nav-item-flat${item.id === activeNav ? ' active' : ''}" onclick="setNav('${item.id}')">
+        <span class="nav-icon">${item.icon}</span>
+        <span>${item.label}</span>
+        ${item.live ? `<span class="nav-score-dot ${getModuleDot(item.id)}" style="margin-left:auto"></span>` : ''}
+      </div>`;
+    }
+    const isOpen = g.id === activeNavSection;
     return `
     <div class="nav-section">
       <div class="nav-section-hdr${isOpen ? ' open' : ''}" onclick="toggleNavSection('${g.id}')">
@@ -185,14 +194,23 @@ function toggleNavSection(id) {
   buildNav();
 }
 
+const _ADMIN_PAGES = { orgs: 'Organisation Manager', users: 'User Management' };
+
 function setNav(id) {
   activeNav = id;
   const item = NAV.flatMap(g => g.items).find(i => i.id === id);
   const group = NAV.find(g => g.items.some(i => i.id === id));
   if (group) activeNavSection = group.id;
-  document.getElementById('breadcrumb').innerHTML =
-    `${group ? `<span style="color:var(--muted)">${group.group}</span> <span style="color:var(--muted)">›</span> ` : ''}<span style="color:var(--text);font-weight:700">${item ? item.label : id}</span>`;
+  const adminLabel = _ADMIN_PAGES[id];
+  document.getElementById('breadcrumb').innerHTML = adminLabel
+    ? `<span style="color:var(--muted)">Admin</span> <span style="color:var(--muted)">›</span> <span style="color:var(--text);font-weight:700">${adminLabel}</span>`
+    : `${group && visibleItems(group) > 1 ? `<span style="color:var(--muted)">${group.group}</span> <span style="color:var(--muted)">›</span> ` : ''}<span style="color:var(--text);font-weight:700">${item ? item.label : id}</span>`;
   buildNav(); renderMain();
+}
+
+function visibleItems(group) {
+  const adminUser = typeof isAdmin === 'function' ? isAdmin() : true;
+  return group.items.filter(i => !i.adminOnly || adminUser).length;
 }
 
 // ============================================================

@@ -90,27 +90,26 @@ function visibleOrgs() {
 // NAV CONFIG
 // ============================================================
 const NAV = [
-  { id: 'g_dashboard', group: 'Dashboard', icon: '🏠', items: [
+  { id: 'g_home', group: 'Home', icon: '🏠', items: [
     { id: 'home', icon: '🏠', label: 'Dashboard', live: true, phase: 1 },
-    { id: 'orgs', icon: '🏢', label: 'Organisation Manager', live: true, phase: 1 },
-    { id: 'users', icon: '👥', label: 'User Management', live: true, phase: 1, adminOnly: true },
   ]},
   { id: 'g_assessments', group: 'Assessments', icon: '📋', items: [
     { id: 'assessments', icon: '📋', label: 'Assessments Hub', live: true, phase: 1 },
     { id: 'insurance', icon: '🛡️', label: 'Insurance Readiness', live: true, phase: 1 },
     { id: 'cis', icon: '✅', label: 'CIS Controls v8', live: true, phase: 1 },
-    { id: 'nist', icon: '🏛️', label: 'NIST CSF 2.0', live: false, phase: 3 },
     { id: 'techstack', icon: '🖥️', label: 'Technology Stack', live: true, phase: 1 },
+    { id: 'nist', icon: '🏛️', label: 'NIST CSF 2.0', live: false, phase: 3 },
   ]},
-  { id: 'g_risk', group: 'Risk Management', icon: '⚠️', items: [
+  { id: 'g_ai_readiness', group: 'AI Readiness', icon: '🤖', items: [
+    { id: 'ai_readiness', icon: '🤖', label: 'AI Readiness Hub', live: true, phase: 1 },
+    { id: 'ai_unified', icon: '🧩', label: 'AI Governance Assessment', live: true, phase: 1 },
+    { id: 'rapid_pyramid', icon: '🔺', label: 'Rapid Pre-Assessment', live: true, phase: 1 },
+  ]},
+  { id: 'g_risk', group: 'Risk & Vendors', icon: '⚠️', items: [
     { id: 'tpra', icon: '🔍', label: 'Vendor Risk (TPRA)', live: true, phase: 1 },
     { id: 'riskregister', icon: '📋', label: 'Risk Register', live: false, phase: 2 },
     { id: 'vulnscan', icon: '📡', label: 'Vulnerability Scan', live: false, phase: 2 },
     { id: 'pentest', icon: '🐛', label: 'Pen Test Findings', live: false, phase: 3 },
-  ]},
-  { id: 'g_compliance', group: 'Compliance', icon: '🔗', items: [
-    { id: 'frameworks', icon: '🔗', label: 'Framework Mapping', live: false, phase: 2 },
-    { id: 'audit', icon: '📜', label: 'Audit Readiness', live: false, phase: 3 },
   ]},
   { id: 'g_exercises', group: 'Exercises', icon: '🎯', items: [
     { id: 'tabletop', icon: '🎯', label: 'Tabletop — Operational', live: true, phase: 3 },
@@ -118,15 +117,11 @@ const NAV = [
     { id: 'tt_vendor', icon: '🚛', label: 'Tabletop — Vendor', live: false, phase: 3 },
     { id: 'tt_bcdr', icon: '🔄', label: 'Tabletop — BCDR', live: false, phase: 3 },
   ]},
-  { id: 'g_reporting', group: 'Reporting', icon: '📊', items: [
-    { id: 'scorecard', icon: '📊', label: 'Scorecards', live: false, phase: 2 },
+  { id: 'g_reporting', group: 'Reports', icon: '📊', items: [
+    { id: 'scorecard', icon: '📊', label: 'Report Library', live: false, phase: 2 },
     { id: 'exec_report', icon: '📄', label: 'Executive Reports', live: false, phase: 2 },
     { id: 'portfolio', icon: '🌐', label: 'Portfolio View', live: false, phase: 2 },
-  ]},
-  { id: 'g_ai_readiness', group: 'AI Readiness', icon: '🤖', items: [
-    { id: 'ai_readiness', icon: '🤖', label: 'AI Readiness Hub', live: true, phase: 1 },
-    { id: 'ai_unified', icon: '🧩', label: 'AI Governance Assessment', live: true, phase: 1 },
-    { id: 'rapid_pyramid', icon: '🔺', label: 'Rapid Pre-Assessment', live: true, phase: 1 },
+    { id: 'audit', icon: '📜', label: 'Audit Readiness', live: false, phase: 3 },
   ]},
 ];
 
@@ -137,7 +132,7 @@ let allOrgs = [];
 let currentOrg = null;
 let orgAssessments = {};
 let activeNav = 'home';
-let activeNavSection = 'g_dashboard';
+let activeNavSection = 'g_assessments';
 let insState = { answers: {}, openPanels: {} };
 let tsState = null;  // Technology Stack survey state; per-org, hydrated from Supabase on enter.
 let orgProfiles = {};  // keyed by org_id; hydrated at init + after profile saves
