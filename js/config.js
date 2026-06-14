@@ -45,31 +45,35 @@ function tierInitials(name) { return name.split(' ').map(w => w[0]).join('').sub
 // ============================================================
 // VISIBILITY SCOPING
 // ============================================================
+function _orgScopeForRole(role, orgId, accessOrgs) {
+  if (role === 'platform_admin') return allOrgs;
+  if (role === 'org_admin') {
+    const homeOrg = allOrgs.find(o => o.id === orgId);
+    if (!homeOrg) return [];
+    if (homeOrg.tier === 'grandfather') {
+      const fathers = allOrgs.filter(o => o.parent_id === homeOrg.id);
+      const fatherIds = fathers.map(f => f.id);
+      return [homeOrg, ...fathers, ...allOrgs.filter(o => fatherIds.includes(o.parent_id))];
+    }
+    if (homeOrg.tier === 'father') return [homeOrg, ...allOrgs.filter(o => o.parent_id === homeOrg.id)];
+    return [homeOrg];
+  }
+  return (accessOrgs || []).map(id => allOrgs.find(o => o.id === id)).filter(Boolean);
+}
+
 function visibleOrgs() {
   if (!currentOrg) return [];
+
+  // View-as override: use the impersonated user's visibility scope
+  if (viewAsState) {
+    return _orgScopeForRole(viewAsState.role, viewAsState.org_id, viewAsState.accessOrgs);
+  }
 
   // When authenticated, visibility is based on the auth user's role + home org,
   // not whichever org is currently selected in the switcher.
   if (typeof authState !== 'undefined' && authState?.profile) {
     const role = authState.profile.role;
-    if (role === 'platform_admin') return allOrgs;
-
-    if (role === 'org_admin') {
-      const homeOrg = allOrgs.find(o => o.id === authState.profile.org_id);
-      if (!homeOrg) return [currentOrg];
-      if (homeOrg.tier === 'grandfather') {
-        const fathers = allOrgs.filter(o => o.parent_id === homeOrg.id);
-        const fatherIds = fathers.map(f => f.id);
-        return [homeOrg, ...fathers, ...allOrgs.filter(o => fatherIds.includes(o.parent_id))];
-      }
-      if (homeOrg.tier === 'father') {
-        return [homeOrg, ...allOrgs.filter(o => o.parent_id === homeOrg.id)];
-      }
-      return [homeOrg];
-    }
-
-    // analyst / viewer — only their explicitly assigned orgs
-    return (authState.accessOrgs || []).map(id => allOrgs.find(o => o.id === id)).filter(Boolean);
+    return _orgScopeForRole(role, authState.profile.org_id, authState.accessOrgs);
   }
 
   // Pre-auth fallback — tier-based from currentOrg
@@ -133,6 +137,7 @@ let currentOrg = null;
 let orgAssessments = {};
 let activeNav = 'home';
 let activeNavSection = 'g_assessments';
+let viewAsState = null; // set when platform_admin is impersonating another user
 let insState = { answers: {}, openPanels: {} };
 let tsState = null;  // Technology Stack survey state; per-org, hydrated from Supabase on enter.
 let orgProfiles = {};  // keyed by org_id; hydrated at init + after profile saves

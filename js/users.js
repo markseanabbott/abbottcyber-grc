@@ -111,6 +111,7 @@ function renderUserMgmtInner() {
             </td>
             <td style="padding:10px 14px;text-align:right">
               ${!isMe ? `<button class="btn btn-sm btn-outline" onclick="openEditUserModal('${u.id}')" style="margin-right:4px">Edit</button>
+              ${isPlatformAdmin() && !viewAsState ? `<button class="btn btn-sm btn-outline" onclick="viewAsUser('${u.id}')" style="margin-right:4px;color:#92400e;border-color:#f59e0b">👁 View As</button>` : ''}
               <button class="btn btn-sm btn-red" onclick="confirmDeleteUser('${u.id}','${escH(u.name||u.email)}')">Remove</button>` : ''}
             </td>
           </tr>`;
@@ -180,6 +181,16 @@ function openCreateUserModal() {
           </label>`).join('')}
         </div>
       </div>
+      <div id="uModuleSection" style="display:none;margin-bottom:12px">
+        <label class="form-label">Module Access <span style="color:var(--muted);font-weight:400">(sections this user can see)</span></label>
+        <div style="border:1px solid var(--border);border-radius:8px;padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:2px">
+          <label style="display:flex;align-items:center;gap:6px;padding:5px 6px;cursor:pointer;border-radius:4px;font-size:12px"><input type="checkbox" class="uModuleCheck" value="assessments" checked> 📋 Assessments</label>
+          <label style="display:flex;align-items:center;gap:6px;padding:5px 6px;cursor:pointer;border-radius:4px;font-size:12px"><input type="checkbox" class="uModuleCheck" value="ai" checked> 🤖 AI Readiness</label>
+          <label style="display:flex;align-items:center;gap:6px;padding:5px 6px;cursor:pointer;border-radius:4px;font-size:12px"><input type="checkbox" class="uModuleCheck" value="risk" checked> ⚠️ Risk &amp; Vendors</label>
+          <label style="display:flex;align-items:center;gap:6px;padding:5px 6px;cursor:pointer;border-radius:4px;font-size:12px"><input type="checkbox" class="uModuleCheck" value="exercises" checked> 🎯 Exercises</label>
+          <label style="display:flex;align-items:center;gap:6px;padding:5px 6px;cursor:pointer;border-radius:4px;font-size:12px"><input type="checkbox" class="uModuleCheck" value="reports" checked> 📊 Reports</label>
+        </div>
+      </div>
       <div id="uError" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;
         padding:8px 10px;border-radius:6px;font-size:12px;margin-bottom:10px"></div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
@@ -193,9 +204,11 @@ function openCreateUserModal() {
 
 function userRoleChanged() {
   const role = document.getElementById('uRole')?.value;
-  const section = document.getElementById('uOrgAccessSection');
-  if (!section) return;
-  section.style.display = ['analyst','viewer'].includes(role) ? '' : 'none';
+  const restricted = ['analyst','viewer'].includes(role);
+  const s1 = document.getElementById('uOrgAccessSection');
+  const s2 = document.getElementById('uModuleSection');
+  if (s1) s1.style.display = restricted ? '' : 'none';
+  if (s2) s2.style.display = restricted ? '' : 'none';
 }
 
 async function submitCreateUser() {
@@ -225,17 +238,24 @@ async function submitCreateUser() {
     const authUid = await authCreateAuthUser(email, password);
 
     // 2. Insert app user record
+    const isRestricted = ['analyst','viewer'].includes(role);
+    let moduleAccess = null;
+    if (isRestricted) {
+      const checked = [...document.querySelectorAll('.uModuleCheck:checked')].map(cb => cb.value);
+      moduleAccess = { assessments: checked.includes('assessments'), ai: checked.includes('ai'), risk: checked.includes('risk'), exercises: checked.includes('exercises'), reports: checked.includes('reports') };
+    }
     const newUser = await sb.users.create({
       name: name || null,
       email,
       role,
       org_id: orgId,
       auth_id: authUid,
+      module_access: moduleAccess,
     });
     const userId = Array.isArray(newUser) ? newUser[0]?.id : newUser?.id;
 
     // 3. Save org access list for analyst/viewer
-    if (['analyst','viewer'].includes(role) && userId) {
+    if (isRestricted && userId) {
       const checked = [...document.querySelectorAll('.uOrgCheck:checked')].map(cb => cb.value);
       if (checked.length) {
         await sb.userOrgAccess.upsertAll(checked.map(orgId => ({ user_id: userId, org_id: orgId })));
@@ -314,6 +334,16 @@ async function openEditUserModal(userId) {
           </label>`).join('')}
         </div>
       </div>
+      <div id="euModuleSection" style="${['analyst','viewer'].includes(user.role) ? '' : 'display:none'};margin-bottom:12px">
+        <label class="form-label">Module Access <span style="color:var(--muted);font-weight:400">(sections this user can see)</span></label>
+        <div style="border:1px solid var(--border);border-radius:8px;padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:2px">
+          ${[['assessments','📋 Assessments'],['ai','🤖 AI Readiness'],['risk','⚠️ Risk &amp; Vendors'],['exercises','🎯 Exercises'],['reports','📊 Reports']].map(([val,lbl]) => {
+            const ma = user.module_access;
+            const chk = !ma || ma[val] !== false;
+            return `<label style="display:flex;align-items:center;gap:6px;padding:5px 6px;cursor:pointer;border-radius:4px;font-size:12px"><input type="checkbox" class="euModuleCheck" value="${val}" ${chk?'checked':''}> ${lbl}</label>`;
+          }).join('')}
+        </div>
+      </div>
       <div id="euError" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;
         padding:8px 10px;border-radius:6px;font-size:12px;margin-bottom:10px"></div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
@@ -326,9 +356,11 @@ async function openEditUserModal(userId) {
 
 function editUserRoleChanged() {
   const role = document.getElementById('euRole')?.value;
-  const section = document.getElementById('euOrgAccessSection');
-  if (!section) return;
-  section.style.display = ['analyst','viewer'].includes(role) ? '' : 'none';
+  const restricted = ['analyst','viewer'].includes(role);
+  const s1 = document.getElementById('euOrgAccessSection');
+  const s2 = document.getElementById('euModuleSection');
+  if (s1) s1.style.display = restricted ? '' : 'none';
+  if (s2) s2.style.display = restricted ? '' : 'none';
 }
 
 async function submitEditUser(userId) {
@@ -340,11 +372,17 @@ async function submitEditUser(userId) {
   btn.textContent = 'Saving…'; btn.disabled = true; errEl.style.display = 'none';
 
   try {
-    await sb.users.update(userId, { name: name || null, role, org_id: orgId });
+    const isRestricted = ['analyst','viewer'].includes(role);
+    let moduleAccess = null;
+    if (isRestricted) {
+      const checked = [...document.querySelectorAll('.euModuleCheck:checked')].map(cb => cb.value);
+      moduleAccess = { assessments: checked.includes('assessments'), ai: checked.includes('ai'), risk: checked.includes('risk'), exercises: checked.includes('exercises'), reports: checked.includes('reports') };
+    }
+    await sb.users.update(userId, { name: name || null, role, org_id: orgId, module_access: moduleAccess });
 
     // Update org access for analyst/viewer
     await sb.userOrgAccess.deleteForUser(userId);
-    if (['analyst','viewer'].includes(role)) {
+    if (isRestricted) {
       const checked = [...document.querySelectorAll('.euOrgCheck:checked')].map(cb => cb.value);
       if (checked.length) {
         await sb.userOrgAccess.upsertAll(checked.map(oid => ({ user_id: userId, org_id: oid })));
@@ -368,15 +406,35 @@ async function submitEditUser(userId) {
 // DELETE USER
 // ============================================================
 function confirmDeleteUser(userId, displayName) {
-  if (!confirm(`Remove user "${displayName}"? This removes their platform access. Their Supabase auth account is not deleted — do that in the Supabase dashboard if needed.`)) return;
+  if (!confirm(`Remove user "${displayName}"? This will delete their platform account and sign-in access.`)) return;
   deleteUser(userId, displayName);
 }
 
 async function deleteUser(userId, displayName) {
   try {
+    // Get auth_id before deleting the app record
+    const userRow = userMgmtState.users.find(u => u.id === userId);
+    const authId = userRow?.auth_id;
+
     await sb.userOrgAccess.deleteForUser(userId);
     await sb.users.delete(userId);
-    auditLog('user_deleted', 'user', displayName, {});
+
+    // Delete Supabase Auth account (requires SB_SERVICE_KEY)
+    if (authId) {
+      try {
+        await authAdminDeleteUser(authId);
+      } catch (authErr) {
+        console.warn('App user deleted but auth account removal failed:', authErr.message);
+        toast(`${displayName} removed from platform — auth account needs manual cleanup in Supabase dashboard`, '#d97706');
+        auditLog('user_deleted', 'user', displayName, { auth_cleanup: 'failed', reason: authErr.message });
+        await userMgmtLoad();
+        const el = document.getElementById('userMgmtContent');
+        if (el) el.innerHTML = renderUserMgmtInner();
+        return;
+      }
+    }
+
+    auditLog('user_deleted', 'user', displayName, { auth_cleanup: authId ? 'success' : 'no_auth_id' });
     toast(`${displayName} removed`, '#d97706');
     await userMgmtLoad();
     const el = document.getElementById('userMgmtContent');

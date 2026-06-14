@@ -1,7 +1,15 @@
 const SB_URL = 'https://sssyimtkvmtgjpusedvq.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzc3lpbXRrdm10Z2pwdXNlZHZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NzA1NTMsImV4cCI6MjA5NDU0NjU1M30.FxQaJn97YewSQi6s45nw1LgMRfBj8xhswLM47_Q2zXI';
+// Service role key — required for Auth admin operations (delete auth user).
+// Get this from: Supabase Dashboard → Settings → API → service_role (secret key).
+// Never commit this value to git.
+const SB_SERVICE_KEY = '';
 
 async function sbFetch(path, method = 'GET', body = null, extraHeaders = {}) {
+  // Block writes in view-as preview mode (prevent accidental data changes while impersonating)
+  if (['POST','PATCH','PUT','DELETE'].includes(method) && typeof viewAsState !== 'undefined' && viewAsState) {
+    throw new Error('Write operations are disabled while in View As mode — exit to make changes');
+  }
   // Block write operations for view-only users (role=viewer)
   if (['POST','PATCH','PUT','DELETE'].includes(method) &&
       typeof isViewOnly === 'function' && isViewOnly()) {

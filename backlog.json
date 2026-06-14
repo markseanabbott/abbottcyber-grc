@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5",
   "created": "2026-05-14",
-  "updated": "2026-06-14 (session 14)",
+  "updated": "2026-06-14 (session 15)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -84,7 +84,7 @@
           "id": "d8",
           "text": "Nav rebuild — topbar org switcher, user avatar dropdown, regrouped nav sections",
           "done": true,
-          "notes": "Nav regrouped into 6 groups (Home/Assessments/AI Readiness/Risk & Vendors/Exercises/Reports). Home rendered as flat single-item nav (no accordion). Org/company switcher moved from sidebar footer to topbar. User chip replaced with avatar dropdown containing Org Manager, User Management (admin only), and Sign Out. Admin pages removed from sidebar nav. js/config.js (NAV structure), js/app.js (buildNav flat items, _ADMIN_PAGES breadcrumb, setNav, click-outside), js/auth.js (renderUserMenu, toggleUserMenu, closeUserMenu), index.html (topbar org switcher, sidebar footer removed), css/core.css (.user-menu*, .nav-item-flat, .topbar-org-selector)."
+          "notes": "Nav regrouped into 6 groups (Home/Assessments/AI Readiness/Risk & Vendors/Exercises/Reports). Home rendered as flat single-item nav (no accordion). Org/company switcher moved from sidebar footer to topbar. User chip replaced with avatar dropdown containing Org Manager, User Management (admin only), and Sign Out. Admin pages removed from sidebar nav. js/config.js (NAV structure), js/app.js (buildNav flat items, _ADMIN_PAGES breadcrumb, setNav, click-outside), js/auth.js (renderUserMenu, toggleUserMenu, closeUserMenu), index.html (topbar org switcher, sidebar footer removed), css/core.css (.user-menu*, .nav-item-flat, .topbar-org-selector). Session 15 fix: dashboard org list now scoped to children of selected org (orgsUnderCurrent() in home.js) — platform handled separately, grandchildren included for grandfather/father tiers."
         }
       ]
     },
@@ -319,8 +319,20 @@
         {
           "id": "auth9",
           "text": "Module-level access control — add module_access jsonb column to users table (PATCH_012); restrict nav group visibility per analyst/viewer based on assigned modules (AI Readiness, Assessments, Risk & Vendors, Exercises, Reports). platform_admin and org_admin always see all. UI reads module_access in buildNav() to filter groups.",
-          "done": false,
-          "priority": "Medium"
+          "done": true,
+          "notes": "SUPABASE_PATCH_012.sql adds module_access jsonb to users. js/app.js: _GROUP_MODULE map, hasModuleAccess(groupId) checks viewAsState then profile.module_access. buildNav() calls hasModuleAccess() per group. js/users.js: Module Access checkbox section in create and edit modals (visible only for analyst/viewer roles). submitCreateUser/submitEditUser save module_access jsonb. NULL = full access (existing users unaffected). Run PATCH_012 in Supabase SQL Editor to activate."
+        },
+        {
+          "id": "auth10",
+          "text": "View As User — platform_admin can impersonate any user to preview their exact nav, org scope, and module access. Amber banner shows who is being viewed. All writes disabled in preview mode. Exit returns to own account.",
+          "done": true,
+          "notes": "js/config.js: viewAsState global + _orgScopeForRole() helper refactors visibleOrgs(). js/auth.js: isAdmin/isViewOnly check viewAsState first; isPlatformAdmin() always uses real role. js/supabase.js: writes blocked when viewAsState active. js/app.js: viewAsUser(userId), exitViewAs(), updateViewAsBanner(). hasModuleAccess() checks viewAsState. js/users.js: '👁 View As' button per user row (platform_admin only, not in view-as mode). index.html: #viewAsBanner div between topbar and content. css/core.css: .view-as-banner amber styles."
+        },
+        {
+          "id": "auth11",
+          "text": "Delete user now removes Supabase Auth account — requires SB_SERVICE_KEY in js/supabase.js (service role key from Supabase Dashboard → Settings → API). Graceful fallback if key not set.",
+          "done": true,
+          "notes": "js/supabase.js: SB_SERVICE_KEY constant (empty placeholder — Mark must fill in). js/auth.js: authAdminDeleteUser(authId) calls DELETE /auth/v1/admin/users/{id} with service role key. js/users.js: deleteUser() retrieves auth_id from userMgmtState, calls authAdminDeleteUser after app record deleted. Soft failure: if auth delete fails, shows warning toast and audit logs the failure rather than crashing. 404 from auth treated as success."
         }
       ]
     },

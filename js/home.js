@@ -1,6 +1,22 @@
+// Returns orgs that sit beneath currentOrg in the hierarchy,
+// intersected with the user's auth scope so we never surface orgs they shouldn't see.
+function orgsUnderCurrent() {
+  if (!currentOrg) return [];
+  const authVisible = new Set(visibleOrgs().map(o => o.id));
+  // Platform: show everything else in scope
+  if (currentOrg.tier === 'platform') {
+    return allOrgs.filter(o => o.id !== currentOrg.id && authVisible.has(o.id));
+  }
+  // Other tiers: direct children + their children (covers grandfather→father→child)
+  const directChildren = allOrgs.filter(o => o.parent_id === currentOrg.id && authVisible.has(o.id));
+  const childIds = new Set(directChildren.map(o => o.id));
+  const grandchildren = allOrgs.filter(o => childIds.has(o.parent_id) && authVisible.has(o.id));
+  return [...directChildren, ...grandchildren];
+}
+
 function renderHome() {
   if (!currentOrg) return '';
-  const visible = visibleOrgs();
+  const subOrgs = orgsUnderCurrent();
   const h = orgAssessments[currentOrg.id] || {};
   const mods = Object.keys(h).filter(k => h[k] && h[k].length > 0);
   const scores = mods.map(k => h[k][h[k].length - 1].score);
@@ -13,9 +29,9 @@ function renderHome() {
       <div class="wcard-val" style="font-size:14px">${currentOrg.tier.charAt(0).toUpperCase() + currentOrg.tier.slice(1)}</div>
       <div class="wcard-sub">${currentOrg.name}</div></div>
     <div class="wcard"><div class="wcard-icon">👁️</div>
-      <div class="wcard-label">Visible orgs</div>
-      <div class="wcard-val">${visible.length}</div>
-      <div class="wcard-sub">In your scope</div></div>
+      <div class="wcard-label">Sub-organisations</div>
+      <div class="wcard-val">${subOrgs.length}</div>
+      <div class="wcard-sub">${subOrgs.length ? 'Under this org' : 'No children'}</div></div>
     <div class="wcard"><div class="wcard-icon">📋</div>
       <div class="wcard-label">Assessments</div>
       <div class="wcard-val">${mods.length}</div>
@@ -40,16 +56,16 @@ function renderHome() {
       </div>`;
     }).join('')}
   </div>
-  ${visible.filter(o => o.id !== currentOrg.id).length ? `
+  ${subOrgs.length ? `
   <div class="card">
-    <div class="card-title">Organisations in scope (${visible.filter(o => o.id !== currentOrg.id).length})</div>
-    ${visible.filter(o => o.id !== currentOrg.id).map(o => {
+    <div class="card-title">Organisations under ${escH(currentOrg.name)} (${subOrgs.length})</div>
+    ${subOrgs.map(o => {
       const parent = allOrgs.find(p => p.id === o.parent_id);
       return `<div class="org-tree-item">
         <div class="org-avatar ${tierAvClass(o.tier)}" style="width:24px;height:24px;font-size:9px;flex-shrink:0">${tierInitials(o.name)}</div>
         <div style="flex:1">
-          <div style="font-size:12px;font-weight:700">${o.name}</div>
-          <div style="font-size:10px;color:var(--muted)">${o.tier}${parent && parent.id !== currentOrg.id ? ' · ' + parent.name : ''}</div>
+          <div style="font-size:12px;font-weight:700">${escH(o.name)}</div>
+          <div style="font-size:10px;color:var(--muted)">${o.tier}${parent && parent.id !== currentOrg.id ? ' · ' + escH(parent.name) : ''}</div>
         </div>
         <span class="badge ${o.tier === 'grandfather' ? 'b-cyan' : o.tier === 'father' ? 'b-purple' : 'b-green'}">${o.tier}</span>
         <button class="btn btn-outline btn-sm" style="margin-left:6px" onclick="selectOrg('${o.id}')">Switch →</button>

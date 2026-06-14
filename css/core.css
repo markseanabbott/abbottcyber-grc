@@ -142,6 +142,8 @@ textarea{font-family:'Inter',sans-serif;font-size:12px;width:100%;padding:7px 9p
 .user-menu-item:hover{background:var(--bg)}
 .user-menu-item.danger{color:#dc2626}
 .user-menu-divider{height:1px;background:var(--border);margin:3px 0}
+/* VIEW AS BANNER */
+.view-as-banner{display:flex;align-items:center;gap:10px;padding:8px 20px;background:#fef3c7;border-bottom:2px solid #f59e0b;font-size:12px;font-weight:600;color:#92400e;font-family:'Inter',sans-serif}
 
 /* FLAT NAV ITEM (single-item groups, e.g. Home) */
 .nav-item-flat{display:flex;align-items:center;gap:8px;padding:8px 1rem;cursor:pointer;font-size:12px;color:rgba(255,255,255,0.65);border-left:2px solid transparent;transition:all 0.15s;font-weight:500}

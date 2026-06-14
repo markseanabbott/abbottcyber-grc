@@ -155,9 +155,87 @@ function getModuleDot(id) {
   return s >= 75 ? 'dot-green' : s >= 50 ? 'dot-amber' : 'dot-red';
 }
 
+const _GROUP_MODULE = {
+  g_assessments: 'assessments',
+  g_ai_readiness: 'ai',
+  g_risk: 'risk',
+  g_exercises: 'exercises',
+  g_reporting: 'reports',
+};
+
+function hasModuleAccess(groupId) {
+  const role = viewAsState?.role || authState?.profile?.role;
+  if (!role || role === 'platform_admin' || role === 'org_admin') return true;
+  const access = viewAsState?.module_access ?? authState?.profile?.module_access;
+  if (!access) return true;
+  const key = _GROUP_MODULE[groupId];
+  if (!key) return true;
+  return access[key] !== false;
+}
+
+async function viewAsUser(userId) {
+  const user = userMgmtState?.users?.find(u => u.id === userId);
+  if (!user) return;
+  let accessOrgs = [];
+  if (['analyst','viewer'].includes(user.role)) {
+    try {
+      const rows = await sb.userOrgAccess.getForUser(userId);
+      accessOrgs = (rows || []).map(r => r.org_id);
+    } catch {}
+  }
+  viewAsState = {
+    name: user.name || user.email,
+    email: user.email,
+    role: user.role,
+    org_id: user.org_id,
+    module_access: user.module_access || null,
+    accessOrgs,
+  };
+  const homeOrg = allOrgs.find(o => o.id === user.org_id);
+  if (homeOrg) currentOrg = homeOrg;
+  activeNav = 'home';
+  activeNavSection = 'g_assessments';
+  updateViewAsBanner();
+  buildNav();
+  renderMain();
+  toast(`Viewing as ${viewAsState.name}`, '#92400e');
+}
+
+function exitViewAs() {
+  viewAsState = null;
+  const myOrg = allOrgs.find(o => o.id === authState.profile?.org_id) || allOrgs[0];
+  if (myOrg) currentOrg = myOrg;
+  activeNav = 'home';
+  activeNavSection = 'g_assessments';
+  updateViewAsBanner();
+  buildNav();
+  renderMain();
+  toast('Returned to your own account', '#152168');
+}
+
+function updateViewAsBanner() {
+  const banner = document.getElementById('viewAsBanner');
+  if (!banner) return;
+  if (!viewAsState) {
+    banner.style.display = 'none';
+    banner.innerHTML = '';
+    return;
+  }
+  const roleLabels = { platform_admin: 'Platform Admin', org_admin: 'Org Admin', analyst: 'Analyst', viewer: 'View Only' };
+  const org = allOrgs.find(o => o.id === viewAsState.org_id);
+  banner.style.display = '';
+  banner.innerHTML = `<div class="view-as-banner">
+    <span style="font-size:16px">🔍</span>
+    <span>Viewing as <strong>${escH(viewAsState.name)}</strong> — ${roleLabels[viewAsState.role] || viewAsState.role}${org ? ' · ' + escH(org.name) : ''}</span>
+    <span style="color:#b45309;font-size:11px">Writes disabled in preview mode</span>
+    <button onclick="exitViewAs()" style="margin-left:auto;background:#92400e;color:#fff;border:none;padding:4px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Exit View As</button>
+  </div>`;
+}
+
 function buildNav() {
   const adminUser = typeof isAdmin === 'function' ? isAdmin() : true;
   document.getElementById('sidebarNav').innerHTML = NAV.map(g => {
+    if (!hasModuleAccess(g.id)) return '';
     const visibleItems = g.items.filter(item => !item.adminOnly || adminUser);
     if (!visibleItems.length) return '';
     // Single-item groups render as flat items (no accordion wrapper)

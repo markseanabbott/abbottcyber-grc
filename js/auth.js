@@ -50,6 +50,20 @@ async function authSignOut() {
   authClearSession();
 }
 
+// Deletes a Supabase auth account by auth UUID. Requires SB_SERVICE_KEY.
+// Throws if service key is not configured or the API call fails.
+async function authAdminDeleteUser(authId) {
+  if (!SB_SERVICE_KEY) throw new Error('Service role key not configured — add SB_SERVICE_KEY to js/supabase.js');
+  const res = await fetch(`${SB_URL}/auth/v1/admin/users/${authId}`, {
+    method: 'DELETE',
+    headers: { 'apikey': SB_SERVICE_KEY, 'Authorization': `Bearer ${SB_SERVICE_KEY}` },
+  });
+  if (!res.ok && res.status !== 404) {
+    const t = await res.text();
+    throw new Error(`Auth delete failed: ${res.status} ${t}`);
+  }
+}
+
 // Creates a new Supabase auth account. Returns the auth UUID only.
 // The session returned by /signup is intentionally discarded so the caller remains logged in.
 async function authCreateAuthUser(email, password) {
@@ -129,9 +143,9 @@ async function authLoadProfile() {
 // ============================================================
 // ROLE HELPERS
 // ============================================================
-function isViewOnly()    { return authState.profile?.role === 'viewer'; }
-function isAdmin()       { return ['platform_admin','org_admin'].includes(authState.profile?.role||''); }
-function isPlatformAdmin() { return authState.profile?.role === 'platform_admin'; }
+function isViewOnly()    { return (viewAsState?.role || authState.profile?.role) === 'viewer'; }
+function isAdmin()       { return ['platform_admin','org_admin'].includes(viewAsState?.role || authState.profile?.role || ''); }
+function isPlatformAdmin() { return authState.profile?.role === 'platform_admin'; } // always real role — not overridden by view-as
 
 // ============================================================
 // LOGIN SCREEN
