@@ -27,10 +27,35 @@ async function sbFetch(path, method = 'GET', body = null, extraHeaders = {}) {
   };
   if (method === 'POST' && !extraHeaders.Prefer) headers.Prefer = 'return=representation';
   Object.assign(headers, extraHeaders);
-  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+  let res = await fetch(`${SB_URL}/rest/v1/${path}`, {
     method, headers,
     body: body ? JSON.stringify(body) : undefined
   });
+
+  // Auto-refresh on 401 JWT expired and retry once
+  if (res.status === 401 && typeof authRefreshToken === 'function' &&
+      typeof authState !== 'undefined' && authState?.session?.refresh_token) {
+    try {
+      const now = Math.floor(Date.now() / 1000);
+      const refreshed = await authRefreshToken(authState.session.refresh_token);
+      authState.session = {
+        access_token: refreshed.access_token,
+        refresh_token: refreshed.refresh_token,
+        expires_at: now + (refreshed.expires_in || 3600),
+      };
+      if (typeof authSaveSession === 'function') authSaveSession(authState.session, authState.user);
+      // Retry with new token
+      headers['Authorization'] = `Bearer ${refreshed.access_token}`;
+      res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+        method, headers,
+        body: body ? JSON.stringify(body) : undefined
+      });
+    } catch {
+      if (typeof authSignOut === 'function') authSignOut();
+      throw new Error('Session expired — please sign in again');
+    }
+  }
+
   if (!res.ok) { const t = await res.text(); throw new Error(`${res.status}: ${t}`); }
   if (res.status === 204) return null;
   return res.json();

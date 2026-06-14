@@ -11,6 +11,32 @@ let authState = {
 };
 
 // ============================================================
+// BACKGROUND TOKEN REFRESH — checks every 4 minutes, refreshes if within 5 min of expiry
+// ============================================================
+let _authRefreshTimer = null;
+function authStartRefreshTimer() {
+  if (_authRefreshTimer) clearInterval(_authRefreshTimer);
+  _authRefreshTimer = setInterval(async () => {
+    if (!authState?.session?.refresh_token) return;
+    const now = Math.floor(Date.now() / 1000);
+    const expiresAt = authState.session.expires_at || 0;
+    if (expiresAt - now > 300) return; // more than 5 min left — nothing to do
+    try {
+      const refreshed = await authRefreshToken(authState.session.refresh_token);
+      authState.session = {
+        access_token: refreshed.access_token,
+        refresh_token: refreshed.refresh_token,
+        expires_at: now + (refreshed.expires_in || 3600),
+      };
+      authSaveSession(authState.session, authState.user);
+    } catch {
+      clearInterval(_authRefreshTimer);
+      authSignOut();
+    }
+  }, 4 * 60 * 1000); // every 4 minutes
+}
+
+// ============================================================
 // SESSION STORAGE
 // ============================================================
 function authSaveSession(session, user) {
@@ -122,6 +148,7 @@ async function authBootstrap() {
 
   try {
     await authLoadProfile();
+    authStartRefreshTimer();
     return true;
   } catch (e) {
     console.warn('Auth profile load failed:', e.message);
@@ -212,6 +239,7 @@ async function loginSubmit(e) {
     authState.user = data.user;
     authSaveSession(session, data.user);
     await authLoadProfile();
+    authStartRefreshTimer();
 
     document.getElementById('loginScreen')?.remove();
     document.getElementById('appShell').style.display = '';
@@ -223,6 +251,7 @@ async function loginSubmit(e) {
 }
 
 async function doSignOut() {
+  if (_authRefreshTimer) { clearInterval(_authRefreshTimer); _authRefreshTimer = null; }
   await authSignOut();
   allOrgs = []; currentOrg = null; orgAssessments = {};
   activeNav = 'home'; activeNavSection = 'g_dashboard';
