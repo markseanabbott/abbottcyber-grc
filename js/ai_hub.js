@@ -253,7 +253,7 @@ function renderAiHub() {
     <div class="card" style="padding:1.1rem">
       <div style="font-size:13px;font-weight:700;margin-bottom:.9rem">Domain Breakdown</div>
       ${groupScores.filter(g => g.pct !== null).length
-        ? `<canvas id="aihub-domain-radar" width="300" height="260" style="width:100%;display:block"></canvas>`
+        ? `<canvas id="aihub-domain-radar" width="260" height="220" style="width:260px;max-width:100%;display:block;margin:0 auto"></canvas>`
         : `<div style="text-align:center;padding:1.5rem 0;color:var(--muted)">
             <div style="font-size:24px;margin-bottom:.5rem">🤖</div>
             <div style="font-size:11px">No assessments yet</div>

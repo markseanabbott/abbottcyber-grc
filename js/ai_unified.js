@@ -1039,7 +1039,7 @@ function renderAiUnifiedExecReport() {
     <div class="card" style="padding:1.25rem">
       <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Domain Breakdown</div>
       ${groupScores.filter(g=>g.pct!==null).length
-        ? `<canvas id="aiurep-radar" width="340" height="280" style="width:100%;display:block;margin:0 auto"></canvas>`
+        ? `<canvas id="aiurep-radar" width="300" height="260" style="width:300px;max-width:100%;display:block;margin:0 auto"></canvas>`
         : `<div style="font-size:12px;color:var(--muted);padding:2rem 0;text-align:center">No data yet</div>`}
     </div>
   </div>
@@ -1266,9 +1266,9 @@ function aiuDrawRadar(canvasId, groupScores) {
   const N = valid.length;
   if (!N) return;
 
-  const cx = W / 2, cy = H / 2 + 10;
-  const R = Math.min(W, H) * 0.3;
-  const labelPad = 52;
+  const cx = W / 2, cy = H / 2 + 8;
+  const R = Math.min(W, H) * 0.28;
+  const labelPad = 44;
 
   function angle(i) { return (Math.PI * 2 * i / N) - Math.PI / 2; }
   function ptR(i, r) { return [cx + r * Math.cos(angle(i)), cy + r * Math.sin(angle(i))]; }
