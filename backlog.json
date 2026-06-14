@@ -1502,6 +1502,30 @@
           "id": "ai8",
           "text": "AI framework auto-scoping — cross-map ISO 42001 and NIST AI RMF findings to identify overlapping gaps and common remediation",
           "done": false
+        },
+        {
+          "id": "ai13",
+          "text": "AI governance control templates — for any AI governance control gap, provide a downloadable template (policy doc, register, tracking spreadsheet) so clients can immediately act on a finding. Could be in-app templates or generated Excel/Word artifacts. Long-term: build these trackers natively into the platform (e.g. AI inventory register, AI incident log, AI risk register).",
+          "done": false,
+          "priority": "High"
+        },
+        {
+          "id": "ai14",
+          "text": "AI phishing and attack simulation — module or integration to run AI-specific attack scenarios: prompt injection tests, model manipulation attempts, AI-generated phishing campaigns targeting staff. Assesses practical AI security posture beyond governance controls.",
+          "done": false,
+          "priority": null
+        },
+        {
+          "id": "ai15",
+          "text": "AI tabletop exercises — scenario track focused on AI-specific incidents: AI model producing harmful output, prompt injection leading to data exfiltration, AI vendor breach, AI-generated misinformation impacting operations. Complements the operational tabletop track with AI-specific injects and role considerations.",
+          "done": false,
+          "priority": null
+        },
+        {
+          "id": "ai16",
+          "text": "AI governance crosswalk with recommendations — map AI Governance Assessment gaps across NIST AI RMF, ISO 42001, EU AI Act, and PIPEDA/provincial AI obligations. For each gap, surface which frameworks require remediation and provide a prioritised recommendation. Builds on AI_REMEDIATION and existing framework mappings.",
+          "done": false,
+          "priority": "Medium"
         }
       ]
     }
