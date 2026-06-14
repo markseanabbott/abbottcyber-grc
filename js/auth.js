@@ -235,12 +235,28 @@ async function doSignOut() {
 
 function renderUserMenu() {
   if (!authState.profile) return '';
-  const ini = (authState.profile.name || authState.profile.email || '?')
-    .split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
   const roleLabels = {
     platform_admin: 'Platform Admin', org_admin: 'Org Admin',
     analyst: 'Analyst', viewer: 'View Only',
   };
+
+  // In view-as mode: show the viewed user's identity, with an exit button — no dropdown
+  if (typeof viewAsState !== 'undefined' && viewAsState) {
+    const ini = (viewAsState.name || viewAsState.email || '?')
+      .split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+    const roleLbl = roleLabels[viewAsState.role] || viewAsState.role;
+    return `<div style="display:flex;align-items:center;gap:8px;padding:0 4px 0 12px;border-left:1px solid var(--border)">
+      <div style="text-align:right">
+        <div style="font-size:11px;font-weight:700;color:var(--text);line-height:1.3">${escH(viewAsState.name || viewAsState.email)}</div>
+        <div style="font-size:9px;color:#92400e;text-transform:uppercase;letter-spacing:0.05em;font-weight:700">${roleLbl}</div>
+      </div>
+      <div class="user-avatar" style="background:#92400e">${ini}</div>
+    </div>`;
+  }
+
+  // Normal mode: show real user with dropdown
+  const ini = (authState.profile.name || authState.profile.email || '?')
+    .split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
   const roleLbl = roleLabels[authState.profile.role] || authState.profile.role;
   const isAdminUser = authState.profile.role === 'platform_admin' || authState.profile.role === 'org_admin';
   const displayName = escH(authState.profile.name || authState.profile.email);

@@ -194,7 +194,9 @@ async function viewAsUser(userId) {
   const homeOrg = allOrgs.find(o => o.id === user.org_id);
   if (homeOrg) currentOrg = homeOrg;
   activeNav = 'home';
-  activeNavSection = 'g_assessments';
+  activeNavSection = null;
+  updateOrgUI();
+  document.getElementById('userChipContainer').innerHTML = renderUserMenu();
   updateViewAsBanner();
   buildNav();
   renderMain();
@@ -206,7 +208,9 @@ function exitViewAs() {
   const myOrg = allOrgs.find(o => o.id === authState.profile?.org_id) || allOrgs[0];
   if (myOrg) currentOrg = myOrg;
   activeNav = 'home';
-  activeNavSection = 'g_assessments';
+  activeNavSection = null;
+  updateOrgUI();
+  document.getElementById('userChipContainer').innerHTML = renderUserMenu();
   updateViewAsBanner();
   buildNav();
   renderMain();

@@ -181,15 +181,16 @@ function openCreateUserModal() {
           </label>`).join('')}
         </div>
       </div>
-      <div id="uModuleSection" style="display:none;margin-bottom:12px">
-        <label class="form-label">Module Access <span style="color:var(--muted);font-weight:400">(sections this user can see)</span></label>
-        <div style="border:1px solid var(--border);border-radius:8px;padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:2px">
+      <div style="margin-bottom:12px">
+        <label class="form-label">Module Access</label>
+        <div id="uModuleSection" style="border:1px solid var(--border);border-radius:8px;padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:2px">
           <label style="display:flex;align-items:center;gap:6px;padding:5px 6px;cursor:pointer;border-radius:4px;font-size:12px"><input type="checkbox" class="uModuleCheck" value="assessments" checked> 📋 Assessments</label>
           <label style="display:flex;align-items:center;gap:6px;padding:5px 6px;cursor:pointer;border-radius:4px;font-size:12px"><input type="checkbox" class="uModuleCheck" value="ai" checked> 🤖 AI Readiness</label>
           <label style="display:flex;align-items:center;gap:6px;padding:5px 6px;cursor:pointer;border-radius:4px;font-size:12px"><input type="checkbox" class="uModuleCheck" value="risk" checked> ⚠️ Risk &amp; Vendors</label>
           <label style="display:flex;align-items:center;gap:6px;padding:5px 6px;cursor:pointer;border-radius:4px;font-size:12px"><input type="checkbox" class="uModuleCheck" value="exercises" checked> 🎯 Exercises</label>
           <label style="display:flex;align-items:center;gap:6px;padding:5px 6px;cursor:pointer;border-radius:4px;font-size:12px"><input type="checkbox" class="uModuleCheck" value="reports" checked> 📊 Reports</label>
         </div>
+        <div id="uModuleNote" style="font-size:10px;color:var(--muted);margin-top:4px"></div>
       </div>
       <div id="uError" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;
         padding:8px 10px;border-radius:6px;font-size:12px;margin-bottom:10px"></div>
@@ -206,9 +207,16 @@ function userRoleChanged() {
   const role = document.getElementById('uRole')?.value;
   const restricted = ['analyst','viewer'].includes(role);
   const s1 = document.getElementById('uOrgAccessSection');
-  const s2 = document.getElementById('uModuleSection');
   if (s1) s1.style.display = restricted ? '' : 'none';
-  if (s2) s2.style.display = restricted ? '' : 'none';
+  const checks = document.querySelectorAll('.uModuleCheck');
+  const note = document.getElementById('uModuleNote');
+  checks.forEach(cb => {
+    cb.disabled = !restricted;
+    cb.checked = true;
+    cb.closest('label').style.opacity = restricted ? '1' : '0.45';
+    cb.closest('label').style.cursor = restricted ? 'pointer' : 'default';
+  });
+  if (note) note.textContent = restricted ? 'Uncheck sections to remove from their navigation.' : 'Platform Admin and Org Admin always have full access to all modules.';
 }
 
 async function submitCreateUser() {
@@ -334,15 +342,17 @@ async function openEditUserModal(userId) {
           </label>`).join('')}
         </div>
       </div>
-      <div id="euModuleSection" style="${['analyst','viewer'].includes(user.role) ? '' : 'display:none'};margin-bottom:12px">
-        <label class="form-label">Module Access <span style="color:var(--muted);font-weight:400">(sections this user can see)</span></label>
-        <div style="border:1px solid var(--border);border-radius:8px;padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:2px">
+      <div style="margin-bottom:12px">
+        <label class="form-label">Module Access</label>
+        <div id="euModuleSection" style="border:1px solid var(--border);border-radius:8px;padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:2px">
           ${[['assessments','📋 Assessments'],['ai','🤖 AI Readiness'],['risk','⚠️ Risk &amp; Vendors'],['exercises','🎯 Exercises'],['reports','📊 Reports']].map(([val,lbl]) => {
+            const restricted = ['analyst','viewer'].includes(user.role);
             const ma = user.module_access;
             const chk = !ma || ma[val] !== false;
-            return `<label style="display:flex;align-items:center;gap:6px;padding:5px 6px;cursor:pointer;border-radius:4px;font-size:12px"><input type="checkbox" class="euModuleCheck" value="${val}" ${chk?'checked':''}> ${lbl}</label>`;
+            return `<label style="display:flex;align-items:center;gap:6px;padding:5px 6px;border-radius:4px;font-size:12px;cursor:${restricted?'pointer':'default'};opacity:${restricted?'1':'0.45'}"><input type="checkbox" class="euModuleCheck" value="${val}" ${chk?'checked':''} ${restricted?'':'disabled'}> ${lbl}</label>`;
           }).join('')}
         </div>
+        <div id="euModuleNote" style="font-size:10px;color:var(--muted);margin-top:4px">${['analyst','viewer'].includes(user.role) ? 'Uncheck sections to remove from their navigation.' : 'Platform Admin and Org Admin always have full access to all modules.'}</div>
       </div>
       <div id="euError" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;
         padding:8px 10px;border-radius:6px;font-size:12px;margin-bottom:10px"></div>
@@ -358,9 +368,15 @@ function editUserRoleChanged() {
   const role = document.getElementById('euRole')?.value;
   const restricted = ['analyst','viewer'].includes(role);
   const s1 = document.getElementById('euOrgAccessSection');
-  const s2 = document.getElementById('euModuleSection');
   if (s1) s1.style.display = restricted ? '' : 'none';
-  if (s2) s2.style.display = restricted ? '' : 'none';
+  const checks = document.querySelectorAll('.euModuleCheck');
+  const note = document.getElementById('euModuleNote');
+  checks.forEach(cb => {
+    cb.disabled = !restricted;
+    cb.closest('label').style.opacity = restricted ? '1' : '0.45';
+    cb.closest('label').style.cursor = restricted ? 'pointer' : 'default';
+  });
+  if (note) note.textContent = restricted ? 'Uncheck sections to remove from their navigation.' : 'Platform Admin and Org Admin always have full access to all modules.';
 }
 
 async function submitEditUser(userId) {
