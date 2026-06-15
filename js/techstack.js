@@ -13,7 +13,7 @@
 
 const TS_CATS = [
   {
-    id: ‘endpoint’, icon: ‘💻’, title: ‘Endpoint Protection’,
+    id: 'endpoint', icon: '💻', title: 'Endpoint Protection',
     desc: 'Workstations, laptops and servers — agents, patching, encryption.',
     questions: [
       { id: 'edr', tool_category: 'EDR', question_type: 'presence', derive_strategy: 'standard',
@@ -55,7 +55,7 @@ const TS_CATS = [
     ]
   },
   {
-    id: ‘identity’, icon: ‘🔒’, title: ‘Identity & Access’,
+    id: 'identity', icon: '🔒', title: 'Identity & Access',
     desc: 'MFA, SSO, privileged access, joiner-mover-leaver.',
     questions: [
       { id: 'mfa_admin', tool_category: 'MFA_Phishing_Resistant', question_type: 'coverage', derive_strategy: 'standard',
