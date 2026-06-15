@@ -414,7 +414,14 @@ function renderMain() {
   const voB = viewOnlyBanner();  // empty string unless role=viewer
   if (activeNav === 'users') { el.innerHTML = renderUserManagement(); return; }
   if (activeNav === 'settings') { el.innerHTML = renderSettings(); setTimeout(settingsLoad, 50); return; }
-  if (activeNav === 'home') { el.innerHTML = renderHome(); drawTrend(); return; }
+  if (activeNav === 'home') {
+    el.innerHTML = renderHome();
+    setTimeout(drawHomeCharts, 80);
+    if (rrState.orgId !== currentOrg?.id) {
+      rrLoad().then(() => { if (activeNav === 'home') { el.innerHTML = renderHome(); setTimeout(drawHomeCharts, 80); } });
+    }
+    return;
+  }
   if (activeNav === 'assessments') { el.innerHTML = voB + renderAssessmentsHub(); setTimeout(drawAllHubTrends, 80); return; }
   if (activeNav === 'insurance') { el.innerHTML = voB + renderInsurance(); drawTrend(); return; }
   if (activeNav === 'cis') { el.innerHTML = voB + renderCIS(); setTimeout(() => { const c = document.getElementById('cisTrendChart'); if (c) cisTrendDraw(); if (cisState.view === 'report') drawReportCharts(); }, 80); return; }  // trend draw covers both dashboard + form views

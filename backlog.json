@@ -1,8 +1,8 @@
 {
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
-  "version": "1.5",
+  "version": "1.1.3",
   "created": "2026-05-14",
-  "updated": "2026-06-15 (session 23d)",
+  "updated": "2026-06-15 (session 23f)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -59,7 +59,8 @@
         {
           "id": "d3",
           "text": "Dashboard home: org tier card, assessments run, avg posture score, quick links",
-          "done": true
+          "done": true,
+          "notes": "Session 23e: Full dashboard redesign. Two-column layout under 4 chicklets: left panel (60%) = assessments snippet table (name, last run, score, sparkline per module) + AI Readiness radar card (from aiuDrawRadar). Right panel (40%) = risk register snippet (name + criticality badge, up to 10 rows, links to risk register). Live Modules card removed; replaced with compact quick-access pill strip. Sub-orgs section removed. AI radar panel links to AI Hub. rrLoad() triggered on home load if RR not yet fetched for current org; home re-renders when loaded. drawHomeCharts() in home.js draws sparklines + radar. app.js home branch updated to call drawHomeCharts() instead of drawTrend()."
         },
         {
           "id": "d4",

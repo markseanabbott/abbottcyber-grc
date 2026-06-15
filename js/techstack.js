@@ -13,7 +13,7 @@
 
 const TS_CATS = [
   {
-    id: 'endpoint', icon: 'ðŸ’»', title: 'Endpoint Protection',
+    id: ‘endpoint’, icon: ‘💻’, title: ‘Endpoint Protection’,
     desc: 'Workstations, laptops and servers — agents, patching, encryption.',
     questions: [
       { id: 'edr', tool_category: 'EDR', question_type: 'presence', derive_strategy: 'standard',
@@ -55,7 +55,7 @@ const TS_CATS = [
     ]
   },
   {
-    id: 'identity', icon: 'ðŸ”‘', title: 'Identity & Access',
+    id: ‘identity’, icon: ‘🔒’, title: ‘Identity & Access’,
     desc: 'MFA, SSO, privileged access, joiner-mover-leaver.',
     questions: [
       { id: 'mfa_admin', tool_category: 'MFA_Phishing_Resistant', question_type: 'coverage', derive_strategy: 'standard',
@@ -106,7 +106,7 @@ const TS_CATS = [
     ]
   },
   {
-    id: 'email', icon: 'ðŸ“§', title: 'Email Security',
+    id: 'email', icon: '📧', title: 'Email Security',
     desc: 'Gateway filtering, domain authentication, user awareness.',
     questions: [
       { id: 'esg', tool_category: 'Email_Security_Gateway', question_type: 'presence', derive_strategy: 'standard',
@@ -148,7 +148,7 @@ const TS_CATS = [
     ]
   },
   {
-    id: 'network', icon: 'ðŸŒ', title: 'Network Security',
+    id: 'network', icon: '🌐', title: 'Network Security',
     desc: 'Firewall, remote access, segmentation, DNS/web filtering.',
     questions: [
       { id: 'ngfw', tool_category: 'NGFW', question_type: 'presence', derive_strategy: 'standard',
@@ -208,7 +208,7 @@ const TS_CATS = [
     ]
   },
   {
-    id: 'backup', icon: 'ðŸ’¾', title: 'Backup & Recovery',
+    id: 'backup', icon: '💾', title: 'Backup & Recovery',
     desc: 'Backup tooling, immutability, restore testing, RTO/RPO.',
     questions: [
       { id: 'backup_tool', tool_category: 'Backup_Tool', question_type: 'presence', derive_strategy: 'standard',
@@ -250,8 +250,8 @@ const TS_CATS = [
     ]
   },
   {
-    id: 'secops', icon: 'ðŸ“¡', title: 'Logging, Monitoring & SecOps',
-    desc: 'Log aggregation, SIEM/XDR, retention, 24Ã—7 monitoring.',
+    id: 'secops', icon: '📡', title: 'Logging, Monitoring & SecOps',
+    desc: 'Log aggregation, SIEM/XDR, retention, 24×7 monitoring.',
     questions: [
       { id: 'log_agg', tool_category: 'Log_Aggregation', question_type: 'presence', derive_strategy: 'standard',
         text: 'Is centralised log aggregation in place across endpoints, servers, identity provider, and network gear?',
@@ -281,8 +281,8 @@ const TS_CATS = [
         }
       },
       { id: 'mdr_24x7', tool_category: 'Monitoring_24x7', question_type: 'process', derive_strategy: 'standard',
-        text: 'Is 24Ã—7 monitoring coverage in place (in-house SOC, MDR provider, or hybrid)?',
-        suggestion: 'Most SMBs use MDR (Arctic Wolf, Huntress, Blackpoint, Expel). In-house 24Ã—7 needs at least 6-8 analysts to be honest.',
+        text: 'Is 24×7 monitoring coverage in place (in-house SOC, MDR provider, or hybrid)?',
+        suggestion: 'Most SMBs use MDR (Arctic Wolf, Huntress, Blackpoint, Expel). In-house 24×7 needs at least 6-8 analysts to be honest.',
         mappings: {
           cis: [{ id: '17.4', title: 'Establish and maintain an incident response process', ig: '1' }],
           nist: [{ id: 'DE.CM-09', title: 'Computing hardware and software, runtime environments, and their data are monitored' }, { id: 'RS.MA-01', title: 'The incident response plan is executed in coordination with relevant third parties' }],
@@ -292,7 +292,7 @@ const TS_CATS = [
     ]
   },
   {
-    id: 'vulnmgmt', icon: 'ðŸ›', title: 'Vulnerability Management',
+    id: 'vulnmgmt', icon: '🐛', title: 'Vulnerability Management',
     desc: 'Scanning, attack-surface, remediation SLA, pen testing.',
     questions: [
       { id: 'vuln_scan', tool_category: 'Vuln_Scanner', question_type: 'presence', derive_strategy: 'standard',
@@ -334,7 +334,7 @@ const TS_CATS = [
     ]
   },
   {
-    id: 'dataprot', icon: 'ðŸ”’', title: 'Data Protection & DLP',
+    id: 'dataprot', icon: '🔑', title: 'Data Protection & DLP',
     desc: 'Classification, DLP enforcement, key management.',
     questions: [
       { id: 'data_classification', tool_category: 'Data_Classification', question_type: 'feature', derive_strategy: 'standard',
@@ -367,7 +367,7 @@ const TS_CATS = [
     ]
   },
   {
-    id: 'opres', icon: 'ðŸš¨', title: 'Operational Resilience & IR Tooling',
+    id: 'opres', icon: '🚨', title: 'Operational Resilience & IR Tooling',
     desc: 'On-call paging, runbook automation, IR retainer, EDR-IR integration.',
     questions: [
       { id: 'paging', tool_category: 'On_Call_Paging', question_type: 'presence', derive_strategy: 'standard',
@@ -376,7 +376,7 @@ const TS_CATS = [
         mappings: {
           cis: [{ id: '17.3', title: 'Establish and maintain an enterprise process for reporting incidents', ig: '1' }],
           nist: [{ id: 'RS.MA-01', title: 'The incident response plan is executed in coordination with relevant third parties' }, { id: 'RS.CO-02', title: 'Internal and external stakeholders are notified of incidents' }],
-          insurance: { impact: 'low', note: 'Process tooling; weighted lightly on cyber renewals but expected for clients with 24Ã—7 SLAs to their customers.' },
+          insurance: { impact: 'low', note: 'Process tooling; weighted lightly on cyber renewals but expected for clients with 24×7 SLAs to their customers.' },
         }
       },
       { id: 'soar_runbook', tool_category: 'SOAR_Runbook', question_type: 'presence', derive_strategy: 'standard',
@@ -409,7 +409,7 @@ const TS_CATS = [
     ]
   },
   {
-    id: 'assetmgmt', icon: 'ðŸ“¦', title: 'Asset & Configuration Management',
+    id: 'assetmgmt', icon: '📦', title: 'Asset & Configuration Management',
     desc: 'Hardware + software inventory, configuration baselines.',
     questions: [
       { id: 'hw_inventory', tool_category: 'HW_Inventory', question_type: 'presence', derive_strategy: 'standard',
