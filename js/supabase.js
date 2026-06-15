@@ -165,6 +165,25 @@ sb.userOrgAccess = {
   deleteForUser: (userId) => sbFetch(`user_org_access?user_id=eq.${userId}`, 'DELETE'),
 };
 
+// Risk Register persistence layer (PATCH_014)
+sb.riskRegister = {
+  getForOrg: (orgId) => sbFetch(
+    `risk_register?org_id=eq.${orgId}&select=*,risk_control_categories(control_number,control_name,threat_scenario,display_order)`
+  ),
+  acceptRisk: (riskRegisterId, acceptedBy, rationale, reviewDate) => sbFetch('rpc/accept_risk', 'POST', {
+    p_risk_register_id: riskRegisterId,
+    p_accepted_by:      acceptedBy,
+    p_rationale:        rationale,
+    p_review_date:      reviewDate,
+  }),
+  handleIgChange: (orgId, assessmentId, newIgLevel, changedBy) => sbFetch('rpc/handle_ig_change', 'POST', {
+    p_org_id:        orgId,
+    p_assessment_id: assessmentId,
+    p_new_ig_level:  newIgLevel,
+    p_changed_by:    changedBy,
+  }),
+};
+
 // Tabletop persistence layer — wraps Supabase calls for the operational tabletop module.
 sb.tt = {
   // RPC: ask the DB for a fresh 6-char session code (alphabet defined in SUPABASE_SCHEMA.sql)

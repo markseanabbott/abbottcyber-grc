@@ -113,7 +113,7 @@ const NAV = [
   ]},
   { id: 'g_risk', group: 'Risk & Vendors', icon: '⚠️', items: [
     { id: 'tpra', icon: '🔍', label: 'Vendor Risk (TPRA)', live: true, phase: 1 },
-    { id: 'riskregister', icon: '📋', label: 'Risk Register', live: false, phase: 2 },
+    { id: 'riskregister', icon: '📋', label: 'Risk Register', live: true, phase: 2 },
     { id: 'vulnscan', icon: '📡', label: 'Vulnerability Scan', live: false, phase: 2 },
     { id: 'pentest', icon: '🐛', label: 'Pen Test Findings', live: false, phase: 3 },
   ]},

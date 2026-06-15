@@ -893,6 +893,14 @@ async function cisSetGoal(goal) {
     await sb.profiles.upsert({ org_id: currentOrg.id, cis_goal: goal });
     const labels = { ig1: 'IG1', ig2: 'IG2', ig3: 'IG3' };
     toast(`Goal updated to ${labels[goal]}`, '#15803d');
+    // Fire-and-forget: re-scope risk register rows when IG level changes
+    try {
+      const igNum = { ig1: 1, ig2: 2, ig3: 3 }[goal] || 1;
+      const latestRun = (orgAssessments[currentOrg.id] || []).filter(a => a.module === 'cis').sort((a, b) => new Date(b.assessed_at) - new Date(a.assessed_at))[0];
+      const actorName = (typeof authState !== 'undefined' && authState?.profile?.name) ? authState.profile.name : 'vCISO';
+      sb.riskRegister.handleIgChange(currentOrg.id, latestRun?.id || null, igNum, actorName).catch(() => {});
+      if (typeof rrState !== 'undefined') rrState.orgId = null; // force reload next visit
+    } catch (_) {}
   } catch(e) {
     // Revert local state if server rejected
     orgProfiles[currentOrg.id].cis_goal = prev;

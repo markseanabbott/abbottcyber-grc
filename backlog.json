@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5",
   "created": "2026-05-14",
-  "updated": "2026-06-15 (session 20)",
+  "updated": "2026-06-15 (session 21)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -757,32 +757,37 @@
       "id": "risk_register_core",
       "title": "Risk Register — Core Structure & Columns",
       "phase": 2,
-      "description": "Full GRC-grade risk register with inherent/residual scoring, treatment tracking, and framework mapping.",
+      "description": "CIS-driven risk register auto-populated by trigger from assessment findings. Architecture shift from manual entry (original design) to auto-calculated: one row per CIS Control (18) per org, inherent risk pre-seeded, residual calculated by weighted safeguard pass/fail. PATCH_014 + js/risk_register.js built in session 21.",
       "items": [
         {
           "id": "r1",
           "text": "Risk ID: auto-generated unique identifier per risk entry (e.g. RSK-0042)",
-          "done": false
+          "done": false,
+          "notes": "N/A in CIS-auto architecture — UUID pk is used. May revisit for manual risk entries in a future phase."
         },
         {
           "id": "r2",
           "text": "Risk Title: short descriptive name of the risk",
-          "done": false
+          "done": true,
+          "notes": "Covered by risk_control_categories.control_name (e.g. 'Account Management'). One row per CIS Control."
         },
         {
           "id": "r3",
           "text": "Risk Description: full narrative of what the risk is and how it arises",
-          "done": false
+          "done": true,
+          "notes": "risk_control_categories.threat_scenario provides the risk narrative. Shown in Accept modal."
         },
         {
           "id": "r4",
           "text": "Risk Category: dropdown (Operational / Technical / Compliance / Third-Party / Physical / Strategic)",
-          "done": false
+          "done": false,
+          "notes": "Not in current architecture — CIS control group is the category. Could add asset_type column to UI."
         },
         {
           "id": "r5",
           "text": "Affected Asset / System: what is exposed (server, app, process, data type)",
-          "done": false
+          "done": true,
+          "notes": "risk_subcontrols.asset_type carries this per safeguard (Devices/Network/Data/Users/Applications/N/A)."
         },
         {
           "id": "r6",
@@ -792,77 +797,92 @@
         {
           "id": "r7",
           "text": "Likelihood: scored 1–5 (Rare / Unlikely / Possible / Likely / Almost Certain)",
-          "done": false
+          "done": false,
+          "notes": "Replaced by inherent_risk_score (1–4) pre-seeded per CIS control group. No separate likelihood field."
         },
         {
           "id": "r8",
           "text": "Impact: scored 1–5 (Negligible / Minor / Moderate / Major / Critical)",
-          "done": false
+          "done": false,
+          "notes": "Replaced by inherent_risk_rating (Critical/High/Medium/Low) pre-seeded per CIS control group."
         },
         {
           "id": "r9",
           "text": "Inherent Risk Score: auto-calculated Likelihood × Impact (1–25)",
-          "done": false
+          "done": true,
+          "notes": "risk_register.inherent_risk_score (1–4 scale) copied from risk_control_categories at row creation."
         },
         {
           "id": "r10",
           "text": "Current Controls: describe existing mitigations in place",
-          "done": false
+          "done": false,
+          "notes": "CIS safeguard answers (yes/no/partial) are the control evidence. No free-text control description field yet."
         },
         {
           "id": "r11",
           "text": "Control Effectiveness: rated Low / Medium / High",
-          "done": false
+          "done": true,
+          "notes": "Replaced by weighted pass rate from safeguard answers: yes=100%, partial=50%, no=0%."
         },
         {
           "id": "r12",
           "text": "Residual Risk Score: adjusted score after control effectiveness applied",
-          "done": false
+          "done": true,
+          "notes": "risk_register.calculated_risk_score = inherent_risk_score × (1 − weighted_pass_rate). Auto-calculated by trigger."
         },
         {
           "id": "r13",
           "text": "Risk Treatment: dropdown (Accept / Mitigate / Transfer / Avoid)",
-          "done": false
+          "done": false,
+          "notes": "Accept treatment built (rrSubmitAccept → rpc/accept_risk). Mitigate/Transfer/Avoid treatments not yet in schema or UI."
         },
         {
           "id": "r14",
           "text": "Treatment Plan / Notes: free-text field for planned remediation actions",
-          "done": false
+          "done": false,
+          "notes": "CIS POAM items serve as the remediation plan. Direct treatment notes field not yet added to risk_register table."
         },
         {
           "id": "r15",
           "text": "Risk Owner: person or role accountable for this risk",
-          "done": false
+          "done": true,
+          "notes": "risk_register.accepted_by captures owner at time of acceptance. Not tracked for Active risks yet."
         },
         {
           "id": "r16",
           "text": "Review Date: scheduled next review date",
-          "done": false
+          "done": true,
+          "notes": "risk_register.acceptance_review_date. Set at acceptance time, default 1 year. Shown in table row sub-line."
         },
         {
           "id": "r17",
           "text": "Date Identified: when the risk was first logged",
-          "done": false
+          "done": true,
+          "notes": "risk_register.created_at — set when first CIS assessment triggers initialize_risk_register."
         },
         {
           "id": "r18",
           "text": "Last Updated: timestamp of most recent edit",
-          "done": false
+          "done": true,
+          "notes": "risk_register.updated_at + last_calculated_at. Shown in module header."
         },
         {
           "id": "r19",
           "text": "Status: Open / In Remediation / Accepted / Closed",
-          "done": false
+          "done": true,
+          "notes": "risk_status: Active / Out of Scope / Accepted / Accepted - OOS / Pending Review. Filter tabs in UI."
         },
         {
           "id": "r20",
           "text": "Framework Mapping: link risk to CIS control / NIST CSF function / ISO domain",
-          "done": false
+          "done": true,
+          "notes": "risk_register.framework_id → risk_frameworks (CIS_V8). Abstraction layer ready for NIST CSF / NIST AI RMF."
         },
         {
           "id": "r21",
           "text": "Org Tier: tag risk to Child / Father / Grandfather level (for hierarchy rollup)",
-          "done": false
+          "done": true,
+          "notes": "risk_register.org_id → organisations. Hierarchy is derived from the org. Rollup view is a future phase item."
         }
       ]
     },
@@ -900,7 +920,8 @@
         {
           "id": "r27",
           "text": "Auto-populate risks from assessment findings (vuln scan, pen test, survey gaps)",
-          "done": false
+          "done": true,
+          "notes": "tg_cis_assessment_risk trigger fires on assessments INSERT/UPDATE (module='cis'). Calls initialize_risk_register then recalculate_risk_register. PATCH_014."
         },
         {
           "id": "r28",
@@ -915,6 +936,27 @@
         {
           "id": "r30",
           "text": "Risk register change log: who changed what and when",
+          "done": true,
+          "notes": "ig_change_log and risk_acceptance_log tables in PATCH_014 capture all change events. No UI view yet."
+        },
+        {
+          "id": "rr_a",
+          "text": "Overdue acceptance review alert — flag risk_register rows where acceptance_review_date < today with a warning badge in the table",
+          "done": false
+        },
+        {
+          "id": "rr_b",
+          "text": "CIS POAM deep-link from Risk Register control row — button to jump to the CIS POAM filtered to that control's failing safeguards",
+          "done": false
+        },
+        {
+          "id": "rr_c",
+          "text": "TPRA push integration — wire the 'push to risk register' checkbox on TPRA Step 5 now that risk_register table exists; push Critical/High TPRA findings as Control 15 risk entries",
+          "done": false
+        },
+        {
+          "id": "rr_d",
+          "text": "Nav score dot for Risk Register — red if any Critical residual rating, amber if any High, green if all Low or below",
           "done": false
         }
       ]
