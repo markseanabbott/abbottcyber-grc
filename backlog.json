@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.1.3",
   "created": "2026-05-14",
-  "updated": "2026-06-15 (session 23h)",
+  "updated": "2026-06-15 (session 24)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -132,6 +132,12 @@
           "id": "s6e",
           "text": "Premium savings estimator: gap-based insurance cost reduction estimates",
           "done": true
+        },
+        {
+          "id": "ins_redesign",
+          "text": "Insurance Readiness UX redesign: CIS-style dashboard/form split with assessment history table, conducted-by + date fields, newest-first sorting, Edit from history, and view-router state machine",
+          "done": true,
+          "notes": "Session 24: renderInsurance() now routes to renderInsuranceDashboard() or renderInsuranceForm() via insState.view. Dashboard has navy score-hero (score, Sec%, Ins%, run count), trend chart, history table with Latest badge and Edit button, savings panel from latest run. Form has metadata bar (date + conducted by + live score), section panels with chevrons and per-section score pills, completion banner with savings. insOpenAssessment(origIdx) loads past run into form. insBackToDashboard() returns to dashboard. insSave() saves conducted_by + assessed_at and reloads history before switching view. insState in config.js and selectOrg() in app.js updated; duplicateAssessment() in home.js updated to set view:form."
         },
         {
           "id": "s7",

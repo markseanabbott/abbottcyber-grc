@@ -131,7 +131,7 @@ async function selectOrg(id) {
   currentOrg = allOrgs.find(o => o.id === id);
   document.getElementById('orgDD').style.display = 'none';
   document.getElementById('orgChev').textContent = '▾';
-  insState = { answers: {}, openPanels: {} };
+  insState = { answers: {}, openPanels: {}, view: 'dashboard', editId: null, conductedBy: '', date: '' };
   cisState = { answers: {}, openPanels: {}, orgId: null, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '' };
   tsState = null;  // tech stack state is per-org — force reload on next view
   tpraState = null;  // TPRA state is per-org — force reload on next view

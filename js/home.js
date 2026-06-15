@@ -394,7 +394,7 @@ function duplicateAssessment(moduleId) {
   if (!runs.length) return;
   const last = runs[runs.length - 1];
   if (moduleId === 'insurance') {
-    insState = { answers: Object.assign({}, last.answers || {}), openPanels: { [INS_SECTIONS[0].id]: true } };
+    insState = { answers: Object.assign({}, last.answers || {}), openPanels: { [INS_SECTIONS[0].id]: true }, view: 'form', editId: null, conductedBy: last.conductedBy || '', date: new Date().toISOString().slice(0, 10) };
     toast('✓ Copied last answers — update and re-save when ready', '#152168');
     setNav('insurance');
   } else if (moduleId === 'cis') {
