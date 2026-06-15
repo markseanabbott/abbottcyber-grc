@@ -171,8 +171,9 @@ function rrRow(r) {
     ? `<span class="badge b-navy" style="font-size:10px;padding:2px 7px">CIS POAM</span>`
     : `<span class="badge" style="font-size:10px;padding:2px 7px;background:#f3f4f6;color:#374151">Manual</span>`;
 
-  const ref = r.safeguard_id
-    ? `<span style="font-family:monospace;font-size:12px;font-weight:700;color:var(--navy)">${esc(r.safeguard_id)}</span>`
+  const refVal = r.safeguard_id || (r.control_number ? 'CIS ' + r.control_number : null);
+  const ref = refVal
+    ? `<span style="font-family:monospace;font-size:12px;font-weight:700;color:var(--navy)">${esc(refVal)}</span>`
     : `<span style="color:var(--muted)">—</span>`;
 
   const title = `<div style="font-weight:600;color:var(--text);line-height:1.3">${esc(r.risk_title || '—')}</div>

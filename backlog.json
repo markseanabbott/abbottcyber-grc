@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5",
   "created": "2026-05-14",
-  "updated": "2026-06-15 (session 23c)",
+  "updated": "2026-06-15 (session 23d)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -922,7 +922,7 @@
           "id": "r27",
           "text": "Auto-populate risks from assessment findings (vuln scan, pen test, survey gaps)",
           "done": true,
-          "notes": "PATCH_015: sync_cis_poam_to_risk_register(p_org_id, p_assessment_id) DB function upserts one risk_register row per POAM item. Called from cisSavePoam() fire-and-forget after every POAM save. Replaces PATCH_014 trigger-based approach (trigger dropped). Stable key: UNIQUE(org_id, safeguard_id) partial index (WHERE safeguard_id IS NOT NULL)."
+          "notes": "PATCH_015: sync_cis_poam_to_risk_register(p_org_id, p_assessment_id) DB function upserts one risk_register row per POAM item. Called from cisSavePoam() fire-and-forget after every POAM save. PATCH_017 (session 23d): redesigned to one row per CIS Control Group (18 max) rather than one per safeguard. Aggregates all gap safeguards into one risk entry per control — status uses worst-case logic (Open beats all), gap list embedded in risk_description. Stable key changed to UNIQUE(org_id, control_number). Ref column in UI shows 'CIS 04' etc."
         },
         {
           "id": "r28",
