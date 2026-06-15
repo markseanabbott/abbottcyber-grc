@@ -1564,9 +1564,18 @@ function cisCollectPoamData() {
     const decision   = row.querySelector('.poam-decision')?.value || null;
     const rationale  = (row.querySelector('.poam-rationale')?.value || '').trim() || null;
     const status     = row.querySelector('.poam-status')?.value || 'open';
-    const isDefault  = !assigned && !targetDate && !decision && !rationale && status === 'open';
-    if (!isDefault && cisState.poamRun?.id) {
-      out.push({ assessment_id: cisState.poamRun.id, org_id: currentOrg?.id, safeguard_id: sf, assigned_to: assigned, target_date: targetDate, risk_decision: decision, risk_rationale: rationale, status });
+    if (cisState.poamRun?.id) {
+      const isBlank = !assigned && !targetDate && !decision && !rationale && status === 'open';
+      out.push({
+        assessment_id: cisState.poamRun.id,
+        org_id:        currentOrg?.id,
+        safeguard_id:  sf,
+        assigned_to:   assigned,
+        target_date:   targetDate,
+        risk_decision: decision,
+        risk_rationale: isBlank ? 'POAM not yet completed — assign owner, target date, and risk decision.' : rationale,
+        status,
+      });
     }
   });
   return out;

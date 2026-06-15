@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5",
   "created": "2026-05-14",
-  "updated": "2026-06-15 (session 23b)",
+  "updated": "2026-06-15 (session 23c)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -964,7 +964,7 @@
           "id": "rr_e",
           "text": "Risk register backfill button — 'Sync from latest POAM' button in the Risk Register header that calls sync_cis_poam_to_risk_register for the org's most recent CIS assessment. Needed because existing POAM data won't appear until a POAM is re-saved after PATCH_015.",
           "done": true,
-          "notes": "↻ Sync from POAM button added to risk register module header. rrSyncFromPoam() finds latest CIS assessment from orgAssessments[], calls sb.riskRegister.sync(), reloads rows, refreshes view. Also: sync errors in cisSavePoam() now show a red toast instead of being silently swallowed. PATCH_016 adds RLS policies + GRANT EXECUTE for sync function. Session 23 bug fix: rrSyncFromPoam() was calling .filter() on orgAssessments[orgId] (an object keyed by module, not an array) — silent TypeError before try/catch made button appear unresponsive. Fixed to orgAssessments[orgId]['cis'] || []. Also fixed sort field assessed_at → date to match the stored property name. Session 23b bug fix: sync was only calling against latest assessment ID; if POAM was saved on an older assessment the function found 0 rows and inserted nothing. Fixed to iterate ALL CIS assessment IDs oldest→newest so most recent POAM data wins on upsert conflicts."
+          "notes": "↻ Sync from POAM button added to risk register module header. rrSyncFromPoam() finds latest CIS assessment from orgAssessments[], calls sb.riskRegister.sync(), reloads rows, refreshes view. Also: sync errors in cisSavePoam() now show a red toast instead of being silently swallowed. PATCH_016 adds RLS policies + GRANT EXECUTE for sync function. Session 23 bug fix: rrSyncFromPoam() was calling .filter() on orgAssessments[orgId] (an object keyed by module, not an array) — silent TypeError before try/catch made button appear unresponsive. Fixed to orgAssessments[orgId]['cis'] || []. Also fixed sort field assessed_at → date to match the stored property name. Session 23b bug fix: sync was only calling against latest assessment ID; if POAM was saved on an older assessment the function found 0 rows and inserted nothing. Fixed to iterate ALL CIS assessment IDs oldest→newest so most recent POAM data wins on upsert conflicts. Session 23c: cisCollectPoamData() previously skipped rows where no POAM fields were filled in — this meant risk register stayed empty until each gap was manually assigned. Now ALL gaps (No/Partial safeguards) are saved to cis_poam_items on every POAM save; blank rows get risk_rationale = 'POAM not yet completed — assign owner, target date, and risk decision.' as a placeholder."
         },
         {
           "id": "rr_f",
