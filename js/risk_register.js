@@ -532,13 +532,13 @@ async function rrDeleteManual(id) {
 async function rrSyncFromPoam() {
   if (!currentOrg?.id) return;
   const cisSessions = (typeof orgAssessments !== 'undefined' && orgAssessments[currentOrg.id])
-    ? orgAssessments[currentOrg.id].filter(a => a.module === 'cis')
+    ? (orgAssessments[currentOrg.id]['cis'] || [])
     : [];
   if (!cisSessions.length) {
     toast('No CIS assessment found for this org', '#ea580c');
     return;
   }
-  const latest = cisSessions.sort((a, b) => new Date(b.assessed_at) - new Date(a.assessed_at))[0];
+  const latest = cisSessions.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
   const syncBtn = document.querySelector('[onclick="rrSyncFromPoam()"]');
   if (syncBtn) { syncBtn.disabled = true; syncBtn.textContent = '↻ Syncing…'; }
   try {
