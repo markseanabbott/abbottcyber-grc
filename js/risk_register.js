@@ -46,7 +46,10 @@ function renderRiskRegister() {
       <div class="module-title">Risk Register</div>
       <div class="module-sub">Consolidated view of identified risks — POAM gaps and manual entries</div>
     </div>
-    <button class="btn btn-cyan btn-sm" onclick="rrOpenAdd()">+ Add Risk</button>
+    <div style="display:flex;gap:.5rem">
+      <button class="btn btn-outline btn-sm" onclick="rrSyncFromPoam()" title="Pull latest CIS POAM items into the register">↻ Sync from POAM</button>
+      <button class="btn btn-cyan btn-sm" onclick="rrOpenAdd()">+ Add Risk</button>
+    </div>
   </div>
 
   ${rrStatCards(counts)}
@@ -519,6 +522,37 @@ async function rrDeleteManual(id) {
     rrRefresh();
   } catch(e) {
     toast('Delete failed: ' + e.message, '#dc2626');
+  }
+}
+
+// ─── SYNC FROM POAM ──────────────────────────────────────────────────────────
+// Manual trigger for rr_e: pulls latest CIS assessment POAM into the register.
+// Useful after PATCH_015 migration (existing POAM won't appear until a re-save).
+
+async function rrSyncFromPoam() {
+  if (!currentOrg?.id) return;
+  const cisSessions = (typeof orgAssessments !== 'undefined' && orgAssessments[currentOrg.id])
+    ? orgAssessments[currentOrg.id].filter(a => a.module === 'cis')
+    : [];
+  if (!cisSessions.length) {
+    toast('No CIS assessment found for this org', '#ea580c');
+    return;
+  }
+  const latest = cisSessions.sort((a, b) => new Date(b.assessed_at) - new Date(a.assessed_at))[0];
+  const syncBtn = document.querySelector('[onclick="rrSyncFromPoam()"]');
+  if (syncBtn) { syncBtn.disabled = true; syncBtn.textContent = '↻ Syncing…'; }
+  try {
+    await sb.riskRegister.sync(currentOrg.id, latest.id);
+    // Reload rows
+    const rows = await sb.riskRegister.getForOrg(currentOrg.id);
+    rrState.rows = Array.isArray(rows) ? rows : [];
+    rrState.orgId = currentOrg.id;
+    toast('Risk register synced from CIS POAM', '#15803d');
+    rrRefresh();
+  } catch(e) {
+    console.error('rrSyncFromPoam failed:', e);
+    toast('Sync failed: ' + e.message, '#dc2626');
+    if (syncBtn) { syncBtn.disabled = false; syncBtn.textContent = '↻ Sync from POAM'; }
   }
 }
 

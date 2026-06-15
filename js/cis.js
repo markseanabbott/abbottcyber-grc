@@ -1590,7 +1590,10 @@ async function cisSavePoam() {
     if (cisState.poamRun?.id && currentOrg?.id) {
       sb.riskRegister.sync(currentOrg.id, cisState.poamRun.id)
         .then(() => { if (typeof rrState !== 'undefined') rrState.orgId = null; })
-        .catch(() => {});
+        .catch(e => {
+          console.error('Risk register sync failed:', e);
+          toast('Risk Register sync failed: ' + e.message, '#dc2626');
+        });
     }
   } catch(e) {
     toast('Save failed: ' + e.message, '#dc2626');

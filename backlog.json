@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5",
   "created": "2026-05-14",
-  "updated": "2026-06-15 (session 22)",
+  "updated": "2026-06-15 (session 22b)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -962,8 +962,8 @@
         {
           "id": "rr_e",
           "text": "Risk register backfill button — 'Sync from latest POAM' button in the Risk Register header that calls sync_cis_poam_to_risk_register for the org's most recent CIS assessment. Needed because existing POAM data won't appear until a POAM is re-saved after PATCH_015.",
-          "done": false,
-          "priority": "High"
+          "done": true,
+          "notes": "↻ Sync from POAM button added to risk register module header. rrSyncFromPoam() finds latest CIS assessment from orgAssessments[], calls sb.riskRegister.sync(), reloads rows, refreshes view. Also: sync errors in cisSavePoam() now show a red toast instead of being silently swallowed. PATCH_016 adds RLS policies + GRANT EXECUTE for sync function — likely root cause of silent sync failure."
         },
         {
           "id": "rr_f",
