@@ -76,7 +76,7 @@ const sb = {
 sb.profiles = {
   getAll: () => sbFetch('organisation_profiles?select=*'),
   get: (orgId) => sbFetch(`organisation_profiles?org_id=eq.${orgId}&select=*`),
-  upsert: (row) => sbFetch('organisation_profiles', 'POST', row, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+  upsert: (row) => sbFetch('organisation_profiles?on_conflict=org_id', 'POST', row, { Prefer: 'resolution=merge-duplicates,return=representation' }),
 };
 
 // Technology Stack Survey persistence layer

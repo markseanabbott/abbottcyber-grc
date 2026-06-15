@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5",
   "created": "2026-05-14",
-  "updated": "2026-06-14 (session 18)",
+  "updated": "2026-06-15 (session 19)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -318,10 +318,10 @@
         },
         {
           "id": "auth13",
-          "text": "Verify RLS UPDATE policy on organisation_profiles — CIS IG goal uses an optimistic UI update (cisSetGoal), but if the authenticated RLS policy is missing an UPDATE permission for the profiles table, the server silently rejects the save and goal won't persist across reloads. Check PATCH_006/009 policies and add UPDATE if needed.",
-          "done": false,
+          "text": "Verify RLS UPDATE policy on organisation_profiles — CIS IG goal upsert was returning 409 duplicate key error.",
+          "done": true,
           "priority": "High",
-          "notes": "Session 18: cisSetGoal() was fixed to use optimistic update (render before await, revert on error). But server-side rejection means the goal reverts on next page load. Must verify via Supabase SQL editor: SELECT * FROM pg_policies WHERE tablename='organisation_profiles'."
+          "notes": "Session 19: Root cause was sb.profiles.upsert() calling POST without specifying the conflict column — PostgREST defaulted to PK (id) but id was not in the payload, so the ON CONFLICT clause never fired and it tried to INSERT a duplicate org_id. Fixed by adding ?on_conflict=org_id to the URL in supabase.js. No SQL patch required."
         },
         {
           "id": "auth9",
