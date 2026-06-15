@@ -125,6 +125,9 @@ const NAV = [
     { id: 'tt_vendor', icon: '🚛', label: 'Tabletop — Vendor', live: false, phase: 3 },
     { id: 'tt_bcdr', icon: '🔄', label: 'Tabletop — BCDR', live: false, phase: 3 },
   ]},
+  { id: 'g_policies', group: 'Policies', icon: '📄', items: [
+    { id: 'policy_lib', icon: '📄', label: 'Policy Library', live: true, phase: 1 },
+  ]},
   { id: 'g_reporting', group: 'Reports', icon: '📊', items: [
     { id: 'scorecard', icon: '📊', label: 'Report Library', live: false, phase: 2 },
     { id: 'exec_report', icon: '📄', label: 'Executive Reports', live: false, phase: 2 },

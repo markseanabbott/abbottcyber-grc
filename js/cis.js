@@ -1495,7 +1495,8 @@ function renderCISPoam() {
             <td style="padding:8px 10px;font-size:11px;line-height:1.4;color:var(--text);vertical-align:top">
               <div style="font-weight:600;margin-bottom:3px">${escH(s.title)}</div>
               <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:${note?'3px':'0'}">${cisHintBadges(s.sf)}</div>
-              ${note ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;font-style:italic">📝 ${escH(note)}</div>` : ''}
+              ${note ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;font-style:italic">&#x1F4DD; ${escH(note)}</div>` : ''}
+              ${(() => { const grp = parseInt(s.sf); const policies = typeof plibForCisGroup !== 'undefined' ? plibForCisGroup(grp) : []; return policies.length ? `<div style="margin-top:4px;display:flex;gap:3px;flex-wrap:wrap">${policies.map(p => `<button onclick="plibOpenFromPoam('${p.id}')" style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:6px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;cursor:pointer">&#x1F4C4; ${escH(p.name)}</button>`).join('')}</div>` : ''; })()}
             </td>
             <td style="padding:6px 8px;vertical-align:top"><input class="poam-assigned" type="text" placeholder="Name or team…" value="${escH(item.assigned_to || '')}" style="${inputSty}"></td>
             <td style="padding:6px 8px;vertical-align:top"><input class="poam-date" type="date" value="${item.target_date || ''}" style="${inputSty}"></td>

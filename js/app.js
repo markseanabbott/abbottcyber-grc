@@ -410,6 +410,7 @@ function renderMain() {
   if (activeNav === 'cis') { el.innerHTML = voB + renderCIS(); setTimeout(() => { const c = document.getElementById('cisTrendChart'); if (c) cisTrendDraw(); if (cisState.view === 'report') drawReportCharts(); }, 80); return; }  // trend draw covers both dashboard + form views
   if (activeNav === 'orgs') { el.innerHTML = renderOrgManager(); setTimeout(updateParentOptions, 100); return; }
   if (activeNav === 'ex_hub') { el.innerHTML = renderExHub(); return; }
+  if (activeNav === 'policy_lib') { el.innerHTML = renderPolicyLib(); return; }
   if (activeNav === 'tabletop') { el.innerHTML = renderTabletop(); return; }
   if (activeNav === 'tt_ai') { el.innerHTML = renderAiTabletop(); return; }
   if (activeNav === 'techstack') {

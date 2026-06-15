@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5",
   "created": "2026-05-14",
-  "updated": "2026-06-15 (session 19)",
+  "updated": "2026-06-15 (session 20)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1462,6 +1462,51 @@
           "id": "tb7",
           "text": "AAR maps to BC Plan gaps same as cyber tabletop",
           "done": false
+        }
+      ]
+    },
+    {
+      "id": "policy_library",
+      "title": "Policy Library",
+      "phase": 1,
+      "description": "Platform-level policy template catalog. Templates are defined in JS and downloaded by clients. POAM items backlink to relevant policies.",
+      "items": [
+        {
+          "id": "pl1",
+          "text": "Policy Library module — catalog of policy templates organised by framework (NIST CSF 2.0 / NIST AI RMF) with filter tabs, framework badges, control mappings, and status indicators",
+          "done": true,
+          "notes": "Session 20: js/policy_lib.js — POLICY_TEMPLATES const (16 policies: 10 NIST CSF, 6 NIST AI RMF). renderPolicyLib() with All/NIST CSF/NIST AI RMF filter tabs. plibRenderCard() per policy. plibSetFilter() updates filter state. g_policies nav group added to config.js between g_exercises and g_reporting. Render route added to app.js."
+        },
+        {
+          "id": "pl2",
+          "text": "CIS POAM backlinks — each POAM row shows a green policy chip for policies covering that CIS control group; clicking navigates to Policy Library and highlights the card",
+          "done": true,
+          "notes": "Session 20: plibForCisGroup(groupNum) maps CIS group numbers to POLICY_TEMPLATES entries via cisGroups arrays. plibOpenFromPoam(policyId) sets highlight state and calls setNav. Chip rendered inline in safeguard title cell in renderCISPoam() in cis.js."
+        },
+        {
+          "id": "pl3",
+          "text": "AI Unified POAM backlinks — same pattern as CIS POAM but mapping AI governance control groups to NIST AI RMF policy templates",
+          "done": false,
+          "priority": "Medium"
+        },
+        {
+          "id": "pl4",
+          "text": "Policy template upload — allow platform admin to upload actual policy Word/PDF files to Supabase Storage and set the url field per template so Download buttons activate",
+          "done": false,
+          "priority": "High",
+          "notes": "Requires Supabase Storage bucket setup and an upload UI in the policy card (admin only). url field already present on each POLICY_TEMPLATES entry — just needs to be set."
+        },
+        {
+          "id": "pl5",
+          "text": "Policy request / notify — when a template is still a placeholder, allow users to flag which policies they need most urgently (stored as a simple counter or email notification to Mark)",
+          "done": false,
+          "priority": "Low"
+        },
+        {
+          "id": "pl6",
+          "text": "Policy version tracking — add version number and last-reviewed date to each template card; flag policies that haven't been reviewed in 12+ months",
+          "done": false,
+          "priority": "Low"
         }
       ]
     },
