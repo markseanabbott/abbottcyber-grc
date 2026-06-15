@@ -550,11 +550,14 @@ function renderAiUnifiedDashboard() {
       </tr></thead>
       <tbody>`;
 
-    runs.forEach((r, i) => {
+    // Sort newest-first for display; preserve original index for action button callbacks
+    const sortedRuns = runs.map((r, origIdx) => ({ r, origIdx }))
+      .sort((a, b) => (b.r.date||'').localeCompare(a.r.date||''));
+    sortedRuns.forEach(({ r, origIdx }) => {
       const cleanAns = Object.fromEntries(Object.entries(r.answers||{}).filter(([k])=>!k.startsWith('_')));
       const runFw = aiuFrameworksFromRun(r);
       const sc = aiuCalcScore(cleanAns, runFw);
-      const isLatest = i === latestIdx;
+      const isLatest = origIdx === latestIdx;
       html += `<tr style="border-bottom:1px solid var(--border)">
         <td style="padding:8px 10px;font-weight:${isLatest?'700':'400'};white-space:nowrap">
           ${r.date||'—'}
@@ -572,11 +575,11 @@ function renderAiUnifiedDashboard() {
         <td style="padding:8px 10px;color:var(--muted)">${escH(r.conductedBy||'—')}</td>
         <td style="padding:8px 10px;text-align:right">
           <div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap">
-            <button class="btn btn-outline btn-sm" onclick="aiuOpenAssessment(${i})" style="font-size:11px;padding:3px 8px">✏️ Edit</button>
-            <button class="btn btn-outline btn-sm" onclick="aiuOpenGapReport(${i})" style="font-size:11px;padding:3px 8px">🔍 Gaps</button>
-            <button class="btn btn-outline btn-sm" onclick="aiuOpenPoam(${i})" style="font-size:11px;padding:3px 8px">📋 POAM</button>
-            <button class="btn btn-outline btn-sm" onclick="aiuOpenReport(${i})" style="font-size:11px;padding:3px 8px">📊 Report</button>
-            <button class="btn btn-red btn-sm" onclick="aiuDeleteConfirm(${i})" style="font-size:11px;padding:3px 8px">🗑</button>
+            <button class="btn btn-outline btn-sm" onclick="aiuOpenAssessment(${origIdx})" style="font-size:11px;padding:3px 8px">✏️ Edit</button>
+            <button class="btn btn-outline btn-sm" onclick="aiuOpenGapReport(${origIdx})" style="font-size:11px;padding:3px 8px">🔍 Gaps</button>
+            <button class="btn btn-outline btn-sm" onclick="aiuOpenPoam(${origIdx})" style="font-size:11px;padding:3px 8px">📋 POAM</button>
+            <button class="btn btn-outline btn-sm" onclick="aiuOpenReport(${origIdx})" style="font-size:11px;padding:3px 8px">📊 Report</button>
+            <button class="btn btn-red btn-sm" onclick="aiuDeleteConfirm(${origIdx})" style="font-size:11px;padding:3px 8px">🗑</button>
           </div>
         </td>
       </tr>`;

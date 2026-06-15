@@ -218,7 +218,7 @@ function _homeAiChicklet(h) {
       </div>
     </div>
     <div style="padding:.5rem .75rem .5rem">
-      <canvas id="home-ai-radar" style="display:block;width:100%;height:170px"></canvas>
+      <canvas id="home-ai-radar" style="display:block;width:100%;height:240px"></canvas>
     </div>
     <div style="padding:.35rem .9rem .75rem;text-align:center;font-size:11px;color:var(--cyan);font-weight:700">→ AI Readiness Hub</div>
   </div>`;
@@ -270,10 +270,12 @@ function _drawHomeAiRadar() {
   if (!canvas) return;
   const W = canvas.offsetWidth || 260;
   canvas.setAttribute('width', W);
-  canvas.setAttribute('height', 170);
+  canvas.setAttribute('height', 240);
   const answers = Object.fromEntries(Object.entries(latest.answers || {}).filter(([k]) => !k.startsWith('_')));
   const fw = aiuFrameworksFromRun(latest);
-  aiuDrawRadar('home-ai-radar', aiuCalcGroupScores(answers, fw));
+  // Map null pct → 0 so all 9 groups always show as axes on the radar
+  const groupScores = aiuCalcGroupScores(answers, fw).map(g => ({ ...g, pct: g.pct ?? 0 }));
+  aiuDrawRadar('home-ai-radar', groupScores);
 }
 
 // ============================================================

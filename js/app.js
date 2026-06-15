@@ -411,6 +411,11 @@ function viewOnlyBanner() {
 
 function renderMain() {
   const el = document.getElementById('mainContent');
+  if (!el) return;
+  if (!currentOrg && !['users','settings'].includes(activeNav)) {
+    el.innerHTML = '<div class="card" style="padding:2rem;text-align:center;color:var(--muted)">No organisation selected.</div>';
+    return;
+  }
   const voB = viewOnlyBanner();  // empty string unless role=viewer
   if (activeNav === 'users') { el.innerHTML = renderUserManagement(); return; }
   if (activeNav === 'settings') { el.innerHTML = renderSettings(); setTimeout(settingsLoad, 50); return; }
