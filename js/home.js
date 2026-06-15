@@ -21,13 +21,31 @@ function renderHome() {
   const h = orgAssessments[currentOrg.id] || {};
   const subOrgs = orgsUnderCurrent();
 
-  // Avg score: mean of latest score across scored modules
-  const scoredMods = ['cis','insurance','techstack','ai_unified'];
-  const scores = scoredMods.map(k => {
-    const runs = h[k] || [];
-    return runs.length ? runs[runs.length - 1].score : null;
-  }).filter(s => typeof s === 'number');
+  // Module access gates — respect viewAs role
+  const _can = (gid) => typeof hasModuleAccess === 'function' ? hasModuleAccess(gid) : true;
+  const canAssessments = _can('g_assessments');
+  const canAI          = _can('g_ai_readiness');
+  const canRisk        = _can('g_risk');
+
+  // Avg score: only from accessible modules
+  const scoredMods = [
+    ...(canAssessments ? ['cis','insurance','techstack'] : []),
+    ...(canAI          ? ['ai_unified'] : []),
+  ];
+  const scores = scoredMods
+    .map(k => { const r = h[k] || []; return r.length ? r[r.length-1].score : null; })
+    .filter(s => s !== null);
   const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+
+  // Quick links — only modules user can reach
+  const quickLinks = [
+    { id:'insurance',  icon:'🛡️', label:'Insurance Readiness', group:'g_assessments' },
+    { id:'techstack',  icon:'🖥️', label:'Technology Stack',    group:'g_assessments' },
+    { id:'cis',        icon:'✅', label:'CIS Controls',         group:'g_assessments' },
+    { id:'tpra',       icon:'🔍', label:'Vendor Risk',          group:'g_risk' },
+    { id:'tabletop',   icon:'🎯', label:'Tabletop',             group:'g_exercises' },
+    { id:'ai_unified', icon:'🤖', label:'AI Readiness',         group:'g_ai_readiness' },
+  ].filter(l => _can(l.group));
 
   // Risk register rows (use rrState if loaded for this org)
   const rrLoaded = rrState.orgId === currentOrg.id;
@@ -38,22 +56,16 @@ function renderHome() {
           const o = { Critical: 0, High: 1, Medium: 2, Low: 3 };
           return (o[a.inherent_risk_rating] ?? 4) - (o[b.inherent_risk_rating] ?? 4);
         })
-        .slice(0, 10)
+        .slice(0, 8)
     : null;
 
-  // Latest AI unified run for radar
-  const aiRuns = [...(h['ai_unified'] || [])].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-  const aiLatest = aiRuns[0] || null;
+  // Build panel chicklets — only accessible ones
+  const panels = [];
+  if (canAssessments) panels.push(_homeAssessmentsChicklet(h));
+  if (canRisk)        panels.push(_homeRiskChicklet(rrRows, rrLoaded));
+  if (canAI)          panels.push(_homeAiChicklet(h));
 
-  // Quick-link modules (moved from Live Modules card)
-  const quickLinks = [
-    { id: 'insurance',  icon: '🛡️', label: 'Insurance Readiness' },
-    { id: 'techstack',  icon: '🖥️', label: 'Technology Stack' },
-    { id: 'cis',        icon: '✅', label: 'CIS Controls' },
-    { id: 'tpra',       icon: '🔍', label: 'Vendor Risk' },
-    { id: 'tabletop',   icon: '🎯', label: 'Tabletop' },
-    { id: 'ai_unified', icon: '🤖', label: 'AI Readiness' },
-  ];
+  const noPanels = panels.length === 0;
 
   return `
   ${renderTierBanner()}
@@ -75,19 +87,19 @@ function renderHome() {
     <div class="wcard">
       <div class="wcard-icon">📋</div>
       <div class="wcard-label">Assessments run</div>
-      <div class="wcard-val">${scores.length}</div>
-      <div class="wcard-sub">This org</div>
+      <div class="wcard-val">${canAssessments || canAI ? scores.length : '—'}</div>
+      <div class="wcard-sub">${canAssessments || canAI ? 'This org' : 'No access'}</div>
     </div>
     <div class="wcard">
       <div class="wcard-icon">🎯</div>
       <div class="wcard-label">Avg score</div>
       <div class="wcard-val">${avg !== null ? avg + '%' : '—'}</div>
-      <div class="wcard-sub">${avg !== null ? 'Across active modules' : 'No data yet'}</div>
+      <div class="wcard-sub">${avg !== null ? 'Across active modules' : (canAssessments || canAI ? 'No data yet' : 'No access')}</div>
     </div>
   </div>
 
-  <!-- Quick access links (replaces Live Modules card) -->
-  <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin:.9rem 0 1.1rem">
+  <!-- Quick access links (filtered by module access) -->
+  ${quickLinks.length ? `<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin:.9rem 0 1.1rem">
     ${quickLinks.map(l => {
       const runs = h[l.id] || [];
       const last = runs.length ? runs[runs.length - 1] : null;
@@ -97,136 +109,118 @@ function renderHome() {
         ${l.icon} ${l.label}
       </button>`;
     }).join('')}
-  </div>
+  </div>` : ''}
 
-  <!-- Two-column body -->
-  <div style="display:grid;grid-template-columns:1fr 320px;gap:1rem;align-items:start">
-
-    <!-- LEFT COLUMN -->
-    <div style="display:flex;flex-direction:column;gap:1rem">
-
-      <!-- Assessments snippet -->
-      <div class="card" style="padding:0;overflow:hidden">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.1rem .6rem;border-bottom:1px solid var(--border)">
-          <div style="font-size:14px;font-weight:700;color:var(--text)">📋 Assessments</div>
-          <button class="btn btn-outline btn-sm" onclick="setNav('assessments')">View all →</button>
-        </div>
-        <table style="width:100%;border-collapse:collapse;font-size:12.5px">
-          <thead>
-            <tr style="border-bottom:1px solid var(--border)">
-              <th style="padding:.45rem 1rem;text-align:left;font-size:10px;font-weight:700;color:var(--muted)">Assessment</th>
-              <th style="padding:.45rem .75rem;text-align:left;font-size:10px;font-weight:700;color:var(--muted)">Last Run</th>
-              <th style="padding:.45rem .75rem;text-align:left;font-size:10px;font-weight:700;color:var(--muted)">Score</th>
-              <th style="padding:.45rem .75rem;text-align:left;font-size:10px;font-weight:700;color:var(--muted)">Trend</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${homeAssessmentRows(h)}
-          </tbody>
-        </table>
-      </div>
-
-      <!-- AI Readiness radar -->
-      ${homeAiRadarPanel(aiLatest)}
-
-    </div>
-
-    <!-- RIGHT COLUMN: Risk Register -->
-    <div class="card" style="padding:0;overflow:hidden">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.1rem .6rem;border-bottom:1px solid var(--border)">
-        <div style="font-size:14px;font-weight:700;color:var(--text)">⚠️ Risk Register</div>
-        <button class="btn btn-outline btn-sm" onclick="setNav('riskregister')">View all →</button>
-      </div>
-      ${homeRiskPanel(rrRows, rrLoaded)}
-    </div>
-
-  </div>`;
+  <!-- Panel chicklet grid -->
+  ${noPanels
+    ? `<div class="card" style="padding:2.5rem;text-align:center;color:var(--muted)">
+        <div style="font-size:2.5rem;margin-bottom:.5rem">🔒</div>
+        <div style="font-weight:700;color:var(--text);margin-bottom:.25rem">Limited access</div>
+        <div style="font-size:12px">You don't have access to any modules on this dashboard.<br>Contact your administrator to request access.</div>
+      </div>`
+    : `<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start">${panels.join('')}</div>`
+  }`;
 }
 
-function homeAssessmentRows(h) {
+// ─── PANEL CHICKLETS ──────────────────────────────────────────────────────────
+
+function _homeAssessmentsChicklet(h) {
   const catalog = [
-    { id: 'cis',       label: 'CIS Controls v8',    icon: '✅', nav: 'cis' },
-    { id: 'insurance', label: 'Insurance Readiness', icon: '🛡️', nav: 'insurance' },
-    { id: 'ai_unified',label: 'AI Governance',       icon: '🤖', nav: 'ai_unified' },
-    { id: 'techstack', label: 'Technology Stack',    icon: '🖥️', nav: 'techstack' },
+    { id:'cis',       label:'CIS Controls v8',    icon:'✅', nav:'cis' },
+    { id:'insurance', label:'Insurance Readiness', icon:'🛡️', nav:'insurance' },
+    { id:'techstack', label:'Technology Stack',    icon:'🖥️', nav:'techstack' },
   ];
-  return catalog.map(a => {
+  const rows = catalog.map(a => {
     const runs = h[a.id] || [];
     const last = runs.length ? runs[runs.length - 1] : null;
     const scoreColor = !last ? 'var(--muted)' : last.score >= 70 ? '#15803d' : last.score >= 40 ? '#b45309' : '#dc2626';
-    return `<tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="setNav('${a.nav}')" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
-      <td style="padding:.55rem 1rem">
-        <span style="font-size:12px;font-weight:700">${a.icon} ${a.label}</span>
-      </td>
-      <td style="padding:.55rem .75rem;color:var(--muted);font-size:11px;white-space:nowrap">
-        ${last ? last.date : '<span style="color:var(--muted)">Never</span>'}
-        ${runs.length > 1 ? `<div style="font-size:10px">${runs.length} runs</div>` : ''}
-      </td>
-      <td style="padding:.55rem .75rem;font-weight:700;font-size:12px;color:${scoreColor};white-space:nowrap">
-        ${last ? last.score + '%' : '—'}
-      </td>
-      <td style="padding:.55rem .75rem">
-        ${runs.length >= 2
-          ? `<canvas id="home-trend-${a.id}" width="80" height="28" style="display:block"></canvas>`
-          : `<span style="font-size:10px;color:var(--muted)">${runs.length === 1 ? '1 run' : '—'}</span>`}
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-function homeRiskPanel(rows, loaded) {
-  if (!loaded) {
-    return `<div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:12px">
-      <div style="font-size:1.5rem;margin-bottom:.5rem">⏳</div>
-      Loading risks…
-    </div>`;
-  }
-  if (!rows || !rows.length) {
-    return `<div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:12px">
-      <div style="font-size:1.5rem;margin-bottom:.5rem">✅</div>
-      No open risks logged.<br>
-      <span style="font-size:11px">Save a CIS POAM to auto-populate.</span>
-    </div>`;
-  }
-  const ratingStyle = { Critical: '#dc2626', High: '#ea580c', Medium: '#b45309', Low: '#15803d' };
-  const ratingBg    = { Critical: '#fef2f2', High: '#fff7ed', Medium: '#fefce8', Low: '#f0fdf4' };
-  return `<div style="padding:.25rem 0">
-    ${rows.map(r => `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;gap:.5rem" onclick="setNav('riskregister')" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
-      <div style="min-width:0;flex:1">
-        <div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.risk_title || '—')}</div>
-        ${r.control_number ? `<div style="font-size:10px;color:var(--muted);font-family:monospace">CIS ${esc(r.control_number)}</div>` : ''}
+    return `<div style="display:flex;align-items:center;gap:.5rem;padding:.5rem .9rem;border-bottom:1px solid var(--border);cursor:pointer" onclick="setNav('${a.nav}')" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+      <span style="font-size:13px;flex-shrink:0">${a.icon}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.label}</div>
+        <div style="font-size:10px;color:var(--muted)">${last ? last.date : 'Never run'}</div>
       </div>
-      ${r.inherent_risk_rating ? `<span style="flex-shrink:0;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:${ratingBg[r.inherent_risk_rating]||'#f3f4f6'};color:${ratingStyle[r.inherent_risk_rating]||'#374151'}">${esc(r.inherent_risk_rating)}</span>` : ''}
-    </div>`).join('')}
+      ${runs.length >= 2 ? `<canvas id="home-trend-${a.id}" width="50" height="20" style="flex-shrink:0"></canvas>` : ''}
+      <span style="font-size:12px;font-weight:800;color:${scoreColor};flex-shrink:0;min-width:28px;text-align:right">${last ? last.score + '%' : '—'}</span>
+    </div>`;
+  }).join('');
+
+  return `<div class="card" style="padding:0;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .9rem .5rem;border-bottom:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:700">📋 Assessments</div>
+      <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();setNav('assessments')">View all →</button>
+    </div>
+    ${rows}
   </div>`;
 }
 
-function homeAiRadarPanel(latest) {
+function _homeRiskChicklet(rows, loaded) {
+  const ratingStyle = { Critical:'#dc2626', High:'#ea580c', Medium:'#b45309', Low:'#15803d' };
+  const ratingBg    = { Critical:'#fef2f2', High:'#fff7ed', Medium:'#fefce8', Low:'#f0fdf4' };
+
+  let body;
+  if (!loaded) {
+    body = `<div style="padding:1.25rem;text-align:center;color:var(--muted);font-size:12px">
+      <div style="font-size:1.25rem;margin-bottom:.35rem">⏳</div>Loading risks…</div>`;
+  } else if (!rows || !rows.length) {
+    body = `<div style="padding:1.25rem;text-align:center;color:var(--muted);font-size:12px">
+      <div style="font-size:1.5rem;margin-bottom:.35rem">✅</div>No open risks logged.<br>
+      <span style="font-size:11px">Save a CIS POAM to auto-populate.</span></div>`;
+  } else {
+    body = rows.map(r => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.45rem .9rem;border-bottom:1px solid var(--border);cursor:pointer;gap:.5rem" onclick="setNav('riskregister')" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+      <div style="min-width:0;flex:1">
+        <div style="font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.risk_title || '—')}</div>
+        ${r.control_number ? `<div style="font-size:10px;color:var(--muted);font-family:monospace">CIS ${esc(r.control_number)}</div>` : ''}
+      </div>
+      ${r.inherent_risk_rating ? `<span style="flex-shrink:0;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:${ratingBg[r.inherent_risk_rating]||'#f3f4f6'};color:${ratingStyle[r.inherent_risk_rating]||'#374151'}">${esc(r.inherent_risk_rating)}</span>` : ''}
+    </div>`).join('');
+  }
+
+  return `<div class="card" style="padding:0;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .9rem .5rem;border-bottom:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:700">⚠️ Risk Register</div>
+      <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();setNav('riskregister')">View all →</button>
+    </div>
+    ${body}
+  </div>`;
+}
+
+function _homeAiChicklet(h) {
+  const runs = [...(h['ai_unified'] || [])].sort((a, b) => (b.date||'').localeCompare(a.date||''));
+  const latest = runs[0] || null;
+  const scoreVal = latest?.score ?? null;
+  const scoreColor = scoreVal !== null ? (scoreVal >= 70 ? '#15803d' : scoreVal >= 40 ? '#b45309' : '#dc2626') : 'var(--muted)';
+
   if (!latest) {
-    return `<div class="card" style="padding:1.25rem;text-align:center;color:var(--muted)">
-      <div style="font-size:14px;font-weight:700;margin-bottom:.35rem">🤖 AI Readiness</div>
-      <div style="font-size:12px">No AI Governance assessment yet.</div>
-      <button class="btn btn-outline btn-sm" style="margin-top:.75rem" onclick="setNav('ai_unified')">Start Assessment →</button>
+    return `<div class="card" style="padding:0;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .9rem .5rem;border-bottom:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:700">🤖 AI Readiness</div>
+        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();setNav('ai_hub')">View Hub →</button>
+      </div>
+      <div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:12px">
+        <div style="font-size:1.5rem;margin-bottom:.35rem">🤖</div>
+        No AI Governance assessment yet.<br>
+        <button class="btn btn-outline btn-sm" style="margin-top:.6rem" onclick="setNav('ai_unified')">Start Assessment →</button>
+      </div>
     </div>`;
   }
-  const scoreVal = latest.score ?? '—';
-  const scoreColor = typeof scoreVal === 'number' ? (scoreVal >= 70 ? '#15803d' : scoreVal >= 40 ? '#b45309' : '#dc2626') : 'var(--muted)';
+
   return `<div class="card" style="padding:0;overflow:hidden;cursor:pointer" onclick="setNav('ai_hub')" onmouseover="this.style.boxShadow='0 0 0 2px var(--cyan)'" onmouseout="this.style.boxShadow=''">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.1rem .6rem;border-bottom:1px solid var(--border)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .9rem .5rem;border-bottom:1px solid var(--border)">
       <div>
-        <div style="font-size:14px;font-weight:700;color:var(--text)">🤖 AI Readiness</div>
-        <div style="font-size:11px;color:var(--muted)">Last run: ${latest.date || '—'}</div>
+        <div style="font-size:13px;font-weight:700">🤖 AI Readiness</div>
+        <div style="font-size:10px;color:var(--muted)">Last run: ${latest.date || '—'}</div>
       </div>
       <div style="text-align:right">
-        <div style="font-size:1.4rem;font-weight:800;color:${scoreColor}">${scoreVal}${typeof scoreVal==='number'?'%':''}</div>
+        <div style="font-size:1.3rem;font-weight:800;color:${scoreColor}">${scoreVal}%</div>
         <div style="font-size:10px;color:var(--muted)">Overall</div>
       </div>
     </div>
-    <div style="padding:.75rem 1rem">
-      <canvas id="home-ai-radar" width="280" height="200" style="display:block;margin:0 auto"></canvas>
+    <div style="padding:.5rem .75rem .5rem">
+      <canvas id="home-ai-radar" style="display:block;width:100%;height:170px"></canvas>
     </div>
-    <div style="padding:.5rem 1rem .85rem;text-align:center;font-size:11px;color:var(--cyan);font-weight:700">→ AI Readiness Hub</div>
+    <div style="padding:.35rem .9rem .75rem;text-align:center;font-size:11px;color:var(--cyan);font-weight:700">→ AI Readiness Hub</div>
   </div>`;
 }
 
@@ -239,20 +233,20 @@ function drawHomeCharts() {
 
 function _drawHomeAssessmentTrends() {
   const h = orgAssessments[currentOrg?.id] || {};
-  ['cis','insurance','ai_unified','techstack'].forEach(id => {
+  ['cis','insurance','techstack'].forEach(id => {
     const runs = h[id] || [];
     if (runs.length < 2) return;
     const canvas = document.getElementById(`home-trend-${id}`);
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const W = 80, H = 28;
+    const W = 50, H = 20;
     canvas.width = W; canvas.height = H;
     ctx.clearRect(0, 0, W, H);
     const scores = runs.map(r => r.score);
     const mn = Math.max(0, Math.min(...scores) - 10);
     const mx = Math.min(100, Math.max(...scores) + 10);
-    const px = i => Math.round(4 + i * (W - 8) / (scores.length - 1));
-    const py = v => Math.round(H - 4 - (v - mn) / (mx - mn) * (H - 10));
+    const px = i => Math.round(3 + i * (W - 6) / (scores.length - 1));
+    const py = v => Math.round(H - 3 - (v - mn) / (mx - mn) * (H - 7));
     ctx.beginPath();
     scores.forEach((s, i) => i === 0 ? ctx.moveTo(px(i), py(s)) : ctx.lineTo(px(i), py(s)));
     ctx.lineTo(px(scores.length - 1), H); ctx.lineTo(px(0), H); ctx.closePath();
@@ -261,7 +255,7 @@ function _drawHomeAssessmentTrends() {
     scores.forEach((s, i) => i === 0 ? ctx.moveTo(px(i), py(s)) : ctx.lineTo(px(i), py(s)));
     ctx.stroke();
     scores.forEach((s, i) => {
-      ctx.beginPath(); ctx.arc(px(i), py(s), 2.5, 0, Math.PI * 2);
+      ctx.beginPath(); ctx.arc(px(i), py(s), 2, 0, Math.PI * 2);
       ctx.fillStyle = s >= 70 ? '#15803d' : s >= 40 ? '#b45309' : '#dc2626'; ctx.fill();
     });
   });
@@ -269,11 +263,14 @@ function _drawHomeAssessmentTrends() {
 
 function _drawHomeAiRadar() {
   const h = orgAssessments[currentOrg?.id] || {};
-  const runs = [...(h['ai_unified'] || [])].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const runs = [...(h['ai_unified'] || [])].sort((a, b) => (b.date||'').localeCompare(a.date||''));
   const latest = runs[0];
   if (!latest) return;
   const canvas = document.getElementById('home-ai-radar');
   if (!canvas) return;
+  const W = canvas.offsetWidth || 260;
+  canvas.setAttribute('width', W);
+  canvas.setAttribute('height', 170);
   const answers = Object.fromEntries(Object.entries(latest.answers || {}).filter(([k]) => !k.startsWith('_')));
   const fw = aiuFrameworksFromRun(latest);
   aiuDrawRadar('home-ai-radar', aiuCalcGroupScores(answers, fw));
@@ -284,10 +281,10 @@ function _drawHomeAiRadar() {
 // ============================================================
 
 const ASSESSMENT_CATALOG = [
-  { id: 'cis', label: 'CIS Controls v8', icon: '✅', ig: null, igLabel: null, description: '153 safeguards across 18 controls. Per-org IG goal (IG1/IG2/IG3). Full assessment history.', nav: 'cis' },
-  { id: 'insurance', label: 'Insurance Readiness', icon: '🛡️', ig: null, igLabel: null, description: 'Dual-weighted readiness score for cyber insurance applications.', nav: 'insurance' },
-  { id: 'nist', label: 'NIST CSF 2.0', icon: '🏛️', ig: null, igLabel: null, description: 'NIST Cybersecurity Framework 2.0 assessment.', nav: 'nist', comingSoon: true },
-  { id: 'techstack', label: 'Technology Stack', icon: '🖥️', ig: null, igLabel: null, description: 'Maps your technology to security frameworks and gaps.', nav: 'techstack' },
+  { id: 'cis',       label: 'CIS Controls v8',    icon: '✅', description: '153 safeguards across 18 controls. Per-org IG goal (IG1/IG2/IG3). Full assessment history.', nav: 'cis' },
+  { id: 'insurance', label: 'Insurance Readiness', icon: '🛡️', description: 'Dual-weighted readiness score for cyber insurance applications.', nav: 'insurance' },
+  { id: 'nist',      label: 'NIST CSF 2.0',        icon: '🏛️', description: 'NIST Cybersecurity Framework 2.0 assessment.', nav: 'nist', comingSoon: true },
+  { id: 'techstack', label: 'Technology Stack',    icon: '🖥️', description: 'Maps your technology to security frameworks and gaps.', nav: 'techstack' },
 ];
 
 function renderAssessmentsHub() {
@@ -325,8 +322,8 @@ function renderAssessmentsHub() {
               <div class="assess-row-sub">${a.description}</div>
             </td>
             <td>${a.id === 'cis'
-            ? (() => { const g = (orgProfiles[currentOrg?.id] || {}).cis_goal; const igCols = { ig1: { bg: '#dcfce7', txt: '#15803d' }, ig2: { bg: '#dbeafe', txt: '#1d4ed8' }, ig3: { bg: '#ede9fe', txt: '#6d28d9' } }; const c = igCols[g]; return g && c ? `<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:${c.bg};color:${c.txt}">${g.toUpperCase()}</span>` : '<span style="font-size:10px;color:var(--muted)">No goal set</span>'; })()
-            : a.igLabel ? `<span class="ig-badge ${a.igClass}">${a.igLabel}</span>` : '<span style="color:var(--muted);font-size:11px">—</span>'}</td>
+              ? (() => { const g = (orgProfiles[currentOrg?.id] || {}).cis_goal; const igCols = { ig1: { bg: '#dcfce7', txt: '#15803d' }, ig2: { bg: '#dbeafe', txt: '#1d4ed8' }, ig3: { bg: '#ede9fe', txt: '#6d28d9' } }; const c = igCols[g]; return g && c ? `<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:${c.bg};color:${c.txt}">${g.toUpperCase()}</span>` : '<span style="font-size:10px;color:var(--muted)">No goal set</span>'; })()
+              : '<span style="color:var(--muted);font-size:11px">—</span>'}</td>
             <td style="color:${last ? 'var(--text)' : 'var(--muted)'}">
               ${last ? `<span style="font-size:11px">${last.date}</span>` : '<span style="font-size:11px">Never</span>'}
               ${runs.length > 1 ? `<div style="font-size:10px;color:var(--muted)">${runs.length} runs total</div>` : ''}
@@ -389,7 +386,6 @@ function drawAllHubTrends() {
   });
 }
 
-// Duplicate an assessment: copy latest answers, clear evidence/notes, go to survey
 function duplicateAssessment(moduleId) {
   const h = orgAssessments[currentOrg?.id] || {};
   const runs = h[moduleId] || [];
