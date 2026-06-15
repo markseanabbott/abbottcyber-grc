@@ -893,14 +893,7 @@ async function cisSetGoal(goal) {
     await sb.profiles.upsert({ org_id: currentOrg.id, cis_goal: goal });
     const labels = { ig1: 'IG1', ig2: 'IG2', ig3: 'IG3' };
     toast(`Goal updated to ${labels[goal]}`, '#15803d');
-    // Fire-and-forget: re-scope risk register rows when IG level changes
-    try {
-      const igNum = { ig1: 1, ig2: 2, ig3: 3 }[goal] || 1;
-      const latestRun = (orgAssessments[currentOrg.id] || []).filter(a => a.module === 'cis').sort((a, b) => new Date(b.assessed_at) - new Date(a.assessed_at))[0];
-      const actorName = (typeof authState !== 'undefined' && authState?.profile?.name) ? authState.profile.name : 'vCISO';
-      sb.riskRegister.handleIgChange(currentOrg.id, latestRun?.id || null, igNum, actorName).catch(() => {});
-      if (typeof rrState !== 'undefined') rrState.orgId = null; // force reload next visit
-    } catch (_) {}
+    if (typeof rrState !== 'undefined') rrState.orgId = null; // force risk register reload
   } catch(e) {
     // Revert local state if server rejected
     orgProfiles[currentOrg.id].cis_goal = prev;
@@ -1593,6 +1586,12 @@ async function cisSavePoam() {
     auditLog('poam_saved', 'poam', 'CIS POAM', { item_count: items.length });
     toast(`✓ POAM saved — ${items.length} item${items.length !== 1 ? 's' : ''}`, '#15803d');
     if (btn) { btn.disabled = false; btn.textContent = 'Save POAM'; }
+    // Fire-and-forget: sync POAM items into risk register
+    if (cisState.poamRun?.id && currentOrg?.id) {
+      sb.riskRegister.sync(currentOrg.id, cisState.poamRun.id)
+        .then(() => { if (typeof rrState !== 'undefined') rrState.orgId = null; })
+        .catch(() => {});
+    }
   } catch(e) {
     toast('Save failed: ' + e.message, '#dc2626');
     if (btn) { btn.disabled = false; btn.textContent = 'Save POAM'; }

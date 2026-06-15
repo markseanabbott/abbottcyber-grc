@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5",
   "created": "2026-05-14",
-  "updated": "2026-06-15 (session 21)",
+  "updated": "2026-06-15 (session 22)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -757,7 +757,7 @@
       "id": "risk_register_core",
       "title": "Risk Register — Core Structure & Columns",
       "phase": 2,
-      "description": "CIS-driven risk register auto-populated by trigger from assessment findings. Architecture shift from manual entry (original design) to auto-calculated: one row per CIS Control (18) per org, inherent risk pre-seeded, residual calculated by weighted safeguard pass/fail. PATCH_014 + js/risk_register.js built in session 21.",
+      "description": "POAM-driven risk register. PATCH_014 (session 21) built an 18-row auto-calculated model; PATCH_015 (session 22) replaced it with individual risk items driven from CIS POAM gaps. One risk_register row per POAM safeguard per org (stable key: org_id + safeguard_id). Manual risks (source=manual) support full CRUD. sync_cis_poam_to_risk_register() DB function upserts on every cisSavePoam() call. Status vocabulary: Open / In Progress / Accepted / Closed / Transferred.",
       "items": [
         {
           "id": "r1",
@@ -828,25 +828,25 @@
           "id": "r12",
           "text": "Residual Risk Score: adjusted score after control effectiveness applied",
           "done": true,
-          "notes": "risk_register.calculated_risk_score = inherent_risk_score × (1 − weighted_pass_rate). Auto-calculated by trigger."
+          "notes": "risk_register.residual_risk_rating (Critical/High/Medium/Low). Editable by user in Edit Notes modal (POAM rows) or Edit modal (manual rows). Not auto-calculated — requires practitioner judgement. PATCH_015."
         },
         {
           "id": "r13",
           "text": "Risk Treatment: dropdown (Accept / Mitigate / Transfer / Avoid)",
-          "done": false,
-          "notes": "Accept treatment built (rrSubmitAccept → rpc/accept_risk). Mitigate/Transfer/Avoid treatments not yet in schema or UI."
+          "done": true,
+          "notes": "PATCH_015: risk_status = Open / In Progress / Accepted / Closed / Transferred. Accept via modal (accepted_by, rationale, review date) for manual risks. Transfer flows from POAM risk_decision='transfer'. Manual risks can be edited to any status. POAM-sourced statuses sync from POAM — not changeable in risk register."
         },
         {
           "id": "r14",
           "text": "Treatment Plan / Notes: free-text field for planned remediation actions",
-          "done": false,
-          "notes": "CIS POAM items serve as the remediation plan. Direct treatment notes field not yet added to risk_register table."
+          "done": true,
+          "notes": "risk_register.treatment_notes. Editable in Edit Notes modal (POAM rows) and Edit modal (manual rows). PATCH_015."
         },
         {
           "id": "r15",
           "text": "Risk Owner: person or role accountable for this risk",
           "done": true,
-          "notes": "risk_register.accepted_by captures owner at time of acceptance. Not tracked for Active risks yet."
+          "notes": "risk_register.risk_owner. Present for all risk types, editable in Edit Notes (POAM) and Edit (manual) modals. PATCH_015."
         },
         {
           "id": "r16",
@@ -870,7 +870,7 @@
           "id": "r19",
           "text": "Status: Open / In Remediation / Accepted / Closed",
           "done": true,
-          "notes": "risk_status: Active / Out of Scope / Accepted / Accepted - OOS / Pending Review. Filter tabs in UI."
+          "notes": "PATCH_015: risk_status = Open / In Progress / Accepted / Closed / Transferred. Filter tabs in UI. Accepted = won't fix (formal risk acceptance). Closed = remediated. Transferred = cyber insurance or third-party."
         },
         {
           "id": "r20",
@@ -921,7 +921,7 @@
           "id": "r27",
           "text": "Auto-populate risks from assessment findings (vuln scan, pen test, survey gaps)",
           "done": true,
-          "notes": "tg_cis_assessment_risk trigger fires on assessments INSERT/UPDATE (module='cis'). Calls initialize_risk_register then recalculate_risk_register. PATCH_014."
+          "notes": "PATCH_015: sync_cis_poam_to_risk_register(p_org_id, p_assessment_id) DB function upserts one risk_register row per POAM item. Called from cisSavePoam() fire-and-forget after every POAM save. Replaces PATCH_014 trigger-based approach (trigger dropped). Stable key: UNIQUE(org_id, safeguard_id) partial index (WHERE safeguard_id IS NOT NULL)."
         },
         {
           "id": "r28",
@@ -958,6 +958,18 @@
           "id": "rr_d",
           "text": "Nav score dot for Risk Register — red if any Critical residual rating, amber if any High, green if all Low or below",
           "done": false
+        },
+        {
+          "id": "rr_e",
+          "text": "Risk register backfill button — 'Sync from latest POAM' button in the Risk Register header that calls sync_cis_poam_to_risk_register for the org's most recent CIS assessment. Needed because existing POAM data won't appear until a POAM is re-saved after PATCH_015.",
+          "done": false,
+          "priority": "High"
+        },
+        {
+          "id": "rr_f",
+          "text": "Risk register POAM deep-link improvement — the '→ POAM' button currently navigates to the CIS module root. Improve to open the specific assessment POAM directly (poam_assessment_id is already stored on each risk_register row; need app.js to route to it via cisOpenPoam).",
+          "done": false,
+          "priority": "Medium"
         }
       ]
     },

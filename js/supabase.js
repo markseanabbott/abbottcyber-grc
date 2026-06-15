@@ -165,23 +165,22 @@ sb.userOrgAccess = {
   deleteForUser: (userId) => sbFetch(`user_org_access?user_id=eq.${userId}`, 'DELETE'),
 };
 
-// Risk Register persistence layer (PATCH_014)
+// Risk Register persistence layer (PATCH_015)
 sb.riskRegister = {
   getForOrg: (orgId) => sbFetch(
-    `risk_register?org_id=eq.${orgId}&select=*,risk_control_categories(control_number,control_name,threat_scenario,display_order)`
+    `risk_register?org_id=eq.${orgId}&order=created_at.asc`
   ),
-  acceptRisk: (riskRegisterId, acceptedBy, rationale, reviewDate) => sbFetch('rpc/accept_risk', 'POST', {
-    p_risk_register_id: riskRegisterId,
-    p_accepted_by:      acceptedBy,
-    p_rationale:        rationale,
-    p_review_date:      reviewDate,
-  }),
-  handleIgChange: (orgId, assessmentId, newIgLevel, changedBy) => sbFetch('rpc/handle_ig_change', 'POST', {
+  // Sync all POAM items for an assessment into the risk register
+  sync: (orgId, assessmentId) => sbFetch('rpc/sync_cis_poam_to_risk_register', 'POST', {
     p_org_id:        orgId,
     p_assessment_id: assessmentId,
-    p_new_ig_level:  newIgLevel,
-    p_changed_by:    changedBy,
   }),
+  // Add a manual risk entry
+  add: (row) => sbFetch('risk_register', 'POST', row, { Prefer: 'return=representation' }),
+  // Update editable fields (residual rating, owner, notes, due date, acceptance fields)
+  update: (id, patch) => sbFetch(`risk_register?id=eq.${id}`, 'PATCH', patch, { Prefer: 'return=representation' }),
+  // Hard-delete a manual risk only
+  delete: (id) => sbFetch(`risk_register?id=eq.${id}`, 'DELETE'),
 };
 
 // Tabletop persistence layer — wraps Supabase calls for the operational tabletop module.
