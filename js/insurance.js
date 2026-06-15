@@ -194,6 +194,7 @@ function renderInsuranceForm() {
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
       <button class="btn btn-outline btn-sm" onclick="insBackToDashboard()">← Back</button>
+      ${insState.fromNew ? '<button class="btn btn-outline btn-sm" id="insPrefillBtn" onclick="insPrefillFromTS()" style="font-size:11px">&#8681; From Tech Stack</button>' : ''}
       ${allDone ? '<button class="btn btn-cyan btn-sm" id="saveBtn" onclick="insSave()">Save Assessment</button>' : ''}
     </div>
   </div>
@@ -316,6 +317,7 @@ function insNew() {
     editId: null,
     conductedBy: '',
     date: new Date().toISOString().slice(0, 10),
+    fromNew: true,
   };
   renderMain();
 }

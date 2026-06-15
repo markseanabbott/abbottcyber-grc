@@ -1,8 +1,8 @@
 {
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "created": "2026-05-14",
-  "updated": "2026-06-15 (session 24)",
+  "updated": "2026-06-15 (session 25)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -216,7 +216,8 @@
         {
           "id": "ts9",
           "text": "Framework auto-scoping: tech stack answers pre-populate CIS / NIST / Insurance survey questions via derive_strategy",
-          "done": false
+          "done": true,
+          "notes": "Session 25: Pull model — 'From Tech Stack' button appears on new assessments only (not edits). js/prefill.js contains tsDeriveCIS() (walks TS_CATS mappings.cis to derive yes/partial/no per safeguard; better answer wins when multiple TS questions map to same safeguard) and tsDeriveInsurance() (14-entry static map to Insurance question IDs; maps TS yes/partial/no to closest option score via option index). tsEnsureLoaded() silently loads TS from Supabase if not yet in memory. insPrefillFromTS() and cisPrefillFromTS() fill only unanswered questions (never overwrites). insState.fromNew=true set in insNew(); CIS button gated on !cisState.editId. q12 (IR Plan documented) intentionally excluded — no TS proxy for a written plan."
         }
       ]
     },
