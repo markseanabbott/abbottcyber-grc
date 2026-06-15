@@ -99,21 +99,31 @@ function toggleOrgDD() {
 function buildOrgDropdown() {
   const dd = document.getElementById('orgDD');
   const switchable = visibleOrgs();
-  const sectionLabels = { platform: 'Platform Owner', grandfather: 'Grandfather', father: 'Father — Groups', child: 'Child — Clients' };
+  const switchableIds = new Set(switchable.map(o => o.id));
   let h = '';
-  TIER_ORDER.forEach(tier => {
-    const orgs = switchable.filter(o => o.tier === tier);
-    if (!orgs.length) return;
-    h += `<div class="org-divider"></div><div class="org-section-lbl">${sectionLabels[tier]}</div>`;
-    orgs.forEach(o => {
-      const parent = allOrgs.find(p => p.id === o.parent_id);
-      const sub = parent ? parent.name : tier === 'platform' ? 'Full platform visibility' : '';
-      h += `<div class="org-option${currentOrg?.id === o.id ? ' selected' : ''}" onclick="selectOrg('${o.id}')">
-        <div class="org-avatar ${tierAvClass(tier)}">${tierInitials(o.name)}</div>
-        <div><div class="org-opt-name">${o.name}</div><div class="org-opt-sub">${sub}</div></div>
-      </div>`;
-    });
-  });
+
+  function renderNode(o, depth) {
+    const indent = depth * 14;
+    const prefix = depth > 0
+      ? `<span style="color:rgba(255,255,255,0.25);margin-right:4px;font-size:10px">${'—'.repeat(depth)}</span>`
+      : '';
+    h += `<div class="org-option${currentOrg?.id === o.id ? ' selected' : ''}" onclick="selectOrg('${o.id}')" style="padding-left:${8 + indent}px">
+      <div class="org-avatar ${tierAvClass(o.tier)}" style="flex-shrink:0">${tierInitials(o.name)}</div>
+      <div style="min-width:0">${prefix}<span class="org-opt-name">${o.name}</span></div>
+    </div>`;
+    // Render children in name order
+    switchable
+      .filter(c => c.parent_id === o.id)
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .forEach(c => renderNode(c, depth + 1));
+  }
+
+  // Roots = orgs whose parent is not in the switchable set (or have no parent)
+  switchable
+    .filter(o => !o.parent_id || !switchableIds.has(o.parent_id))
+    .sort((a, b) => TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier) || a.name.localeCompare(b.name))
+    .forEach(o => renderNode(o, 0));
+
   dd.innerHTML = h || '<div style="padding:10px;font-size:11px;color:rgba(255,255,255,0.4)">No organisations</div>';
 }
 

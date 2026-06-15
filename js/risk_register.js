@@ -538,11 +538,15 @@ async function rrSyncFromPoam() {
     toast('No CIS assessment found for this org', '#ea580c');
     return;
   }
-  const latest = cisSessions.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+  // Sort oldest→newest so the most recent POAM data wins on upsert conflicts
+  const sorted = [...cisSessions].sort((a, b) => new Date(a.date) - new Date(b.date));
   const syncBtn = document.querySelector('[onclick="rrSyncFromPoam()"]');
   if (syncBtn) { syncBtn.disabled = true; syncBtn.textContent = '↻ Syncing…'; }
   try {
-    await sb.riskRegister.sync(currentOrg.id, latest.id);
+    // Sync all assessments — POAM items may be on any assessment, not just the latest
+    for (const session of sorted) {
+      await sb.riskRegister.sync(currentOrg.id, session.id);
+    }
     // Reload rows
     const rows = await sb.riskRegister.getForOrg(currentOrg.id);
     rrState.rows = Array.isArray(rows) ? rows : [];
