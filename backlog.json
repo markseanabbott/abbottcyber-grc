@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.1.4",
   "created": "2026-05-14",
-  "updated": "2026-06-15 (session 25)",
+  "updated": "2026-06-15 (session 26)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -137,7 +137,7 @@
           "id": "ins_redesign",
           "text": "Insurance Readiness UX redesign: CIS-style dashboard/form split with assessment history table, conducted-by + date fields, newest-first sorting, Edit from history, and view-router state machine",
           "done": true,
-          "notes": "Session 24: renderInsurance() now routes to renderInsuranceDashboard() or renderInsuranceForm() via insState.view. Dashboard has navy score-hero (score, Sec%, Ins%, run count), trend chart, history table with Latest badge and Edit button, savings panel from latest run. Form has metadata bar (date + conducted by + live score), section panels with chevrons and per-section score pills, completion banner with savings. insOpenAssessment(origIdx) loads past run into form. insBackToDashboard() returns to dashboard. insSave() saves conducted_by + assessed_at and reloads history before switching view. insState in config.js and selectOrg() in app.js updated; duplicateAssessment() in home.js updated to set view:form."
+          "notes": "Session 24: renderInsurance() now routes to renderInsuranceDashboard() or renderInsuranceForm() via insState.view. Dashboard has navy score-hero (score, Sec%, Ins%, run count), trend chart, history table with Latest badge and Edit button, savings panel from latest run. insOpenAssessment(origIdx) loads past run into form. insBackToDashboard() returns to dashboard. insSave() saves conducted_by + assessed_at and reloads history before switching view. insState in config.js and selectOrg() in app.js updated; duplicateAssessment() in home.js updated to set view:form. Session 26: renderInsuranceForm() fully rewritten to match CIS form visual style — navy .score-hero-ins header with live 'Score So Far' (computed from answered questions only), progress bar, date/conductor inputs right-aligned; section panels use b-green/b-amber/b-gray badges (Done/In progress/Not started); question rows use .cis-safeguard/.cis-sf-text/.cis-sf-sub; answer options use .cis-ans-btn buttons (full-width, stacked) with sel-yes/sel-partial/sel-no state by score tier (>=80/>=40/<40); footer bar always visible — Save button disabled (greyed) until all questions answered, active cyan when allDone; savings panel appears below footer when all done."
         },
         {
           "id": "s7",

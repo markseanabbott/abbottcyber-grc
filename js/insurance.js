@@ -181,107 +181,133 @@ function renderInsuranceDashboard() {
 // ─── FORM ─────────────────────────────────────────────────────
 function renderInsuranceForm() {
   const allDone = insAllDone();
-  const r = allDone ? insCalc() : null;
   const totalQs = INS_SECTIONS.reduce((a, s) => a + s.questions.length, 0);
   const answeredQs = INS_SECTIONS.reduce((a, s) => a + insAnswered(s), 0);
-  const scoreColor = r ? (r.score >= 75 ? '#15803d' : r.score >= 50 ? '#b45309' : '#dc2626') : 'var(--muted)';
+  const remaining = totalQs - answeredQs;
+  const pct = totalQs > 0 ? Math.round(answeredQs / totalQs * 100) : 0;
+
+  // Live score from answered questions only (like CIS "Score So Far")
+  let displayScore = null, displaySecPct = null, displayInsPct = null;
+  if (answeredQs > 0) {
+    let ss = 0, si = 0, smax = 0, imax = 0;
+    INS_SECTIONS.forEach(sec => sec.questions.forEach(q => {
+      if (insState.answers[q.id] !== undefined) {
+        ss += insState.answers[q.id] * q.secW; si += insState.answers[q.id] * q.insW;
+        smax += q.secW; imax += q.insW;
+      }
+    }));
+    displaySecPct = smax ? Math.round(ss / smax * 100) : 0;
+    displayInsPct = imax ? Math.round(si / imax * 100) : 0;
+    displayScore = Math.round(displaySecPct * 0.4 + displayInsPct * 0.6);
+  }
 
   let h = `${renderTierBanner()}
   <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.85rem;flex-wrap:wrap;gap:8px">
     <div>
-      <div style="font-size:17px;font-weight:700;margin-bottom:3px">🛡️ Insurance Readiness</div>
-      <div style="font-size:12px;color:var(--muted)">${currentOrg.name} · ${answeredQs}/${totalQs} questions answered</div>
+      <div style="font-size:17px;font-weight:700;margin-bottom:4px">🛡️ Insurance Readiness — ${insState.editId ? 'Edit Assessment' : 'New Assessment'}</div>
+      <div style="font-size:12px;color:var(--muted)">${insState.editId ? 'Editing an existing record — saving will update it in place' : 'Answer all ' + totalQs + ' questions, then save to record this run'}</div>
     </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-      <button class="btn btn-outline btn-sm" onclick="insBackToDashboard()">← Back</button>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn btn-outline btn-sm" onclick="insBackToDashboard()">← Back to Dashboard</button>
       ${insState.fromNew ? '<button class="btn btn-outline btn-sm" id="insPrefillBtn" onclick="insPrefillFromTS()" style="font-size:11px">&#8681; From Tech Stack</button>' : ''}
-      ${allDone ? '<button class="btn btn-cyan btn-sm" id="saveBtn" onclick="insSave()">Save Assessment</button>' : ''}
     </div>
   </div>
 
-  <div class="card" style="padding:.75rem 1rem;margin-bottom:1rem">
-    <div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center">
-      <div>
-        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Assessment Date</div>
-        <input type="date" value="${insState.date || ''}" onchange="insState.date=this.value" style="border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;font-family:inherit;color:var(--text);background:#fff">
-      </div>
-      <div style="flex:1;min-width:180px">
-        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Conducted By</div>
-        <input type="text" value="${escH(insState.conductedBy || '')}" placeholder="Your name" oninput="insState.conductedBy=this.value" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;font-family:inherit;color:var(--text);background:#fff;box-sizing:border-box">
-      </div>
-      ${r ? `<div style="margin-left:auto;text-align:right">
-        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Score</div>
-        <div style="font-size:22px;font-weight:800;color:${scoreColor};line-height:1">${r.score}<span style="font-size:13px">%</span></div>
-        <div style="display:flex;gap:4px;margin-top:3px;justify-content:flex-end">
-          <span class="badge b-navy" style="font-size:10px">Sec: ${r.secPct}%</span>
-          <span class="badge b-cyan" style="font-size:10px">Ins: ${r.insPct}%</span>
+  <div class="score-hero-ins" style="margin-bottom:1.25rem">
+    <div style="flex:1;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:4px">Score So Far</div>
+          <div class="score-big" style="color:#fff">${displayScore !== null ? displayScore : '—'}<span style="font-size:18px">${displayScore !== null ? '%' : ''}</span></div>
+          <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:6px">${allDone ? 'All questions answered' : answeredQs + '/' + totalQs + ' answered'}</div>
         </div>
-      </div>` : `<div style="margin-left:auto;text-align:right;color:var(--muted);font-size:12px">${totalQs - answeredQs} questions remaining</div>`}
+        <div style="flex:1;min-width:220px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+            <span style="font-size:10px;color:rgba(255,255,255,.5)">${answeredQs} of ${totalQs} questions</span>
+            <span style="font-size:10px;color:rgba(255,255,255,.5)">${pct}%</span>
+          </div>
+          <div style="height:6px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:var(--cyan);border-radius:3px;transition:width .3s"></div>
+          </div>
+          ${allDone && displaySecPct !== null ? `
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+            <span class="badge b-navy" style="font-size:10px">Security: ${displaySecPct}%</span>
+            <span class="badge b-cyan" style="font-size:10px">Insurance: ${displayInsPct}%</span>
+          </div>` : ''}
+        </div>
+      </div>
+    </div>
+    <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+      <div>
+        <div style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:3px">Assessment Date</div>
+        <input type="date" value="${insState.date || ''}" onchange="insState.date=this.value"
+          style="padding:5px 8px;border-radius:6px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-family:Inter,sans-serif;font-size:12px;color-scheme:dark">
+      </div>
+      <div>
+        <div style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:3px">Conducted By</div>
+        <input type="text" value="${escH(insState.conductedBy || '')}" placeholder="Assessor name" oninput="insState.conductedBy=this.value"
+          style="padding:5px 8px;border-radius:6px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-family:Inter,sans-serif;font-size:12px;width:150px" autocomplete="off">
+      </div>
     </div>
   </div>
 
   ${INS_SECTIONS.map(sec => {
     const isOpen = insState.openPanels[sec.id];
     const ans = insAnswered(sec);
-    const secDone = ans === sec.questions.length;
-    const sp = secDone ? Math.round(insSecScore(sec) / insSecMax(sec) * 100) : null;
-    const ip = secDone ? Math.round(insInsScore(sec) / insInsMax(sec) * 100) : null;
-    const avg = sp !== null ? Math.round(sp * 0.4 + ip * 0.6) : null;
-    const pillCls = avg === null ? '' : avg >= 70 ? 'band-high' : avg >= 40 ? 'band-mid' : 'band-low';
+    const done = ans === sec.questions.length;
+    const started = ans > 0 && !done;
     return `<div class="survey-panel">
       <div class="sph" onclick="insToggle('${sec.id}')">
-        <div style="display:flex;align-items:center;gap:8px;flex:1">
-          <span style="font-size:16px">${sec.icon}</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:15px">${sec.icon}</span>
           <div>
             <div style="font-size:13px;font-weight:700;color:var(--text)">${sec.name}</div>
-            <div style="font-size:11px;color:var(--muted)">${sec.questions.length} questions · ${ans}/${sec.questions.length} answered</div>
+            <div style="font-size:10px;color:var(--muted)">${sec.questions.length} questions · ${ans}/${sec.questions.length} answered</div>
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-          ${avg !== null ? `<span class="score-band ${pillCls}" style="font-size:10px;padding:2px 8px">${avg}%</span>` : `<span style="font-size:11px;color:var(--muted)">${ans === 0 ? 'Not started' : 'In progress'}</span>`}
-          <span style="font-size:11px;color:var(--muted);display:inline-block;transition:transform .2s;${isOpen ? 'transform:rotate(180deg)' : ''}">&#9662;</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="badge ${done ? 'b-green' : started ? 'b-amber' : 'b-gray'}">${done ? 'Done' : started ? 'In progress' : 'Not started'}</span>
+          <span style="color:var(--muted);font-size:12px">${isOpen ? '▴' : '▾'}</span>
         </div>
       </div>
       <div class="spb${isOpen ? ' open' : ''}">
         ${sec.questions.map(q => {
           const sel = insState.answers[q.id];
-          return `<div style="margin-bottom:1.1rem;padding-top:.1rem">
-            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">${q.text}</div>
-            ${q.sub ? `<div style="font-size:11px;color:var(--muted);margin-bottom:5px">${q.sub}</div>` : ''}
-            <div style="display:flex;gap:4px;margin-bottom:7px;flex-wrap:wrap">
-              <span class="badge b-navy" style="font-size:10px">Security: ${q.secW}</span>
-              <span class="badge b-cyan" style="font-size:10px">Insurance: ${q.insW}</span>
+          return `<div class="cis-safeguard">
+            <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:3px">
+              <span class="badge b-navy" style="font-size:9px;flex-shrink:0;margin-top:1px">Sec: ${q.secW}</span>
+              <span class="badge b-cyan" style="font-size:9px;flex-shrink:0;margin-top:1px">Ins: ${q.insW}</span>
+              <span class="cis-sf-text" style="margin:0">${q.text}</span>
             </div>
-            ${q.options.map(o => {
-              const sc = Math.round(o.s * 100);
-              const isSel = sel === o.s;
-              const bc = sc >= 80 ? '#15803d' : sc >= 40 ? '#b45309' : '#dc2626';
-              return `<label style="display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:7px;margin-bottom:4px;cursor:pointer;border:1.5px solid ${isSel ? 'var(--cyan)' : 'var(--border)'};background:${isSel ? 'rgba(7,180,217,0.06)' : '#fff'};transition:border-color .15s,background .15s">
-                <input type="radio" name="${q.id}" value="${o.s}" ${isSel ? 'checked' : ''} onchange="insAnswer('${q.id}',${o.s})" style="accent-color:var(--cyan);flex-shrink:0">
-                <span style="flex:1;font-size:12px;color:var(--text)">${o.t}</span>
-                <span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;white-space:nowrap;background:${isSel ? bc + '22' : '#f3f4f6'};color:${isSel ? bc : 'var(--muted)'}">${sc}%</span>
-              </label>`;
-            }).join('')}
+            ${q.sub ? `<div class="cis-sf-sub">${q.sub}</div>` : '<div style="margin-bottom:6px"></div>'}
+            <div class="cis-ans-row" style="flex-direction:column;gap:4px">
+              ${q.options.map(o => {
+                const sc = Math.round(o.s * 100);
+                const isSel = sel === o.s;
+                const selCls = isSel ? (sc >= 80 ? 'sel-yes' : sc >= 40 ? 'sel-partial' : 'sel-no') : '';
+                return `<button class="cis-ans-btn${isSel ? ' ' + selCls : ''}" onclick="insAnswer('${q.id}',${o.s})"
+                  style="text-align:left;white-space:normal;height:auto;width:100%;padding:6px 10px;font-size:11px">
+                  ${o.t}<span style="float:right;font-size:9px;opacity:.65;margin-left:8px">${sc}%</span>
+                </button>`;
+              }).join('')}
+            </div>
           </div>`;
         }).join('')}
       </div>
     </div>`;
-  }).join('')}`;
+  }).join('')}
 
-  if (allDone && r) {
-    const band = r.score >= 75 ? 'Strong Posture' : r.score >= 60 ? 'Moderate Risk' : r.score >= 40 ? 'Elevated Risk' : 'High Risk';
+  <div style="margin-top:.75rem;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <button class="btn btn-outline btn-sm" onclick="insBackToDashboard()">← Back to Dashboard</button>
+    ${insState.fromNew ? '<button class="btn btn-outline btn-sm" id="insPrefillBtn2" onclick="insPrefillFromTS()" style="font-size:11px">&#8681; From Tech Stack</button>' : ''}
+    <span style="flex:1"></span>
+    ${remaining > 0 ? `<span style="font-size:11px;color:var(--muted)">${remaining} question${remaining !== 1 ? 's' : ''} remaining</span>` : ''}
+    ${allDone ? '<button class="btn btn-cyan btn-sm" id="saveBtn" onclick="insSave()">Save Assessment</button>' : '<button class="btn btn-cyan btn-sm" disabled style="opacity:.35;cursor:not-allowed">Save Assessment</button>'}
+  </div>`;
+
+  if (allDone) {
+    const r = insCalc();
     const gaps = INS_SAVINGS.filter(sv => (insState.answers[sv.q] || 0) < 0.8);
-    h += `<div style="background:var(--navy);border-radius:10px;padding:1rem 1.25rem;margin-top:.75rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-      <div>
-        <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:3px">Assessment complete</div>
-        <div style="font-size:20px;font-weight:800;color:#fff">${r.score}% <span style="font-size:13px;color:rgba(255,255,255,.5)">— ${band}</span></div>
-        <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">
-          <span class="badge b-navy">Security: ${r.secPct}%</span>
-          <span class="badge b-cyan">Insurance: ${r.insPct}%</span>
-        </div>
-      </div>
-      <button class="btn btn-cyan" onclick="insSave()">Save Assessment</button>
-    </div>`;
     if (gaps.length) {
       h += `<div class="savings-box" style="margin-top:.75rem">
         <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cyan2);margin-bottom:.85rem">Estimated premium savings available — address these gaps</div>
