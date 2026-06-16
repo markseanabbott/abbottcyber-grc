@@ -1211,6 +1211,32 @@ function aiuPoamUpdate(id, field, value) {
   aiUnifiedState.poamItems[id][field] = value;
 }
 
+function _aiuBuildRrItems() {
+  const items = [];
+  for (const [ctrlId, poamItem] of Object.entries(aiUnifiedState.poamItems || {})) {
+    if (!poamItem?.status) continue;
+    const ctrl = (typeof AI_UNIFIED_CONTROLS !== 'undefined' ? AI_UNIFIED_CONTROLS : []).find(c => c.id === ctrlId);
+    if (!ctrl) continue;
+    const riskStatus = poamItem.status === 'complete' ? 'Closed'
+      : poamItem.status === 'accepted' ? 'Accepted'
+      : poamItem.status === 'in_progress' ? 'In Progress'
+      : 'Open';
+    const w = ctrl.weight || 3;
+    const inherent = w >= 5 ? 'Critical' : w >= 4 ? 'High' : w >= 3 ? 'Medium' : 'Low';
+    items.push({
+      safeguard_id:         ctrlId,
+      risk_title:           ctrl.title,
+      risk_description:     ctrl.desc || ctrl.title,
+      inherent_risk_rating: inherent,
+      risk_status:          riskStatus,
+      risk_owner:           poamItem.owner || '',
+      treatment_notes:      poamItem.notes || '',
+      due_date:             poamItem.targetDate || '',
+    });
+  }
+  return items;
+}
+
 async function aiuSavePoam() {
   const run = aiUnifiedState.poamRun || aiUnifiedState.reportRun;
   if (!run?.id) { toast('Cannot save — assessment ID missing', '#dc2626'); return; }
@@ -1223,6 +1249,18 @@ async function aiuSavePoam() {
     const idx = runs.findIndex(r=>r.id===run.id);
     if (idx!==-1) runs[idx].answers = updatedAnswers;
     toast('✓ POAM saved', '#15803d');
+    // Fire-and-forget: sync to risk register (PATCH_020)
+    if (run.id && currentOrg?.id) {
+      const items = _aiuBuildRrItems();
+      if (items.length) {
+        sb.riskRegister.syncAi(currentOrg.id, run.id, items)
+          .then(() => { if (typeof rrState !== 'undefined') rrState.orgId = null; })
+          .catch(e => {
+            console.error('AI POAM → risk register sync failed:', e);
+            toast('Risk Register sync failed: ' + e.message, '#dc2626');
+          });
+      }
+    }
   } catch(e) { toast('Save failed: ' + e.message, '#dc2626'); }
 }
 

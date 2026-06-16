@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.1.4",
   "created": "2026-05-14",
-  "updated": "2026-06-15 (session 26)",
+  "updated": "2026-06-16 (session 26)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -184,7 +184,7 @@
           "id": "ts3",
           "text": "Technical maturity score: pre-populated baseline before manual survey questions are answered",
           "done": true,
-          "notes": "Overall + per-category maturity computed live (Yes=1, Partial=0.5, No=0, NA=excluded). Snapshot writes to assessments table with module='techstack' on save, feeding the dashboard score dot."
+          "notes": "Overall + per-category maturity computed live (Yes=1, Partial=0.5, No=0, NA=excluded). Snapshot writes to assessments table with module='techstack' on save, feeding the dashboard score dot. Session 26: full dashboard/form split added — renderTechStackDashboard() shows navy score hero with live maturity %, 8-cell category mini-grid, trend canvas (drawTsTrend, ≥2 runs), assessment history table with date/score/conductedBy/Delete, and 10-category breakdown bars. renderTechStackForm() extracted with back button + always-visible save footer. tsNavToDashboard(), tsStartNew(), tsDeleteSnapshot() added. tsSaveAllResponses() now saves conducted_by, reloads history via delete+loadAssessments, switches to dashboard view on success."
         },
         {
           "id": "ts4",
@@ -985,6 +985,12 @@
           "text": "Risk register POAM deep-link improvement — the '→ POAM' button currently navigates to the CIS module root. Improve to open the specific assessment POAM directly (poam_assessment_id is already stored on each risk_register row; need app.js to route to it via cisOpenPoam).",
           "done": false,
           "priority": "Medium"
+        },
+        {
+          "id": "rr_g",
+          "text": "AI POAM → Risk Register: activate and verify end-to-end flow — PATCH_020 must be run in Supabase SQL Editor before this works. JS code is complete (session 26): _aiuBuildRrItems(), aiuSavePoam() fire-and-forget sync, sb.riskRegister.syncAi(), rrSyncFromAiPoam(), rrRow() AI Gov badge. After running the patch, test: (1) open AI Governance POAM, assign status/owner/date to a few gaps, save — confirm AI Gov rows appear in Risk Register; (2) '↻ AI Gov' sync button in Risk Register header; (3) Edit Notes modal shows correct AI Gov badge; (4) '→ POAM' button navigates to ai_unified.",
+          "done": false,
+          "priority": "High"
         }
       ]
     },

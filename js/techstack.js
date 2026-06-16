@@ -453,6 +453,9 @@ function tsInit() {
     loading: true,
     saving: false,
     dirty: false,       // unsaved changes since last load/save
+    view: 'dashboard',  // 'dashboard' | 'form'
+    conductedBy: '',
+    date: new Date().toISOString().slice(0, 10),
   };
 }
 
@@ -541,57 +544,232 @@ function tsRenderQuestion(q) {
 function renderTechStack() {
   if (!tsState) return '<div class="card">Initialising...</div>';
   if (tsState.loading) return `<div style="text-align:center;padding:2rem"><div class="spinner" style="border-color:rgba(21,33,104,0.2);border-top-color:var(--navy);width:24px;height:24px;margin:0 auto 0.75rem"></div><div style="font-size:13px;font-weight:700;color:var(--text)">Loading tech stack responses...</div></div>`;
+  if (tsState.view === 'form') return renderTechStackForm();
+  return renderTechStackDashboard();
+}
+
+function renderTechStackDashboard() {
+  const runs = ((orgAssessments[currentOrg?.id] || {})['techstack'] || [])
+    .slice().sort((a, b) => new Date(b.date) - new Date(a.date));
   const allQs = TS_CATS.flatMap(c => c.questions);
-  const answered = allQs.filter(q => tsState.answers[q.id] && tsState.answers[q.id].ans).length;
-  const gaps     = allQs.filter(q => tsState.answers[q.id] && tsState.answers[q.id].ans==='no').length;
-  const partials = allQs.filter(q => tsState.answers[q.id] && tsState.answers[q.id].ans==='partial').length;
-  const overall  = tsCalcScore(allQs);
-  const dirtyBanner = tsState.dirty
-    ? `<div style="background:#fef9c3;border:1px solid #fcd34d;border-radius:8px;padding:0.5rem 1rem;margin-bottom:0.75rem;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#92400e">
-        <span>Unsaved changes</span>
-        <button class="btn btn-amber btn-sm" onclick="tsSaveAllResponses()" ${tsState.saving?'disabled':''}>
-          ${tsState.saving?'Saving...':'Save now'}</button></div>` : '';
+  const liveScore = tsCalcScore(allQs);
+  const latest = runs[0] || null;
+  const catScores = TS_CATS.map(cat => ({
+    id: cat.id, title: cat.title, icon: cat.icon,
+    score: tsCalcScore(cat.questions),
+  }));
+
+  if (runs.length >= 2) setTimeout(() => drawTsTrend([...runs].reverse()), 0);
+
   return `${renderTierBanner()}
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.85rem;flex-wrap:wrap;gap:8px">
-    <div style="font-size:17px;font-weight:700">Technology Stack Survey</div>
-    <div style="display:flex;gap:6px">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.85rem;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:17px;font-weight:700;margin-bottom:4px">🖥️ Technology Stack</div>
+      <div style="font-size:12px;color:var(--muted)">${runs.length} assessment${runs.length !== 1 ? 's' : ''} recorded · ${currentOrg?.name || ''}</div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn btn-outline btn-sm" onclick="tsExportSnapshot()">Export JSON</button>
-      <button class="btn btn-primary btn-sm" onclick="tsSaveAllResponses()" ${tsState.saving?'disabled':''}>
-        ${tsState.saving?'Saving...':'Save all'}</button>
+      <button class="btn btn-cyan btn-sm" onclick="tsStartNew()">${runs.length > 0 ? 'Update / Reassess' : '+ Start Assessment'}</button>
     </div>
   </div>
-  ${dirtyBanner}
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1rem">
-    ${[
-      {label:'Questions',val:`${answered}/${allQs.length}`,sub:'answered'},
-      {label:'Score',val:overall===null?'--':`${overall}%`,sub:'overall'},
-      {label:'Gaps',val:gaps,sub:'answered No'},
-      {label:'Partial',val:partials,sub:'needs detail'},
-    ].map(m => `<div class="wcard"><div class="wcard-label">${m.label}</div><div class="wcard-val">${m.val}</div><div class="wcard-sub">${m.sub}</div></div>`).join('')}
+
+  <div class="score-hero-ins" style="margin-bottom:1.25rem">
+    <div style="flex:1">
+      <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:4px">Current Maturity Score</div>
+      <div class="score-big" style="color:#fff">${liveScore !== null ? liveScore : '—'}<span style="font-size:18px">${liveScore !== null ? '%' : ''}</span></div>
+      <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:6px">${latest ? 'Last saved ' + latest.date : 'No assessments saved yet'}</div>
+      ${runs.length >= 2 ? `<canvas id="tsTrendChart" height="56" style="margin-top:12px;width:100%;max-width:300px;display:block"></canvas>` : ''}
+    </div>
+    <div style="flex-shrink:0;display:grid;grid-template-columns:1fr 1fr;gap:5px;max-width:270px">
+      ${catScores.slice(0, 8).map(cs => `
+        <div style="background:rgba(255,255,255,.08);border-radius:7px;padding:6px 9px">
+          <div style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cs.icon} ${cs.title}</div>
+          <div style="font-size:14px;font-weight:700;color:#fff">${cs.score !== null ? cs.score + '%' : '—'}</div>
+        </div>`).join('')}
+    </div>
   </div>
+
+  <div class="card" style="padding:0;overflow:hidden;margin-bottom:1rem">
+    <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:13px;font-weight:700">Assessment History</div>
+    </div>
+    ${runs.length === 0 ? `
+    <div style="text-align:center;padding:2.5rem;color:var(--muted)">
+      <div style="font-size:2rem;margin-bottom:.5rem">🖥️</div>
+      <div style="font-weight:700;color:var(--text);margin-bottom:.25rem">No assessments saved yet</div>
+      <div style="font-size:13px">Answer the survey questions across all 10 categories, then save to record your first maturity snapshot.</div>
+    </div>` : `
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr style="background:#f8fafc">
+        <th style="padding:.6rem .75rem;text-align:left;font-size:11px;color:var(--muted);font-weight:600">Date</th>
+        <th style="padding:.6rem .75rem;text-align:left;font-size:11px;color:var(--muted);font-weight:600">Score</th>
+        <th style="padding:.6rem .75rem;text-align:left;font-size:11px;color:var(--muted);font-weight:600">Conducted By</th>
+        <th style="padding:.6rem .75rem"></th>
+      </tr></thead>
+      <tbody>
+        ${runs.map((r, i) => {
+          const sc = r.score;
+          const band = sc >= 70 ? 'band-high' : sc >= 40 ? 'band-mid' : 'band-low';
+          return `<tr style="border-top:1px solid var(--border)">
+            <td style="padding:.65rem .75rem;font-size:12px;color:var(--text);white-space:nowrap">
+              ${r.date}${i === 0 ? '&nbsp;<span class="badge b-cyan" style="font-size:9px">Latest</span>' : ''}
+            </td>
+            <td style="padding:.65rem .75rem"><span class="score-band ${band}" style="font-size:11px;padding:2px 8px">${sc}%</span></td>
+            <td style="padding:.65rem .75rem;font-size:12px;color:var(--muted)">${r.conductedBy || '—'}</td>
+            <td style="padding:.65rem .75rem;text-align:right">
+              <button class="btn btn-red btn-sm" onclick="tsDeleteSnapshot('${r.id}')">Delete</button>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`}
+  </div>
+
+  <div class="card" style="padding:.75rem 1rem">
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem">Category Breakdown — live responses</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+      ${catScores.map(cs => {
+        const pct = cs.score;
+        const barColor = pct === null ? 'var(--border)' : pct >= 70 ? '#86efac' : pct >= 40 ? '#fcd34d' : '#fca5a5';
+        return `<div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:14px;flex-shrink:0">${cs.icon}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:11px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cs.title}</div>
+            <div style="height:4px;background:var(--border);border-radius:2px;margin-top:3px;overflow:hidden">
+              <div style="height:100%;width:${pct !== null ? pct : 0}%;background:${barColor};border-radius:2px;transition:width .3s"></div>
+            </div>
+          </div>
+          <span style="font-size:11px;font-weight:700;color:var(--text);min-width:30px;text-align:right">${pct !== null ? pct + '%' : '—'}</span>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+function renderTechStackForm() {
+  const allQs = TS_CATS.flatMap(c => c.questions);
+  const answered = allQs.filter(q => tsState.answers[q.id]?.ans).length;
+  const overall = tsCalcScore(allQs);
+  const pct = allQs.length > 0 ? Math.round(answered / allQs.length * 100) : 0;
+
+  return `${renderTierBanner()}
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.85rem;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:17px;font-weight:700;margin-bottom:4px">🖥️ Technology Stack Survey</div>
+      <div style="font-size:12px;color:var(--muted)">Answer questions across all 10 categories, then save to record your maturity snapshot</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-outline btn-sm" onclick="tsNavToDashboard()">← Back to Dashboard</button>
+    </div>
+  </div>
+
+  <div class="score-hero-ins" style="margin-bottom:1.25rem">
+    <div style="flex:1;display:flex;flex-direction:column;gap:10px">
+      <div>
+        <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:4px">Score So Far</div>
+        <div class="score-big" style="color:#fff">${overall !== null ? overall : '—'}<span style="font-size:18px">${overall !== null ? '%' : ''}</span></div>
+        <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:6px">${answered}/${allQs.length} questions answered</div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,.4);margin-bottom:3px"><span>${answered} of ${allQs.length}</span><span>${pct}%</span></div>
+        <div style="height:6px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:var(--cyan);border-radius:3px;transition:width .3s"></div>
+        </div>
+      </div>
+    </div>
+    <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+      <div>
+        <div style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:3px">Assessment Date</div>
+        <input type="date" value="${tsState.date || ''}" onchange="tsState.date=this.value"
+          style="padding:5px 8px;border-radius:6px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-family:Inter,sans-serif;font-size:12px;color-scheme:dark">
+      </div>
+      <div>
+        <div style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:3px">Conducted By</div>
+        <input type="text" value="${(tsState.conductedBy || '').replace(/"/g, '&quot;')}" placeholder="Assessor name" oninput="tsState.conductedBy=this.value"
+          style="padding:5px 8px;border-radius:6px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-family:Inter,sans-serif;font-size:12px;width:150px" autocomplete="off">
+      </div>
+    </div>
+  </div>
+
   ${TS_CATS.map(cat => {
     const isOpen = !!(tsState.openCats && tsState.openCats[cat.id]);
     const catScore = tsCalcScore(cat.questions);
-    const answeredHere = cat.questions.filter(q => tsState.answers[q.id] && tsState.answers[q.id].ans).length;
-    const pillClass = catScore===null?'':catScore>=70?'band-high':catScore>=40?'band-mid':'band-low';
+    const answeredHere = cat.questions.filter(q => tsState.answers[q.id]?.ans).length;
+    const done = answeredHere === cat.questions.length;
+    const started = answeredHere > 0 && !done;
+    const pillClass = catScore === null ? '' : catScore >= 70 ? 'band-high' : catScore >= 40 ? 'band-mid' : 'band-low';
     return `<div class="survey-panel">
       <div class="sph" onclick="tsToggleCat('${cat.id}')">
         <div style="display:flex;align-items:center;gap:8px;flex:1">
           <span style="font-size:18px">${cat.icon}</span>
-          <div><div style="font-size:13px;font-weight:700;color:var(--text)">${cat.title}</div>
-          <div style="font-size:11px;color:var(--muted)">${cat.desc}</div></div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text)">${cat.title}</div>
+            <div style="font-size:11px;color:var(--muted)">${cat.desc}</div>
+          </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
           <span style="font-size:10px;color:var(--muted)">${answeredHere}/${cat.questions.length}</span>
-          ${catScore!==null?`<span class="score-band ${pillClass}" style="font-size:10px;padding:2px 8px">${catScore}%</span>`:''}
-          <span style="font-size:12px;color:var(--muted);display:inline-block;${isOpen?'transform:rotate(180deg)':''}">&#9662;</span>
+          <span class="badge ${done ? 'b-green' : started ? 'b-amber' : 'b-gray'}">${done ? 'Done' : started ? 'In progress' : 'Not started'}</span>
+          ${catScore !== null ? `<span class="score-band ${pillClass}" style="font-size:10px;padding:2px 8px">${catScore}%</span>` : ''}
+          <span style="font-size:12px;color:var(--muted);display:inline-block;${isOpen ? 'transform:rotate(180deg)' : ''}">&#9662;</span>
         </div>
       </div>
-      <div class="spb ${isOpen?'open':''}">
+      <div class="spb ${isOpen ? 'open' : ''}">
         ${cat.questions.map(q => tsRenderQuestion(q)).join('')}
       </div>
     </div>`;
-  }).join('')}`;
+  }).join('')}
+
+  <div style="margin-top:.75rem;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <button class="btn btn-outline btn-sm" onclick="tsNavToDashboard()">← Back to Dashboard</button>
+    <button class="btn btn-outline btn-sm" onclick="tsExportSnapshot()">Export JSON</button>
+    <span style="flex:1"></span>
+    <button class="btn btn-cyan btn-sm" onclick="tsSaveAllResponses()" ${tsState.saving ? 'disabled' : ''}>${tsState.saving ? 'Saving…' : 'Save Assessment'}</button>
+  </div>`;
+}
+
+function drawTsTrend(sortedRuns) {
+  const canvas = document.getElementById('tsTrendChart');
+  if (!canvas || sortedRuns.length < 2) return;
+  const scores = sortedRuns.map(r => r.score);
+  const W = canvas.offsetWidth || 280; const H = 56;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+  const mn = Math.max(0, Math.min(...scores) - 10);
+  const mx = Math.min(100, Math.max(...scores) + 10);
+  const rng = mx - mn || 1;
+  const pts = scores.map((s, i) => ({
+    x: (i / (scores.length - 1)) * (W - 16) + 8,
+    y: H - 8 - ((s - mn) / rng) * (H - 16),
+  }));
+  ctx.beginPath(); ctx.strokeStyle = 'rgba(7,177,242,0.8)'; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+  pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+  ctx.stroke();
+  pts.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fillStyle = '#07B4D9'; ctx.fill(); });
+}
+
+function tsNavToDashboard() { if (tsState) { tsState.view = 'dashboard'; tsState.dirty = false; } tsRender(); }
+
+function tsStartNew() {
+  if (!tsState) return;
+  tsState.view = 'form';
+  tsState.date = new Date().toISOString().slice(0, 10);
+  tsState.openCats = { endpoint: true };
+  tsRender();
+}
+
+async function tsDeleteSnapshot(id) {
+  if (!confirm('Delete this assessment snapshot? The live survey responses will not be affected.')) return;
+  try {
+    await sb.techstack.deleteSnapshot(id);
+    delete orgAssessments[currentOrg.id];
+    await loadAssessments(currentOrg.id);
+    toast('Snapshot deleted', '#15803d');
+    tsRender();
+  } catch(e) {
+    toast('Delete failed: ' + e.message, '#dc2626');
+  }
 }
 
 function tsToggleCat(catId) {
@@ -617,10 +795,11 @@ function tsSetDetail(qid, detail) {
 }
 
 async function tsSaveAllResponses() {
-  if (!tsState || !currentOrg) { toast('Select an organisation first','#dc2626'); return; }
+  if (!tsState || !currentOrg) { toast('Select an organisation first', '#dc2626'); return; }
   if (tsState.saving) return;
   tsState.saving = true; tsRender();
   let saved = 0, failed = 0;
+  const today = tsState.date || new Date().toISOString().slice(0, 10);
   const allQs = TS_CATS.flatMap(c => c.questions.map(q => ({ ...q, category_id: c.id })));
   for (const q of allQs) {
     const a = tsState.answers[q.id];
@@ -631,19 +810,29 @@ async function tsSaveAllResponses() {
         category_id: q.category_id,
         tool_category: q.tool_category, question_type: q.question_type,
         derive_strategy: q.derive_strategy, answer: a.ans,
-        partial_detail: a.ans==='partial'?(a.detail||null):null,
-        assessed_at: new Date().toISOString().slice(0, 10),
+        partial_detail: a.ans === 'partial' ? (a.detail || null) : null,
+        assessed_at: today,
         updated_at: new Date().toISOString(),
       });
       saved++;
-    } catch(e) { console.warn('save failed',q.id,e); failed++; }
+    } catch(e) { console.warn('save failed', q.id, e); failed++; }
   }
   try {
     const score = tsCalcScore(allQs);
-    if (score!==null) await sb.techstack.saveSnapshot({org_id:currentOrg.id,module:'techstack',score,assessed_at:new Date().toISOString().slice(0,10)});
+    if (score !== null) {
+      await sb.techstack.saveSnapshot({
+        org_id: currentOrg.id, module: 'techstack', score,
+        assessed_at: today,
+        conducted_by: tsState.conductedBy || null,
+      });
+    }
   } catch {}
+  // Reload history so dashboard shows the new snapshot
+  delete orgAssessments[currentOrg.id];
+  await loadAssessments(currentOrg.id);
   tsState.saving = false; tsState.dirty = false;
-  toast(failed?`Saved ${saved}, ${failed} failed`:`${saved} responses saved`, failed?'#dc2626':'#15803d');
+  toast(failed ? `Saved ${saved}, ${failed} failed` : `${saved} responses saved`, failed ? '#dc2626' : '#15803d');
+  tsState.view = 'dashboard';
   tsRender();
 }
 

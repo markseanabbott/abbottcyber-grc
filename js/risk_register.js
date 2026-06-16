@@ -46,8 +46,9 @@ function renderRiskRegister() {
       <div class="module-title">Risk Register</div>
       <div class="module-sub">Consolidated view of identified risks — POAM gaps and manual entries</div>
     </div>
-    <div style="display:flex;gap:.5rem">
-      <button class="btn btn-outline btn-sm" onclick="rrSyncFromPoam()" title="Pull latest CIS POAM items into the register">↻ Sync from POAM</button>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <button class="btn btn-outline btn-sm" onclick="rrSyncFromPoam()" title="Pull latest CIS POAM gaps into the register">↻ CIS POAM</button>
+      <button class="btn btn-outline btn-sm" onclick="rrSyncFromAiPoam()" title="Pull latest AI Governance POAM gaps into the register">↻ AI Gov</button>
       <button class="btn btn-cyan btn-sm" onclick="rrOpenAdd()">+ Add Risk</button>
     </div>
   </div>
@@ -164,11 +165,14 @@ function rrTable(rows) {
 }
 
 function rrRow(r) {
-  const isPoam = r.source === 'cis_poam';
-  const idx    = rrState.rows.findIndex(x => x.id === r.id);
+  const isPoam   = r.source === 'cis_poam';
+  const isAiPoam = r.source === 'ai_poam';
+  const idx      = rrState.rows.findIndex(x => x.id === r.id);
 
   const sourceBadge = isPoam
     ? `<span class="badge b-navy" style="font-size:10px;padding:2px 7px">CIS POAM</span>`
+    : isAiPoam
+    ? `<span class="badge b-cyan" style="font-size:10px;padding:2px 7px">AI Gov</span>`
     : `<span class="badge" style="font-size:10px;padding:2px 7px;background:#f3f4f6;color:#374151">Manual</span>`;
 
   const refVal = r.safeguard_id || (r.control_number ? 'CIS ' + r.control_number : null);
@@ -179,10 +183,10 @@ function rrRow(r) {
   const title = `<div style="font-weight:600;color:var(--text);line-height:1.3">${esc(r.risk_title || '—')}</div>
     ${r.risk_description ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4;max-width:320px">${esc(r.risk_description)}</div>` : ''}`;
 
-  const actions = isPoam
+  const actions = (isPoam || isAiPoam)
     ? `<div style="display:flex;gap:.4rem;flex-wrap:nowrap">
         <button class="btn btn-outline btn-sm" onclick="rrOpenEditNotes(${idx})">Edit Notes</button>
-        <button class="btn btn-outline btn-sm" onclick="setNav('cis')" title="Manage status in the POAM" style="white-space:nowrap">→ POAM</button>
+        <button class="btn btn-outline btn-sm" onclick="setNav('${isPoam ? 'cis' : 'ai_unified'}')" title="Manage status in the POAM" style="white-space:nowrap">→ POAM</button>
        </div>`
     : `<div style="display:flex;gap:.4rem;flex-wrap:nowrap">
         ${(r.risk_status !== 'Accepted' && r.risk_status !== 'Closed')
@@ -215,7 +219,7 @@ function rrEmpty() {
     <div style="font-size:13px">
       ${isFiltered
         ? `Switch to "All" to see other statuses.`
-        : `Save a CIS POAM to populate from gaps, or click <strong>Add Risk</strong> for manual entries.`}
+        : `Save a CIS POAM or AI Governance POAM to populate from gaps, or click <strong>Add Risk</strong> for manual entries.`}
     </div>
   </div>`;
 }
@@ -282,12 +286,14 @@ function rrModalAdd() {
 }
 
 function rrModalEditNotes(r) {
+  const isAiPoam = r.source === 'ai_poam';
+  const sourceLine = isAiPoam
+    ? `<span class="badge b-cyan" style="font-size:10px">AI Gov</span>&nbsp;<strong style="color:var(--text)">${esc(r.risk_title || r.safeguard_id || '')}</strong> — status is managed in the AI Governance POAM.`
+    : `<span class="badge b-navy" style="font-size:10px">CIS POAM</span>&nbsp;<strong style="color:var(--text)">${esc(r.risk_title || r.safeguard_id || '')}</strong> — status and title are managed in the POAM.`;
   return `
   <div class="modal-header"><span>Edit Risk Notes</span><button class="modal-close" onclick="rrCloseModal()">✕</button></div>
   <div style="padding:.5rem 1.5rem .25rem;font-size:12px;color:var(--muted)">
-    <span class="badge b-navy" style="font-size:10px">CIS POAM</span>&nbsp;
-    <strong style="color:var(--text)">${esc(r.risk_title || r.safeguard_id || '')}</strong>
-    — status and title are managed in the POAM.
+    ${sourceLine}
   </div>
   <div class="modal-body" style="display:grid;gap:.75rem">
     ${rrSelect('residual_risk_rating','Residual Risk Rating (your professional judgement)',['Critical','High','Medium','Low'],r.residual_risk_rating || '')}
@@ -557,7 +563,60 @@ async function rrSyncFromPoam() {
   } catch(e) {
     console.error('rrSyncFromPoam failed:', e);
     toast('Sync failed: ' + e.message, '#dc2626');
-    if (syncBtn) { syncBtn.disabled = false; syncBtn.textContent = '↻ Sync from POAM'; }
+    if (syncBtn) { syncBtn.disabled = false; syncBtn.textContent = '↻ CIS POAM'; }
+  }
+}
+
+async function rrSyncFromAiPoam() {
+  if (!currentOrg?.id) return;
+  const aiSessions = (typeof orgAssessments !== 'undefined' && orgAssessments[currentOrg.id])
+    ? (orgAssessments[currentOrg.id]['ai_unified'] || [])
+    : [];
+  const withPoam = [...aiSessions]
+    .filter(r => r.answers?._poam)
+    .sort((a, b) => new Date(a.date) - new Date(b.date)); // oldest→newest, most recent wins
+  if (!withPoam.length) {
+    toast('No AI Governance POAM found — open a POAM and save it first', '#ea580c');
+    return;
+  }
+  const syncBtn = document.querySelector('[onclick="rrSyncFromAiPoam()"]');
+  if (syncBtn) { syncBtn.disabled = true; syncBtn.textContent = '↻ Syncing…'; }
+  try {
+    for (const session of withPoam) {
+      const poamData = JSON.parse(session.answers._poam || '{}');
+      const items = [];
+      for (const [ctrlId, poamItem] of Object.entries(poamData)) {
+        if (!poamItem?.status) continue;
+        const ctrl = (typeof AI_UNIFIED_CONTROLS !== 'undefined' ? AI_UNIFIED_CONTROLS : []).find(c => c.id === ctrlId);
+        if (!ctrl) continue;
+        const riskStatus = poamItem.status === 'complete' ? 'Closed'
+          : poamItem.status === 'accepted' ? 'Accepted'
+          : poamItem.status === 'in_progress' ? 'In Progress'
+          : 'Open';
+        const w = ctrl.weight || 3;
+        const inherent = w >= 5 ? 'Critical' : w >= 4 ? 'High' : w >= 3 ? 'Medium' : 'Low';
+        items.push({
+          safeguard_id:         ctrlId,
+          risk_title:           ctrl.title,
+          risk_description:     ctrl.desc || ctrl.title,
+          inherent_risk_rating: inherent,
+          risk_status:          riskStatus,
+          risk_owner:           poamItem.owner || '',
+          treatment_notes:      poamItem.notes || '',
+          due_date:             poamItem.targetDate || '',
+        });
+      }
+      if (items.length) await sb.riskRegister.syncAi(currentOrg.id, session.id, items);
+    }
+    const rows = await sb.riskRegister.getForOrg(currentOrg.id);
+    rrState.rows = Array.isArray(rows) ? rows : [];
+    rrState.orgId = currentOrg.id;
+    toast('Risk register synced from AI Governance POAM', '#15803d');
+    rrRefresh();
+  } catch(e) {
+    console.error('rrSyncFromAiPoam failed:', e);
+    toast('Sync failed: ' + e.message, '#dc2626');
+    if (syncBtn) { syncBtn.disabled = false; syncBtn.textContent = '↻ AI Gov'; }
   }
 }
 

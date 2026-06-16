@@ -83,8 +83,8 @@ sb.profiles = {
 sb.techstack = {
   getResponses: (orgId) => sbFetch(`techstack_responses?org_id=eq.${orgId}&select=*`),
   upsertResponse: (row) => sbFetch('techstack_responses', 'POST', row, { Prefer: 'resolution=merge-duplicates,return=representation' }),
-  // Snapshot to assessments table for trend tracking (same pattern as insurance module)
   saveSnapshot: (d) => sbFetch('assessments', 'POST', d),
+  deleteSnapshot: (id) => sbFetch(`assessments?id=eq.${id}`, 'DELETE'),
 };
 
 // Third-Party Risk Assessment persistence layer
@@ -170,10 +170,16 @@ sb.riskRegister = {
   getForOrg: (orgId) => sbFetch(
     `risk_register?org_id=eq.${orgId}&order=created_at.asc`
   ),
-  // Sync all POAM items for an assessment into the risk register
+  // Sync CIS POAM items for an assessment into the risk register
   sync: (orgId, assessmentId) => sbFetch('rpc/sync_cis_poam_to_risk_register', 'POST', {
     p_org_id:        orgId,
     p_assessment_id: assessmentId,
+  }),
+  // Sync AI Governance POAM items — accepts pre-built items array from JS (PATCH_020)
+  syncAi: (orgId, assessmentId, items) => sbFetch('rpc/sync_ai_poam_to_risk_register', 'POST', {
+    p_org_id:        orgId,
+    p_assessment_id: assessmentId,
+    p_items:         items,
   }),
   // Add a manual risk entry
   add: (row) => sbFetch('risk_register', 'POST', row, { Prefer: 'return=representation' }),
