@@ -456,6 +456,7 @@ function tsInit() {
     view: 'dashboard',  // 'dashboard' | 'form'
     conductedBy: '',
     date: new Date().toISOString().slice(0, 10),
+    editId: null,       // assessment id being edited, null = new snapshot
   };
 }
 
@@ -616,7 +617,8 @@ function renderTechStackDashboard() {
             </td>
             <td style="padding:.65rem .75rem"><span class="score-band ${band}" style="font-size:11px;padding:2px 8px">${sc}%</span></td>
             <td style="padding:.65rem .75rem;font-size:12px;color:var(--muted)">${r.conductedBy || '—'}</td>
-            <td style="padding:.65rem .75rem;text-align:right">
+            <td style="padding:.65rem .75rem;text-align:right;white-space:nowrap">
+              <button class="btn btn-outline btn-sm" onclick="tsEditSnapshot('${r.id}')" style="margin-right:4px">Edit</button>
               <button class="btn btn-red btn-sm" onclick="tsDeleteSnapshot('${r.id}')">Delete</button>
             </td>
           </tr>`;
@@ -656,7 +658,7 @@ function renderTechStackForm() {
   <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.85rem;flex-wrap:wrap;gap:8px">
     <div>
       <div style="font-size:17px;font-weight:700;margin-bottom:4px">🖥️ Technology Stack Survey</div>
-      <div style="font-size:12px;color:var(--muted)">Answer questions across all 10 categories, then save to record your maturity snapshot</div>
+      <div style="font-size:12px;color:var(--muted)">${tsState.editId ? 'Editing snapshot — update responses, date, or conducted by, then save' : 'Answer questions across all 10 categories, then save to record your maturity snapshot'}</div>
     </div>
     <div style="display:flex;gap:6px">
       <button class="btn btn-outline btn-sm" onclick="tsNavToDashboard()">← Back to Dashboard</button>
@@ -724,7 +726,7 @@ function renderTechStackForm() {
     <button class="btn btn-outline btn-sm" onclick="tsNavToDashboard()">← Back to Dashboard</button>
     <button class="btn btn-outline btn-sm" onclick="tsExportSnapshot()">Export JSON</button>
     <span style="flex:1"></span>
-    <button class="btn btn-cyan btn-sm" onclick="tsSaveAllResponses()" ${tsState.saving ? 'disabled' : ''}>${tsState.saving ? 'Saving…' : 'Save Assessment'}</button>
+    <button class="btn btn-cyan btn-sm" onclick="tsSaveAllResponses()" ${tsState.saving ? 'disabled' : ''}>${tsState.saving ? 'Saving…' : tsState.editId ? 'Update Assessment' : 'Save Assessment'}</button>
   </div>`;
 }
 
@@ -749,7 +751,7 @@ function drawTsTrend(sortedRuns) {
   pts.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fillStyle = '#07B4D9'; ctx.fill(); });
 }
 
-function tsNavToDashboard() { if (tsState) { tsState.view = 'dashboard'; tsState.dirty = false; } tsRender(); }
+function tsNavToDashboard() { if (tsState) { tsState.view = 'dashboard'; tsState.dirty = false; tsState.editId = null; } tsRender(); }
 
 function tsStartNew() {
   if (!tsState) return;
@@ -770,6 +772,19 @@ async function tsDeleteSnapshot(id) {
   } catch(e) {
     toast('Delete failed: ' + e.message, '#dc2626');
   }
+}
+
+function tsEditSnapshot(id) {
+  if (!tsState) return;
+  const runs = ((orgAssessments[currentOrg?.id] || {})['techstack'] || []);
+  const run = runs.find(r => r.id === id);
+  if (!run) return;
+  tsState.editId = id;
+  tsState.date = run.date;
+  tsState.conductedBy = run.conductedBy || '';
+  tsState.view = 'form';
+  tsState.openCats = { endpoint: true };
+  tsRender();
 }
 
 function tsToggleCat(catId) {
@@ -820,11 +835,18 @@ async function tsSaveAllResponses() {
   try {
     const score = tsCalcScore(allQs);
     if (score !== null) {
-      await sb.techstack.saveSnapshot({
-        org_id: currentOrg.id, module: 'techstack', score,
-        assessed_at: today,
-        conducted_by: tsState.conductedBy || null,
-      });
+      if (tsState.editId) {
+        await sb.updateAssessment(tsState.editId, {
+          score, assessed_at: today, conducted_by: tsState.conductedBy || null,
+        });
+        tsState.editId = null;
+      } else {
+        await sb.techstack.saveSnapshot({
+          org_id: currentOrg.id, module: 'techstack', score,
+          assessed_at: today,
+          conducted_by: tsState.conductedBy || null,
+        });
+      }
     }
   } catch {}
   // Reload history so dashboard shows the new snapshot

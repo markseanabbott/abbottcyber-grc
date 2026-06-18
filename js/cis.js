@@ -674,6 +674,28 @@ const CIS_HINTS = {
   '18.5':{ asset:'N/A',         fn:'Identify' },
 };
 
+// Short scope description per control — shown in assessment form header and used for context
+const CIS_CONTROL_SCOPE = {
+  1:  'Scope: all hardware that connects to or interacts with your environment — laptops, desktops, servers, phones, network gear, and IoT.',
+  2:  'Scope: all software installed on enterprise devices — operating systems, applications, utilities, and third-party libraries.',
+  3:  'Scope: sensitive data at rest, in transit, and in use — classification, encryption, access controls, and the full data lifecycle from creation to disposal.',
+  4:  'Scope: hardening of operating systems, applications, and network devices — removing defaults, disabling unused services, and enforcing secure baselines.',
+  5:  'Scope: user, admin, and service accounts — provisioning, deprovisioning, privilege assignment, and enforcement of least privilege.',
+  6:  'Scope: who can access which systems, data, and resources — role-based access, MFA, remote access controls, and privileged access management.',
+  7:  'Scope: patch management and remediation of known vulnerabilities across all assets — scanning cadence, prioritisation, and remediation timelines.',
+  8:  'Scope: logging across systems, applications, and network devices — what to log, retention periods, centralisation, and tamper protection.',
+  9:  'Scope: email filtering, anti-phishing, DNS filtering, and web browsing controls — primarily gateway and endpoint-level protections.',
+  10: 'Scope: anti-malware, EDR, and behaviour-based detection across endpoints and servers — signature updates, scanning schedules, and automated response.',
+  11: 'Scope: backup processes and tested restoration capabilities — backup scope, frequency, storage location, and recovery time validation.',
+  12: 'Scope: routers, switches, firewalls, and network device configuration — segmentation, secure protocols, and change management.',
+  13: 'Scope: traffic analysis, intrusion detection/prevention, and anomaly detection across the network perimeter and internal segments.',
+  14: 'Scope: security education for all staff, plus role-specific training for IT and security personnel — phishing simulations and policy acknowledgements.',
+  15: 'Scope: third-party vendors, cloud providers, and managed services — vendor risk assessment, contractual obligations, and ongoing monitoring.',
+  16: 'Scope: custom-built and third-party applications, including web apps and APIs — SDLC practices, secure code review, dependency management, and web application scanning.',
+  17: 'Scope: IR planning, team roles, detection, containment, and post-incident review — communication plans and regulatory notification requirements.',
+  18: 'Scope: adversarial testing of systems, networks, and applications — internal/external pen tests, red team exercises, and remediation validation.',
+};
+
 const CIS_ASSET_STYLE = {
   Devices:      { bg:'#dbeafe', txt:'#1e40af', icon:'🖥' },
   Software:     { bg:'#ede9fe', txt:'#6d28d9', icon:'📦' },
@@ -695,11 +717,12 @@ const CIS_FN_STYLE = {
 function cisHintBadges(sf) {
   const h = CIS_HINTS[sf];
   if (!h) return '';
+  const ctrl = parseInt(sf);
   const a = CIS_ASSET_STYLE[h.asset] || CIS_ASSET_STYLE['N/A'];
   const f = CIS_FN_STYLE[h.fn]   || CIS_FN_STYLE.Protect;
   return `<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:${a.bg};color:${a.txt};white-space:nowrap">${a.icon} ${h.asset}</span>`
        + `<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:${f.bg};color:${f.txt};white-space:nowrap">${h.fn}</span>`
-       + `<a href="https://www.cisecurity.org/controls/v8" target="_blank" rel="noopener" style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:#f0f4ff;color:#152168;text-decoration:none;white-space:nowrap">CIS ↗</a>`;
+       + `<a href="https://cas.docs.cisecurity.org/en/latest/source/Controls${ctrl}/" target="_blank" rel="noopener" style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:#f0f4ff;color:#152168;text-decoration:none;white-space:nowrap">CIS ↗</a>`;
 }
 
 // ── REPORT ACCORDION LAYER MAP ────────────────────────────────────────────────
@@ -1264,6 +1287,7 @@ function renderCISForm() {
           <div>
             <div class="cis-ctrl-name" style="font-size:13px">${ctrl.name}</div>
             <div style="font-size:10px;color:var(--muted)">${ctrl.safeguards.length} safeguard${ctrl.safeguards.length !== 1 ? 's' : ''} · ${answeredInScope}/${scopedSfs.length}${goal ? ' in scope' : ''} answered</div>
+            ${CIS_CONTROL_SCOPE[ctrlNum] ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;font-style:italic">${CIS_CONTROL_SCOPE[ctrlNum]}</div>` : ''}
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">

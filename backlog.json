@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.1.4",
   "created": "2026-05-14",
-  "updated": "2026-06-16 (session 26)",
+  "updated": "2026-06-18 (session 27)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -184,7 +184,7 @@
           "id": "ts3",
           "text": "Technical maturity score: pre-populated baseline before manual survey questions are answered",
           "done": true,
-          "notes": "Overall + per-category maturity computed live (Yes=1, Partial=0.5, No=0, NA=excluded). Snapshot writes to assessments table with module='techstack' on save, feeding the dashboard score dot. Session 26: full dashboard/form split added — renderTechStackDashboard() shows navy score hero with live maturity %, 8-cell category mini-grid, trend canvas (drawTsTrend, ≥2 runs), assessment history table with date/score/conductedBy/Delete, and 10-category breakdown bars. renderTechStackForm() extracted with back button + always-visible save footer. tsNavToDashboard(), tsStartNew(), tsDeleteSnapshot() added. tsSaveAllResponses() now saves conducted_by, reloads history via delete+loadAssessments, switches to dashboard view on success."
+          "notes": "Overall + per-category maturity computed live (Yes=1, Partial=0.5, No=0, NA=excluded). Snapshot writes to assessments table with module='techstack' on save, feeding the dashboard score dot. Session 26: full dashboard/form split added — renderTechStackDashboard() shows navy score hero with live maturity %, 8-cell category mini-grid, trend canvas (drawTsTrend, ≥2 runs), assessment history table with date/score/conductedBy/Delete, and 10-category breakdown bars. renderTechStackForm() extracted with back button + always-visible save footer. tsNavToDashboard(), tsStartNew(), tsDeleteSnapshot() added. tsSaveAllResponses() now saves conducted_by, reloads history via delete+loadAssessments, switches to dashboard view on success. Session 27: Edit button added to each history row — tsEditSnapshot(id) looks up run in orgAssessments, pre-fills date/conductedBy, sets tsState.editId, opens form. tsSaveAllResponses() PATCHes existing record (sb.updateAssessment) when editId is set, then clears it. Form subtitle and save button text reflect edit vs new mode. tsNavToDashboard() clears editId."
         },
         {
           "id": "ts4",
@@ -249,6 +249,12 @@
           "text": "CIS POAM (Plan of Action & Milestones): per-assessment gap report with Assigned To, Target Date, Risk Decision (Remediate/Accept/Transfer), Rationale, Status columns. Excel export with logo placeholder row. POAM button on each assessment history row.",
           "done": true,
           "notes": "Built. cis_poam_items table (PATCH_008). renderCISPoam(), cisOpenPoam(), cisSavePoam(), cisExportPoam(). Logo row placeholder in Excel export (row 1) — full logo upload is backlogged."
+        },
+        {
+          "id": "cis_ux1",
+          "text": "CIS control scope descriptions in Gap Report and POAM — CIS_CONTROL_SCOPE descriptions are shown in the assessment accordion (session 27) but not yet in cisOpenGapReport() or renderCISPoam(). Add scope as a sub-line under each control group header in both views.",
+          "done": false,
+          "priority": "Low"
         },
         {
           "id": "cis_poam_rem",
