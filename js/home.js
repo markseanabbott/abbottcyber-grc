@@ -64,6 +64,7 @@ function renderHome() {
   if (canAssessments) panels.push(_homeAssessmentsChicklet(h));
   if (canRisk)        panels.push(_homeRiskChicklet(rrRows, rrLoaded));
   if (canAI)          panels.push(_homeAiChicklet(h));
+  if (canAssessments && (h['cis'] || []).length > 0) panels.push(_homeCisRadarChicklet(h));
 
   const noPanels = panels.length === 0;
 
@@ -224,11 +225,40 @@ function _homeAiChicklet(h) {
   </div>`;
 }
 
+function _homeCisRadarChicklet(h) {
+  const runs = [...(h['cis'] || [])].sort((a, b) => (b.date||'').localeCompare(a.date||''));
+  const latest = runs[0];
+  if (!latest) return '';
+  const scoreVal = latest.score ?? null;
+  const scoreColor = scoreVal !== null ? (scoreVal >= 70 ? '#15803d' : scoreVal >= 40 ? '#b45309' : '#dc2626') : 'var(--muted)';
+  const goal = (latest.answers || {})._goal;
+  const igCols = { ig1: { bg: '#dcfce7', txt: '#15803d' }, ig2: { bg: '#dbeafe', txt: '#1d4ed8' }, ig3: { bg: '#ede9fe', txt: '#6d28d9' } };
+  const igC = igCols[goal];
+
+  return `<div class="card" style="padding:0;overflow:hidden;cursor:pointer" onclick="setNav('cis')" onmouseover="this.style.boxShadow='0 0 0 2px var(--cyan)'" onmouseout="this.style.boxShadow=''">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .9rem .5rem;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:13px;font-weight:700">✅ CIS Controls</div>
+        <div style="font-size:10px;color:var(--muted)">Last run: ${latest.date || '—'}${goal && igC ? ' · <span style="font-weight:700;color:' + igC.txt + '">' + goal.toUpperCase() + '</span>' : ''}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:1.3rem;font-weight:800;color:${scoreColor}">${scoreVal !== null ? scoreVal + '%' : '—'}</div>
+        <div style="font-size:10px;color:var(--muted)">Overall</div>
+      </div>
+    </div>
+    <div style="padding:.5rem .75rem .5rem">
+      <canvas id="home-cis-radar" style="display:block;width:100%;height:240px"></canvas>
+    </div>
+    <div style="padding:.35rem .9rem .75rem;text-align:center;font-size:11px;color:var(--cyan);font-weight:700">→ CIS Controls Assessment</div>
+  </div>`;
+}
+
 // ─── CHART DRAWING ────────────────────────────────────────────────────────────
 
 function drawHomeCharts() {
   _drawHomeAssessmentTrends();
   _drawHomeAiRadar();
+  _drawHomeCisRadar();
 }
 
 function _drawHomeAssessmentTrends() {
@@ -276,6 +306,22 @@ function _drawHomeAiRadar() {
   // Map null pct → 0 so all 9 groups always show as axes on the radar
   const groupScores = aiuCalcGroupScores(answers, fw).map(g => ({ ...g, pct: g.pct ?? 0 }));
   aiuDrawRadar('home-ai-radar', groupScores);
+}
+
+function _drawHomeCisRadar() {
+  const h = orgAssessments[currentOrg?.id] || {};
+  const runs = [...(h['cis'] || [])].sort((a, b) => (b.date||'').localeCompare(a.date||''));
+  const latest = runs[0];
+  if (!latest) return;
+  const canvas = document.getElementById('home-cis-radar');
+  if (!canvas) return;
+  const W = canvas.offsetWidth || 260;
+  canvas.setAttribute('width', W);
+  canvas.setAttribute('height', 240);
+  const answers = Object.fromEntries(Object.entries(latest.answers || {}).filter(([k]) => !k.startsWith('_')));
+  const goal = (latest.answers || {})._goal;
+  const goalN = { ig1: 1, ig2: 2, ig3: 3 }[goal] || 3;
+  cisDrawRadar('home-cis-radar', answers, goalN);
 }
 
 // ============================================================
