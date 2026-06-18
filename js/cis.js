@@ -1294,8 +1294,8 @@ function renderCISForm() {
   Object.entries(controls).forEach(([ctrlNum, ctrl]) => {
     const isOpen = cisState.openPanels[`ctrl_${ctrlNum}`];
     const scopedSfs = goal ? ctrl.safeguards.filter(s => s.ig <= goalN) : ctrl.safeguards;
-    // Apply IG filter for display only — stats still based on full scope
-    const displaySfs = filterN ? scopedSfs.filter(s => s.ig === filterN) : scopedSfs;
+    // Apply IG filter against all safeguards (not just scoped) so IG3 shows even on IG2 goal
+    const displaySfs = filterN ? ctrl.safeguards.filter(s => s.ig === filterN) : scopedSfs;
     if (displaySfs.length === 0) return; // hide panel entirely when filter yields nothing
 
     const answeredInScope = scopedSfs.filter(s => cisState.answers[s.sf] != null).length;
