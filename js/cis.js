@@ -1083,7 +1083,8 @@ function renderCISDashboard() {
       // cisIgProgress returns exclusive-tier counts: ig===1 only, ig===2 only, ig===3 only
       const prog = cisIgProgress(cleanAns);
       const p1 = prog[0], p2 = prog[1], p3 = prog[2];
-      const d1 = p1.yes + p1.partial, d2 = p2.yes + p2.partial, d3 = p3.yes + p3.partial;
+      // Partial = 0.5 points (matches cisCalcScore weighting)
+      const d1 = p1.yes + p1.partial * 0.5, d2 = p2.yes + p2.partial * 0.5, d3 = p3.yes + p3.partial * 0.5;
       const s1 = p1.total - p1.na, s2 = p2.total - p2.na, s3 = p3.total - p3.na;
       const igGoal = (r.answers && r.answers._goal) || '';
       const igGoalN = { ig1: 1, ig2: 2, ig3: 3 }[igGoal] || 3;
@@ -1095,6 +1096,9 @@ function renderCISDashboard() {
       const igC = igBadgeCols[igGoal] || { bg: '#f1f5f9', txt: '#5a6a8a' };
       const by = r.conductedBy || '—';
       const isLatest = origIdx === latestIdx;
+      // IG3 greyed when not in scope for this assessment's goal
+      const ig3InScope = igGoalN >= 3;
+      const ig3Style = ig3InScope ? '' : 'opacity:0.35;';
       html += `<tr style="border-bottom:1px solid var(--border)">
         <td style="padding:8px 10px;font-weight:${isLatest ? '700' : '400'};white-space:nowrap">
           ${r.date || '—'}
@@ -1102,7 +1106,7 @@ function renderCISDashboard() {
         </td>
         <td style="padding:8px 8px;text-align:center">${pctCell(d1, s1)}</td>
         <td style="padding:8px 8px;text-align:center">${pctCell(d2, s2)}</td>
-        <td style="padding:8px 8px;text-align:center">${pctCell(d3, s3)}</td>
+        <td style="padding:8px 8px;text-align:center;${ig3Style}">${s3 > 0 ? pctCell(d3, s3) : '<span style="color:#cbd5e1">—</span>'}</td>
         <td style="padding:8px 8px;text-align:center"><span style="font-size:13px;font-weight:700;color:${totalCol}">${pctTotal}%</span></td>
         <td style="padding:8px 10px">${igGoal ? `<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:${igC.bg};color:${igC.txt}">${igGoal.toUpperCase()}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
         <td style="padding:8px 10px;color:var(--muted)">${by}</td>
