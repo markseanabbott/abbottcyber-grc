@@ -137,7 +137,7 @@ async function selectOrg(id) {
   tpraState = null;  // TPRA state is per-org — force reload on next view
   nistAiState = { answers: {}, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '' };
   iso42001State = { answers: {}, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '' };
-  aiUnifiedState = { answers: {}, frameworks: { nist: true, iso: true }, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '', poamRun: null, poamItems: {} };
+  aiUnifiedState = { answers: {}, frameworks: { nist: true, iso: true }, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '', poamRun: null, poamItems: {}, matrixRuns: [], matrixGroup: 'g1' };
   if (ttState) { ttState.completedSessions = null; ttState.historicalSession = null; }
   exHubState = { opSessions: null };
   await loadAssessments(id);

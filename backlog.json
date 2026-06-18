@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.1.5",
   "created": "2026-05-14",
-  "updated": "2026-06-18 (session 30)",
+  "updated": "2026-06-18 (session 31)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1635,7 +1635,7 @@
           "id": "ai5",
           "text": "Unified AI Governance Assessment — 44-question NIST AI RMF × ISO 42001 cross-walk module; weighted gap prioritisation (weight × deficit), top-5 gap view, POAM, exec report, framework toggles (NIST on/off, ISO on/off), AI prompt export; replaces separate NIST and ISO modules in nav",
           "done": true,
-          "notes": "js/ai_unified.js (AI_UNIFIED_CONTROLS 44q, 9 groups, aiuCalcScore/aiuWeightedGaps/aiuCalcGroupScores, full render suite). ai_hub.js updated to read from ai_unified. Saves to assessments with module=ai_unified. POAM stored in answers._poam blob. Session 13: AI_REMEDIATION lookup added (all 44 controls); POAM rows now show '💡 Suggested Action' block with concrete remediation guidance inline under each gap."
+          "notes": "js/ai_unified.js (AI_UNIFIED_CONTROLS 44q, 9 groups, aiuCalcScore/aiuWeightedGaps/aiuCalcGroupScores, full render suite). ai_hub.js updated to read from ai_unified. Saves to assessments with module=ai_unified. POAM stored in answers._poam blob. Session 13: AI_REMEDIATION lookup added (all 44 controls); POAM rows now show '💡 Suggested Action' block with concrete remediation guidance inline under each gap. Session 31: visual equalisation to CIS pattern — assessment history table headers now framework-coloured (Overall=navy, NIST=#1d4ed8, ISO=#0f766e); action button inline size overrides removed (now use standard .btn-sm); history card toolbar now has ⊞ Compare Matrix + 📋 POAM + + New Assessment buttons; Compare Matrix view added (aiuOpenMatrix/renderAiUnifiedMatrix/aiuMatrixAnswer) — last 5 assessments side-by-side with 9-group filter, click-to-cycle answers (Yes→Partial→No→N/A→Clear), auto-save to Supabase; Word export added (aiuExportWord) — canvas gauge, canvas radar, domain table, top 5 gaps, commentary; exec report score card changed from white card to .score-hero-ins navy hero matching CIS style; Domain Coverage progress bars added below hero; radar draw now triggered in aiuOpenReport() setTimeout."
         },
         {
           "id": "ai6",
@@ -1653,7 +1653,7 @@
           "id": "ai12",
           "text": "AI Governance Executive Report — maturity pyramid (read-only, status derived from AIG answers) + 9-spoke domain radar chart replacing group breakdown bars; pyramid and radar both init from app.js setTimeout on report view load",
           "done": true,
-          "notes": "Session 13: renderAiUnifiedExecReport() updated — Group Breakdown card replaced with aiurep-radar canvas (aiuDrawRadar()); renderAiPyramidCard('aiurep',false) inserted between radar and Top Priority Gaps. aiuBuildPyramidState(answers) maps AIG answers to pyramid statuses (yes→green, partial→yellow, no→red) via AI_PYR_MAP. app.js setTimeout extended to draw radar + init pyramid when aiUnifiedState.view==='report'."
+          "notes": "Session 13: renderAiUnifiedExecReport() updated — Group Breakdown card replaced with aiurep-radar canvas (aiuDrawRadar()); renderAiPyramidCard('aiurep',false) inserted between radar and Top Priority Gaps. aiuBuildPyramidState(answers) maps AIG answers to pyramid statuses (yes→green, partial→yellow, no→red) via AI_PYR_MAP. app.js setTimeout extended to draw radar + init pyramid when aiUnifiedState.view==='report'. Session 31: score card changed from white card to .score-hero-ins navy hero; Domain Coverage progress-bar section added; radar canvas moved into hero card right panel; domain breakdown white card removed; 📄 Export Word button added to report header toolbar."
         },
         {
           "id": "ai10",
@@ -1718,6 +1718,18 @@
           "text": "AI governance crosswalk with recommendations — map AI Governance Assessment gaps across NIST AI RMF, ISO 42001, EU AI Act, and PIPEDA/provincial AI obligations. For each gap, surface which frameworks require remediation and provide a prioritised recommendation. Builds on AI_REMEDIATION and existing framework mappings.",
           "done": false,
           "priority": "Medium"
+        },
+        {
+          "id": "ai17",
+          "text": "AI Governance exec report Print / Save as PDF button — add a 'Print' button on the exec report view that calls window.print() with @media print CSS. Same pattern as cis_report_print backlog item. Pyramid and radar charts already rendered as canvases so they will print correctly.",
+          "done": false,
+          "priority": "Medium"
+        },
+        {
+          "id": "ai18",
+          "text": "Wire auditLog() into AI Governance assessment saves — aiuSave(), aiuSavePoam(), and aiuDeleteConfirm() currently have no audit trail. Pattern is identical to cis.js audit calls (session 17). Needed for full platform audit coverage.",
+          "done": false,
+          "priority": "Low"
         }
       ]
     }

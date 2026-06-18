@@ -167,4 +167,4 @@ let cisState = { answers: {}, openPanels: {}, orgId: null, view: 'dashboard', ed
 let tpraState = null;  // Third-Party Risk Assessment state; per-org, hydrated on enter.
 let nistAiState = { answers: {}, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '' };
 let iso42001State = { answers: {}, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '' };
-let aiUnifiedState = { answers: {}, frameworks: { nist: true, iso: true }, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '', poamRun: null, poamItems: {} };
+let aiUnifiedState = { answers: {}, frameworks: { nist: true, iso: true }, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '', poamRun: null, poamItems: {}, matrixRuns: [], matrixGroup: 'g1' };

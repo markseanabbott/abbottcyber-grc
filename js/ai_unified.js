@@ -409,6 +409,7 @@ function renderAiUnified() {
     case 'gap':    return renderAiUnifiedGapReport();
     case 'poam':   return renderAiUnifiedPoam();
     case 'report': return renderAiUnifiedExecReport();
+    case 'matrix': return renderAiUnifiedMatrix();
     default:       return renderAiUnifiedDashboard();
   }
 }
@@ -528,7 +529,11 @@ function renderAiUnifiedDashboard() {
   <div class="card" style="padding:1.25rem">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;flex-wrap:wrap;gap:8px">
       <div style="font-size:14px;font-weight:700;color:var(--text)">Assessment History</div>
-      <button class="btn btn-cyan btn-sm" onclick="aiuStartNew()">+ New Assessment</button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-outline btn-sm" onclick="aiuOpenMatrix()">⊞ Compare Matrix</button>
+        <button class="btn btn-outline btn-sm" onclick="aiuOpenPoam(-1)">📋 POAM</button>
+        <button class="btn btn-cyan btn-sm" onclick="aiuStartNew()">+ New Assessment</button>
+      </div>
     </div>`;
 
   if (!runs.length) {
@@ -542,9 +547,9 @@ function renderAiUnifiedDashboard() {
     html += `<table style="width:100%;border-collapse:collapse;font-size:13px">
       <thead><tr style="border-bottom:2px solid var(--border)">
         <th style="text-align:left;padding:7px 10px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Date</th>
-        <th style="text-align:center;padding:7px 8px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Overall</th>
-        <th style="text-align:center;padding:7px 8px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">NIST</th>
-        <th style="text-align:center;padding:7px 8px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">ISO</th>
+        <th style="text-align:center;padding:7px 8px;font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.05em">Overall</th>
+        <th style="text-align:center;padding:7px 8px;font-size:11px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:.05em">NIST</th>
+        <th style="text-align:center;padding:7px 8px;font-size:11px;font-weight:700;color:#0f766e;text-transform:uppercase;letter-spacing:.05em">ISO</th>
         <th style="text-align:left;padding:7px 10px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Conducted By</th>
         <th style="text-align:right;padding:7px 10px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Actions</th>
       </tr></thead>
@@ -575,11 +580,11 @@ function renderAiUnifiedDashboard() {
         <td style="padding:8px 10px;color:var(--muted)">${escH(r.conductedBy||'—')}</td>
         <td style="padding:8px 10px;text-align:right">
           <div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap">
-            <button class="btn btn-outline btn-sm" onclick="aiuOpenAssessment(${origIdx})" style="font-size:11px;padding:3px 8px">✏️ Edit</button>
-            <button class="btn btn-outline btn-sm" onclick="aiuOpenGapReport(${origIdx})" style="font-size:11px;padding:3px 8px">🔍 Gaps</button>
-            <button class="btn btn-outline btn-sm" onclick="aiuOpenPoam(${origIdx})" style="font-size:11px;padding:3px 8px">📋 POAM</button>
-            <button class="btn btn-outline btn-sm" onclick="aiuOpenReport(${origIdx})" style="font-size:11px;padding:3px 8px">📊 Report</button>
-            <button class="btn btn-red btn-sm" onclick="aiuDeleteConfirm(${origIdx})" style="font-size:11px;padding:3px 8px">🗑</button>
+            <button class="btn btn-outline btn-sm" onclick="aiuOpenAssessment(${origIdx})">✏️ Edit</button>
+            <button class="btn btn-outline btn-sm" onclick="aiuOpenGapReport(${origIdx})">🔍 Gaps</button>
+            <button class="btn btn-outline btn-sm" onclick="aiuOpenPoam(${origIdx})">📋 POAM</button>
+            <button class="btn btn-outline btn-sm" onclick="aiuOpenReport(${origIdx})">📊 Report</button>
+            <button class="btn btn-red btn-sm" onclick="aiuDeleteConfirm(${origIdx})">🗑</button>
           </div>
         </td>
       </tr>`;
@@ -1019,31 +1024,51 @@ function renderAiUnifiedExecReport() {
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn btn-outline btn-sm" onclick="aiuNavToDashboard()">← Back</button>
+      <button class="btn btn-outline btn-sm" onclick="aiuExportWord()">📄 Export Word</button>
       <button class="btn btn-outline btn-sm" onclick="aiuCopyReportPrompt()">📋 AI Prompt</button>
       <button class="btn btn-cyan btn-sm" onclick="aiuSaveCommentary()">Save Commentary</button>
     </div>
   </div>
 
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;margin-bottom:1rem">
-    <div class="card" style="padding:1.25rem">
-      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">AI Governance Score</div>
-      <div style="display:flex;align-items:baseline;gap:8px">
-        <div style="font-size:48px;font-weight:800;color:var(--navy);line-height:1">${scores.overall??'—'}</div>
-        ${scores.overall!==null?`<div style="font-size:20px;color:var(--muted)">%</div>`:''}
-      </div>
-      <div style="font-size:13px;font-weight:700;color:${aiuScoreColor(scores.overall)};margin-top:4px">${aiuScoreBand(scores.overall)}</div>
-      ${scoreChange!==null?`<div style="font-size:11px;color:${scoreChange>=0?'#15803d':'#dc2626'};margin-top:4px">${scoreChange>=0?'▲':'▼'} ${Math.abs(scoreChange)}% vs previous run</div>`:''}
-      <div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap">
-        ${fw.nist!==false&&scores.nist!==null?`<div><div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">NIST AI RMF</div><div style="font-size:22px;font-weight:800;color:#1d4ed8">${scores.nist}%</div></div>`:''}
-        ${fw.iso!==false&&scores.iso!==null?`<div><div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">ISO 42001</div><div style="font-size:22px;font-weight:800;color:#0f766e">${scores.iso}%</div></div>`:''}
-        <div><div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Total Gaps</div><div style="font-size:22px;font-weight:800;color:#dc2626">${gaps.length}</div></div>
+  <div class="score-hero-ins" style="margin-bottom:1.25rem">
+    <div style="flex:1;display:flex;flex-direction:column;gap:12px">
+      <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4)">AI Governance Assessment</div>
+      <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start">
+        <div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:4px">Overall Score</div>
+          <div class="score-big" style="color:#fff">${scores.overall!==null?scores.overall:'—'}<span style="font-size:18px">${scores.overall!==null?'%':''}</span></div>
+          ${scores.overall!==null?`<div style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;display:inline-block;margin-top:6px;background:rgba(255,255,255,.08);color:${aiuScoreColor(scores.overall)}">${aiuScoreBand(scores.overall)}</div>`:''}
+          ${scoreChange!==null?`<div style="font-size:11px;color:${scoreChange>=0?'#4ade80':'#f87171'};margin-top:4px">${scoreChange>=0?'▲':'▼'} ${Math.abs(scoreChange)}% vs previous</div>`:''}
+        </div>
+        <div style="display:flex;gap:20px;flex-wrap:wrap">
+          ${fw.nist!==false&&scores.nist!==null?`<div><div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:4px">NIST AI RMF</div><div style="font-size:28px;font-weight:800;color:#93c5fd;line-height:1">${scores.nist}%</div></div>`:''}
+          ${fw.iso!==false&&scores.iso!==null?`<div><div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:4px">ISO 42001</div><div style="font-size:28px;font-weight:800;color:#6ee7b7;line-height:1">${scores.iso}%</div></div>`:''}
+          <div><div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:4px">Total Gaps</div><div style="font-size:28px;font-weight:800;color:#f87171;line-height:1">${gaps.length}</div></div>
+          <div><div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:4px">Assessed</div><div style="font-size:13px;font-weight:700;color:#fff;margin-top:4px">${run.date||'—'}</div>${run.conductedBy?`<div style="font-size:11px;color:rgba(255,255,255,.5)">${escH(run.conductedBy)}</div>`:''}</div>
+        </div>
       </div>
     </div>
-    <div class="card" style="padding:1.25rem">
-      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Domain Breakdown</div>
-      ${groupScores.filter(g=>g.pct!==null).length
-        ? `<canvas id="aiurep-radar" width="300" height="260" style="width:300px;max-width:100%;display:block;margin:0 auto"></canvas>`
-        : `<div style="font-size:12px;color:var(--muted);padding:2rem 0;text-align:center">No data yet</div>`}
+    <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+      <div style="font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:2px">Domain Radar</div>
+      ${groupScores.filter(g=>g.pct!==null).length?`<canvas id="aiurep-radar" width="200" height="160"></canvas>`:''}
+    </div>
+  </div>
+
+  <div class="card" style="padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:.85rem">Domain Coverage</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${groupScores.filter(g=>g.pct!==null).map(g => {
+        const gm = AI_GROUP_META[g.grp];
+        return `<div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">
+            <span style="font-size:12px;font-weight:600;color:var(--text)">${gm.icon} ${gm.label}</span>
+            <span style="font-size:12px;font-weight:700;color:${gm.color}">${g.pct}%</span>
+          </div>
+          <div style="height:6px;background:var(--bg);border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:${g.pct}%;background:${gm.color};border-radius:3px;transition:width .4s"></div>
+          </div>
+        </div>`;
+      }).join('')}
     </div>
   </div>
 
@@ -1292,6 +1317,9 @@ function aiuOpenReport(idx) {
   aiUnifiedState.reportCommentary = (run.answers||{})._exec_commentary || '';
   aiUnifiedState.view = 'report';
   renderMain();
+  const answers = Object.fromEntries(Object.entries(run.answers||{}).filter(([k])=>!k.startsWith('_')));
+  const fw = aiuFrameworksFromRun(run);
+  setTimeout(() => aiuDrawRadar('aiurep-radar', aiuCalcGroupScores(answers, fw)), 80);
 }
 
 // ── RADAR + PYRAMID HELPERS ───────────────────────────────────────────────────
@@ -1436,6 +1464,336 @@ Write for a non-technical executive audience. Keep to one printed page. No secti
   navigator.clipboard.writeText(prompt)
     .then(() => toast('✓ AI prompt copied — paste into Claude', '#152168'))
     .catch(() => toast('Clipboard blocked', '#b45309'));
+}
+
+// ── COMPARE MATRIX ────────────────────────────────────────────────────────────
+
+function aiuOpenMatrix() {
+  const orgId = currentOrg?.id;
+  const allRuns = [...((orgAssessments[orgId] || {})['ai_unified'] || [])]
+    .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+    .slice(0, 5);
+  aiUnifiedState.matrixRuns = allRuns.map(r => ({
+    id: r.id, date: r.date, conductedBy: r.conductedBy, score: r.score,
+    cleanAnswers: Object.fromEntries(Object.entries(r.answers || {}).filter(([k]) => !k.startsWith('_'))),
+    metaAnswers:  Object.fromEntries(Object.entries(r.answers || {}).filter(([k]) =>  k.startsWith('_'))),
+  }));
+  if (!aiUnifiedState.matrixGroup) aiUnifiedState.matrixGroup = 'g1';
+  aiUnifiedState.view = 'matrix';
+  renderMain();
+}
+
+function aiuSetMatrixGroup(grp) {
+  aiUnifiedState.matrixGroup = grp;
+  renderMain();
+}
+
+function renderAiUnifiedMatrix() {
+  const runs = aiUnifiedState.matrixRuns || [];
+  if (!runs.length) {
+    return `${renderTierBanner()}
+    <div class="card" style="padding:2rem;text-align:center">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:1rem">No assessments to compare.</div>
+      <button class="btn btn-outline btn-sm" onclick="aiuNavToDashboard()">← Back</button>
+    </div>`;
+  }
+
+  const grpKey = aiUnifiedState.matrixGroup || 'g1';
+  const allControls = AI_UNIFIED_CONTROLS.filter(c => c.grp === grpKey);
+  const m = AI_GROUP_META[grpKey];
+
+  const CELL_NEXT = { yes: 'partial', partial: 'no', no: 'na', na: '__clear__' };
+  const cellStyle = val => {
+    if (val === 'yes')     return 'background:#dcfce7;color:#15803d;font-weight:700;border:1.5px solid #86efac';
+    if (val === 'partial') return 'background:#fef3c7;color:#b45309;font-weight:700;border:1.5px solid #fcd34d';
+    if (val === 'no')      return 'background:#fee2e2;color:#dc2626;font-weight:700;border:1.5px solid #fca5a5';
+    if (val === 'na')      return 'background:#f1f5f9;color:#64748b;font-weight:700;border:1.5px solid #cbd5e1';
+    return 'background:#f8fafc;color:var(--muted);border:1.5px dashed #dde3ef';
+  };
+  const cellLabel = { yes: 'Yes', partial: 'Par', no: 'No', na: 'N/A' };
+
+  const runScores = runs.map(r => aiuCalcScore(r.cleanAnswers, { nist: true, iso: true }));
+
+  const groupFilterHtml = Object.entries(AI_GROUP_META).map(([gk, gm]) => {
+    const isActive = gk === grpKey;
+    return `<button onclick="aiuSetMatrixGroup('${gk}')"
+      style="padding:4px 10px;font-size:11px;font-weight:700;border-radius:20px;cursor:pointer;border:2px solid ${isActive?gm.color:'#dde3ef'};background:${isActive?gm.color:'transparent'};color:${isActive?'#fff':'var(--muted)'}">
+      ${gm.icon} ${gm.label.split(' ')[0]}
+    </button>`;
+  }).join('');
+
+  let html = `
+  ${renderTierBanner()}
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:10px">
+    <div>
+      <div style="font-size:17px;font-weight:700">⊞ AI Governance — Compare Matrix</div>
+      <div style="font-size:12px;color:var(--muted)">Last ${runs.length} assessments · click any cell to cycle (Yes → Partial → No → N/A → Clear) · auto-saves</div>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="aiuNavToDashboard()">← Back</button>
+  </div>
+
+  <div class="card" style="padding:1.25rem;overflow-x:auto">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:.85rem">
+      ${groupFilterHtml}
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:${260 + runs.length * 95}px">
+      <thead>
+        <tr style="border-bottom:2px solid var(--border)">
+          <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:700;background:${m.light||'var(--bg)'};color:${m.txt||m.color};text-transform:uppercase;letter-spacing:.05em;min-width:220px">
+            ${m.icon} ${m.label}
+          </th>
+          ${runs.map((r, i) => `<th style="text-align:center;padding:8px 6px;background:${m.light||'var(--bg)'};min-width:90px;border-left:1px solid var(--border)">
+            <div style="font-weight:700;font-size:11px;color:var(--text)">${r.date||'—'}</div>
+            ${r.conductedBy?`<div style="font-size:10px;color:var(--muted)">${escH(r.conductedBy)}</div>`:''}
+            <div style="font-size:15px;font-weight:800;color:${aiuScoreColor(runScores[i].overall)};margin-top:2px">${runScores[i].overall??'—'}%</div>
+          </th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        ${allControls.map(ctrl => {
+          const wColor = AI_WEIGHT_COLORS[ctrl.weight];
+          return `<tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:7px 10px;vertical-align:top">
+              <div style="display:flex;align-items:baseline;gap:5px;margin-bottom:3px;flex-wrap:wrap">
+                <span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:6px;background:${wColor}22;color:${wColor}">${AI_WEIGHT_LABELS[ctrl.weight]}</span>
+                <span style="font-size:10px;font-weight:700;color:${m.color}">${ctrl.id}</span>
+              </div>
+              <div style="font-size:11px;font-weight:600;color:var(--text);line-height:1.3">${escH(ctrl.title)}</div>
+            </td>
+            ${runs.map(r => {
+              const val = r.cleanAnswers[ctrl.id] || null;
+              const nextVal = CELL_NEXT[val || 'na'] || 'yes';
+              return `<td style="padding:5px 6px;text-align:center;vertical-align:middle;border-left:1px solid var(--border)">
+                <button onclick="aiuMatrixAnswer('${r.id}','${ctrl.id}','${nextVal}')"
+                  title="Click to cycle answer"
+                  style="width:60px;padding:5px 3px;font-size:11px;border-radius:6px;cursor:pointer;${cellStyle(val)};transition:all .1s">
+                  ${val ? cellLabel[val] : '<span style="font-size:10px;color:#cbd5e1">—</span>'}
+                </button>
+              </td>`;
+            }).join('')}
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>`;
+
+  return html;
+}
+
+async function aiuMatrixAnswer(runId, ctrlId, nextVal) {
+  const run = aiUnifiedState.matrixRuns && aiUnifiedState.matrixRuns.find(r => r.id === runId);
+  if (!run) return;
+  if (nextVal === '__clear__') delete run.cleanAnswers[ctrlId];
+  else run.cleanAnswers[ctrlId] = nextVal;
+  // Update orgAssessments cache
+  const orgId = currentOrg?.id;
+  const allRuns = (orgAssessments[orgId] || {})['ai_unified'] || [];
+  const cached = allRuns.find(r => r.id === runId);
+  if (cached) {
+    const merged = { ...run.metaAnswers, ...run.cleanAnswers };
+    cached.answers = merged;
+    const sc = aiuCalcScore(run.cleanAnswers, { nist: true, iso: true });
+    cached.score = sc.overall ?? cached.score;
+    run.score = cached.score;
+  }
+  renderMain();
+  try {
+    await sb.updateAssessment(runId, { answers: { ...run.metaAnswers, ...run.cleanAnswers } });
+  } catch(e) { toast('Auto-save failed: ' + e.message, '#dc2626'); }
+}
+
+// ── WORD EXPORT ───────────────────────────────────────────────────────────────
+
+function aiuDrawRadarOffscreen(canvas, groupScores) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  const valid = groupScores.filter(g => g.pct !== null);
+  const N = valid.length;
+  if (!N) return;
+  const cx = W / 2, cy = H / 2 + 8, R = Math.min(W, H) * 0.28, labelPad = 44;
+  function angle(i) { return (Math.PI * 2 * i / N) - Math.PI / 2; }
+  function ptR(i, r) { return [cx + r * Math.cos(angle(i)), cy + r * Math.sin(angle(i))]; }
+  function pt(i, val) { return ptR(i, (val / 100) * R); }
+  [0.25, 0.5, 0.75, 1].forEach(level => {
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) { const p = ptR(i, level * R); i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]); }
+    ctx.closePath();
+    ctx.strokeStyle = level === 1 ? '#9ca3af' : '#e5e7eb'; ctx.lineWidth = level === 1 ? 1.5 : 0.8;
+    if (level === 1) ctx.setLineDash([4, 3]); ctx.stroke(); ctx.setLineDash([]);
+  });
+  for (let i = 0; i < N; i++) {
+    const op = ptR(i, R); ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(op[0], op[1]);
+    ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 0.8; ctx.stroke();
+  }
+  ctx.beginPath();
+  valid.forEach((g, i) => { const p = pt(i, g.pct ?? 0); i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]); });
+  ctx.closePath(); ctx.fillStyle = 'rgba(21,33,104,0.1)'; ctx.fill();
+  ctx.strokeStyle = '#152168'; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
+  valid.forEach((g, i) => {
+    const p = pt(i, g.pct ?? 0);
+    ctx.beginPath(); ctx.arc(p[0], p[1], 4, 0, Math.PI * 2);
+    ctx.fillStyle = g.pct >= 70 ? '#15803d' : g.pct >= 40 ? '#d97706' : '#dc2626';
+    ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+  });
+  for (let i = 0; i < N; i++) {
+    const gm = AI_GROUP_META[valid[i].grp];
+    const ang = angle(i);
+    const lp = [cx + (R + labelPad) * Math.cos(ang), cy + (R + labelPad) * Math.sin(ang)];
+    const xOff = Math.cos(ang);
+    ctx.textAlign = xOff > 0.15 ? 'left' : xOff < -0.15 ? 'right' : 'center';
+    ctx.font = 'bold 9px Arial'; ctx.fillStyle = '#374151';
+    ctx.fillText(gm.label.split(' ')[0], lp[0], lp[1]);
+    ctx.font = 'bold 10px Arial';
+    ctx.fillStyle = valid[i].pct >= 70 ? '#15803d' : valid[i].pct >= 40 ? '#d97706' : '#dc2626';
+    ctx.fillText((valid[i].pct ?? '—') + '%', lp[0], lp[1] + 12);
+  }
+}
+
+async function aiuExportWord() {
+  const orgId = currentOrg?.id;
+  const runs = (orgAssessments[orgId] || {})['ai_unified'] || [];
+  const latestIdx = aiuLatestIdx(runs);
+  const run = aiUnifiedState.reportRun || runs[latestIdx];
+  if (!run) { toast('No assessment to export', '#b45309'); return; }
+
+  const answers = Object.fromEntries(Object.entries(run.answers || {}).filter(([k]) => !k.startsWith('_')));
+  const fw = aiuFrameworksFromRun(run);
+  const scores = aiuCalcScore(answers, fw);
+  const groupScores = aiuCalcGroupScores(answers, fw);
+  const gaps = aiuWeightedGaps(answers, fw);
+  const score = scores.overall ?? 0;
+  const commentary = (run.answers || {})._exec_commentary || '';
+
+  // Canvas gauge
+  let gaugeImg = null;
+  {
+    const _gc = document.createElement('canvas');
+    _gc.width = 280; _gc.height = 155;
+    _gc.style.cssText = 'position:fixed;left:-9999px;pointer-events:none';
+    document.body.appendChild(_gc);
+    const _ctx = _gc.getContext('2d');
+    const cx = 140, cy = 130, r = 105, tw = 18;
+    const t = Math.max(0.02, Math.min(0.98, score / 100));
+    _ctx.beginPath(); _ctx.arc(cx, cy, r, Math.PI, 0, false);
+    _ctx.strokeStyle = '#e8edf5'; _ctx.lineWidth = tw; _ctx.lineCap = 'butt'; _ctx.stroke();
+    const _grad = _ctx.createLinearGradient(cx - r, 0, cx + r, 0);
+    _grad.addColorStop(0, '#dc2626'); _grad.addColorStop(0.30, '#f97316');
+    _grad.addColorStop(0.55, '#f59e0b'); _grad.addColorStop(0.75, '#84cc16');
+    _grad.addColorStop(1.00, '#15803d');
+    _ctx.beginPath(); _ctx.arc(cx, cy, r, Math.PI, 0, false);
+    _ctx.strokeStyle = _grad; _ctx.stroke();
+    const nx = cx + r * 0.84 * Math.cos(Math.PI + t * Math.PI);
+    const ny = cy + r * 0.84 * Math.sin(Math.PI + t * Math.PI);
+    _ctx.beginPath(); _ctx.moveTo(cx, cy); _ctx.lineTo(nx, ny);
+    _ctx.strokeStyle = '#152168'; _ctx.lineWidth = 3.5; _ctx.lineCap = 'round'; _ctx.stroke();
+    _ctx.beginPath(); _ctx.arc(cx, cy, 9, 0, Math.PI * 2); _ctx.fillStyle = '#152168'; _ctx.fill();
+    _ctx.beginPath(); _ctx.arc(cx, cy, 5, 0, Math.PI * 2); _ctx.fillStyle = '#fff'; _ctx.fill();
+    _ctx.font = 'bold 26px Arial'; _ctx.fillStyle = '#152168'; _ctx.textAlign = 'center';
+    _ctx.fillText(score + '%', cx, cy - 18);
+    _ctx.font = 'bold 13px Arial'; _ctx.fillStyle = aiuScoreColor(score);
+    _ctx.fillText(aiuScoreBand(score), cx, cy - 2);
+    _ctx.font = '10px Arial'; _ctx.fillStyle = '#9ca3af';
+    _ctx.textAlign = 'left'; _ctx.fillText('Low', cx - r + 4, cy + 14);
+    _ctx.textAlign = 'right'; _ctx.fillText('High', cx + r - 4, cy + 14);
+    gaugeImg = _gc.toDataURL('image/png');
+    document.body.removeChild(_gc);
+  }
+
+  // Canvas radar
+  let radarImg = null;
+  const validGroups = groupScores.filter(g => g.pct !== null);
+  if (validGroups.length) {
+    const _rc = document.createElement('canvas');
+    _rc.width = 320; _rc.height = 280;
+    _rc.style.cssText = 'position:fixed;left:-9999px;pointer-events:none';
+    document.body.appendChild(_rc);
+    aiuDrawRadarOffscreen(_rc, validGroups);
+    radarImg = _rc.toDataURL('image/png');
+    document.body.removeChild(_rc);
+  }
+
+  const fwLabel = [fw.nist !== false ? 'NIST AI RMF v1.0' : '', fw.iso !== false ? 'ISO/IEC 42001:2023' : ''].filter(Boolean).join(' + ');
+
+  const groupRowsHtml = groupScores.filter(g => g.pct !== null).map(g => {
+    const gm = AI_GROUP_META[g.grp];
+    const scoreCol = g.pct >= 75 ? '#15803d' : g.pct >= 50 ? '#b45309' : '#dc2626';
+    return `<tr>
+      <td style="padding:5px 10px;font-weight:700;color:${gm.txt||gm.color}">${gm.label}</td>
+      <td style="padding:5px 10px;text-align:center;font-weight:800;color:${scoreCol}">${g.pct}%</td>
+      <td style="padding:5px 10px;text-align:center;color:#5a6a8a">${g.answered}/${g.total}</td>
+    </tr>`;
+  }).join('');
+
+  const top5 = gaps.slice(0, 5);
+  const gapRowsHtml = top5.map((g, i) => {
+    const gm = AI_GROUP_META[g.grp];
+    const ansCol = g.answer === 'no' ? '#dc2626' : '#b45309';
+    return `<tr>
+      <td style="padding:5px 10px;text-align:center;font-weight:900;color:${ansCol};font-size:14pt">${i + 1}</td>
+      <td style="padding:5px 10px;font-size:8pt;font-weight:700;color:${gm.color}">${g.id}</td>
+      <td style="padding:5px 10px;font-weight:700">${escH(g.title)}</td>
+      <td style="padding:5px 10px;text-align:center;font-weight:700;color:${ansCol}">${g.answer === 'no' ? 'No' : 'Partial'}</td>
+      <td style="padding:5px 10px;text-align:center;font-weight:700;color:${AI_WEIGHT_COLORS[g.weight]}">${AI_WEIGHT_LABELS[g.weight]}</td>
+    </tr>`;
+  }).join('');
+
+  const docHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>AI Governance Assessment — Executive Report</title>
+  <style>
+    body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color: #1a2340; margin: 2cm; }
+    h1 { font-size: 20pt; color: #152168; margin-bottom: 4px; }
+    h2 { font-size: 13pt; color: #152168; border-bottom: 2px solid #07B4D9; padding-bottom: 4px; margin-top: 20px; margin-bottom: 10px; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 12px; }
+    th { background: #152168; color: #fff; padding: 7px 10px; font-size: 9pt; text-align: left; letter-spacing: .04em; text-transform: uppercase; }
+    td { padding: 5px 10px; border-bottom: 1px solid #e5e7eb; font-size: 10pt; vertical-align: top; }
+  </style>
+  </head><body>
+  <h1>AI Governance Assessment — Executive Report</h1>
+  <p style="color:#5a6a8a;font-size:10pt;margin-top:4px">${escH(currentOrg?.name || '')} &nbsp;·&nbsp; ${run.date || '—'} &nbsp;·&nbsp; ${escH(run.conductedBy || '—')} &nbsp;·&nbsp; ${fwLabel}</p>
+
+  <div style="display:flex;gap:24px;align-items:center;background:#f0f4fa;border-radius:8px;padding:16px;margin-bottom:16px">
+    <div><img src="${gaugeImg}" style="width:220px;display:block"></div>
+    <div>
+      <div style="font-size:10pt;font-weight:700;color:#5a6a8a;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">AI Governance Score</div>
+      <div style="font-size:36pt;font-weight:900;color:#152168;line-height:1">${score}%</div>
+      <div style="font-size:12pt;font-weight:700;color:${aiuScoreColor(score)};margin-top:4px">${aiuScoreBand(score)}</div>
+      <div style="display:flex;gap:20px;margin-top:14px;flex-wrap:wrap">
+        ${fw.nist !== false && scores.nist !== null ? `<div><div style="font-size:9pt;color:#5a6a8a">NIST AI RMF</div><div style="font-size:16pt;font-weight:800;color:#1d4ed8">${scores.nist}%</div></div>` : ''}
+        ${fw.iso !== false && scores.iso !== null ? `<div><div style="font-size:9pt;color:#5a6a8a">ISO 42001</div><div style="font-size:16pt;font-weight:800;color:#0f766e">${scores.iso}%</div></div>` : ''}
+        <div><div style="font-size:9pt;color:#5a6a8a">Total Gaps</div><div style="font-size:16pt;font-weight:800;color:#dc2626">${gaps.length}</div></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Domain Coverage</h2>
+  <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+    ${radarImg ? `<img src="${radarImg}" style="width:260px;display:block">` : ''}
+    <table style="flex:1;min-width:220px">
+      <thead><tr><th>Domain</th><th style="text-align:center">Score</th><th style="text-align:center">Questions</th></tr></thead>
+      <tbody>${groupRowsHtml}</tbody>
+    </table>
+  </div>
+
+  <h2>Top Priority Gaps</h2>
+  ${top5.length ? `<table>
+    <thead><tr><th style="width:28px">#</th><th style="width:70px">ID</th><th>Gap</th><th style="width:60px;text-align:center">Status</th><th style="width:70px;text-align:center">Priority</th></tr></thead>
+    <tbody>${gapRowsHtml}</tbody>
+  </table>` : '<p style="color:#5a6a8a">No gaps — all assessed items are Yes or N/A.</p>'}
+
+  ${commentary ? `<h2>Executive Commentary</h2><div style="line-height:1.7;font-size:11pt">${escH(commentary).replace(/\n/g, '<br>')}</div>` : ''}
+  </body></html>`;
+
+  const blob = new Blob([docHtml], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const slug = (currentOrg?.name || 'AI').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+  a.download = `ai_governance_report_${slug}_${run.date || 'unknown'}.doc`;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('✓ Word report exported', '#15803d');
 }
 
 function aiuCopyGapPrompt() {
