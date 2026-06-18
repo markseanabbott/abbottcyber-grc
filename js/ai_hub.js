@@ -248,21 +248,60 @@ function renderAiHub() {
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem;margin-bottom:1.25rem">`;
 
-  // ── Group breakdown card ──────────────────────────────────────
-  html += `
+  // ── NIST AI RMF radar card ────────────────────────────────────
+  const nistAxes = latest ? aiuCalcNistFunctionScores(answers, fw) : [];
+  const isoAxes  = latest ? aiuCalcIsoClauseScores(answers, fw) : [];
+  const hasNist  = nistAxes.some(a => a.pct !== null);
+  const hasIso   = isoAxes.some(a => a.pct !== null);
+
+  if (hasNist || hasIso) {
+    if (hasNist) {
+      const nistLegend = nistAxes.filter(a => a.pct !== null).map(a =>
+        `<tr><td style="padding:2px 8px 2px 0;font-size:11px;color:var(--muted)">${a.label}</td><td style="padding:2px 0;font-size:11px;font-weight:700;color:${a.pct>=70?'#15803d':a.pct>=40?'#d97706':'#dc2626'};text-align:right">${a.pct}%</td></tr>`
+      ).join('');
+      html += `
+      <div class="card" style="padding:1.1rem">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:.9rem">
+          <div style="width:10px;height:10px;border-radius:2px;background:#1d4ed8;flex-shrink:0"></div>
+          <div style="font-size:13px;font-weight:700">NIST AI RMF</div>
+          <div style="margin-left:auto;font-size:18px;font-weight:800;color:#1d4ed8">${scores.nist !== null ? scores.nist + '%' : '—'}</div>
+        </div>
+        <canvas id="aihub-nist-radar" width="260" height="220" style="display:block;margin:0 auto .9rem"></canvas>
+        <table style="width:100%;border-collapse:collapse">${nistLegend}</table>
+        <div style="margin-top:.9rem;display:flex;gap:6px">
+          <button class="btn btn-cyan btn-sm" onclick="setNav('ai_unified')">📊 Open Assessment</button>
+        </div>
+      </div>`;
+    }
+    if (hasIso) {
+      const isoLegend = isoAxes.filter(a => a.pct !== null).map(a =>
+        `<tr><td style="padding:2px 8px 2px 0;font-size:11px;color:var(--muted)">${a.label}</td><td style="padding:2px 0;font-size:11px;font-weight:700;color:${a.pct>=70?'#15803d':a.pct>=40?'#d97706':'#dc2626'};text-align:right">${a.pct}%</td></tr>`
+      ).join('');
+      html += `
+      <div class="card" style="padding:1.1rem">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:.9rem">
+          <div style="width:10px;height:10px;border-radius:2px;background:#0f766e;flex-shrink:0"></div>
+          <div style="font-size:13px;font-weight:700">ISO/IEC 42001</div>
+          <div style="margin-left:auto;font-size:18px;font-weight:800;color:#0f766e">${scores.iso !== null ? scores.iso + '%' : '—'}</div>
+        </div>
+        <canvas id="aihub-iso-radar" width="260" height="220" style="display:block;margin:0 auto .9rem"></canvas>
+        <table style="width:100%;border-collapse:collapse">${isoLegend}</table>
+        <div style="margin-top:.9rem;display:flex;gap:6px">
+          <button class="btn btn-outline btn-sm" onclick="setNav('ai_unified');aiuOpenGapReport(0)">🔍 Gap Report</button>
+        </div>
+      </div>`;
+    }
+  } else {
+    html += `
     <div class="card" style="padding:1.1rem">
-      <div style="font-size:13px;font-weight:700;margin-bottom:.9rem">Domain Breakdown</div>
-      ${groupScores.filter(g => g.pct !== null).length
-        ? `<canvas id="aihub-domain-radar" width="260" height="220" style="width:260px;max-width:100%;display:block;margin:0 auto"></canvas>`
-        : `<div style="text-align:center;padding:1.5rem 0;color:var(--muted)">
-            <div style="font-size:24px;margin-bottom:.5rem">🤖</div>
-            <div style="font-size:11px">No assessments yet</div>
-          </div>`}
-      <div style="margin-top:.9rem;display:flex;gap:6px">
-        <button class="btn btn-cyan btn-sm" onclick="setNav('ai_unified')">${latest ? '📊 Open Assessment' : '+ Start Now'}</button>
-        ${latest ? `<button class="btn btn-outline btn-sm" onclick="setNav('ai_unified');aiuOpenGapReport(0)">🔍 Gap Report</button>` : ''}
+      <div style="font-size:13px;font-weight:700;margin-bottom:.9rem">Framework Breakdown</div>
+      <div style="text-align:center;padding:1.5rem 0;color:var(--muted)">
+        <div style="font-size:24px;margin-bottom:.5rem">🤖</div>
+        <div style="font-size:11px;margin-bottom:.9rem">No assessments yet</div>
+        <button class="btn btn-cyan btn-sm" onclick="setNav('ai_unified')">+ Start Now</button>
       </div>
     </div>`;
+  }
 
   // ── Top priority gaps card ────────────────────────────────────
   html += `
@@ -599,7 +638,16 @@ function initAiReadinessHub() {
   if (!latest) return;
   const answers = Object.fromEntries(Object.entries(latest.answers||{}).filter(([k])=>!k.startsWith('_')));
   const fw = aiuFrameworksFromRun(latest);
-  aiuDrawRadar('aihub-domain-radar', aiuCalcGroupScores(answers, fw));
+  const nc = document.getElementById('aihub-nist-radar');
+  if (nc) {
+    const nistAxes = aiuCalcNistFunctionScores(answers, fw);
+    if (nistAxes.some(a => a.pct !== null)) aiuDrawFrameworkRadar(nc, nistAxes, 'rgba(29,78,216,0.10)', '#1d4ed8');
+  }
+  const ic = document.getElementById('aihub-iso-radar');
+  if (ic) {
+    const isoAxes = aiuCalcIsoClauseScores(answers, fw);
+    if (isoAxes.some(a => a.pct !== null)) aiuDrawFrameworkRadar(ic, isoAxes, 'rgba(15,118,110,0.10)', '#0f766e');
+  }
 }
 
 // ============================================================
