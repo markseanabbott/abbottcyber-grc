@@ -138,6 +138,21 @@ const POLICY_TEMPLATES = [
     description: 'Establishes accountability structures, roles, and decision rights for the development, procurement, and deployment of AI systems across the organisation.',
     cisGroups: [],
     url: null,
+    downloads: [
+      { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-AI%20Governance-Comprehensive-6.26.docx' },
+      { label: 'SMB', url: 'templates/ENT-Draft-POL-AI%20Governance-SMB-6.26.docx' },
+    ],
+  },
+  {
+    id: 'pol_aiaup',
+    name: 'AI Acceptable Use Policy',
+    framework: 'nist_ai',
+    frameworkLabel: 'NIST AI RMF',
+    domain: 'GOVERN',
+    controls: ['GV-1.1', 'GV-5.1', 'GV-6.1'],
+    description: 'Defines permitted and prohibited uses of AI tools by employees, contractors, and third parties. Covers data input restrictions, output verification requirements, disclosure obligations when AI-generated content is shared externally, and consequences for misuse.',
+    cisGroups: [],
+    url: null,
   },
   {
     id: 'pol_airmp',
@@ -261,9 +276,19 @@ function plibRenderCard(p) {
     `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px;background:${fwBg};color:${fwTxt};border:1px solid ${isCsf ? '#bfdbfe' : '#ddd6fe'}">${c}</span>`
   ).join('');
 
-  const downloadBtn = p.url
-    ? `<a href="${p.url}" target="_blank" rel="noopener" class="btn btn-cyan btn-sm" style="text-decoration:none">&#x2193; Download</a>`
-    : `<button class="btn btn-sm" disabled style="opacity:.45;cursor:default;background:var(--border);color:var(--muted);border:none">&#x2193; In Development</button>`;
+  const hasDownloads = p.downloads && p.downloads.length > 0;
+  const hasUrl = !!p.url;
+  const isAvailable = hasDownloads || hasUrl;
+
+  const downloadBtns = hasDownloads
+    ? p.downloads.map(d => `<a href="${d.url}" download class="btn btn-cyan btn-sm" style="text-decoration:none">&#x2193; ${escH(d.label)}</a>`).join('')
+    : hasUrl
+      ? `<a href="${p.url}" target="_blank" rel="noopener" class="btn btn-cyan btn-sm" style="text-decoration:none">&#x2193; Download</a>`
+      : `<button class="btn btn-sm" disabled style="opacity:.45;cursor:default;background:var(--border);color:var(--muted);border:none">&#x2193; In Development</button>`;
+
+  const statusBadge = isAvailable
+    ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#dcfce7;color:#15803d">&#x2713; Available</span>`
+    : `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#fef3c7;color:#b45309">&#x23F3; Placeholder</span>`;
 
   return `<div id="plib-${p.id}" class="card" style="padding:1.1rem 1.2rem;border-top:3px solid ${accentCol};${isHl ? 'box-shadow:0 0 0 3px rgba(7,180,217,.35);' : ''}transition:box-shadow .2s">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:.6rem">
@@ -274,8 +299,8 @@ function plibRenderCard(p) {
     <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:.75rem">${controlChips}</div>
     <div style="font-size:12px;color:var(--text);line-height:1.5;margin-bottom:1rem">${escH(p.description)}</div>
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
-      <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#fef3c7;color:#b45309">&#x23F3; Placeholder</span>
-      ${downloadBtn}
+      ${statusBadge}
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${downloadBtns}</div>
     </div>
   </div>`;
 }

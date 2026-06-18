@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.1.6",
   "created": "2026-05-14",
-  "updated": "2026-06-18 (session 37)",
+  "updated": "2026-06-18 (session 38)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1602,10 +1602,9 @@
         },
         {
           "id": "pl4",
-          "text": "Policy template upload — allow platform admin to upload actual policy Word/PDF files to Supabase Storage and set the url field per template so Download buttons activate",
-          "done": false,
-          "priority": "High",
-          "notes": "Requires Supabase Storage bucket setup and an upload UI in the policy card (admin only). url field already present on each POLICY_TEMPLATES entry — just needs to be set."
+          "text": "Policy template download — AI Governance Policy card wired to two downloadable Word docs (Comprehensive and SMB); plibRenderCard() extended to support downloads array with multiple labelled buttons and green Available badge",
+          "done": true,
+          "notes": "Session 38: Added downloads:[{label,url}] array to pol_aigov in POLICY_TEMPLATES. Updated plibRenderCard() in js/policy_lib.js to check p.downloads — renders side-by-side cyan download buttons when present; falls back to single p.url button or disabled In Development. Status badge switches from amber Placeholder to green Available automatically. Files placed in templates/ folder (ENT-Draft-POL-AI Governance-Comprehensive-6.26.docx, ENT-Draft-POL-AI Governance-SMB-6.26.docx). Simpler approach than Supabase Storage — files served statically alongside the app."
         },
         {
           "id": "pl5",
@@ -1618,6 +1617,18 @@
           "text": "Policy version tracking — add version number and last-reviewed date to each template card; flag policies that haven't been reviewed in 12+ months",
           "done": false,
           "priority": "Low"
+        },
+        {
+          "id": "pl7",
+          "text": "AI Acceptable Use Policy card — added pol_aiaup entry (NIST AI RMF / GOVERN, controls GV-1.1 GV-5.1 GV-6.1); currently Placeholder status, no Word doc yet",
+          "done": true,
+          "notes": "Session 38: Card added to POLICY_TEMPLATES in js/policy_lib.js after pol_aigov. Placeholder badge shown until a downloads entry is added. Word doc template to be produced separately."
+        },
+        {
+          "id": "pl8",
+          "text": "AI Acceptable Use Policy Word doc — produce and add downloadable Comprehensive/SMB versions to the pol_aiaup card (same pattern as AI Governance)",
+          "done": false,
+          "priority": "High"
         }
       ]
     },
