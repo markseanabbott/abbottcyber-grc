@@ -900,7 +900,7 @@ function cisHydrate() {
   const last = runs[cisLatestIdx(runs)] || null;
   const rawAnswers = last ? Object.assign({}, last.answers || {}) : {};
   const answers = Object.fromEntries(Object.entries(rawAnswers).filter(([k]) => !k.startsWith('_')));
-  cisState = { answers, openPanels: {}, orgId: currentOrg?.id, view: 'dashboard', editId: null, conductedBy: '', editDate: '', notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '', gapRun: null };
+  cisState = { answers, openPanels: {}, orgId: currentOrg?.id, view: 'dashboard', editId: null, conductedBy: '', editDate: '', notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '', gapRun: null, igFilter: 'all' };
 }
 
 // ── GOAL ──────────────────────────────────────────────────────────────────────
@@ -1272,9 +1272,32 @@ function renderCISForm() {
     </div>
   </div>`;
 
+  // ── IG filter bar ─────────────────────────────────────────────────────────
+  const igF = cisState.igFilter || 'all';
+  const igFilterColors = { 1: '#15803d', 2: '#1d4ed8', 3: '#6d28d9' };
+  const filterOpts = [['all','All'], ['ig1','IG1'], ['ig2','IG2'], ['ig3','IG3']];
+  html += `<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+    <span style="font-size:11px;font-weight:600;color:var(--muted)">Filter:</span>
+    ${filterOpts.map(([val, label]) => {
+      const active = igF === val;
+      const n = parseInt(val.replace('ig',''));
+      const col = igFilterColors[n] || 'var(--navy)';
+      return `<button class="btn btn-sm" onclick="cisSetIgFilter('${val}')"
+        style="padding:4px 12px;font-size:11px;font-weight:700;border-radius:16px;transition:all .15s;
+        ${active ? `background:${col};color:#fff;border:2px solid ${col}` : `background:transparent;color:${val === 'all' ? 'var(--navy)' : col};border:2px solid ${val === 'all' ? 'var(--border)' : col}`}">
+        ${label}</button>`;
+    }).join('')}
+  </div>`;
+
+  const filterN = igF === 'all' ? null : ({ ig1:1, ig2:2, ig3:3 }[igF]);
+
   Object.entries(controls).forEach(([ctrlNum, ctrl]) => {
     const isOpen = cisState.openPanels[`ctrl_${ctrlNum}`];
     const scopedSfs = goal ? ctrl.safeguards.filter(s => s.ig <= goalN) : ctrl.safeguards;
+    // Apply IG filter for display only — stats still based on full scope
+    const displaySfs = filterN ? scopedSfs.filter(s => s.ig === filterN) : scopedSfs;
+    if (displaySfs.length === 0) return; // hide panel entirely when filter yields nothing
+
     const answeredInScope = scopedSfs.filter(s => cisState.answers[s.sf] != null).length;
     const done = scopedSfs.length > 0 && answeredInScope === scopedSfs.length;
     const started = answeredInScope > 0 && !done;
@@ -1288,7 +1311,7 @@ function renderCISForm() {
           </div>
           <div>
             <div class="cis-ctrl-name" style="font-size:13px">${ctrl.name}</div>
-            <div style="font-size:10px;color:var(--muted)">${ctrl.safeguards.length} safeguard${ctrl.safeguards.length !== 1 ? 's' : ''} · ${answeredInScope}/${scopedSfs.length}${goal ? ' in scope' : ''} answered</div>
+            <div style="font-size:10px;color:var(--muted)">${ctrl.safeguards.length} safeguard${ctrl.safeguards.length !== 1 ? 's' : ''} · ${answeredInScope}/${scopedSfs.length}${goal ? ' in scope' : ''} answered${filterN ? ` · showing IG${filterN} only` : ''}</div>
             ${CIS_CONTROL_SCOPE[ctrlNum] ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;font-style:italic">${CIS_CONTROL_SCOPE[ctrlNum]}</div>` : ''}
           </div>
         </div>
@@ -1298,7 +1321,7 @@ function renderCISForm() {
         </div>
       </div>
       <div class="spb${isOpen ? ' open' : ''}">
-        ${ctrl.safeguards.map(s => {
+        ${displaySfs.map(s => {
           const ans = cisState.answers[s.sf];
           const inScope = !goal || s.ig <= goalN;
           const dimStyle = inScope ? '' : 'opacity:.4;';
@@ -1890,6 +1913,11 @@ function cisCaptureHeader() {
   const c = document.getElementById('cisConductedBy');
   if (d && d.value) cisState.editDate = d.value;
   if (c) cisState.conductedBy = c.value;
+}
+
+function cisSetIgFilter(val) {
+  cisState.igFilter = val;
+  renderMain();
 }
 
 function cisToggleCtrl(n) {
