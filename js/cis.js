@@ -935,6 +935,7 @@ function renderCIS() {
   if (cisState.view === 'poam') return renderCISPoam();
   if (cisState.view === 'report') return renderCISReport();
   if (cisState.view === 'gap') return renderCISGapReport();
+  if (cisState.view === 'matrix') return renderCISMatrix();
   return renderCISDashboard();
 }
 
@@ -1041,6 +1042,7 @@ function renderCISDashboard() {
       <div style="display:flex;gap:6px">
         <button class="btn btn-outline btn-sm" onclick="cisExportExcel()">↓ Export Excel</button>
         <button class="btn btn-outline btn-sm" onclick="cisShowImportModal()">↑ Import Excel</button>
+        ${runs.length >= 2 ? `<button class="btn btn-outline btn-sm" onclick="cisOpenMatrix()">⊞ Compare Matrix</button>` : ''}
         <button class="btn btn-cyan btn-sm" onclick="cisStartNewAssessment()">+ New Assessment</button>
       </div>
     </div>`;
@@ -1806,6 +1808,137 @@ async function cisOpenAssessment(idx) {
     } catch(e) { console.warn('Failed to load CIS notes', e); }
   }
   renderMain();
+}
+
+function cisOpenMatrix() {
+  const allRuns = [...((orgAssessments[currentOrg?.id] || {})['cis'] || [])]
+    .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+    .slice(0, 5);
+  cisState.matrixRuns = allRuns.map(r => ({
+    id: r.id,
+    date: r.date,
+    conductedBy: r.conductedBy,
+    score: r.score,
+    cleanAnswers: Object.fromEntries(Object.entries(r.answers || {}).filter(([k]) => !k.startsWith('_'))),
+    metaAnswers:  Object.fromEntries(Object.entries(r.answers || {}).filter(([k]) =>  k.startsWith('_'))),
+  }));
+  cisState.view = 'matrix';
+  if (!cisState.igFilter || cisState.igFilter === 'all') cisState.igFilter = 'ig3';
+  renderMain();
+}
+
+async function cisMatrixAnswer(runId, sf, nextVal) {
+  const run = cisState.matrixRuns && cisState.matrixRuns.find(r => r.id === runId);
+  if (!run) return;
+  if (nextVal === '__clear__') delete run.cleanAnswers[sf];
+  else run.cleanAnswers[sf] = nextVal;
+
+  const toSave = { ...run.metaAnswers, ...run.cleanAnswers };
+  const cisRuns = (orgAssessments[currentOrg?.id] || {})['cis'] || [];
+  const cached = cisRuns.find(r => r.id === runId);
+  if (cached) {
+    cached.answers = toSave;
+    const goal = run.metaAnswers._goal || 'ig2';
+    const { score } = cisCalcScore(run.cleanAnswers, goal);
+    cached.score = score; run.score = score;
+  }
+  renderMain();
+  try {
+    await sb.updateAssessment(runId, { answers: toSave });
+  } catch(e) {
+    toast('Auto-save failed: ' + e.message, '#dc2626');
+  }
+}
+
+function renderCISMatrix() {
+  const runs = cisState.matrixRuns || [];
+  if (!runs.length) { cisState.view = 'dashboard'; return renderCISDashboard(); }
+
+  const igF = cisState.igFilter || 'ig3';
+  const filterN = igF === 'all' ? null : ({ ig1:1, ig2:2, ig3:3 }[igF]);
+  const igFilterColors = { 1: '#15803d', 2: '#1d4ed8', 3: '#6d28d9' };
+  const sfs = filterN ? CIS_SAFEGUARDS.filter(s => s.ig === filterN) : CIS_SAFEGUARDS;
+
+  const byCtrl = {};
+  sfs.forEach(s => {
+    if (!byCtrl[s.ctrl]) byCtrl[s.ctrl] = { name: s.ctrlName, sfs: [] };
+    byCtrl[s.ctrl].sfs.push(s);
+  });
+
+  // Cycle order: null → yes → partial → no → na → null
+  const CYCLE = [null, 'yes', 'partial', 'no', 'na'];
+  const NEXT = { null: 'yes', yes: 'partial', partial: 'no', no: 'na', na: '__clear__' };
+  const CELL_STYLE = {
+    yes:     'background:#dcfce7;color:#15803d;border:1.5px solid #86efac',
+    partial: 'background:#fef3c7;color:#b45309;border:1.5px solid #fcd34d',
+    no:      'background:#fee2e2;color:#dc2626;border:1.5px solid #fca5a5',
+    na:      'background:#f1f5f9;color:#94a3b8;border:1.5px solid #e2e8f0',
+  };
+  const CELL_LABEL = { yes: 'Yes', partial: 'Part', no: 'No', na: 'N/A' };
+
+  const ansCell = (runId, sf, val) => {
+    const nxt = NEXT[val === undefined || val === null ? 'null' : val] || 'yes';
+    const s = val ? CELL_STYLE[val] : 'background:#f8fafc;color:#cbd5e1;border:1.5px dashed #e2e8f0';
+    const lbl = val ? CELL_LABEL[val] : '—';
+    return `<td style="text-align:center;padding:3px 4px">
+      <button onclick="cisMatrixAnswer('${runId}','${sf}','${nxt}')"
+        style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;min-width:42px;${s}">
+        ${lbl}</button></td>`;
+  };
+
+  const filterBar = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+    <span style="font-size:11px;font-weight:600;color:var(--muted)">Show:</span>
+    ${[['all','All'],['ig1','IG1'],['ig2','IG2'],['ig3','IG3']].map(([val,label]) => {
+      const active = igF === val;
+      const n = parseInt(val.replace('ig',''));
+      const col = igFilterColors[n] || 'var(--navy)';
+      return `<button class="btn btn-sm" onclick="cisSetIgFilter('${val}')"
+        style="padding:4px 12px;font-size:11px;font-weight:700;border-radius:16px;
+        ${active ? `background:${col};color:#fff;border:2px solid ${col}` : `background:transparent;color:${val==='all'?'var(--navy)':col};border:2px solid ${val==='all'?'var(--border)':col}`}">
+        ${label}</button>`;
+    }).join('')}
+    <span style="margin-left:auto;font-size:11px;color:var(--muted)">${sfs.length} safeguards &nbsp;·&nbsp; click any cell to cycle &nbsp;·&nbsp; auto-saves</span>
+  </div>`;
+
+  const colW = Math.max(80, Math.floor(360 / runs.length));
+  let tbl = `<div style="overflow-x:auto">
+  <table style="width:100%;border-collapse:collapse;font-size:12px">
+    <thead><tr style="border-bottom:2px solid var(--border)">
+      <th style="text-align:left;padding:6px 8px;font-size:10px;color:var(--muted);text-transform:uppercase;width:64px">ID</th>
+      <th style="text-align:left;padding:6px 8px;font-size:10px;color:var(--muted);text-transform:uppercase">Safeguard</th>
+      ${runs.map(r => `<th style="text-align:center;padding:6px 4px;font-size:10px;color:var(--muted);text-transform:uppercase;width:${colW}px;white-space:nowrap">
+        ${r.date||'—'}<div style="font-size:9px;font-weight:400;margin-top:1px">${escH(r.conductedBy||'')}</div></th>`).join('')}
+    </tr></thead>
+    <tbody>`;
+
+  Object.keys(byCtrl).sort((a,b) => +a - +b).forEach(cn => {
+    const ctrl = byCtrl[cn];
+    tbl += `<tr><td colspan="${2+runs.length}" style="background:var(--navy);color:#fff;font-weight:700;font-size:10.5px;padding:4px 8px">
+      Control ${cn}: ${escH(ctrl.name)}</td></tr>`;
+    ctrl.sfs.forEach(s => {
+      tbl += `<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:4px 8px;font-weight:700;color:var(--navy);font-size:10.5px;white-space:nowrap">${s.sf}</td>
+        <td style="padding:4px 8px;font-size:11px;color:var(--text)">${escH(s.title)}</td>
+        ${runs.map(r => ansCell(r.id, s.sf, r.cleanAnswers[s.sf]||null)).join('')}
+      </tr>`;
+    });
+  });
+
+  tbl += `</tbody></table></div>`;
+
+  return `
+  ${renderTierBanner()}
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:10px">
+    <div>
+      <div style="font-size:17px;font-weight:700;margin-bottom:4px">⊞ Assessment Comparison Matrix</div>
+      <div style="font-size:12px;color:var(--muted)">Click any cell to cycle: — → Yes → Partial → No → N/A → —. Each change auto-saves immediately.</div>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="cisNavToDashboard()">← Back to Dashboard</button>
+  </div>
+  <div class="card" style="padding:1rem">
+    ${filterBar}
+    ${tbl}
+  </div>`;
 }
 
 async function cisDeleteAssessment(idx) {
