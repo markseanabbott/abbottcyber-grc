@@ -1882,12 +1882,24 @@ function cisTrendDraw() {
 
 // ── INTERACTIONS ──────────────────────────────────────────────────────────────
 
+// Capture header fields from DOM into state before any re-render that happens
+// while the edit form is open — prevents date/assessor resetting on answer click.
+function cisCaptureHeader() {
+  if (!cisState.editId) return;
+  const d = document.getElementById('cisSaveDate');
+  const c = document.getElementById('cisConductedBy');
+  if (d && d.value) cisState.editDate = d.value;
+  if (c) cisState.conductedBy = c.value;
+}
+
 function cisToggleCtrl(n) {
+  cisCaptureHeader();
   cisState.openPanels[`ctrl_${n}`] = !cisState.openPanels[`ctrl_${n}`];
   renderMain();
 }
 
 function cisAnswer(sf, val) {
+  cisCaptureHeader();
   cisState.answers[sf] = val;
   renderMain();
 }
@@ -1898,6 +1910,7 @@ function cisQuickAnswer(id, val) {
 }
 
 function cisExpandAll(open) {
+  cisCaptureHeader();
   [...new Set(CIS_SAFEGUARDS.map(s => s.ctrl))].forEach(c => {
     cisState.openPanels[`ctrl_${c}`] = open;
   });
@@ -1940,6 +1953,7 @@ async function cisSaveQuick() {
 }
 
 function cisCommentToggle(sf) {
+  cisCaptureHeader();
   if (!cisState.openComments) cisState.openComments = {};
   cisState.openComments[sf] = !cisState.openComments[sf];
   renderMain();
@@ -3263,7 +3277,75 @@ function cisDrawReportTrend(canvasId, runs) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
   const sorted = [...runs].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-  const W = canvas.width || canvas.offsetWidth || 520;
+  const W = canvas.offsetWidth || 340;
+  const H = 92;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+
+  const n = sorted.length;
+  const padX = 10, padTop = 14, padBot = 14;
+  const legendW = 36;
+  const barMaxH = H - padTop - padBot;
+  const sectionH = barMaxH / 3;
+  const totalBarW = W - padX * 2 - legendW;
+  const barW = Math.max(14, Math.floor((totalBarW - Math.max(4, n - 1) * 6) / n));
+  const actualGap = n > 1 ? Math.floor((totalBarW - barW * n) / (n - 1)) : 0;
+
+  const tierColors = ['#15803d', '#1d4ed8', '#6d28d9'];
+  const tierLabels = ['IG1', 'IG2', 'IG3'];
+
+  sorted.forEach((r, i) => {
+    const x = padX + i * (barW + actualGap);
+    const cleanAns = Object.fromEntries(Object.entries(r.answers || {}).filter(([k]) => !k.startsWith('_')));
+    const prog = cisIgProgress(cleanAns);
+
+    [0, 1, 2].forEach(ti => {
+      const t = prog[ti];
+      const sc = t.total - t.na;
+      const score = sc > 0 ? (t.yes + t.partial * 0.5) / sc : 0;
+      const segY = H - padBot - (ti + 1) * sectionH;
+
+      ctx.fillStyle = '#f1f5f9';
+      ctx.fillRect(x, segY, barW, sectionH - 1);
+
+      const fillH = score * (sectionH - 1);
+      ctx.fillStyle = tierColors[ti];
+      ctx.globalAlpha = 0.88;
+      ctx.fillRect(x, segY + (sectionH - 1 - fillH), barW, fillH);
+      ctx.globalAlpha = 1;
+    });
+
+    const col = r.score >= 75 ? '#15803d' : r.score >= 50 ? '#b45309' : '#dc2626';
+    ctx.fillStyle = col;
+    ctx.font = 'bold 9px Inter,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(r.score + '%', x + barW / 2, padTop - 2);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '9px Inter,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText((r.date || '').slice(5), x + barW / 2, H - 1);
+  });
+
+  ctx.textAlign = 'right';
+  tierLabels.forEach((lbl, li) => {
+    ctx.fillStyle = tierColors[li];
+    ctx.globalAlpha = 0.88;
+    ctx.fillRect(W - 30, 1 + li * 11, 8, 8);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#6b7280';
+    ctx.font = '8px Inter,sans-serif';
+    ctx.fillText(lbl, W - 4, 9 + li * 11);
+  });
+}
+
+// Dot/line trend — used for the Word export only (drawn off-screen)
+function cisDrawTrendLine(canvasId, runs) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const sorted = [...runs].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const W = canvas.width || 560;
   const H = 110;
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
@@ -3276,7 +3358,6 @@ function cisDrawReportTrend(canvasId, runs) {
   const chartW = W - padL - padR;
   const chartH = H - padTop - padBot;
 
-  // Grid lines at 25, 50, 75, 100
   [25, 50, 75, 100].forEach(v => {
     const y = padTop + chartH - (v / 100) * chartH;
     ctx.strokeStyle = v === 50 ? '#cbd5e1' : '#e2e8f0';
@@ -3290,7 +3371,6 @@ function cisDrawReportTrend(canvasId, runs) {
     ctx.fillText(v + '%', padL - 4, y + 3);
   });
 
-  // Compute points
   const pts = sorted.map((r, i) => ({
     x: n === 1 ? padL + chartW / 2 : padL + (i / (n - 1)) * chartW,
     y: padTop + chartH - (Math.min(100, Math.max(0, r.score)) / 100) * chartH,
@@ -3299,7 +3379,6 @@ function cisDrawReportTrend(canvasId, runs) {
     col: r.score >= 75 ? '#15803d' : r.score >= 50 ? '#b45309' : '#dc2626',
   }));
 
-  // Connecting line
   if (pts.length > 1) {
     ctx.strokeStyle = '#152168';
     ctx.lineWidth = 2.5;
@@ -3310,7 +3389,6 @@ function cisDrawReportTrend(canvasId, runs) {
     ctx.stroke();
   }
 
-  // Dots + labels
   pts.forEach(p => {
     ctx.beginPath();
     ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
@@ -3343,70 +3421,98 @@ function cisGenerateReportPrompt() {
   const goal = (run.answers || {})._goal;
   if (!goal) { toast('No IG goal recorded for this assessment', '#b45309'); return; }
 
+  const goalN = { ig1: 1, ig2: 2, ig3: 3 }[goal] || 3;
   const { score, yes: yesN, partial: partN } = cisCalcScore(answers, goal);
   const noCount = cisGetSafeguards(goal).filter(s => answers[s.sf] === 'no').length;
   const band = score >= 75 ? 'Strong' : score >= 60 ? 'Moderate' : score >= 40 ? 'Elevated' : 'High Risk';
 
   const runs = (orgAssessments[currentOrg?.id] || {})['cis'] || [];
-  const trend = [...runs]
-    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
-    .map(r => `${r.date}: ${r.score}%`)
-    .join(' → ');
+  const sortedRuns = [...runs].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const hasTrend = sortedRuns.length >= 2;
+  const trendStr = hasTrend
+    ? sortedRuns.map(r => `${r.date}: ${r.score}%`).join(' → ')
+    : 'First assessment — no trend data';
+
+  const igProg = [1, 2, 3].filter(n => n <= goalN).map(n => {
+    const sfs = CIS_SAFEGUARDS.filter(s => s.ig === n);
+    const y = sfs.filter(s => answers[s.sf] === 'yes').length;
+    const p = sfs.filter(s => answers[s.sf] === 'partial').length;
+    const na = sfs.filter(s => answers[s.sf] === 'na').length;
+    const sc = sfs.length - na > 0 ? Math.round((y + p * 0.5) / (sfs.length - na) * 100) : 0;
+    return `IG${n}: ${y} Yes / ${p} Partial / ${sfs.length - y - p - na} No of ${sfs.length} safeguards (${sc}% score)`;
+  }).join('\n');
 
   const noGaps = cisGetSafeguards(goal)
-    .filter(s => answers[s.sf] === 'no').slice(0, 10)
-    .map(s => `- ${s.sf} [C${s.ctrl}: ${s.ctrlName}]: ${s.title}`)
+    .filter(s => answers[s.sf] === 'no')
+    .sort((a, b) => a.ig - b.ig)
+    .slice(0, 10)
+    .map(s => `- ${s.sf} (IG${s.ig}) [C${s.ctrl}: ${s.ctrlName}]: ${s.title}`)
     .join('\n');
 
   const partGaps = cisGetSafeguards(goal)
     .filter(s => answers[s.sf] === 'partial').slice(0, 6)
-    .map(s => `- ${s.sf} [C${s.ctrl}: ${s.ctrlName}]: ${s.title}`)
+    .map(s => `- ${s.sf} (IG${s.ig}) [C${s.ctrl}: ${s.ctrlName}]: ${s.title}`)
     .join('\n');
 
-  const prompt = `Please write a professional executive cybersecurity report commentary for ${currentOrg.name}. This will be presented to a non-technical CEO or board — avoid jargon, focus on business risk and practical outcomes.
+  const igScopeLabel = goalN === 1 ? 'IG1' : goalN === 2 ? 'IG1 and IG2' : 'IG1, IG2, and IG3';
+
+  const prompt = `Write a professional cybersecurity executive report commentary for ${currentOrg.name}. Target audience: non-technical CEO or board. Focus on business risk and practical outcomes — avoid jargon.
 
 ORGANISATION: ${currentOrg.name}
 ASSESSMENT DATE: ${run.date || 'Unknown'}
 ASSESSOR: ${run.conductedBy || 'Not specified'}
-FRAMEWORK: CIS Controls v8 — ${goal.toUpperCase()} implementation group
+FRAMEWORK: CIS Controls v8 — ${goal.toUpperCase()} Implementation Group
 OVERALL SCORE: ${score}% — Risk Band: ${band}
-SAFEGUARDS ANSWERED: ${yesN} Yes, ${partN} Partial, ${noCount} No
-SCORE TREND: ${trend || 'First assessment — no trend available'}
+SAFEGUARDS: ${yesN} Yes, ${partN} Partial, ${noCount} No (of ${yesN + partN + noCount} in scope)
 
-TOP CONTROL FAILURES (No answers — highest priority):
+IMPLEMENTATION GROUP PROGRESS:
+${igProg}
+
+SCORE TREND: ${trendStr}
+
+TOP PRIORITY GAPS (No answers, IG1 first = highest priority):
 ${noGaps || '— None —'}
 
-PARTIALLY ADDRESSED CONTROLS:
+PARTIALLY ADDRESSED:
 ${partGaps || '— None —'}
 
 ─────────────────────────────────────────────
-CRITICAL FORMATTING RULES — read before writing:
+CRITICAL FORMATTING RULES — non-negotiable:
 
-This text will be pasted directly into a Word report export. The export engine renders it as follows:
-  • A blank line between paragraphs → new paragraph in the document
-  • A single line break within a block → line break within the same paragraph
-  • Plain text characters are passed through exactly as typed
+This text is parsed by a Word export engine and placed into different sections of the document. Follow these rules exactly or the output will be broken.
 
-Therefore you MUST follow these rules or the output will be corrupted in the Word document:
-
-1. NO MARKDOWN. Do not use ** for bold, * or - for bullet lists, ## or # for headings, or _ for italic. These characters will appear literally in the printed report.
-2. NO SECTION LABELS. Do not write "Executive Summary:", "Key Findings:", or any heading labels. The report template already provides the section heading "Executive Commentary" — just write the content.
-3. BULLETS: If you need a bullet list, use the actual bullet character • at the start of each line (not a dash, not an asterisk).
-4. PARAGRAPH BREAKS: Separate each paragraph or bullet block with exactly one blank line.
-5. KEEP IT TO ONE PAGE: 3 short paragraphs of prose, then a bullet list of 3–4 findings, then 2–3 priority actions as short sentences. No more.
+1. NO MARKDOWN. No **, no *, no ##, no -, no _. These appear literally in the printed report.
+2. BULLETS: Use the actual • character at the start of each line. Never use - or * for lists.
+3. PARAGRAPH BREAKS: Separate paragraphs and bullet blocks with exactly one blank line.
+4. NO SECTION LABELS in the prose. Do not write "Executive Summary:", "Key Findings:", etc. Write the content only — the report template adds all headings.
+5. USE THE EXACT SECTION MARKERS below. They are parsed by the export engine to place content in specific report sections. Do not alter, rename, or omit them.
 ─────────────────────────────────────────────
 
-CONTENT TO WRITE:
+OUTPUT STRUCTURE — write EXACTLY in this order with EXACTLY these markers:
 
-Paragraph 1 — Overall posture: What does a ${score}% ${band} score mean for this organisation in plain business terms? What is working?
+Write 2–3 paragraphs of executive summary prose. Plain sentences. What does this ${score}% ${band} score mean for the business in practical terms? What is working? What is the primary risk exposure if gaps are not addressed?
 
-Paragraph 2 — Key risk exposure: What is the real-world business impact of the top gaps listed above? Describe as business risk, not technical failure.
+KEY FINDINGS
+• [Risk described as business impact — what could go wrong, not a technical gap — one sentence]
+• [3 to 4 findings total]
+• [Focus on consequence for the business]
+• [Optional 4th finding]
 
-Paragraph 3 — Trend and trajectory: ${runs.length >= 2 ? `Scores have trended: ${trend}. Describe what this movement means for the business and what still needs attention.` : `This is the first assessment. Set expectations for the improvement journey ahead.`}
+PRIORITY RECOMMENDATIONS
+• [Specific action with a one-sentence rationale — why now, not later]
+• [2 to 3 recommendations total]
+• [Actionable, not vague]
 
-Bullet section — 3 to 4 findings as • bullets. Each bullet is one concise sentence: the risk, written as what could go wrong for the business, not as a technical gap.
+---CONTROLS---
+Write 1–2 sentences about the IG tier progress breakdown. What does the score distribution across ${igScopeLabel} tell leadership about the depth vs. breadth of their security maturity? Is foundational (IG1) coverage solid before tackling advanced controls?
 
-Final paragraph — 2 to 3 priority actions written as plain sentences. Each action should include a one-sentence rationale explaining why it matters now, not later.`;
+---TREND---
+${hasTrend
+  ? `Write 1–2 sentences about the score progression: ${trendStr}. Is the trend improving, plateauing, or declining? What does this trajectory mean for the business and what does it signal about the program's momentum?`
+  : `Write 1 sentence noting this is the first assessment for ${currentOrg.name} and setting expectations for the improvement journey ahead.`}
+
+---GAPS---
+Write 1 paragraph about the top priority gaps. What pattern do you see in where the gaps cluster — which controls, which capabilities? What is the combined business risk of these gaps, and what is the logical first step to close the most critical exposures?`;
 
   navigator.clipboard.writeText(prompt)
     .then(() => toast('✓ AI prompt copied — paste into Claude to generate commentary', '#152168'))
@@ -3448,76 +3554,105 @@ function cisExportReportWord() {
   const goal = (run.answers || {})._goal;
   if (!goal) { toast('No IG goal on this assessment', '#b45309'); return; }
 
-  const goalN = { ig1: 1, ig2: 2, ig3: 3 }[goal] || 3;
-  const { score, yes: yesN, partial: partN, answered, total, scoreable: sc } = cisCalcScore(answers, goal);
-  const noN      = cisGetSafeguards(goal).filter(s => answers[s.sf] === 'no').length;
-  const fullImpl = sc > 0 ? Math.round(yesN / sc * 100) : 0;
-  const band     = score >= 75 ? 'Strong' : score >= 60 ? 'Moderate' : score >= 40 ? 'Elevated' : 'High Risk';
-  const bandCol  = score >= 75 ? '#15803d' : score >= 60 ? '#b45309' : score >= 40 ? '#ea580c' : '#dc2626';
-  const topGaps  = cisGetSafeguards(goal).filter(s => answers[s.sf] === 'no').slice(0, 10);
-  const commentary = cisState.reportCommentary || (run.answers || {})._exec_commentary || '';
+  const goalN   = { ig1: 1, ig2: 2, ig3: 3 }[goal] || 3;
+  const { score, yes: yesN, partial: partN, total } = cisCalcScore(answers, goal);
+  const noN     = cisGetSafeguards(goal).filter(s => answers[s.sf] === 'no').length;
+  const band    = score >= 75 ? 'Strong' : score >= 60 ? 'Moderate' : score >= 40 ? 'Elevated' : 'High Risk';
+  const bandCol = score >= 75 ? '#15803d' : score >= 60 ? '#b45309' : score >= 40 ? '#ea580c' : '#dc2626';
 
-  const runs = (orgAssessments[currentOrg?.id] || {})['cis'] || [];
+  const runs   = (orgAssessments[currentOrg?.id] || {})['cis'] || [];
   const sorted = [...runs].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const prevRun     = sorted.length >= 2 ? sorted[sorted.length - 2] : null;
+  const scoreChange = prevRun ? score - prevRun.score : null;
+  const changeStr   = scoreChange === null ? 'First assessment' : (scoreChange > 0 ? '+' + scoreChange + '%' : scoreChange + '%');
 
-  const igProg = [1, 2, 3].map(n => {
+  // ── Parse commentary into sections using ---MARKER--- delimiters ─────────
+  const rawCommentary = cisState.reportCommentary || (run.answers || {})._exec_commentary || '';
+  const _cParts = rawCommentary.split(/\n?---([A-Z]+)---\n?/);
+  const execText = _cParts[0].trim();
+  const _cMap = {};
+  for (let i = 1; i < _cParts.length - 1; i += 2) {
+    _cMap[_cParts[i]] = (_cParts[i + 1] || '').trim();
+  }
+
+  // Render commentary text as HTML paragraphs / • bullet lists
+  function fmtCommentary(text, placeholder) {
+    if (!text) return placeholder
+      ? `<p style="color:#94a3b8;font-style:italic;font-size:10pt;margin:0 0 10pt 0">${placeholder}</p>`
+      : '';
+    return text.split(/\n\n+/).map(p => {
+      const lines = p.split('\n').map(l => l.trim()).filter(Boolean);
+      if (lines.length && lines.every(l => l.startsWith('•'))) {
+        return '<ul style="margin:0 0 8pt 0;padding-left:16pt">' +
+          lines.map(l => `<li style="margin-bottom:3pt;font-size:11pt">${escH(l.replace(/^•\s*/, ''))}</li>`).join('') +
+          '</ul>';
+      }
+      return `<p style="font-size:11pt;line-height:1.75;margin:0 0 8pt 0">${escH(p).replace(/\n/g, '<br>')}</p>`;
+    }).join('');
+  }
+
+  // ── Gauge SVG — semicircle dial, red (left) → green (right) ──────────────
+  const _gt  = Math.max(0.02, Math.min(0.98, score / 100));
+  const _gex = Math.round((120 - 100 * Math.cos(_gt * Math.PI)) * 10) / 10;
+  const _gey = Math.round((110 - 100 * Math.sin(_gt * Math.PI)) * 10) / 10;
+  const _gla = _gt > 0.5 ? 1 : 0;
+  const _gid = 'gg' + score + (run.id || '').replace(/[^a-z0-9]/gi, '').slice(-4);
+  const gaugeSVG = `<svg width="240" height="130" viewBox="0 0 240 130" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="${_gid}" gradientUnits="userSpaceOnUse" x1="20" y1="0" x2="220" y2="0">
+        <stop offset="0%" stop-color="#dc2626"/>
+        <stop offset="38%" stop-color="#f59e0b"/>
+        <stop offset="72%" stop-color="#84cc16"/>
+        <stop offset="100%" stop-color="#15803d"/>
+      </linearGradient>
+    </defs>
+    <path d="M 20,110 A 100,100 0 0 1 220,110" fill="none" stroke="#e8edf5" stroke-width="18" stroke-linecap="round"/>
+    <path d="M 20,110 A 100,100 0 ${_gla} 1 ${_gex},${_gey}" fill="none" stroke="url(#${_gid})" stroke-width="18" stroke-linecap="round"/>
+    <text x="120" y="92" text-anchor="middle" font-family="Arial,sans-serif" font-size="38" font-weight="bold" fill="#152168">${score}%</text>
+    <text x="120" y="111" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" font-weight="bold" fill="${bandCol}">${band}</text>
+    <text x="20"  y="128" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#94a3b8">Low</text>
+    <text x="220" y="128" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#94a3b8">High</text>
+  </svg>`;
+
+  // ── Charts ─────────────────────────────────────────────────────────────────
+  const radarCanvas = document.getElementById('cisReportRadar');
+  const radarImg = radarCanvas ? radarCanvas.toDataURL('image/png') : null;
+
+  let trendImg = null;
+  if (sorted.length >= 2) {
+    const _tid = '_cisTE_' + Date.now();
+    const _tc  = document.createElement('canvas');
+    _tc.id = _tid; _tc.width = 560; _tc.height = 110;
+    _tc.style.cssText = 'position:fixed;left:-9999px;pointer-events:none';
+    document.body.appendChild(_tc);
+    cisDrawTrendLine(_tid, sorted);
+    trendImg = _tc.toDataURL('image/png');
+    document.body.removeChild(_tc);
+  }
+
+  // ── IG tier progress — only in-scope tiers ─────────────────────────────────
+  const igProg = [1, 2, 3].filter(n => n <= goalN).map(n => {
     const sfs = CIS_SAFEGUARDS.filter(s => s.ig === n);
     const y = sfs.filter(s => answers[s.sf] === 'yes').length;
     const p = sfs.filter(s => answers[s.sf] === 'partial').length;
-    return { n, y, p, total: sfs.length, inScope: n <= goalN,
-      score: Math.round((y + p * 0.5) / sfs.length * 100),
-      cov:   Math.round((y + p) / sfs.length * 100) };
+    return { n, y, p, total: sfs.length, no: sfs.length - y - p,
+      score: Math.round((y + p * 0.5) / sfs.length * 100) };
   });
 
-  const prevRun = sorted.length >= 2 ? sorted[sorted.length - 2] : null;
-  const scoreChange = prevRun ? score - prevRun.score : null;
-  const changeStr = scoreChange === null ? 'First assessment' : (scoreChange > 0 ? '+' + scoreChange + '%' : scoreChange + '%');
+  // ── Top priority gaps — in-scope No answers, IG1 first ────────────────────
+  const topGaps = cisGetSafeguards(goal)
+    .filter(s => answers[s.sf] === 'no')
+    .sort((a, b) => a.ig - b.ig)
+    .slice(0, 10);
 
-  // Capture chart images from already-rendered exec report canvases
-  const radarCanvas = document.getElementById('cisReportRadar');
-  const radarImg = radarCanvas ? radarCanvas.toDataURL('image/png') : null;
-  const trendCanvas = document.getElementById('cisReportTrend');
-  const trendImg = (trendCanvas && sorted.length >= 2) ? trendCanvas.toDataURL('image/png') : null;
-
-  const radarSection = radarImg ? `
-  <h2>Maturity Radar</h2>
-  <div style="text-align:center;margin-bottom:16pt">
-    <img src="${radarImg}" style="max-width:300pt;width:70%;display:inline-block">
-  </div>` : '';
-
-  const trendSection = sorted.length >= 2 ? (trendImg ? `
-  <h2>Score Trend</h2>
-  <div style="margin-bottom:12pt">
-    <img src="${trendImg}" style="width:100%;display:block">
-  </div>` : `
-  <h2>Score Trend</h2>
-  <table>
-    <thead><tr><th>Date</th><th>Score</th><th>Coverage</th><th>Change</th><th>Conducted By</th></tr></thead>
-    <tbody>
-      ${sorted.map((r, i) => {
-        const rA = Object.fromEntries(Object.entries(r.answers || {}).filter(([k]) => !k.startsWith('_')));
-        const rG = (r.answers || {})._goal || goal;
-        const { score: rS, yes: rY, partial: rP, total: rT } = cisCalcScore(rA, rG);
-        const rCov = Math.round((rY + rP) / rT * 100);
-        const rPrev = sorted[i - 1];
-        const rChg = rPrev ? (rS - rPrev.score) : null;
-        const rCol = rS >= 75 ? '#15803d' : rS >= 50 ? '#b45309' : '#dc2626';
-        return `<tr>
-          <td>${r.date || '—'}</td>
-          <td style="font-weight:bold;color:${rCol}">${rS}%</td>
-          <td>${rCov}%</td>
-          <td>${rChg === null ? '—' : (rChg > 0 ? '+' + rChg + '%' : rChg + '%')}</td>
-          <td style="color:#5a6a8a">${escH(r.conductedBy || '—')}</td>
-        </tr>`;
-      }).join('')}
-    </tbody>
-  </table>`) : '';
-
-  // Full controls listing for the detail page
+  // ── Full controls listing — IG-scoped safeguards only ─────────────────────
   const _aL = { yes: 'Yes', partial: 'Partial', no: 'No', na: 'N/A' };
   const _aC = { yes: '#15803d', partial: '#b45309', no: '#dc2626', na: '#94a3b8' };
   const _byC = {};
-  CIS_SAFEGUARDS.forEach(s => { if (!_byC[s.ctrl]) _byC[s.ctrl] = { name: s.ctrlName, sfs: [] }; _byC[s.ctrl].sfs.push(s); });
+  CIS_SAFEGUARDS.filter(s => s.ig <= goalN).forEach(s => {
+    if (!_byC[s.ctrl]) _byC[s.ctrl] = { name: s.ctrlName, sfs: [] };
+    _byC[s.ctrl].sfs.push(s);
+  });
   const ctrlsHtml = Object.keys(_byC).sort((a, b) => +a - +b).map(cn => {
     const sfRows = _byC[cn].sfs.map(s => {
       const ans = answers[s.sf] || '';
@@ -3545,13 +3680,6 @@ function cisExportReportWord() {
        border-bottom: 1.5pt solid #152168; padding-bottom: 3pt;
        text-transform: uppercase; letter-spacing: .5pt; }
   .sub { font-size: 10pt; color: #5a6a8a; margin: 0 0 20pt 0; }
-  .dial-row { display: flex; gap: 20pt; margin-bottom: 20pt; }
-  .dial-box { flex: 1; border: 1pt solid #dde3ef; border-radius: 4pt; padding: 12pt 16pt; text-align: center; }
-  .dial-label { font-size: 8pt; color: #5a6a8a; text-transform: uppercase; letter-spacing: .5pt; margin-bottom: 8pt; }
-  .dial-score { font-size: 32pt; font-weight: bold; line-height: 1; margin-bottom: 4pt; }
-  .dial-band  { font-size: 10pt; font-weight: bold; margin-bottom: 6pt; }
-  .dial-sub   { font-size: 9pt; color: #5a6a8a; }
-  .stats-box  { flex: 1.2; border: 1pt solid #dde3ef; border-radius: 4pt; padding: 12pt 16pt; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 10pt; font-size: 10pt; }
   th { background: #152168; color: #fff; text-align: left; padding: 5pt 8pt;
        font-size: 9pt; text-transform: uppercase; letter-spacing: .4pt; }
@@ -3572,61 +3700,63 @@ function cisExportReportWord() {
     ${run.conductedBy ? ' &nbsp;&middot;&nbsp; Assessed by: ' + escH(run.conductedBy) : ''}
   </div>
 
-  <div class="dial-row">
-    <div class="dial-box">
-      <div class="dial-label">Overall Score</div>
-      <div class="dial-score" style="color:${bandCol}">${score}%</div>
-      <div class="dial-band" style="color:${bandCol}">${band}</div>
-      <div class="dial-sub">Weighted quality measure<br>Partial = 50% credit</div>
-    </div>
-    <div class="dial-box">
-      <div class="dial-label">Fully Implemented</div>
-      <div class="dial-score" style="color:#152168">${fullImpl}%</div>
-      <div class="dial-band" style="color:#152168">${fullImpl >= 75 ? 'Mature' : fullImpl >= 50 ? 'Good' : fullImpl >= 25 ? 'Partial' : 'Minimal'}</div>
-      <div class="dial-sub">${yesN} of ${total} safeguards<br>fully completed (Yes only)</div>
-    </div>
-    <div class="stats-box">
-      <table style="margin:0">
+  <h2>Executive Summary</h2>
+  ${fmtCommentary(execText, 'No executive commentary saved. Use the Generate AI Prompt button in the exec report view, paste the prompt into Claude, then save the response before exporting.')}
+
+  <h2>Overall Security Score</h2>
+  <div style="display:flex;gap:24pt;margin-bottom:12pt;align-items:flex-start">
+    <div style="flex-shrink:0;text-align:center">${gaugeSVG}</div>
+    <div style="flex:1">
+      <table style="margin:0;font-size:10pt">
         ${[
-          ['IG Goal',            goal.toUpperCase(),  '#152168'],
-          ['Scoped safeguards',  total,               '#1a2340'],
-          ['Fully implemented', yesN + ' (' + fullImpl + '%)', '#15803d'],
-          ['Partial',            partN,               '#b45309'],
-          ['Gaps (No)',          noN,                 noN > 0 ? '#dc2626' : '#15803d'],
-          ['vs Prior run',       changeStr,           '#1a2340'],
-          ['Date',               run.date || '—',     '#5a6a8a'],
+          ['IG Goal',             goal.toUpperCase(),                                             '#152168'],
+          ['Safeguards in scope', total,                                                          '#1a2340'],
+          ['Yes (fully done)',    yesN + ' (' + Math.round(yesN / total * 100) + '%)',            '#15803d'],
+          ['Partial',             partN + ' (' + Math.round(partN / total * 100) + '%)',          '#b45309'],
+          ['Gaps (No answer)',    noN + ' (' + Math.round(noN / total * 100) + '%)',              noN > 0 ? '#dc2626' : '#15803d'],
+          ['vs Prior assessment', changeStr,                                                      '#1a2340'],
+          ['Date',                run.date || '—',                                                '#5a6a8a'],
+          ['Assessor',            run.conductedBy || '—',                                         '#5a6a8a'],
         ].map(([l, v, c]) => `<tr>
-          <td style="padding:3pt 8pt 3pt 0;border:none;color:#5a6a8a;font-size:9pt">${l}</td>
-          <td style="padding:3pt 0;border:none;font-weight:bold;font-size:9pt;color:${c}">${v}</td>
+          <td style="padding:4pt 8pt 4pt 0;border:none;color:#5a6a8a;font-size:9.5pt;white-space:nowrap">${l}</td>
+          <td style="padding:4pt 0;border:none;font-weight:bold;font-size:9.5pt;color:${c}">${v}</td>
         </tr>`).join('')}
       </table>
     </div>
   </div>
 
-  ${radarSection}
-  ${trendSection}
+  ${radarImg ? `
+  <h2>Maturity Radar</h2>
+  <div style="text-align:center;margin-bottom:16pt">
+    <img src="${radarImg}" style="max-width:300pt;width:70%;display:inline-block">
+  </div>` : ''}
 
-  <h2>IG Tier Progress</h2>
+  <h2>Implementation Group Progress</h2>
+  ${fmtCommentary(_cMap['CONTROLS'], '')}
   <table>
-    <thead><tr><th>Tier</th><th>In Scope</th><th>Safeguards</th><th>Yes</th><th>Partial</th><th>No / Open</th><th>Score</th><th>Coverage</th></tr></thead>
+    <thead><tr><th style="width:36pt">Tier</th><th>Safeguards</th><th>Yes</th><th>Partial</th><th>Gaps</th><th>Score</th></tr></thead>
     <tbody>
-      ${igProg.map(t => `<tr style="${t.inScope ? '' : 'color:#94a3b8'}">
+      ${igProg.map(t => `<tr>
         <td><span class="ig${t.n}">IG${t.n}</span></td>
-        <td>${t.inScope ? 'Yes' : 'No'}</td>
         <td>${t.total}</td>
         <td style="color:#15803d;font-weight:bold">${t.y}</td>
         <td style="color:#b45309;font-weight:bold">${t.p}</td>
-        <td style="color:${(t.total - t.y - t.p) > 0 ? '#dc2626' : '#15803d'};font-weight:bold">${t.total - t.y - t.p}</td>
-        <td style="font-weight:bold">${t.score}%</td>
-        <td style="font-weight:bold">${t.cov}%</td>
+        <td style="color:${t.no > 0 ? '#dc2626' : '#15803d'};font-weight:bold">${t.no}</td>
+        <td style="font-weight:bold;color:${t.score >= 75 ? '#15803d' : t.score >= 50 ? '#b45309' : '#dc2626'}">${t.score}%</td>
       </tr>`).join('')}
     </tbody>
   </table>
 
+  ${sorted.length >= 2 ? `
+  <h2>Score Trend</h2>
+  ${fmtCommentary(_cMap['TREND'], '')}
+  ${trendImg ? `<div style="margin-bottom:12pt"><img src="${trendImg}" style="width:100%;display:block"></div>` : ''}` : ''}
+
+  <h2>Top 10 Priority Gaps</h2>
+  ${fmtCommentary(_cMap['GAPS'], '')}
   ${topGaps.length ? `
-  <h2>Priority Gaps — No Answers (${noN} total${noN > 10 ? ', first 10 shown' : ''})</h2>
   <table>
-    <thead><tr><th style="width:60pt">Safeguard</th><th style="width:36pt">IG</th><th style="width:36pt">Control</th><th>Title</th></tr></thead>
+    <thead><tr><th style="width:60pt">Safeguard</th><th style="width:30pt">IG</th><th style="width:36pt">Control</th><th>Title</th></tr></thead>
     <tbody>
       ${topGaps.map(s => `<tr>
         <td style="font-weight:bold;color:#152168">${s.sf}</td>
@@ -3637,12 +3767,8 @@ function cisExportReportWord() {
     </tbody>
   </table>` : `<p style="color:#15803d;font-weight:bold">&#10003; No gaps &mdash; all scoped safeguards are Yes or Partial.</p>`}
 
-  ${commentary ? `
-  <h2>Executive Commentary</h2>
-  ${commentary.split(/\n\n+/).map(p => `<p style="font-size:11pt;line-height:1.75;margin:0 0 10pt 0">${escH(p).replace(/\n/g, '<br>')}</p>`).join('')}` : ''}
-
   <div style="page-break-before: always">
-    <h2>Full Assessment &mdash; All Controls &amp; Safeguards</h2>
+    <h2>Full Assessment &mdash; Controls &amp; Safeguards (${goal.toUpperCase()} in scope)</h2>
     <table>
       <thead><tr>
         <th style="width:52pt">Safeguard</th>
