@@ -323,7 +323,7 @@ function aiuCalcScore(answers, frameworks) {
 
   AI_UNIFIED_CONTROLS.forEach(c => {
     const v = answers[c.id];
-    const val = v === 'yes' ? 1 : v === 'partial' ? 0.5 : v === 'no' ? 0 : null;
+    const val = (v === 'yes' || v === 'cc') ? 1 : v === 'partial' ? 0.5 : v === 'no' ? 0 : null;
     if (val === null) return; // unanswered or na
 
     const hasNist = c.nist && c.nist.length > 0;
@@ -369,7 +369,7 @@ function aiuCalcGroupScores(answers, frameworks) {
     let totalW = 0, earnedW = 0;
     controls.forEach(c => {
       const v = answers[c.id];
-      const val = v === 'yes' ? 1 : v === 'partial' ? 0.5 : null;
+      const val = (v === 'yes' || v === 'cc') ? 1 : v === 'partial' ? 0.5 : null;
       if (val === null) return;
       totalW += c.weight; earnedW += val * c.weight;
     });
@@ -705,12 +705,12 @@ function renderAiUnifiedForm() {
       const val = aiUnifiedState.answers[ctrl.id] || '';
       const note = aiUnifiedState.notes[ctrl.id] || '';
       const commentOpen = aiUnifiedState.openComments[ctrl.id];
-      const ansColors = { yes:'#15803d', partial:'#b45309', no:'#dc2626', na:'#5a6a8a' };
-      const ansLabels = { yes:'Yes', partial:'Partial', no:'No', na:'N/A' };
+      const ansColors = { yes:'#15803d', partial:'#b45309', no:'#dc2626', na:'#5a6a8a', cc:'#0f766e' };
+      const ansLabels = { yes:'Yes', partial:'Partial', no:'No', na:'N/A', cc:'CC' };
       const wLabel = AI_WEIGHT_LABELS[ctrl.weight];
       const wColor = AI_WEIGHT_COLORS[ctrl.weight];
-      const bgColor = val==='yes'?'#f0fdf4':val==='partial'?'#fffbeb':val==='no'?'#fef2f2':val==='na'?'#f8fafc':'#fff';
-      const borderColor = val==='yes'?'#dcfce7':val==='partial'?'#fef3c7':val==='no'?'#fee2e2':val==='na'?'#e2e8f0':'var(--border)';
+      const bgColor = val==='yes'?'#f0fdf4':val==='partial'?'#fffbeb':val==='no'?'#fef2f2':val==='na'?'#f8fafc':val==='cc'?'#f0fdfa':'#fff';
+      const borderColor = val==='yes'?'#dcfce7':val==='partial'?'#fef3c7':val==='no'?'#fee2e2':val==='na'?'#e2e8f0':val==='cc'?'#99f6e4':'var(--border)';
 
       const nistBadges = ctrl.nist ? ctrl.nist.map(id => `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:#dbeafe;color:#1e40af">${id}</span>`).join(' ') : '';
       const isoBadges  = ctrl.iso  ? ctrl.iso.map(id  => `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:#ccfbf1;color:#0f766e">${id}</span>`).join(' ')  : '';
@@ -731,12 +731,13 @@ function renderAiUnifiedForm() {
             ${note ? `<div style="margin-top:4px;font-size:11px;color:var(--muted);font-style:italic">📝 ${escH(note)}</div>` : ''}
           </div>
           <div style="display:flex;gap:4px;flex-shrink:0;align-items:center;flex-wrap:wrap">
-            ${['yes','partial','no','na'].map(a => `<button onclick="aiuAnswer('${ctrl.id}','${a}')"
+            ${['yes','partial','no','na','cc'].map(a => `<button onclick="aiuAnswer('${ctrl.id}','${a}')"
               style="padding:4px 9px;font-size:11px;font-weight:700;border-radius:6px;cursor:pointer;border:2px solid ${val===a?ansColors[a]:'#dde3ef'};background:${val===a?ansColors[a]:'transparent'};color:${val===a?'#fff':'#5a6a8a'};transition:all .12s">${ansLabels[a]}</button>`).join('')}
             <button onclick="aiuToggleComment('${ctrl.id}')" title="Add note"
               style="padding:4px 8px;font-size:11px;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:${commentOpen||note?'#f0f4ff':'transparent'};color:${commentOpen||note?'var(--navy)':'var(--muted)'}">💬</button>
           </div>
         </div>
+        ${val==='cc'?`<div style="margin-top:6px;font-size:10px;color:#0f766e;background:#f0fdfa;border:1px solid #99f6e4;border-radius:6px;padding:4px 8px;line-height:1.4">Document the provider's AUP and control evidence. You manage compensating controls only.</div>`:''}
         ${commentOpen ? `<div style="margin-top:8px">
           <textarea id="aiu_note_${ctrl.id.replace(/-/g,'_')}" placeholder="Assessor note or evidence reference…"
             style="width:100%;min-height:56px;padding:6px 9px;border:1px solid var(--border);border-radius:6px;font-size:12px;resize:vertical"
@@ -1624,15 +1625,16 @@ function renderAiUnifiedMatrix() {
   const allControls = AI_UNIFIED_CONTROLS.filter(c => c.grp === grpKey);
   const m = AI_GROUP_META[grpKey];
 
-  const CELL_NEXT = { yes: 'partial', partial: 'no', no: 'na', na: '__clear__' };
+  const CELL_NEXT = { yes: 'partial', partial: 'no', no: 'na', na: 'cc', cc: '__clear__' };
   const cellStyle = val => {
     if (val === 'yes')     return 'background:#dcfce7;color:#15803d;font-weight:700;border:1.5px solid #86efac';
     if (val === 'partial') return 'background:#fef3c7;color:#b45309;font-weight:700;border:1.5px solid #fcd34d';
     if (val === 'no')      return 'background:#fee2e2;color:#dc2626;font-weight:700;border:1.5px solid #fca5a5';
     if (val === 'na')      return 'background:#f1f5f9;color:#64748b;font-weight:700;border:1.5px solid #cbd5e1';
+    if (val === 'cc')      return 'background:#f0fdfa;color:#0f766e;font-weight:700;border:1.5px solid #5eead4';
     return 'background:#f8fafc;color:var(--muted);border:1.5px dashed #dde3ef';
   };
-  const cellLabel = { yes: 'Yes', partial: 'Par', no: 'No', na: 'N/A' };
+  const cellLabel = { yes: 'Yes', partial: 'Par', no: 'No', na: 'N/A', cc: 'CC' };
 
   const runScores = runs.map(r => aiuCalcScore(r.cleanAnswers, { nist: true, iso: true }));
 

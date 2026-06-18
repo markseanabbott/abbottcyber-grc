@@ -258,7 +258,7 @@ function nistAiCalcScore(answers) {
     const v = answers[c.id];
     if (!v || v === 'na') return;
     answered++;
-    if (v === 'yes') yes++;
+    if (v === 'yes' || v === 'cc') yes++;
     else if (v === 'partial') partial++;
     else if (v === 'no') no++;
   });
@@ -276,7 +276,7 @@ function nistAiCalcFnScores(answers) {
       const v = answers[c.id];
       if (!v || v === 'na') return;
       answered++;
-      if (v === 'yes') yes++;
+      if (v === 'yes' || v === 'cc') yes++;
       else if (v === 'partial') partial++;
     });
     const total = controls.length;
@@ -597,10 +597,12 @@ function renderNistAiForm() {
         const val = nistAiState.answers[ctrl.id] || '';
         const note = (nistAiState.notes[ctrl.id] || '');
         const commentOpen = nistAiState.openComments[ctrl.id];
-        const ansColors = { yes: '#15803d', partial: '#b45309', no: '#dc2626', na: '#5a6a8a' };
-        const ansLabels = { yes: 'Yes', partial: 'Partial', no: 'No', na: 'N/A' };
+        const ansColors = { yes: '#15803d', partial: '#b45309', no: '#dc2626', na: '#5a6a8a', cc: '#0f766e' };
+        const ansLabels = { yes: 'Yes', partial: 'Partial', no: 'No', na: 'N/A', cc: 'CC' };
+        const cardBg = val==='yes'?'#f0fdf4':val==='partial'?'#fffbeb':val==='no'?'#fef2f2':val==='na'?'#f8fafc':val==='cc'?'#f0fdfa':'#fff';
+        const cardBd = val==='yes'?'#dcfce7':val==='partial'?'#fef3c7':val==='no'?'#fee2e2':val==='na'?'#f1f5f9':val==='cc'?'#99f6e4':'var(--border)';
         html += `
-        <div style="margin-bottom:.75rem;padding:.65rem .75rem;border-radius:6px;border:1px solid ${val ? (val === 'yes' ? '#dcfce7' : val === 'partial' ? '#fef3c7' : val === 'no' ? '#fee2e2' : '#f1f5f9') : 'var(--border)'};background:${val === 'yes' ? '#f0fdf4' : val === 'partial' ? '#fffbeb' : val === 'no' ? '#fef2f2' : val === 'na' ? '#f8fafc' : '#fff'}">
+        <div style="margin-bottom:.75rem;padding:.65rem .75rem;border-radius:6px;border:1px solid ${cardBd};background:${cardBg}">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
             <div style="flex:1;min-width:200px">
               <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:3px">
@@ -610,13 +612,14 @@ function renderNistAiForm() {
               <div style="font-size:11px;color:var(--muted);line-height:1.45">${escH(ctrl.desc)}</div>
               ${note ? `<div style="margin-top:4px;font-size:11px;color:var(--muted);font-style:italic">📝 ${escH(note)}</div>` : ''}
             </div>
-            <div style="display:flex;gap:4px;flex-shrink:0;align-items:center">
-              ${['yes','partial','no','na'].map(a => `<button onclick="nistAiAnswer('${ctrl.id}','${a}')"
+            <div style="display:flex;gap:4px;flex-shrink:0;align-items:center;flex-wrap:wrap">
+              ${['yes','partial','no','na','cc'].map(a => `<button onclick="nistAiAnswer('${ctrl.id}','${a}')"
                 style="padding:4px 9px;font-size:11px;font-weight:700;border-radius:6px;cursor:pointer;border:2px solid ${val === a ? ansColors[a] : '#dde3ef'};background:${val === a ? ansColors[a] : 'transparent'};color:${val === a ? '#fff' : '#5a6a8a'};transition:all .12s">${ansLabels[a]}</button>`).join('')}
               <button onclick="nistAiToggleComment('${ctrl.id}')" title="Add note"
                 style="padding:4px 8px;font-size:11px;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:${commentOpen || note ? '#f0f4ff' : 'transparent'};color:${commentOpen || note ? 'var(--navy)' : 'var(--muted)'}">💬</button>
             </div>
           </div>
+          ${val === 'cc' ? `<div style="margin-top:6px;font-size:10px;color:#0f766e;background:#f0fdfa;border:1px solid #99f6e4;border-radius:6px;padding:4px 8px;line-height:1.4">Document the provider's AUP and control evidence. You manage compensating controls only.</div>` : ''}
           ${commentOpen ? `<div style="margin-top:8px">
             <textarea id="note_${ctrl.id.replace(/-/g,'_')}" placeholder="Add assessor note…"
               style="width:100%;min-height:56px;padding:6px 9px;border:1px solid var(--border);border-radius:6px;font-size:12px;resize:vertical"
