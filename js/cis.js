@@ -1083,10 +1083,13 @@ function renderCISDashboard() {
       const p1 = prog[0], p2 = prog[1], p3 = prog[2];
       const d1 = p1.yes + p1.partial, d2 = p2.yes + p2.partial, d3 = p3.yes + p3.partial;
       const s1 = p1.total - p1.na, s2 = p2.total - p2.na, s3 = p3.total - p3.na;
-      const dTotal = d1 + d2 + d3, tTotal = s1 + s2 + s3;
+      const igGoal = (r.answers && r.answers._goal) || '';
+      const igGoalN = { ig1: 1, ig2: 2, ig3: 3 }[igGoal] || 3;
+      // TOTAL scoped to the assessment's goal — IG3 answers don't dilute an IG2 assessment
+      const dTotal = d1 + (igGoalN >= 2 ? d2 : 0) + (igGoalN >= 3 ? d3 : 0);
+      const tTotal = s1 + (igGoalN >= 2 ? s2 : 0) + (igGoalN >= 3 ? s3 : 0);
       const pctTotal = tTotal > 0 ? Math.round(dTotal / tTotal * 100) : 0;
       const totalCol = pctTotal >= 75 ? '#15803d' : pctTotal >= 50 ? '#b45309' : '#dc2626';
-      const igGoal = (r.answers && r.answers._goal) || '';
       const igC = igBadgeCols[igGoal] || { bg: '#f1f5f9', txt: '#5a6a8a' };
       const by = r.conductedBy || '—';
       const isLatest = origIdx === latestIdx;
