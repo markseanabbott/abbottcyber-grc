@@ -853,17 +853,20 @@ function cisQuickCalcScore(answers) {
   const answered = all.filter(q => answers[q.id] != null).length;
   const applicable = all.filter(q => answers[q.id] && answers[q.id] !== 'na');
   if (!applicable.length) return { score: 0, answered, total: all.length };
-  const pts = applicable.reduce((s, q) => s + (answers[q.id] === 'yes' ? 1 : answers[q.id] === 'partial' ? 0.5 : 0), 0);
+  const pts = applicable.reduce((s, q) => s + (cisIsYes(answers[q.id]) ? 1 : answers[q.id] === 'partial' ? 0.5 : 0), 0);
   return { score: Math.round(pts / applicable.length * 100), answered, total: all.length };
 }
 
 // ── SCORE ──────────────────────────────────────────────────────────────────────
 
+// Compensating Control ('cc') scores the same as 'yes' — control is managed via provider
+const cisIsYes = a => a === 'yes' || a === 'cc';
+
 // Calculate score against a given IG scope from a given answers object
 function cisCalcScore(answers, ig) {
   const sfs = cisGetSafeguards(ig);
   if (!sfs.length) return { score: 0, yes: 0, partial: 0, answered: 0, total: 0, na: 0 };
-  const yes = sfs.filter(s => answers[s.sf] === 'yes').length;
+  const yes = sfs.filter(s => cisIsYes(answers[s.sf])).length;
   const partial = sfs.filter(s => answers[s.sf] === 'partial').length;
   const na = sfs.filter(s => answers[s.sf] === 'na').length;
   const answered = sfs.filter(s => answers[s.sf] != null).length;
@@ -876,7 +879,7 @@ function cisCalcScore(answers, ig) {
 function cisIgProgress(answers) {
   return [1, 2, 3].map(n => {
     const sfs = CIS_SAFEGUARDS.filter(s => s.ig === n);
-    const yes = sfs.filter(s => answers[s.sf] === 'yes').length;
+    const yes = sfs.filter(s => cisIsYes(answers[s.sf])).length;
     const partial = sfs.filter(s => answers[s.sf] === 'partial').length;
     const na = sfs.filter(s => answers[s.sf] === 'na').length;
     const answered = sfs.filter(s => answers[s.sf] != null).length;
@@ -1060,8 +1063,8 @@ function renderCISDashboard() {
         <tr style="border-bottom:2px solid var(--border)">
           <th style="text-align:left;padding:7px 10px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Date</th>
           <th style="text-align:center;padding:7px 8px;font-size:11px;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:.05em">IG1</th>
-          <th style="text-align:center;padding:7px 8px;font-size:11px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:.05em">IG2</th>
-          <th style="text-align:center;padding:7px 8px;font-size:11px;font-weight:700;color:#6d28d9;text-transform:uppercase;letter-spacing:.05em">IG3</th>
+          <th style="text-align:center;padding:7px 8px;font-size:11px;font-weight:700;color:${goalN >= 2 ? '#1d4ed8' : '#cbd5e1'};text-transform:uppercase;letter-spacing:.05em">IG2</th>
+          <th style="text-align:center;padding:7px 8px;font-size:11px;font-weight:700;color:${goalN >= 3 ? '#6d28d9' : '#cbd5e1'};text-transform:uppercase;letter-spacing:.05em">IG3</th>
           <th style="text-align:center;padding:7px 8px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Total</th>
           <th style="text-align:left;padding:7px 10px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Goal</th>
           <th style="text-align:left;padding:7px 10px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Conducted By</th>
@@ -1096,16 +1099,16 @@ function renderCISDashboard() {
       const igC = igBadgeCols[igGoal] || { bg: '#f1f5f9', txt: '#5a6a8a' };
       const by = r.conductedBy || '—';
       const isLatest = origIdx === latestIdx;
-      // IG3 greyed when not in scope for this assessment's goal
-      const ig3InScope = igGoalN >= 3;
-      const ig3Style = ig3InScope ? '' : 'opacity:0.35;';
+      // IG2/IG3 greyed when not in scope for this assessment's goal
+      const ig2Style = igGoalN >= 2 ? '' : 'opacity:0.35;';
+      const ig3Style = igGoalN >= 3 ? '' : 'opacity:0.35;';
       html += `<tr style="border-bottom:1px solid var(--border)">
         <td style="padding:8px 10px;font-weight:${isLatest ? '700' : '400'};white-space:nowrap">
           ${r.date || '—'}
           ${isLatest ? '<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:#dbeafe;color:#1d4ed8;margin-left:6px">Latest</span>' : ''}
         </td>
         <td style="padding:8px 8px;text-align:center">${pctCell(d1, s1)}</td>
-        <td style="padding:8px 8px;text-align:center">${pctCell(d2, s2)}</td>
+        <td style="padding:8px 8px;text-align:center;${ig2Style}">${s2 > 0 ? pctCell(d2, s2) : '<span style="color:#cbd5e1">—</span>'}</td>
         <td style="padding:8px 8px;text-align:center;${ig3Style}">${s3 > 0 ? pctCell(d3, s3) : '<span style="color:#cbd5e1">—</span>'}</td>
         <td style="padding:8px 8px;text-align:center"><span style="font-size:13px;font-weight:700;color:${totalCol}">${pctTotal}%</span></td>
         <td style="padding:8px 10px">${igGoal ? `<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:${igC.bg};color:${igC.txt}">${igGoal.toUpperCase()}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
@@ -1346,10 +1349,11 @@ function renderCISForm() {
             <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px">${cisHintBadges(s.sf)}</div>
             <div class="cis-sf-sub">${s.sub}</div>
             <div class="cis-ans-row">
-              ${['yes','partial','no','na'].map(v => {
-                const labels = { yes: '✓ Yes', partial: '~ Partial', no: '✕ No', na: 'N/A' };
+              ${['yes','partial','no','na','cc'].map(v => {
+                const labels = { yes: '✓ Yes', partial: '~ Partial', no: '✕ No', na: 'N/A', cc: '⟳ Comp. Control' };
                 return `<button class="cis-ans-btn${ans === v ? ' sel-'+v : ''}" onclick="cisAnswer('${s.sf}','${v}')">${labels[v]}</button>`;
               }).join('')}
+              ${ans === 'cc' ? `<div style="font-size:10px;color:#0f766e;background:#f0fdfa;border:1px solid #99f6e4;border-radius:6px;padding:4px 8px;margin-left:6px;max-width:340px;line-height:1.4">Document the provider's AUP and control evidence. You manage compensating controls only.</div>` : ''}
               <button data-comment-btn="${s.sf}" onclick="cisCommentToggle('${s.sf}')" style="margin-left:auto;font-size:10px;font-weight:600;padding:3px 9px;border-radius:6px;border:1px dashed ${hasNote ? 'var(--navy)' : 'var(--border)'};background:transparent;color:${hasNote ? 'var(--navy)' : 'var(--muted)'};cursor:pointer" title="Assessor comment">💬${hasNote ? ' ✓' : ''} Comment</button>
               <button onclick="cisEvidencePlaceholder('${s.sf}')" style="font-size:10px;font-weight:600;padding:3px 9px;border-radius:6px;border:1px dashed var(--border);background:transparent;color:var(--muted);cursor:pointer" title="Upload evidence (coming soon)">📎 Evidence</button>
             </div>
@@ -1868,16 +1872,17 @@ function renderCISMatrix() {
     byCtrl[s.ctrl].sfs.push(s);
   });
 
-  // Cycle order: null → yes → partial → no → na → null
-  const CYCLE = [null, 'yes', 'partial', 'no', 'na'];
-  const NEXT = { null: 'yes', yes: 'partial', partial: 'no', no: 'na', na: '__clear__' };
+  // Cycle order: null → yes → partial → no → na → cc → null
+  const CYCLE = [null, 'yes', 'partial', 'no', 'na', 'cc'];
+  const NEXT = { null: 'yes', yes: 'partial', partial: 'no', no: 'na', na: 'cc', cc: '__clear__' };
   const CELL_STYLE = {
     yes:     'background:#dcfce7;color:#15803d;border:1.5px solid #86efac',
+    cc:      'background:#f0fdfa;color:#0f766e;border:1.5px solid #5eead4',
     partial: 'background:#fef3c7;color:#b45309;border:1.5px solid #fcd34d',
     no:      'background:#fee2e2;color:#dc2626;border:1.5px solid #fca5a5',
     na:      'background:#f1f5f9;color:#94a3b8;border:1.5px solid #e2e8f0',
   };
-  const CELL_LABEL = { yes: 'Yes', partial: 'Part', no: 'No', na: 'N/A' };
+  const CELL_LABEL = { yes: 'Yes', partial: 'Part', no: 'No', na: 'N/A', cc: 'CC' };
 
   const ansCell = (runId, sf, val) => {
     const nxt = NEXT[val === undefined || val === null ? 'null' : val] || 'yes';
@@ -2464,7 +2469,7 @@ function cisRenderImportPreview(parsed, ig) {
   const scopedSfs = cisGetSafeguards(ig);
   const answeredItems = scopedSfs.filter(s => parsed.answers[s.sf]);
   const preview = answeredItems.slice(0, 15);
-  const ansColors = { yes: '#15803d', partial: '#b45309', no: '#b91c1c', na: '#5a6a8a' };
+  const ansColors = { yes: '#15803d', partial: '#b45309', no: '#b91c1c', na: '#5a6a8a', cc: '#0f766e' };
 
   let html = `<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:8px">
     <div style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:12px 16px;display:flex;gap:20px;flex-wrap:wrap;align-items:center">
@@ -2939,7 +2944,7 @@ function renderCISReport() {
       ${[1,2,3].map(n => {
         const sfs = CIS_SAFEGUARDS.filter(s => s.ig === n);
         const inSc = n <= goalN;
-        const y = sfs.filter(s => answers[s.sf] === 'yes').length;
+        const y = sfs.filter(s => cisIsYes(answers[s.sf])).length;
         const p = sfs.filter(s => answers[s.sf] === 'partial').length;
         const naT = sfs.filter(s => answers[s.sf] === 'na').length;
         const sc = sfs.length - naT;
@@ -3066,6 +3071,7 @@ function cisReportBuildAccordion(answers, goalN) {
   function sfSt(sf) {
     const a = answers[sf];
     if (a === 'yes')     return { color:'#15803d', bg:'#dcfce7', label:'Yes' };
+    if (a === 'cc')      return { color:'#0f766e', bg:'#f0fdfa', label:'CC' };
     if (a === 'partial') return { color:'#d97706', bg:'#fef3c7', label:'Partial' };
     if (a === 'no')      return { color:'#dc2626', bg:'#fee2e2', label:'No' };
     if (a === 'na')      return { color:'#94a3b8', bg:'#f1f5f9', label:'N/A' };
@@ -3074,7 +3080,7 @@ function cisReportBuildAccordion(answers, goalN) {
 
   function ctrlPct(cn) {
     const sfs = (byCtrl[cn]?.safeguards || []).filter(s => s.ig <= goalN);
-    const yes = sfs.filter(s => answers[s.sf] === 'yes').length;
+    const yes = sfs.filter(s => cisIsYes(answers[s.sf])).length;
     const part = sfs.filter(s => answers[s.sf] === 'partial').length;
     const na = sfs.filter(s => answers[s.sf] === 'na').length;
     const sc = sfs.length - na;
@@ -3092,7 +3098,7 @@ function cisReportBuildAccordion(answers, goalN) {
 
   CIS_REPORT_LAYERS.forEach(layer => {
     const inScopeSfs = layer.controls.flatMap(cn => (byCtrl[cn]?.safeguards || []).filter(s => s.ig <= goalN));
-    const yes  = inScopeSfs.filter(s => answers[s.sf] === 'yes').length;
+    const yes  = inScopeSfs.filter(s => cisIsYes(answers[s.sf])).length;
     const part = inScopeSfs.filter(s => answers[s.sf] === 'partial').length;
     const naC  = inScopeSfs.filter(s => answers[s.sf] === 'na').length;
     const sc   = inScopeSfs.length - naC;
@@ -3213,7 +3219,7 @@ function cisDrawRadar(canvasId, answers, goalN) {
     const sfs = CIS_SAFEGUARDS.filter(s => s.ctrl === i);
     const inSc = sfs.filter(s => s.ig <= goalN);
     if (!inSc.length) { scores.push(null); continue; }
-    const yes  = inSc.filter(s => answers[s.sf] === 'yes').length;
+    const yes  = inSc.filter(s => cisIsYes(answers[s.sf])).length;
     const part = inSc.filter(s => answers[s.sf] === 'partial').length;
     const na   = inSc.filter(s => answers[s.sf] === 'na').length;
     const sc   = inSc.length - na;
@@ -3280,7 +3286,7 @@ function cisDrawRadar(canvasId, answers, goalN) {
   scores.forEach((s, i) => {
     if (s === null) return;
     const sfs = CIS_SAFEGUARDS.filter(sf => sf.ctrl === i + 1 && sf.ig <= goalN);
-    const yes  = sfs.filter(sf => answers[sf.sf] === 'yes').length;
+    const yes  = sfs.filter(sf => cisIsYes(answers[sf.sf])).length;
     const part = sfs.filter(sf => answers[sf.sf] === 'partial').length;
     const no   = sfs.filter(sf => answers[sf.sf] === 'no').length;
     const dotCol = yes >= part && yes >= no ? '#15803d'
@@ -3628,7 +3634,7 @@ function cisGenerateReportPrompt() {
 
   const igProg = [1, 2, 3].filter(n => n <= goalN).map(n => {
     const sfs = CIS_SAFEGUARDS.filter(s => s.ig === n);
-    const y = sfs.filter(s => answers[s.sf] === 'yes').length;
+    const y = sfs.filter(s => cisIsYes(answers[s.sf])).length;
     const p = sfs.filter(s => answers[s.sf] === 'partial').length;
     const na = sfs.filter(s => answers[s.sf] === 'na').length;
     const sc = sfs.length - na > 0 ? Math.round((y + p * 0.5) / (sfs.length - na) * 100) : 0;
@@ -3940,7 +3946,7 @@ function cisExportReportWord() {
   // ── IG tier progress — only in-scope tiers ─────────────────────────────────
   const igProg = [1, 2, 3].filter(n => n <= goalN).map(n => {
     const sfs = CIS_SAFEGUARDS.filter(s => s.ig === n);
-    const y  = sfs.filter(s => answers[s.sf] === 'yes').length;
+    const y  = sfs.filter(s => cisIsYes(answers[s.sf])).length;
     const p  = sfs.filter(s => answers[s.sf] === 'partial').length;
     const na = sfs.filter(s => answers[s.sf] === 'na').length;
     const no = sfs.length - y - p - na;
@@ -3956,8 +3962,8 @@ function cisExportReportWord() {
     .slice(0, 10);
 
   // ── Full controls listing — IG-scoped safeguards only ─────────────────────
-  const _aL = { yes: 'Yes', partial: 'Partial', no: 'No', na: 'N/A' };
-  const _aC = { yes: '#15803d', partial: '#b45309', no: '#dc2626', na: '#94a3b8' };
+  const _aL = { yes: 'Yes', partial: 'Partial', no: 'No', na: 'N/A', cc: 'Comp. Control' };
+  const _aC = { yes: '#15803d', partial: '#b45309', no: '#dc2626', na: '#94a3b8', cc: '#0f766e' };
   const _byC = {};
   CIS_SAFEGUARDS.filter(s => s.ig <= goalN).forEach(s => {
     if (!_byC[s.ctrl]) _byC[s.ctrl] = { name: s.ctrlName, sfs: [] };

@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.1.5",
   "created": "2026-05-14",
-  "updated": "2026-06-18 (session 35)",
+  "updated": "2026-06-18 (session 36)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -289,7 +289,7 @@
           "id": "cis_ig_filter",
           "text": "CIS assessment form: IG filter bar (All / IG1 / IG2 / IG3) to narrow visible safeguards by implementation group tier.",
           "done": true,
-          "notes": "Session 30. cisSetIgFilter(val) updates cisState.igFilter and re-renders. Filter bar rendered above control panels in renderCISForm(). filterN applied to scopedSfs — controls with zero matching safeguards hidden entirely. Header stats remain based on full goal scope. Panel subtitle shows 'showing IGx only' when filter active. Session 35: displaySfs changed from scopedSfs to ctrl.safeguards — all safeguards now always visible; out-of-scope ones (ig > goalN) shown at opacity:.4 with 'outside goal' badge so IG2+IG3 are visible (greyed) when goal=IG1, IG3 visible (greyed) when goal=IG2."
+          "notes": "Session 30. cisSetIgFilter(val) updates cisState.igFilter and re-renders. Filter bar rendered above control panels in renderCISForm(). filterN applied to scopedSfs — controls with zero matching safeguards hidden entirely. Header stats remain based on full goal scope. Panel subtitle shows 'showing IGx only' when filter active. Session 35: displaySfs changed from scopedSfs to ctrl.safeguards — all safeguards now always visible; out-of-scope ones (ig > goalN) shown at opacity:.4 with 'outside goal' badge so IG2+IG3 are visible (greyed) when goal=IG1, IG3 visible (greyed) when goal=IG2. Session 36: dashboard history table IG2 column now also greyed (ig2Style = opacity:0.35) when org goal is IG1, matching existing IG3 behaviour. IG2/IG3 column header colors are also dynamic (#1d4ed8/#6d28d9 when in scope, #cbd5e1 when out of scope). IG2 cell has null guard (shows — when s2=0)."
         },
         {
           "id": "cis4",
@@ -302,6 +302,12 @@
           "text": "CIS assessment form: partial save — allow saving an in-progress assessment at any point, not only when all in-scope safeguards are answered.",
           "done": true,
           "notes": "Session 34: save button was gated on org having a CIS goal set (hidden entirely when no goal). cisSave() blocked with toast when no goal. Fix: save button always visible in form header and bottom bar; cisSave() now defaults to ig1 when no goal set (cisGetGoal() || 'ig1') rather than returning. Hint text updated from 'answer all safeguards then save' to 'save at any time — partial assessments recorded with answers so far'."
+        },
+        {
+          "id": "cis_cc",
+          "text": "CIS assessment form: Compensating Control answer option — 5th answer alongside Yes/Partial/No/N/A. Teal colour (distinct from green Yes). Scores as Yes for all calculations. Shows inline note prompting documenter to capture provider AUP and control evidence.",
+          "done": true,
+          "notes": "Session 36. cisIsYes() helper (a === 'yes' || a === 'cc') replaces === 'yes' checks in cisCalcScore(), cisIgProgress(), cisQuickCalcScore(), and exec report scoring loops. Button added to cis-ans-row with label '⟳ Comp. Control', value 'cc'. Teal style .cis-ans-btn.sel-cc in modules.css. Inline provider note shown when ans === 'cc'. Matrix cycle extended: na → cc → clear. CELL_LABEL.cc = 'CC', CELL_STYLE.cc teal, ansColors.cc teal, sfSt() CC badge, exec report _aL.cc / _aC.cc mappings. Gap filter unchanged — cc is not a gap (filter is no/partial only)."
         },
         {
           "id": "cis_partial_badge",

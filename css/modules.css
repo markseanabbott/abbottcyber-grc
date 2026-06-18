@@ -214,3 +214,4 @@
 .cis-ans-btn.sel-no{background:var(--red-bg);border-color:#fca5a5;color:var(--red)}
 .cis-ans-btn.sel-partial{background:var(--amber-bg);border-color:#fcd34d;color:var(--amber)}
 .cis-ans-btn.sel-na{background:#f1f5f9;border-color:#cbd5e1;color:var(--muted)}
+.cis-ans-btn.sel-cc{background:#f0fdfa;border-color:#5eead4;color:#0f766e}
