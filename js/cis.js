@@ -3483,6 +3483,17 @@ function cisGenerateReportPrompt() {
 
   const igScopeLabel = goalN === 1 ? 'IG1' : goalN === 2 ? 'IG1 and IG2' : 'IG1, IG2, and IG3';
 
+  // Advancement threshold — 80% at current IG level triggers a recommendation to expand scope
+  const ADVANCE_THRESHOLD = 80;
+  const nextIg = goalN === 1 ? 'IG2' : goalN === 2 ? 'IG3' : null;
+  const advancementNote = goalN === 3
+    ? score >= ADVANCE_THRESHOLD
+      ? `This is a full IG3 assessment. At ${score}%, the programme is performing strongly — recommend scheduling the next re-assessment in 12 months to track continued maturity and close remaining gaps.`
+      : `This is a full IG3 assessment. At ${score}%, there are still meaningful gaps to close — recommend continuing to focus on IG3 consolidation before the next re-assessment.`
+    : score >= ADVANCE_THRESHOLD
+      ? `Score of ${score}% meets the ${ADVANCE_THRESHOLD}% advancement threshold. The foundational ${goal.toUpperCase()} programme is solid — recommend scoping next year's assessment at ${nextIg} to expand the security framework.`
+      : `Score of ${score}% is below the ${ADVANCE_THRESHOLD}% advancement threshold. Recommend consolidating the current ${goal.toUpperCase()} programme — depth before breadth — before expanding scope to ${nextIg}.`;
+
   const prompt = `Write a professional cybersecurity executive report commentary for ${currentOrg.name}. Target audience: non-technical CEO or board. Focus on business risk and practical outcomes — avoid jargon.
 
 ORGANISATION: ${currentOrg.name}
@@ -3496,6 +3507,8 @@ IMPLEMENTATION GROUP PROGRESS:
 ${igProg}
 
 SCORE TREND: ${trendStr}
+
+ADVANCEMENT RECOMMENDATION: ${advancementNote}
 
 TOP PRIORITY GAPS (No answers, IG1 first = highest priority):
 ${noGaps || '— None —'}
@@ -3518,6 +3531,8 @@ This text is parsed by a Word export engine and placed into different sections o
 OUTPUT STRUCTURE — write EXACTLY in this order with EXACTLY these markers:
 
 Write 2–3 paragraphs of executive summary prose. Plain sentences. What does this ${score}% ${band} score mean for the business in practical terms? What is working? What is the primary risk exposure if gaps are not addressed?
+
+Close the executive summary with 1–2 sentences on the recommended scope for next year's assessment. Use this as your basis: "${advancementNote}" Frame it as a forward-looking strategic recommendation, not a data point. Do not mention percentages or thresholds — speak to the programme maturity and the business case for expanding or consolidating.
 
 KEY FINDINGS
 • [Risk described as business impact — what could go wrong, not a technical gap — one sentence]
@@ -3660,28 +3675,74 @@ function cisExportReportWord() {
     return html;
   }
 
-  // ── Gauge SVG — semicircle dial, red (left) → green (right) ──────────────
-  const _gt  = Math.max(0.02, Math.min(0.98, score / 100));
-  const _gex = Math.round((120 - 100 * Math.cos(_gt * Math.PI)) * 10) / 10;
-  const _gey = Math.round((110 - 100 * Math.sin(_gt * Math.PI)) * 10) / 10;
-  const _gla = _gt > 0.5 ? 1 : 0;
-  const _gid = 'gg' + score + (run.id || '').replace(/[^a-z0-9]/gi, '').slice(-4);
-  const gaugeSVG = `<svg width="240" height="130" viewBox="0 0 240 130" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="${_gid}" gradientUnits="userSpaceOnUse" x1="20" y1="0" x2="220" y2="0">
-        <stop offset="0%" stop-color="#dc2626"/>
-        <stop offset="38%" stop-color="#f59e0b"/>
-        <stop offset="72%" stop-color="#84cc16"/>
-        <stop offset="100%" stop-color="#15803d"/>
-      </linearGradient>
-    </defs>
-    <path d="M 20,110 A 100,100 0 0 1 220,110" fill="none" stroke="#e8edf5" stroke-width="18" stroke-linecap="round"/>
-    <path d="M 20,110 A 100,100 0 ${_gla} 1 ${_gex},${_gey}" fill="none" stroke="url(#${_gid})" stroke-width="18" stroke-linecap="round"/>
-    <text x="120" y="92" text-anchor="middle" font-family="Arial,sans-serif" font-size="38" font-weight="bold" fill="#152168">${score}%</text>
-    <text x="120" y="111" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" font-weight="bold" fill="${bandCol}">${band}</text>
-    <text x="20"  y="128" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#94a3b8">Low</text>
-    <text x="220" y="128" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#94a3b8">High</text>
-  </svg>`;
+  // ── Gauge — speedometer drawn on canvas → PNG (SVG gradients don't render in Word) ──
+  let gaugeImg = null;
+  {
+    const _gc = document.createElement('canvas');
+    _gc.width = 280; _gc.height = 155;
+    _gc.style.cssText = 'position:fixed;left:-9999px;pointer-events:none';
+    document.body.appendChild(_gc);
+    const _ctx = _gc.getContext('2d');
+    const cx = 140, cy = 130, r = 105, tw = 18;
+    const t = Math.max(0.02, Math.min(0.98, score / 100));
+
+    // Grey backing track
+    _ctx.beginPath();
+    _ctx.arc(cx, cy, r, Math.PI, 0, false); // false=clockwise → upper semicircle
+    _ctx.strokeStyle = '#e8edf5';
+    _ctx.lineWidth = tw;
+    _ctx.lineCap = 'butt';
+    _ctx.stroke();
+
+    // Full colour spectrum track (red→orange→amber→lime→green)
+    const _grad = _ctx.createLinearGradient(cx - r, 0, cx + r, 0);
+    _grad.addColorStop(0,    '#dc2626');
+    _grad.addColorStop(0.30, '#f97316');
+    _grad.addColorStop(0.55, '#f59e0b');
+    _grad.addColorStop(0.75, '#84cc16');
+    _grad.addColorStop(1.00, '#15803d');
+    _ctx.beginPath();
+    _ctx.arc(cx, cy, r, Math.PI, 0, false);
+    _ctx.strokeStyle = _grad;
+    _ctx.lineWidth = tw;
+    _ctx.lineCap = 'butt';
+    _ctx.stroke();
+
+    // Needle — angle: π (left=0%) to 0/2π (right=100%), clockwise means π + t*π
+    const nx = cx + r * 0.84 * Math.cos(Math.PI + t * Math.PI);
+    const ny = cy + r * 0.84 * Math.sin(Math.PI + t * Math.PI);
+    _ctx.beginPath();
+    _ctx.moveTo(cx, cy);
+    _ctx.lineTo(nx, ny);
+    _ctx.strokeStyle = '#152168';
+    _ctx.lineWidth = 3.5;
+    _ctx.lineCap = 'round';
+    _ctx.stroke();
+
+    // Hub
+    _ctx.beginPath(); _ctx.arc(cx, cy, 9, 0, Math.PI * 2); _ctx.fillStyle = '#152168'; _ctx.fill();
+    _ctx.beginPath(); _ctx.arc(cx, cy, 5, 0, Math.PI * 2); _ctx.fillStyle = '#fff';    _ctx.fill();
+
+    // Score %
+    _ctx.textAlign = 'center';
+    _ctx.font = 'bold 34px Arial, sans-serif';
+    _ctx.fillStyle = '#152168';
+    _ctx.fillText(`${score}%`, cx, 82);
+
+    // Band label
+    _ctx.font = 'bold 12px Arial, sans-serif';
+    _ctx.fillStyle = bandCol;
+    _ctx.fillText(band, cx, 100);
+
+    // Low / High axis labels
+    _ctx.font = '9px Arial, sans-serif';
+    _ctx.fillStyle = '#94a3b8';
+    _ctx.textAlign = 'left';  _ctx.fillText('Low',  cx - r + 2,  150);
+    _ctx.textAlign = 'right'; _ctx.fillText('High', cx + r - 2, 150);
+
+    gaugeImg = _gc.toDataURL('image/png');
+    document.body.removeChild(_gc);
+  }
 
   // ── Charts — always draw fresh off-screen for reliable Word capture ─────────
   // Radar
@@ -3713,10 +3774,13 @@ function cisExportReportWord() {
   // ── IG tier progress — only in-scope tiers ─────────────────────────────────
   const igProg = [1, 2, 3].filter(n => n <= goalN).map(n => {
     const sfs = CIS_SAFEGUARDS.filter(s => s.ig === n);
-    const y = sfs.filter(s => answers[s.sf] === 'yes').length;
-    const p = sfs.filter(s => answers[s.sf] === 'partial').length;
-    return { n, y, p, total: sfs.length, no: sfs.length - y - p,
-      score: Math.round((y + p * 0.5) / sfs.length * 100) };
+    const y  = sfs.filter(s => answers[s.sf] === 'yes').length;
+    const p  = sfs.filter(s => answers[s.sf] === 'partial').length;
+    const na = sfs.filter(s => answers[s.sf] === 'na').length;
+    const no = sfs.length - y - p - na;
+    const denom = sfs.length - na;
+    return { n, y, p, na, no, total: sfs.length,
+      score: denom > 0 ? Math.round((y + p * 0.5) / denom * 100) : 0 };
   });
 
   // ── Top priority gaps — in-scope No answers, IG1 first ────────────────────
@@ -3751,7 +3815,7 @@ function cisExportReportWord() {
 <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
 <head>
 <meta charset="utf-8">
-<title>CIS Executive Report — ${escH(currentOrg.name)}</title>
+<title>CIS ${goal.toUpperCase()} Assessment — Executive Report — ${escH(currentOrg.name)}</title>
 <style>
   body { font-family: Arial, sans-serif; font-size: 11pt; color: #1a2340; margin: 0; padding: 0; }
   .page { padding: 2.5cm; max-width: 19cm; margin: 0 auto; }
@@ -3774,7 +3838,7 @@ function cisExportReportWord() {
 <body>
 <div class="page">
 
-  <h1>Cybersecurity Executive Report</h1>
+  <h1>CIS ${goal.toUpperCase()} Assessment — Executive Report</h1>
   <div class="sub">
     ${escH(currentOrg.name)} &nbsp;&middot;&nbsp; CIS Controls v8 &nbsp;&middot;&nbsp; ${run.date || '&mdash;'}
     ${run.conductedBy ? ' &nbsp;&middot;&nbsp; Assessed by: ' + escH(run.conductedBy) : ''}
@@ -3785,7 +3849,7 @@ function cisExportReportWord() {
 
   <h2>Overall Security Score</h2>
   <div style="display:flex;gap:24pt;margin-bottom:12pt;align-items:flex-start">
-    <div style="flex-shrink:0;text-align:center">${gaugeSVG}</div>
+    <div style="flex-shrink:0;text-align:center">${gaugeImg ? `<img src="${gaugeImg}" style="width:240px;display:block">` : ''}</div>
     <div style="flex:1">
       <table style="margin:0;font-size:10pt">
         ${[
@@ -3814,7 +3878,7 @@ function cisExportReportWord() {
   <h2>Implementation Group Progress</h2>
   ${fmtCommentary(_cMap['CONTROLS'], '')}
   <table>
-    <thead><tr><th style="width:36pt">Tier</th><th>Safeguards</th><th>Yes</th><th>Partial</th><th>Gaps</th><th>Score</th></tr></thead>
+    <thead><tr><th style="width:36pt">Tier</th><th>Safeguards</th><th>Yes</th><th>Partial</th><th>Gaps</th><th>N/A</th><th>Score</th></tr></thead>
     <tbody>
       ${igProg.map(t => `<tr>
         <td><span class="ig${t.n}">IG${t.n}</span></td>
@@ -3822,6 +3886,7 @@ function cisExportReportWord() {
         <td style="color:#15803d;font-weight:bold">${t.y}</td>
         <td style="color:#b45309;font-weight:bold">${t.p}</td>
         <td style="color:${t.no > 0 ? '#dc2626' : '#15803d'};font-weight:bold">${t.no}</td>
+        <td style="color:#94a3b8;font-weight:bold">${t.na}</td>
         <td style="font-weight:bold;color:${t.score >= 75 ? '#15803d' : t.score >= 50 ? '#b45309' : '#dc2626'}">${t.score}%</td>
       </tr>`).join('')}
     </tbody>
