@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+<head>
+<meta charset="utf-8">
+<title>Abbott Cyber Consulting — Executive Report Template</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 11pt; color: #1a2340; margin: 0; padding: 0; }
+  .page { padding: 2.5cm; max-width: 19cm; margin: 0 auto; }
+  h1 { font-size: 20pt; color: #152168; margin: 0 0 4pt 0; font-weight: bold; }
+  h2 { font-size: 11pt; color: #152168; margin: 20pt 0 6pt 0; font-weight: bold;
+       border-bottom: 1.5pt solid #152168; padding-bottom: 3pt;
+       text-transform: uppercase; letter-spacing: .5pt; }
+  .sub { font-size: 10pt; color: #5a6a8a; margin: 0 0 20pt 0; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 10pt; font-size: 10pt; }
+  th { background: #152168; color: #fff; text-align: left; padding: 5pt 8pt;
+       font-size: 9pt; text-transform: uppercase; letter-spacing: .4pt; }
+  td { padding: 5pt 8pt; border-bottom: 1pt solid #e8ecf4; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .ig1 { background: #dcfce7; color: #15803d; padding: 1pt 6pt; border-radius: 8pt; font-size: 9pt; font-weight: bold; }
+  .ig2 { background: #dbeafe; color: #1d4ed8; padding: 1pt 6pt; border-radius: 8pt; font-size: 9pt; font-weight: bold; }
+  .ig3 { background: #ede9fe; color: #6d28d9; padding: 1pt 6pt; border-radius: 8pt; font-size: 9pt; font-weight: bold; }
+  .footer { margin-top: 28pt; padding-top: 8pt; border-top: 1pt solid #dde3ef; font-size: 8pt; color: #94a3b8; }
+  .sub-heading { font-size: 9.5pt; color: #152168; font-weight: bold; text-transform: uppercase;
+                 letter-spacing: .5pt; margin: 14pt 0 5pt 0; padding-bottom: 3pt;
+                 border-bottom: 1.5pt solid #152168; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- TITLE -->
+  <h1>[FRAMEWORK] Assessment — Executive Report</h1>
+
+  <!-- SUBTITLE LINE: client · framework · date · assessor -->
+  <div class="sub">
+    [CLIENT NAME] &nbsp;&middot;&nbsp; [FRAMEWORK FULL NAME] &nbsp;&middot;&nbsp; [ASSESSMENT DATE]
+    &nbsp;&middot;&nbsp; Assessed by: [ASSESSOR NAME]
+  </div>
+
+  <!-- EXECUTIVE SUMMARY NARRATIVE -->
+  <!-- 3–4 paragraphs of prose contextualising the assessment, key themes, and recommended direction. -->
+  <!-- Followed immediately by KEY FINDINGS and PRIORITY RECOMMENDATIONS sub-sections if present. -->
+  <h2>Executive Summary</h2>
+  <p style="font-size:11pt;line-height:1.75;margin:0 0 8pt 0">[Executive narrative paragraph 1 — context and overall posture]</p>
+  <p style="font-size:11pt;line-height:1.75;margin:0 0 8pt 0">[Executive narrative paragraph 2 — key risk themes]</p>
+  <p style="font-size:11pt;line-height:1.75;margin:0 0 8pt 0">[Executive narrative paragraph 3 — recommended direction]</p>
+
+  <!-- KEY FINDINGS: bullet table, dark blue sub-header -->
+  <div class="sub-heading">Key Findings</div>
+  <table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">
+    <!-- EXAMPLE ROW -->
+    <tr>
+      <td style="width:14pt;vertical-align:top;padding:4pt 8pt 4pt 0;color:#152168;font-size:14pt;line-height:1">&#8226;</td>
+      <td style="font-size:11pt;line-height:1.65;padding:4pt 0;vertical-align:top;border-bottom:1pt solid #f1f5f9">[Finding text — one sentence per row]</td>
+    </tr>
+    <tr>
+      <td style="width:14pt;vertical-align:top;padding:4pt 8pt 4pt 0;color:#152168;font-size:14pt;line-height:1">&#8226;</td>
+      <td style="font-size:11pt;line-height:1.65;padding:4pt 0;vertical-align:top;border-bottom:1pt solid #f1f5f9">[Finding 2]</td>
+    </tr>
+    <tr>
+      <td style="width:14pt;vertical-align:top;padding:4pt 8pt 4pt 0;color:#152168;font-size:14pt;line-height:1">&#8226;</td>
+      <td style="font-size:11pt;line-height:1.65;padding:4pt 0;vertical-align:top;border-bottom:1pt solid #f1f5f9">[Finding 3]</td>
+    </tr>
+  </table>
+
+  <!-- PRIORITY RECOMMENDATIONS: numbered table, dark blue sub-header -->
+  <div class="sub-heading">Priority Recommendations</div>
+  <table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">
+    <!-- EXAMPLE ROW -->
+    <tr>
+      <td style="background:#152168;color:#fff;width:24pt;text-align:center;font-size:11pt;font-weight:bold;vertical-align:top;padding:7pt 4pt;border-bottom:1pt solid #1e3080">1</td>
+      <td style="padding:7pt 10pt;border-bottom:1pt solid #e8ecf4;font-size:11pt;line-height:1.65;vertical-align:top">[Recommendation 1]</td>
+    </tr>
+    <tr>
+      <td style="background:#152168;color:#fff;width:24pt;text-align:center;font-size:11pt;font-weight:bold;vertical-align:top;padding:7pt 4pt;border-bottom:1pt solid #1e3080">2</td>
+      <td style="padding:7pt 10pt;border-bottom:1pt solid #e8ecf4;font-size:11pt;line-height:1.65;vertical-align:top">[Recommendation 2]</td>
+    </tr>
+    <tr>
+      <td style="background:#152168;color:#fff;width:24pt;text-align:center;font-size:11pt;font-weight:bold;vertical-align:top;padding:7pt 4pt;border-bottom:1pt solid #1e3080">3</td>
+      <td style="padding:7pt 10pt;border-bottom:1pt solid #e8ecf4;font-size:11pt;line-height:1.65;vertical-align:top">[Recommendation 3]</td>
+    </tr>
+  </table>
+
+  <!-- SCORE HERO BLOCK: gauge image left, score metadata table right -->
+  <h2>Overall Security Score</h2>
+  <div style="display:flex;gap:24pt;margin-bottom:12pt;align-items:flex-start">
+    <div style="flex-shrink:0;text-align:center">
+      <!-- GAUGE IMAGE: insert base64 PNG here -->
+      <!-- <img src="data:image/png;base64,[BASE64]" style="width:240px;display:block"> -->
+      <!-- CHART: speedometer gauge — insert base64 PNG here -->
+    </div>
+    <div style="flex:1">
+      <table style="margin:0;font-size:10pt">
+        <!-- EXAMPLE ROW: score metadata key-value pairs -->
+        <tr>
+          <td style="padding:4pt 8pt 4pt 0;border:none;color:#5a6a8a;font-size:9.5pt;white-space:nowrap">IG Goal</td>
+          <td style="padding:4pt 0;border:none;font-weight:bold;font-size:9.5pt;color:#152168">[IG1 / IG2 / IG3]</td>
+        </tr>
+        <tr>
+          <td style="padding:4pt 8pt 4pt 0;border:none;color:#5a6a8a;font-size:9.5pt;white-space:nowrap">Safeguards in scope</td>
+          <td style="padding:4pt 0;border:none;font-weight:bold;font-size:9.5pt;color:#1a2340">[N]</td>
+        </tr>
+        <tr>
+          <td style="padding:4pt 8pt 4pt 0;border:none;color:#5a6a8a;font-size:9.5pt;white-space:nowrap">Yes (fully done)</td>
+          <td style="padding:4pt 0;border:none;font-weight:bold;font-size:9.5pt;color:#15803d">[N (X%)]</td>
+        </tr>
+        <tr>
+          <td style="padding:4pt 8pt 4pt 0;border:none;color:#5a6a8a;font-size:9.5pt;white-space:nowrap">Partial</td>
+          <td style="padding:4pt 0;border:none;font-weight:bold;font-size:9.5pt;color:#b45309">[N (X%)]</td>
+        </tr>
+        <tr>
+          <td style="padding:4pt 8pt 4pt 0;border:none;color:#5a6a8a;font-size:9.5pt;white-space:nowrap">Gaps (No answer)</td>
+          <td style="padding:4pt 0;border:none;font-weight:bold;font-size:9.5pt;color:#dc2626">[N (X%)]</td>
+        </tr>
+        <tr>
+          <td style="padding:4pt 8pt 4pt 0;border:none;color:#5a6a8a;font-size:9.5pt;white-space:nowrap">vs Prior assessment</td>
+          <td style="padding:4pt 0;border:none;font-weight:bold;font-size:9.5pt;color:#1a2340">[+X% / First assessment]</td>
+        </tr>
+        <tr>
+          <td style="padding:4pt 8pt 4pt 0;border:none;color:#5a6a8a;font-size:9.5pt;white-space:nowrap">Date</td>
+          <td style="padding:4pt 0;border:none;font-weight:bold;font-size:9.5pt;color:#5a6a8a">[YYYY-MM-DD]</td>
+        </tr>
+        <tr>
+          <td style="padding:4pt 8pt 4pt 0;border:none;color:#5a6a8a;font-size:9.5pt;white-space:nowrap">Assessor</td>
+          <td style="padding:4pt 0;border:none;font-weight:bold;font-size:9.5pt;color:#5a6a8a">[Assessor Name]</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- MATURITY RADAR IMAGE -->
+  <h2>Maturity Radar</h2>
+  <div style="text-align:center;margin-bottom:16pt">
+    <!-- CHART: maturity radar — insert base64 PNG here -->
+    <!-- <img src="data:image/png;base64,[BASE64]" style="max-width:300pt;width:70%;display:inline-block"> -->
+  </div>
+
+  <!-- IMPLEMENTATION GROUP PROGRESS TABLE -->
+  <h2>Implementation Group Progress</h2>
+  <!-- Optional: prose context for this section goes here -->
+  <table>
+    <thead>
+      <tr><th style="width:36pt">Tier</th><th>Safeguards</th><th>Yes</th><th>Partial</th><th>Gaps</th><th>N/A</th><th>Score</th></tr>
+    </thead>
+    <tbody>
+      <!-- EXAMPLE ROW -->
+      <tr>
+        <td><span class="ig1">IG1</span></td>
+        <td>[56]</td>
+        <td style="color:#15803d;font-weight:bold">[42]</td>
+        <td style="color:#b45309;font-weight:bold">[8]</td>
+        <td style="color:#dc2626;font-weight:bold">[6]</td>
+        <td style="color:#94a3b8;font-weight:bold">[0]</td>
+        <td style="font-weight:bold;color:#15803d">[82%]</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- SCORE TREND IMAGE -->
+  <!-- Only include this section if 2+ prior assessments exist -->
+  <h2>Score Trend</h2>
+  <!-- Optional: prose context for trend direction goes here -->
+  <!-- CHART: score trend line — insert base64 PNG here -->
+  <!-- <div style="margin-bottom:12pt"><img src="data:image/png;base64,[BASE64]" style="width:100%;display:block"></div> -->
+
+  <!-- TOP N PRIORITY GAPS TABLE -->
+  <h2>Top 10 Priority Gaps</h2>
+  <!-- Optional: prose context for gap prioritisation goes here -->
+  <table>
+    <thead>
+      <tr><th style="width:60pt">Safeguard</th><th style="width:30pt">IG</th><th style="width:36pt">Control</th><th>Title</th></tr>
+    </thead>
+    <tbody>
+      <!-- EXAMPLE ROW -->
+      <tr>
+        <td style="font-weight:bold;color:#152168">[1.1]</td>
+        <td><span class="ig1">IG1</span></td>
+        <td style="color:#5a6a8a">[C1]</td>
+        <td>[Safeguard title]</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- FULL ASSESSMENT TABLE: control group headers + safeguard rows -->
+  <!-- page-break-before keeps this section starting on a new page in Word -->
+  <div style="page-break-before: always">
+    <h2>Full Assessment &mdash; Controls &amp; Safeguards ([IG GOAL] in scope)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:52pt">Safeguard</th>
+          <th style="width:30pt">IG</th>
+          <th style="width:44pt">Answer</th>
+          <th>Title &amp; Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- EXAMPLE ROW: control group header (navy full-width) -->
+        <tr>
+          <td colspan="4" style="background:#152168;color:#fff;font-weight:bold;font-size:9.5pt;padding:5pt 8pt;border:none">Control 1: Inventory and Control of Enterprise Assets</td>
+        </tr>
+        <!-- EXAMPLE ROW: safeguard row -->
+        <tr>
+          <td style="font-weight:bold;color:#152168;white-space:nowrap;font-size:9pt">1.1</td>
+          <td style="text-align:center"><span class="ig1">IG1</span></td>
+          <td style="font-weight:bold;color:#15803d;text-align:center;white-space:nowrap;font-size:9pt">Yes</td>
+          <td>
+            <strong style="font-size:9.5pt">Establish and Maintain Detailed Enterprise Asset Inventory</strong><br>
+            <span style="font-size:8.5pt;color:#5a6a8a">Establish and maintain an accurate, detailed, and up-to-date inventory of all enterprise assets…</span>
+          </td>
+        </tr>
+        <!-- EXAMPLE ROW: partial answer -->
+        <tr>
+          <td style="font-weight:bold;color:#152168;white-space:nowrap;font-size:9pt">1.2</td>
+          <td style="text-align:center"><span class="ig1">IG1</span></td>
+          <td style="font-weight:bold;color:#b45309;text-align:center;white-space:nowrap;font-size:9pt">Partial</td>
+          <td>
+            <strong style="font-size:9.5pt">Address Unauthorized Assets</strong><br>
+            <span style="font-size:8.5pt;color:#5a6a8a">Ensure that a process exists to address unauthorized assets on a weekly basis…</span>
+          </td>
+        </tr>
+        <!-- EXAMPLE ROW: no answer -->
+        <tr>
+          <td style="font-weight:bold;color:#152168;white-space:nowrap;font-size:9pt">1.3</td>
+          <td style="text-align:center"><span class="ig2">IG2</span></td>
+          <td style="font-weight:bold;color:#dc2626;text-align:center;white-space:nowrap;font-size:9pt">No</td>
+          <td>
+            <strong style="font-size:9.5pt">Utilize an Active Discovery Tool</strong><br>
+            <span style="font-size:8.5pt;color:#5a6a8a">Utilize an active discovery tool to identify assets connected to the enterprise's network…</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    Generated by Abbott Cyber Consulting GRC Platform &nbsp;&middot;&nbsp;
+    [FRAMEWORK NAME] &nbsp;&middot;&nbsp; [ASSESSMENT DATE] &nbsp;&middot;&nbsp; [CLIENT NAME] &nbsp;&middot;&nbsp; Confidential
+  </div>
+
+</div>
+</body>
+</html>
