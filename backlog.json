@@ -1759,6 +1759,12 @@
           "text": "Abbott Executive Report Template — ma-executive-report-generator skill created; template shell saved to templates/Abbott_Executive_Report_Template.doc. Future: build a native report generator view in the platform that pre-populates the template from live assessment data and allows one-click download without needing Claude.",
           "done": false,
           "priority": "Low"
+        },
+        {
+          "id": "ai21",
+          "text": "AI Security Assessment — dedicated assessment module covering the technical security posture of an organisation's AI usage, distinct from the governance/compliance focus of NIST AI RMF and ISO 42001. Scope to cover: prompt injection controls, model access and API key management, data sent to AI providers (data leakage risk), AI output validation and human-in-the-loop controls, AI tool inventory and shadow AI, vendor security posture for AI providers, adversarial input handling, and AI-specific incident response. Likely a survey-based format similar to Insurance Readiness or Tech Stack, with scored output and gap report. Ties into TPRA for AI vendor assessment and the AI Tabletop track for incident readiness.",
+          "done": false,
+          "priority": "Medium"
         }
       ]
     }
