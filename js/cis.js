@@ -1231,7 +1231,7 @@ function renderCISForm() {
   <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:10px">
     <div>
       <div style="font-size:17px;font-weight:700;margin-bottom:4px">✅ CIS Controls v8 — ${cisState.editId ? 'Edit Assessment' : 'New Assessment'}</div>
-      <div style="font-size:12px;color:var(--muted)">${cisState.editId ? 'Editing an existing record — saving will update it in place' : 'Answer all safeguards in scope for your target IG level, then save to record this run'}</div>
+      <div style="font-size:12px;color:var(--muted)">${cisState.editId ? 'Editing an existing record — saving will update it in place' : 'Save at any time — partial assessments are recorded with answers answered so far'}</div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn btn-outline btn-sm" onclick="cisNavToDashboard()">← Back to Dashboard</button>
@@ -1262,8 +1262,7 @@ function renderCISForm() {
         ? `<div style="font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:2px">Trend</div>
            <canvas id="cisTrendChart" width="200" height="60"></canvas>`
         : `<div style="font-size:11px;color:rgba(255,255,255,.3);text-align:right">${runs.length === 1 ? '1 run recorded<br>trend after 2nd save' : 'No history yet'}</div>`}
-      ${goal ? `
-        <div style="display:flex;align-items:flex-end;gap:6px;margin-top:4px;flex-wrap:wrap">
+      <div style="display:flex;align-items:flex-end;gap:6px;margin-top:4px;flex-wrap:wrap">
           <div>
             <div style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:3px">Assessment date</div>
             <input type="date" id="cisSaveDate" value="${cisState.editId ? (cisState.editDate || new Date().toISOString().split('T')[0]) : new Date().toISOString().split('T')[0]}"
@@ -1277,7 +1276,7 @@ function renderCISForm() {
               style="padding:5px 8px;border-radius:6px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-family:Inter,sans-serif;font-size:12px;width:150px" autocomplete="off">
           </div>
           <button class="btn btn-cyan btn-sm" id="cisSaveBtn" onclick="cisSave()">${cisState.editId ? 'Update Assessment' : 'Save to Database'}</button>
-        </div>` : ''}
+        </div>
     </div>
   </div>`;
 
@@ -1369,7 +1368,7 @@ function renderCISForm() {
     <button class="btn btn-outline btn-sm" onclick="cisExpandAll(true)">Expand all</button>
     <button class="btn btn-outline btn-sm" onclick="cisExpandAll(false)">Collapse all</button>
     <button class="btn btn-outline btn-sm" onclick="cisNavToDashboard()">← Back to Dashboard</button>
-    ${goal ? `<button class="btn btn-cyan btn-sm" onclick="cisSave()">Save to Database</button>` : ''}
+    <button class="btn btn-cyan btn-sm" onclick="cisSave()">Save to Database</button>
   </div>`;
 
   return html;
@@ -2153,8 +2152,7 @@ async function cisSave() {
     if (!cisState.notes) cisState.notes = {};
     cisState.notes[sf] = ta.value;
   });
-  const goal = cisGetGoal();
-  if (!goal) { toast('Set a CIS goal before saving', '#b45309'); return; }
+  const goal = cisGetGoal() || 'ig1';
   const { score } = cisCalcScore(cisState.answers, goal);
   const dateInput = document.getElementById('cisSaveDate');
   const date = (dateInput && dateInput.value) || new Date().toISOString().split('T')[0];

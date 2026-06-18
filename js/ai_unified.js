@@ -1418,6 +1418,65 @@ function aiuBuildPyramidState(answers) {
   return state;
 }
 
+function aiuBuildPyramidSvgStr(pyrState) {
+  const W = 1400, TIP_Y = 28, BASE_Y = 690, HALF_W = 460, PAD = 5;
+  const NT = AI_PYR_TIERS.length, TH = (BASE_Y - TIP_Y) / NT;
+  const cx = W / 2;
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function getFill(st) { return {red:'#c00000',yellow:'#e8a000',blue:'#2e7ab0',green:'#00af50'}[st]||'#888'; }
+  function getStroke(st) { return {red:'#960000',yellow:'#b87800',blue:'#1e5a8a',green:'#007a38'}[st]||'#555'; }
+  function tierBounds(ti) {
+    const topY = TIP_Y + ti * TH, botY = topY + TH;
+    const ft = (topY - TIP_Y) / (BASE_Y - TIP_Y), fb = (botY - TIP_Y) / (BASE_Y - TIP_Y);
+    return { topY, botY, topHW: ft * HALF_W, botHW: fb * HALF_W };
+  }
+  function wrapText(text, maxW, fs) {
+    const max = Math.max(4, Math.floor(maxW / (fs * 0.52)));
+    const words = text.split(' '); const lines = []; let cur = '';
+    words.forEach(w => { const t = cur ? cur + ' ' + w : w; if (t.length > max && cur) { lines.push(cur); cur = w; } else cur = t; });
+    if (cur) lines.push(cur);
+    return lines;
+  }
+  let s = '';
+  AI_PYR_TIERS.forEach((tier, ti) => {
+    const { topY, botY, topHW, botHW } = tierBounds(ti);
+    const tierWtop = topHW * 2, tierWbot = botHW * 2;
+    const nCols = tier.cols.length;
+    const colXtop = [], colXbot = [];
+    for (let i = 0; i <= nCols; i++) {
+      colXtop.push(cx - topHW + (i / nCols) * tierWtop);
+      colXbot.push(cx - botHW + (i / nCols) * tierWbot);
+    }
+    const yt = topY + PAD, yb = botY - PAD;
+    const APEX_GAP = 12;
+    tier.cols.forEach((col, ci) => {
+      const colFracL = ci / nCols - 0.5, colFracR = (ci + 1) / nCols - 0.5;
+      const apexOffL = colFracL * APEX_GAP * 2, apexOffR = colFracR * APEX_GAP * 2;
+      const _xtl = colXtop[ci] + PAD + apexOffL * Math.max(0, 1 - topHW / 40);
+      const _xtr = colXtop[ci + 1] - PAD + apexOffR * Math.max(0, 1 - topHW / 40);
+      const xtl = Math.min(_xtl, _xtr), xtr = Math.max(_xtl, _xtr);
+      const xbl = colXbot[ci] + PAD, xbr = colXbot[ci + 1] - PAD;
+      const midX = (xtl + xtr + xbl + xbr) / 4;
+      const colW = (xtr - xtl + xbr - xbl) / 2;
+      const fill = getFill(pyrState[col.id] || 'red');
+      const stroke = getStroke(pyrState[col.id] || 'red');
+      s += `<polygon points="${xtl},${yt} ${xtr},${yt} ${xbr},${yb} ${xbl},${yb}" fill="${fill}" stroke="${stroke}" stroke-width="1"/>`;
+      const fs = Math.min(11, Math.max(7, (yb - yt) / 4.5));
+      const midY = (yt + yb) / 2;
+      const lines = wrapText(col.name, colW - 6, fs);
+      const lh = fs * 1.25, tot = lines.length * lh;
+      lines.forEach((line, li) => {
+        const ty = midY - tot / 2 + li * lh + lh * 0.78;
+        s += `<text x="${midX}" y="${ty}" text-anchor="middle" fill="#ffffff" font-size="${fs}" font-weight="600" font-family="Arial,sans-serif">${esc(line)}</text>`;
+      });
+    });
+    const { topY: ty2, botY: by2, topHW: thw } = tierBounds(ti);
+    const lblY = (ty2 + by2) / 2;
+    s += `<text x="${cx - Math.max(thw, 0) - 80}" y="${lblY + 4}" text-anchor="end" fill="#5a3a9a" font-size="13" font-weight="700" font-family="Arial,sans-serif" letter-spacing="0.06em">${esc(tier.label.toUpperCase())}</text>`;
+  });
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-120 0 1540 710" width="520" height="222" style="display:block;margin:0 auto">${s}</svg>`;
+}
+
 async function aiuSaveCommentary() {
   const run = aiUnifiedState.reportRun;
   if (!run?.id) { toast('Cannot save — assessment ID missing', '#dc2626'); return; }
@@ -1821,7 +1880,7 @@ async function aiuExportWord() {
   let nistRadarImg = null, isoRadarImg = null;
   if (fw.nist !== false && nistAxes.filter(a => a.pct !== null).length) {
     const _nc = document.createElement('canvas');
-    _nc.width = 280; _nc.height = 260;
+    _nc.width = 420; _nc.height = 380;
     _nc.style.cssText = 'position:fixed;left:-9999px;pointer-events:none';
     document.body.appendChild(_nc);
     aiuDrawFrameworkRadar(_nc, nistAxes, 'rgba(29,78,216,0.12)', '#1d4ed8');
@@ -1830,7 +1889,7 @@ async function aiuExportWord() {
   }
   if (fw.iso !== false && isoAxes.filter(a => a.pct !== null).length) {
     const _ic = document.createElement('canvas');
-    _ic.width = 280; _ic.height = 260;
+    _ic.width = 420; _ic.height = 380;
     _ic.style.cssText = 'position:fixed;left:-9999px;pointer-events:none';
     document.body.appendChild(_ic);
     aiuDrawFrameworkRadar(_ic, isoAxes, 'rgba(15,118,110,0.12)', '#0f766e');
@@ -1961,27 +2020,40 @@ ${fmtCommentary(rawCommentary, 'No executive commentary saved. Use the AI Prompt
 </div>
 
 <h2>Framework Breakdown</h2>
-<div style="display:flex;gap:32pt;align-items:flex-start;flex-wrap:wrap;justify-content:space-around;margin-bottom:16pt">
-  ${nistRadarImg ? `<div style="text-align:center">
-    <div style="font-size:10pt;font-weight:bold;color:#1d4ed8;margin-bottom:8pt">NIST AI RMF</div>
-    <img src="${nistRadarImg}" style="width:220pt;display:block;margin:0 auto">
-    <div style="display:flex;justify-content:center;gap:12pt;margin-top:6pt;flex-wrap:wrap">
-      ${nistAxes.filter(a=>a.pct!==null).map(a=>`<div style="font-size:9pt;text-align:center"><div style="font-weight:800;color:#1d4ed8">${a.pct}%</div><div style="color:#5a6a8a">${a.label}</div></div>`).join('')}
-    </div>
-  </div>` : ''}
-  ${isoRadarImg ? `<div style="text-align:center">
-    <div style="font-size:10pt;font-weight:bold;color:#0f766e;margin-bottom:8pt">ISO 42001</div>
-    <img src="${isoRadarImg}" style="width:220pt;display:block;margin:0 auto">
-    <div style="display:flex;justify-content:center;gap:12pt;margin-top:6pt;flex-wrap:wrap">
-      ${isoAxes.filter(a=>a.pct!==null).map(a=>`<div style="font-size:9pt;text-align:center"><div style="font-weight:800;color:#0f766e">${a.pct}%</div><div style="color:#5a6a8a">${a.label}</div></div>`).join('')}
-    </div>
-  </div>` : ''}
-</div>
+<table style="width:100%;border-collapse:collapse;margin-bottom:16pt">
+  <tr valign="top">
+    ${nistRadarImg ? `<td style="width:50%;text-align:center;padding:0 12pt 0 0;border:none">
+      <div style="font-size:10pt;font-weight:bold;color:#1d4ed8;margin-bottom:6pt">NIST AI RMF</div>
+      <img src="${nistRadarImg}" style="width:200pt;display:block;margin:0 auto">
+      <table style="margin:8pt auto 0;border-collapse:collapse;font-size:9pt;width:auto">
+        <tbody>${nistAxes.filter(a=>a.pct!==null).map(a=>`<tr>
+          <td style="padding:2pt 16pt 2pt 0;color:#5a6a8a;border:none;text-align:left">${a.label}</td>
+          <td style="font-weight:800;color:#1d4ed8;border:none;text-align:right">${a.pct}%</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </td>` : '<td style="width:50%;border:none"></td>'}
+    ${isoRadarImg ? `<td style="width:50%;text-align:center;padding:0 0 0 12pt;border:none">
+      <div style="font-size:10pt;font-weight:bold;color:#0f766e;margin-bottom:6pt">ISO 42001</div>
+      <img src="${isoRadarImg}" style="width:200pt;display:block;margin:0 auto">
+      <table style="margin:8pt auto 0;border-collapse:collapse;font-size:9pt;width:auto">
+        <tbody>${isoAxes.filter(a=>a.pct!==null).map(a=>`<tr>
+          <td style="padding:2pt 16pt 2pt 0;color:#5a6a8a;border:none;text-align:left">${a.label}</td>
+          <td style="font-weight:800;color:#0f766e;border:none;text-align:right">${a.pct}%</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </td>` : '<td style="width:50%;border:none"></td>'}
+  </tr>
+</table>
 
 <h2>AI Maturity Pyramid</h2>
-<table>
-  <thead><tr><th>Capability</th><th>NIST AI RMF</th><th>ISO 42001</th><th style="width:90pt;text-align:center">Status</th></tr></thead>
-  <tbody>${pyrRowsHtml}</tbody>
+${aiuBuildPyramidSvgStr(pyrState)}
+<table style="width:auto;margin:8pt auto 0;border-collapse:collapse">
+  <tbody><tr>
+    <td style="padding:4pt 14pt;border:none;font-size:9pt"><span style="display:inline-block;width:10px;height:10px;background:#c00000;margin-right:5px;border-radius:2px;vertical-align:middle"></span>Not Addressed</td>
+    <td style="padding:4pt 14pt;border:none;font-size:9pt"><span style="display:inline-block;width:10px;height:10px;background:#e8a000;margin-right:5px;border-radius:2px;vertical-align:middle"></span>Partial</td>
+    <td style="padding:4pt 14pt;border:none;font-size:9pt"><span style="display:inline-block;width:10px;height:10px;background:#2e7ab0;margin-right:5px;border-radius:2px;vertical-align:middle"></span>In Progress</td>
+    <td style="padding:4pt 14pt;border:none;font-size:9pt"><span style="display:inline-block;width:10px;height:10px;background:#00af50;margin-right:5px;border-radius:2px;vertical-align:middle"></span>Implemented</td>
+  </tr></tbody>
 </table>
 
 <h2>Top ${top10.length} Priority Gaps</h2>

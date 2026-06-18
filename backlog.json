@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.1.5",
   "created": "2026-05-14",
-  "updated": "2026-06-18 (session 33)",
+  "updated": "2026-06-18 (session 34)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -296,6 +296,17 @@
           "text": "CIS gap report: dedicated view listing all unanswered or 'No' safeguards for the selected IG goal, sorted by control group, with recommended remediation priority.",
           "done": true,
           "notes": "Built. cisOpenGapReport(idx) opens gap view; renderCISGapReport() renders grouped-by-control table with priority badges (Critical/High/Medium/Low derived from IG tier × answer status). cisGapPriority() matrix. cisGapCopyPrompt() copies a remediation roadmap prompt for Claude. 🔍 Gaps button added to each assessment row in the dashboard. Includes summary stat chips and priority legend."
+        },
+        {
+          "id": "cis_partial_save",
+          "text": "CIS assessment form: partial save — allow saving an in-progress assessment at any point, not only when all in-scope safeguards are answered.",
+          "done": true,
+          "notes": "Session 34: save button was gated on org having a CIS goal set (hidden entirely when no goal). cisSave() blocked with toast when no goal. Fix: save button always visible in form header and bottom bar; cisSave() now defaults to ig1 when no goal set (cisGetGoal() || 'ig1') rather than returning. Hint text updated from 'answer all safeguards then save' to 'save at any time — partial assessments recorded with answers so far'."
+        },
+        {
+          "id": "cis_partial_badge",
+          "text": "CIS dashboard history table: show 'In Progress' badge on saved assessments that have unanswered in-scope safeguards (answered < scoreable). Helps distinguish interim saves from complete assessments at a glance.",
+          "done": false
         }
       ]
     },
@@ -1635,7 +1646,7 @@
           "id": "ai5",
           "text": "Unified AI Governance Assessment — 44-question NIST AI RMF × ISO 42001 cross-walk module; weighted gap prioritisation (weight × deficit), top-5 gap view, POAM, exec report, framework toggles (NIST on/off, ISO on/off), AI prompt export; replaces separate NIST and ISO modules in nav",
           "done": true,
-          "notes": "js/ai_unified.js (AI_UNIFIED_CONTROLS 44q, 9 groups, aiuCalcScore/aiuWeightedGaps/aiuCalcGroupScores, full render suite). ai_hub.js updated to read from ai_unified. Saves to assessments with module=ai_unified. POAM stored in answers._poam blob. Session 13: AI_REMEDIATION lookup added (all 44 controls); POAM rows now show '💡 Suggested Action' block with concrete remediation guidance inline under each gap. Session 31: visual equalisation to CIS pattern — assessment history table headers now framework-coloured (Overall=navy, NIST=#1d4ed8, ISO=#0f766e); action button inline size overrides removed (now use standard .btn-sm); history card toolbar now has ⊞ Compare Matrix + 📋 POAM + + New Assessment buttons; Compare Matrix view added (aiuOpenMatrix/renderAiUnifiedMatrix/aiuMatrixAnswer) — last 5 assessments side-by-side with 9-group filter, click-to-cycle answers (Yes→Partial→No→N/A→Clear), auto-save to Supabase; Word export added (aiuExportWord) — canvas gauge, canvas radar, domain table, top 5 gaps, commentary; exec report score card changed from white card to .score-hero-ins navy hero matching CIS style; Domain Coverage progress bars added below hero; radar draw now triggered in aiuOpenReport() setTimeout. Session 33: aiuExportWord() fully overhauled — now matches Abbott Executive Report template CSS (Arial, .page 2.5cm, h2 uppercase with navy border); fmtCommentary() parser added (KEY FINDINGS bullet table + PRIORITY RECOMMENDATIONS numbered table, identical to CIS pattern); score hero restructured (gauge left, metadata table right); Pyramid Maturity Table added (all 5 tiers × 22 segments, NIST+ISO refs, status badges); top gaps expanded to 10 with Domain column; full 44-control assessment table added (9 group headers, framework badge, answer colour, weight); filename changed to AI_Exec_Report_[Client]_[Date].doc with BOM."
+          "notes": "js/ai_unified.js (AI_UNIFIED_CONTROLS 44q, 9 groups, aiuCalcScore/aiuWeightedGaps/aiuCalcGroupScores, full render suite). ai_hub.js updated to read from ai_unified. Saves to assessments with module=ai_unified. POAM stored in answers._poam blob. Session 13: AI_REMEDIATION lookup added (all 44 controls); POAM rows now show '💡 Suggested Action' block with concrete remediation guidance inline under each gap. Session 31: visual equalisation to CIS pattern — assessment history table headers now framework-coloured (Overall=navy, NIST=#1d4ed8, ISO=#0f766e); action button inline size overrides removed (now use standard .btn-sm); history card toolbar now has ⊞ Compare Matrix + 📋 POAM + + New Assessment buttons; Compare Matrix view added (aiuOpenMatrix/renderAiUnifiedMatrix/aiuMatrixAnswer) — last 5 assessments side-by-side with 9-group filter, click-to-cycle answers (Yes→Partial→No→N/A→Clear), auto-save to Supabase; Word export added (aiuExportWord) — canvas gauge, canvas radar, domain table, top 5 gaps, commentary; exec report score card changed from white card to .score-hero-ins navy hero matching CIS style; Domain Coverage progress bars added below hero; radar draw now triggered in aiuOpenReport() setTimeout. Session 33: aiuExportWord() fully overhauled — now matches Abbott Executive Report template CSS (Arial, .page 2.5cm, h2 uppercase with navy border); fmtCommentary() parser added (KEY FINDINGS bullet table + PRIORITY RECOMMENDATIONS numbered table, identical to CIS pattern); score hero restructured (gauge left, metadata table right); Pyramid Maturity Table added (all 5 tiers × 22 segments, NIST+ISO refs, status badges); top gaps expanded to 10 with Domain column; full 44-control assessment table added (9 group headers, framework badge, answer colour, weight); filename changed to AI_Exec_Report_[Client]_[Date].doc with BOM. Session 34: three Word export fixes — (1) off-screen radar canvas 280x260 increased to 420x380 so long labels no longer clip; (2) framework breakdown per-axis score legends replaced from flex chips to proper HTML tables (Word ignores flexbox); (3) Pyramid text table replaced with inline SVG graphic via new aiuBuildPyramidSvgStr(pyrState) function — mirrors initAiPyramid() geometry as a string builder, embedded at 520x222px with colour legend table."
         },
         {
           "id": "ai6",
