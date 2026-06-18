@@ -197,7 +197,7 @@ function _homeAiChicklet(h) {
     return `<div class="card" style="padding:0;overflow:hidden">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .9rem .5rem;border-bottom:1px solid var(--border)">
         <div style="font-size:13px;font-weight:700">🤖 AI Readiness</div>
-        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();setNav('ai_hub')">View Hub →</button>
+        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();setNav('ai_readiness')">View Hub →</button>
       </div>
       <div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:12px">
         <div style="font-size:1.5rem;margin-bottom:.35rem">🤖</div>
@@ -207,7 +207,7 @@ function _homeAiChicklet(h) {
     </div>`;
   }
 
-  return `<div class="card" style="padding:0;overflow:hidden;cursor:pointer" onclick="setNav('ai_hub')" onmouseover="this.style.boxShadow='0 0 0 2px var(--cyan)'" onmouseout="this.style.boxShadow=''">
+  return `<div class="card" style="padding:0;overflow:hidden;cursor:pointer" onclick="setNav('ai_readiness')" onmouseover="this.style.boxShadow='0 0 0 2px var(--cyan)'" onmouseout="this.style.boxShadow=''">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .9rem .5rem;border-bottom:1px solid var(--border)">
       <div>
         <div style="font-size:13px;font-weight:700">🤖 AI Readiness</div>
@@ -219,7 +219,16 @@ function _homeAiChicklet(h) {
       </div>
     </div>
     <div style="padding:.5rem .75rem .5rem">
-      <canvas id="home-ai-radar" style="display:block;width:100%;height:240px"></canvas>
+      <div style="display:flex;gap:4px">
+        <div style="flex:1;text-align:center">
+          <div style="font-size:9px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">NIST AI RMF</div>
+          <canvas id="home-ai-nist-radar" style="display:block;width:100%;height:190px"></canvas>
+        </div>
+        <div style="flex:1;text-align:center">
+          <div style="font-size:9px;font-weight:700;color:#0f766e;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">ISO 42001</div>
+          <canvas id="home-ai-iso-radar" style="display:block;width:100%;height:190px"></canvas>
+        </div>
+      </div>
     </div>
     <div style="padding:.35rem .9rem .75rem;text-align:center;font-size:11px;color:var(--cyan);font-weight:700">→ AI Readiness Hub</div>
   </div>`;
@@ -296,16 +305,22 @@ function _drawHomeAiRadar() {
   const runs = [...(h['ai_unified'] || [])].sort((a, b) => (b.date||'').localeCompare(a.date||''));
   const latest = runs[0];
   if (!latest) return;
-  const canvas = document.getElementById('home-ai-radar');
-  if (!canvas) return;
-  const W = canvas.offsetWidth || 260;
-  canvas.setAttribute('width', W);
-  canvas.setAttribute('height', 240);
   const answers = Object.fromEntries(Object.entries(latest.answers || {}).filter(([k]) => !k.startsWith('_')));
   const fw = aiuFrameworksFromRun(latest);
-  // Map null pct → 0 so all 9 groups always show as axes on the radar
-  const groupScores = aiuCalcGroupScores(answers, fw).map(g => ({ ...g, pct: g.pct ?? 0 }));
-  aiuDrawRadar('home-ai-radar', groupScores);
+  const nistAxes = aiuCalcNistFunctionScores(answers, fw);
+  const isoAxes  = aiuCalcIsoClauseScores(answers, fw);
+
+  function drawPanel(canvasId, axes, fillColor, strokeColor) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const W = canvas.offsetWidth || 130;
+    canvas.setAttribute('width', W);
+    canvas.setAttribute('height', 190);
+    aiuDrawFrameworkRadar(canvas, axes, fillColor, strokeColor);
+  }
+
+  if (fw.nist !== false) drawPanel('home-ai-nist-radar', nistAxes, 'rgba(29,78,216,0.12)', '#1d4ed8');
+  if (fw.iso  !== false) drawPanel('home-ai-iso-radar',  isoAxes,  'rgba(15,118,110,0.12)', '#0f766e');
 }
 
 function _drawHomeCisRadar() {
