@@ -129,19 +129,24 @@ const ISO42001_CONTROLS = [
   // A.6 AI System Life Cycle
   { clause: 'A', clauseName: 'Annex A — AI Controls', id: 'A.6.1',
     title: 'AI system life cycle general',
-    desc: 'The organization shall manage AI systems across their complete lifecycle, from requirements definition through design, development, testing, deployment, monitoring, and decommissioning, with appropriate controls at each stage.' },
+    desc: 'The organization shall manage AI systems across their complete lifecycle, from requirements definition through design, development, testing, deployment, monitoring, and decommissioning, with appropriate controls at each stage.',
+    providerManaged: true },
   { clause: 'A', clauseName: 'Annex A — AI Controls', id: 'A.6.2',
     title: 'Intended use documentation',
-    desc: 'The intended purpose, intended use context, and intended users of each AI system shall be clearly defined and documented before development or procurement begins, providing a baseline for all subsequent design and risk decisions.' },
+    desc: 'The intended purpose, intended use context, and intended users of each AI system shall be clearly defined and documented before development or procurement begins, providing a baseline for all subsequent design and risk decisions.',
+    providerManaged: true },
   { clause: 'A', clauseName: 'Annex A — AI Controls', id: 'A.6.3',
     title: 'AI system requirements',
-    desc: 'Functional and non-functional requirements for AI systems shall be established, documented, and validated, including performance requirements, safety constraints, ethical requirements, and regulatory compliance requirements.' },
+    desc: 'Functional and non-functional requirements for AI systems shall be established, documented, and validated, including performance requirements, safety constraints, ethical requirements, and regulatory compliance requirements.',
+    providerManaged: true },
   { clause: 'A', clauseName: 'Annex A — AI Controls', id: 'A.6.4',
     title: 'AI system performance requirements',
-    desc: 'Performance criteria for AI systems shall be defined, including accuracy, reliability, robustness, and fairness thresholds, with clear acceptance criteria that must be met before deployment.' },
+    desc: 'Performance criteria for AI systems shall be defined, including accuracy, reliability, robustness, and fairness thresholds, with clear acceptance criteria that must be met before deployment.',
+    providerManaged: true },
   { clause: 'A', clauseName: 'Annex A — AI Controls', id: 'A.6.5',
     title: 'AI system design',
-    desc: 'AI system design shall address safety, security, privacy, fairness, and explainability requirements, with design decisions documented and reviewed by appropriate subject matter experts.' },
+    desc: 'AI system design shall address safety, security, privacy, fairness, and explainability requirements, with design decisions documented and reviewed by appropriate subject matter experts.',
+    providerManaged: true },
   { clause: 'A', clauseName: 'Annex A — AI Controls', id: 'A.6.6',
     title: 'Data acquisition and preparation',
     desc: 'Processes for acquiring, curating, and preparing data used in AI systems shall be documented and controlled, including data source validation, quality assessment, bias analysis, and privacy compliance checks.' },
@@ -164,13 +169,16 @@ const ISO42001_CONTROLS = [
   // A.7 Data for AI Systems
   { clause: 'A', clauseName: 'Annex A — AI Controls', id: 'A.7.2',
     title: 'Data for AI development and testing',
-    desc: 'Data used for AI development, training, and testing shall be appropriate, representative, and sufficient for the intended purpose, with documented provenance, licensing, and any known quality limitations.' },
+    desc: 'Data used for AI development, training, and testing shall be appropriate, representative, and sufficient for the intended purpose, with documented provenance, licensing, and any known quality limitations.',
+    providerManaged: true },
   { clause: 'A', clauseName: 'Annex A — AI Controls', id: 'A.7.3',
     title: 'Data acquisition and sourcing',
-    desc: 'Processes shall govern how data is acquired for AI systems, ensuring ethical sourcing, appropriate consent or licensing, compliance with privacy regulations, and suitability for the intended AI application.' },
+    desc: 'Processes shall govern how data is acquired for AI systems, ensuring ethical sourcing, appropriate consent or licensing, compliance with privacy regulations, and suitability for the intended AI application.',
+    providerManaged: true },
   { clause: 'A', clauseName: 'Annex A — AI Controls', id: 'A.7.4',
     title: 'Data quality management',
-    desc: 'Data quality processes shall be established for AI systems, covering accuracy, completeness, consistency, timeliness, and representativeness, with quality issues documented and addressed before use in training or deployment.' },
+    desc: 'Data quality processes shall be established for AI systems, covering accuracy, completeness, consistency, timeliness, and representativeness, with quality issues documented and addressed before use in training or deployment.',
+    providerManaged: true },
   { clause: 'A', clauseName: 'Annex A — AI Controls', id: 'A.7.5',
     title: 'Data provenance and lineage',
     desc: 'The provenance and lineage of data used in AI systems shall be documented, enabling traceability of training data sources, transformations, and any known biases or limitations that may affect AI system outputs.' },
@@ -178,7 +186,8 @@ const ISO42001_CONTROLS = [
   // A.8 Information for Interested Parties
   { clause: 'A', clauseName: 'Annex A — AI Controls', id: 'A.8.2',
     title: 'Transparency of AI systems',
-    desc: 'The organization shall provide appropriate information about AI systems to relevant interested parties, including intended use, known limitations, decision-making processes, and available recourse mechanisms, consistent with confidentiality requirements.' },
+    desc: 'The organization shall provide appropriate information about AI systems to relevant interested parties, including intended use, known limitations, decision-making processes, and available recourse mechanisms, consistent with confidentiality requirements.',
+    providerManaged: true },
   { clause: 'A', clauseName: 'Annex A — AI Controls', id: 'A.8.3',
     title: 'Communication to users of AI systems',
     desc: 'Users of AI systems shall be informed when they are interacting with or subject to decisions from an AI system, and shall be provided with sufficient information to understand AI outputs and exercise appropriate judgment.' },
@@ -511,9 +520,11 @@ function renderIso42001Form() {
       const ansLabels = { yes: 'Yes', partial: 'Partial', no: 'No', na: 'N/A', cc: 'CC' };
       const cardBg = val==='yes'?'#f0fdf4':val==='partial'?'#fffbeb':val==='no'?'#fef2f2':val==='na'?'#f8fafc':val==='cc'?'#f0fdfa':'#fff';
       const cardBd = val==='yes'?'#dcfce7':val==='partial'?'#fef3c7':val==='no'?'#fee2e2':val==='na'?'#f1f5f9':val==='cc'?'#99f6e4':'var(--border)';
+      const providerHint = ctrl.providerManaged ? `<div style="margin-bottom:6px;font-size:10px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:4px 8px;line-height:1.5">⚠️ <strong>Provider-managed:</strong> This control is implemented by your AI provider (e.g. Anthropic, OpenAI). As a consumer you cannot directly fulfil it — this is typically a <strong>Compensating Control</strong>. Document the provider's model card, AUP, and published safety/compliance materials as your evidence.</div>` : '';
 
       html += `
       <div style="margin-bottom:.75rem;padding:.65rem .75rem;border-radius:6px;border:1px solid ${cardBd};background:${cardBg}">
+        ${providerHint}
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
           <div style="flex:1;min-width:200px">
             <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:3px">
