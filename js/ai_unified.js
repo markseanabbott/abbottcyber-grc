@@ -2045,17 +2045,6 @@ ${fmtCommentary(rawCommentary, 'No executive commentary saved. Use the AI Prompt
   </tr>
 </table>
 
-<h2>AI Maturity Pyramid</h2>
-${aiuBuildPyramidSvgStr(pyrState)}
-<table style="width:auto;margin:8pt auto 0;border-collapse:collapse">
-  <tbody><tr>
-    <td style="padding:4pt 14pt;border:none;font-size:9pt"><span style="display:inline-block;width:10px;height:10px;background:#c00000;margin-right:5px;border-radius:2px;vertical-align:middle"></span>Not Addressed</td>
-    <td style="padding:4pt 14pt;border:none;font-size:9pt"><span style="display:inline-block;width:10px;height:10px;background:#e8a000;margin-right:5px;border-radius:2px;vertical-align:middle"></span>Partial</td>
-    <td style="padding:4pt 14pt;border:none;font-size:9pt"><span style="display:inline-block;width:10px;height:10px;background:#2e7ab0;margin-right:5px;border-radius:2px;vertical-align:middle"></span>In Progress</td>
-    <td style="padding:4pt 14pt;border:none;font-size:9pt"><span style="display:inline-block;width:10px;height:10px;background:#00af50;margin-right:5px;border-radius:2px;vertical-align:middle"></span>Implemented</td>
-  </tr></tbody>
-</table>
-
 <h2>Top ${top10.length} Priority Gaps</h2>
 ${top10.length ? `<table>
   <thead><tr><th style="width:20pt">#</th><th style="width:56pt">ID</th><th style="width:100pt">Domain</th><th>Gap</th><th style="width:44pt;text-align:center">Status</th><th style="width:56pt;text-align:center">Priority</th></tr></thead>
