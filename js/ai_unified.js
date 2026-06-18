@@ -2152,7 +2152,7 @@ function aiuDrawFrameworkRadar(canvas, axes, fillColor, strokeColor) {
   const valid = axes.filter(a => a.pct !== null);
   const N = valid.length;
   if (!N) return;
-  const cx = W/2, cy = H/2+6, R = Math.min(W,H)*0.30, labelPad = 40;
+  const cx = W/2, cy = H/2+6, R = Math.min(W,H)*0.26, labelPad = 36;
   function angle(i) { return (Math.PI*2*i/N) - Math.PI/2; }
   function ptR(i, r) { return [cx + r*Math.cos(angle(i)), cy + r*Math.sin(angle(i))]; }
   function pt(i, val) { return ptR(i, (val/100)*R); }

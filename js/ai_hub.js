@@ -197,7 +197,7 @@ function renderAiHub() {
   const scores = latest ? aiuCalcScore(answers, fw) : { overall: null, nist: null, iso: null };
   const groupScores = latest ? aiuCalcGroupScores(answers, fw) : [];
   const gaps = latest ? aiuWeightedGaps(answers, fw) : [];
-  const top3 = gaps.slice(0, 3);
+  const top5 = gaps.slice(0, 5);
 
   const scoreColor = aiuScoreColor;
   const scoreBand  = aiuScoreBand;
@@ -266,7 +266,7 @@ function renderAiHub() {
           <div style="font-size:13px;font-weight:700">NIST AI RMF</div>
           <div style="margin-left:auto;font-size:18px;font-weight:800;color:#1d4ed8">${scores.nist !== null ? scores.nist + '%' : '—'}</div>
         </div>
-        <canvas id="aihub-nist-radar" width="260" height="220" style="display:block;margin:0 auto .9rem"></canvas>
+        <canvas id="aihub-nist-radar" width="260" height="260" style="display:block;margin:0 auto .9rem"></canvas>
         <table style="width:100%;border-collapse:collapse">${nistLegend}</table>
         <div style="margin-top:.9rem;display:flex;gap:6px">
           <button class="btn btn-cyan btn-sm" onclick="setNav('ai_unified')">📊 Open Assessment</button>
@@ -284,7 +284,7 @@ function renderAiHub() {
           <div style="font-size:13px;font-weight:700">ISO/IEC 42001</div>
           <div style="margin-left:auto;font-size:18px;font-weight:800;color:#0f766e">${scores.iso !== null ? scores.iso + '%' : '—'}</div>
         </div>
-        <canvas id="aihub-iso-radar" width="260" height="220" style="display:block;margin:0 auto .9rem"></canvas>
+        <canvas id="aihub-iso-radar" width="260" height="260" style="display:block;margin:0 auto .9rem"></canvas>
         <table style="width:100%;border-collapse:collapse">${isoLegend}</table>
         <div style="margin-top:.9rem;display:flex;gap:6px">
           <button class="btn btn-outline btn-sm" onclick="setNav('ai_unified');aiuOpenGapReport(0)">🔍 Gap Report</button>
@@ -306,9 +306,9 @@ function renderAiHub() {
   // ── Top priority gaps card ────────────────────────────────────
   html += `
     <div class="card" style="padding:1.1rem">
-      <div style="font-size:13px;font-weight:700;margin-bottom:.9rem">⭐ Top Priority Gaps</div>
-      ${top3.length
-        ? top3.map((g, i) => {
+      <div style="font-size:13px;font-weight:700;margin-bottom:.9rem">⭐ Top 5 Priority Gaps</div>
+      ${top5.length
+        ? top5.map((g, i) => {
             const m = AI_GROUP_META[g.grp];
             const wColor = AI_WEIGHT_COLORS[g.weight];
             return `<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:.65rem;padding:.5rem .6rem;border-radius:6px;background:${g.answer==='no'?'#fff7f7':'#fffbeb'};border:1px solid ${g.answer==='no'?'#fecaca':'#fde68a'}">

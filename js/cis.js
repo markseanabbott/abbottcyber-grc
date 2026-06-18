@@ -3210,8 +3210,8 @@ function cisDrawRadar(canvasId, answers, goalN) {
 
   const N = 18;
   const cx = W / 2, cy = H / 2 + 10;
-  const R = Math.min(W, H) * 0.34;
-  const labelPad = 46;
+  const R = Math.min(W, H) * 0.27;
+  const labelPad = 38;
 
   // Compute score (0–1) for each CIS control 1–18
   const scores = [];

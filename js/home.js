@@ -222,11 +222,11 @@ function _homeAiChicklet(h) {
       <div style="display:flex;gap:4px">
         <div style="flex:1;text-align:center">
           <div style="font-size:9px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">NIST AI RMF</div>
-          <canvas id="home-ai-nist-radar" style="display:block;width:100%;height:190px"></canvas>
+          <canvas id="home-ai-nist-radar" style="display:block;width:100%;height:250px"></canvas>
         </div>
         <div style="flex:1;text-align:center">
           <div style="font-size:9px;font-weight:700;color:#0f766e;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">ISO 42001</div>
-          <canvas id="home-ai-iso-radar" style="display:block;width:100%;height:190px"></canvas>
+          <canvas id="home-ai-iso-radar" style="display:block;width:100%;height:250px"></canvas>
         </div>
       </div>
     </div>
@@ -256,7 +256,7 @@ function _homeCisRadarChicklet(h) {
       </div>
     </div>
     <div style="padding:.5rem .75rem .5rem">
-      <canvas id="home-cis-radar" style="display:block;width:100%;height:240px"></canvas>
+      <canvas id="home-cis-radar" style="display:block;width:100%;height:280px"></canvas>
     </div>
     <div style="padding:.35rem .9rem .75rem;text-align:center;font-size:11px;color:var(--cyan);font-weight:700">→ CIS Controls Assessment</div>
   </div>`;
@@ -315,7 +315,7 @@ function _drawHomeAiRadar() {
     if (!canvas) return;
     const W = canvas.offsetWidth || 130;
     canvas.setAttribute('width', W);
-    canvas.setAttribute('height', 190);
+    canvas.setAttribute('height', 250);
     aiuDrawFrameworkRadar(canvas, axes, fillColor, strokeColor);
   }
 
@@ -332,7 +332,7 @@ function _drawHomeCisRadar() {
   if (!canvas) return;
   const W = canvas.offsetWidth || 260;
   canvas.setAttribute('width', W);
-  canvas.setAttribute('height', 240);
+  canvas.setAttribute('height', 280);
   const answers = Object.fromEntries(Object.entries(latest.answers || {}).filter(([k]) => !k.startsWith('_')));
   const goal = (latest.answers || {})._goal;
   const goalN = { ig1: 1, ig2: 2, ig3: 3 }[goal] || 3;
