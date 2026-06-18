@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.1.5",
   "created": "2026-05-14",
-  "updated": "2026-06-18 (session 31)",
+  "updated": "2026-06-18 (session 32)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1653,7 +1653,7 @@
           "id": "ai12",
           "text": "AI Governance Executive Report — maturity pyramid (read-only, status derived from AIG answers) + 9-spoke domain radar chart replacing group breakdown bars; pyramid and radar both init from app.js setTimeout on report view load",
           "done": true,
-          "notes": "Session 13: renderAiUnifiedExecReport() updated — Group Breakdown card replaced with aiurep-radar canvas (aiuDrawRadar()); renderAiPyramidCard('aiurep',false) inserted between radar and Top Priority Gaps. aiuBuildPyramidState(answers) maps AIG answers to pyramid statuses (yes→green, partial→yellow, no→red) via AI_PYR_MAP. app.js setTimeout extended to draw radar + init pyramid when aiUnifiedState.view==='report'. Session 31: score card changed from white card to .score-hero-ins navy hero; Domain Coverage progress-bar section added; radar canvas moved into hero card right panel; domain breakdown white card removed; 📄 Export Word button added to report header toolbar."
+          "notes": "Session 13: renderAiUnifiedExecReport() updated — Group Breakdown card replaced with aiurep-radar canvas (aiuDrawRadar()); renderAiPyramidCard('aiurep',false) inserted between radar and Top Priority Gaps. aiuBuildPyramidState(answers) maps AIG answers to pyramid statuses (yes→green, partial→yellow, no→red) via AI_PYR_MAP. app.js setTimeout extended to draw radar + init pyramid when aiUnifiedState.view==='report'. Session 31: score card changed from white card to .score-hero-ins navy hero; Domain Coverage progress-bar section added; radar canvas moved into hero card right panel; domain breakdown white card removed; 📄 Export Word button added to report header toolbar. Session 32: Domain Coverage section replaced with Framework Breakdown card — two side-by-side framework-native radars replacing the confusing 9-domain breakdown; NIST AI RMF radar (4 spokes: Govern/Map/Measure/Manage, blue) + ISO 42001 radar (up to 8 spokes: clause groups 4–10 + Annex A, teal); helpers: aiuCalcNistFunctionScores(), aiuCalcIsoClauseScores(), aiuDrawFrameworkRadar(); aiuOpenReport() updated to draw both; aiuExportWord() updated with two off-screen radars side-by-side in Word doc."
         },
         {
           "id": "ai10",

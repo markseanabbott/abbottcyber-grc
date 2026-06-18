@@ -1004,7 +1004,8 @@ function renderAiUnifiedExecReport() {
   const answers = Object.fromEntries(Object.entries(run.answers||{}).filter(([k])=>!k.startsWith('_')));
   const fw = aiuFrameworksFromRun(run);
   const scores = aiuCalcScore(answers, fw);
-  const groupScores = aiuCalcGroupScores(answers, fw);
+  const nistAxes = aiuCalcNistFunctionScores(answers, fw);
+  const isoAxes  = aiuCalcIsoClauseScores(answers, fw);
   const gaps = aiuWeightedGaps(answers, fw);
   const top5 = gaps.slice(0, 5);
   const commentary = aiUnifiedState.reportCommentary || (run.answers||{})._exec_commentary || '';
@@ -1048,27 +1049,27 @@ function renderAiUnifiedExecReport() {
         </div>
       </div>
     </div>
-    <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-      <div style="font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:2px">Domain Radar</div>
-      ${groupScores.filter(g=>g.pct!==null).length?`<canvas id="aiurep-radar" width="200" height="160"></canvas>`:''}
-    </div>
   </div>
 
   <div class="card" style="padding:1.25rem;margin-bottom:1rem">
-    <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:.85rem">Domain Coverage</div>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      ${groupScores.filter(g=>g.pct!==null).map(g => {
-        const gm = AI_GROUP_META[g.grp];
-        return `<div>
-          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">
-            <span style="font-size:12px;font-weight:600;color:var(--text)">${gm.icon} ${gm.label}</span>
-            <span style="font-size:12px;font-weight:700;color:${gm.color}">${g.pct}%</span>
-          </div>
-          <div style="height:6px;background:var(--bg);border-radius:3px;overflow:hidden">
-            <div style="height:100%;width:${g.pct}%;background:${gm.color};border-radius:3px;transition:width .4s"></div>
-          </div>
-        </div>`;
-      }).join('')}
+    <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:1rem">Framework Breakdown</div>
+    <div style="display:flex;gap:2rem;flex-wrap:wrap;justify-content:space-around;align-items:flex-start">
+      ${fw.nist!==false?`<div style="text-align:center;flex:1;min-width:200px">
+        <div style="font-size:11px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">🏛️ NIST AI RMF</div>
+        <canvas id="aiurep-nist-radar" width="260" height="240" style="max-width:100%;display:block;margin:0 auto"></canvas>
+        ${scores.nist!==null?`<div style="font-size:12px;font-weight:700;color:#1d4ed8;margin-top:6px">${scores.nist}% overall</div>`:''}
+        <div style="display:flex;justify-content:center;gap:10px;margin-top:8px;flex-wrap:wrap">
+          ${nistAxes.filter(a=>a.pct!==null).map(a=>`<div style="font-size:10px;text-align:center"><div style="font-weight:700;color:#1d4ed8">${a.pct}%</div><div style="color:var(--muted)">${a.label}</div></div>`).join('')}
+        </div>
+      </div>`:''}
+      ${fw.iso!==false?`<div style="text-align:center;flex:1;min-width:200px">
+        <div style="font-size:11px;font-weight:700;color:#0f766e;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">📋 ISO 42001</div>
+        <canvas id="aiurep-iso-radar" width="260" height="240" style="max-width:100%;display:block;margin:0 auto"></canvas>
+        ${scores.iso!==null?`<div style="font-size:12px;font-weight:700;color:#0f766e;margin-top:6px">${scores.iso}% overall</div>`:''}
+        <div style="display:flex;justify-content:center;gap:10px;margin-top:8px;flex-wrap:wrap">
+          ${isoAxes.filter(a=>a.pct!==null).map(a=>`<div style="font-size:10px;text-align:center"><div style="font-weight:700;color:#0f766e">${a.pct}%</div><div style="color:var(--muted)">${a.label}</div></div>`).join('')}
+        </div>
+      </div>`:''}
     </div>
   </div>
 
@@ -1319,7 +1320,12 @@ function aiuOpenReport(idx) {
   renderMain();
   const answers = Object.fromEntries(Object.entries(run.answers||{}).filter(([k])=>!k.startsWith('_')));
   const fw = aiuFrameworksFromRun(run);
-  setTimeout(() => aiuDrawRadar('aiurep-radar', aiuCalcGroupScores(answers, fw)), 80);
+  const nistAxes = aiuCalcNistFunctionScores(answers, fw);
+  const isoAxes  = aiuCalcIsoClauseScores(answers, fw);
+  setTimeout(() => {
+    if (fw.nist !== false) aiuDrawFrameworkRadar(document.getElementById('aiurep-nist-radar'), nistAxes, 'rgba(29,78,216,0.12)', '#1d4ed8');
+    if (fw.iso  !== false) aiuDrawFrameworkRadar(document.getElementById('aiurep-iso-radar'),  isoAxes,  'rgba(15,118,110,0.12)', '#0f766e');
+  }, 80);
 }
 
 // ── RADAR + PYRAMID HELPERS ───────────────────────────────────────────────────
@@ -1660,7 +1666,8 @@ async function aiuExportWord() {
   const answers = Object.fromEntries(Object.entries(run.answers || {}).filter(([k]) => !k.startsWith('_')));
   const fw = aiuFrameworksFromRun(run);
   const scores = aiuCalcScore(answers, fw);
-  const groupScores = aiuCalcGroupScores(answers, fw);
+  const nistAxes = aiuCalcNistFunctionScores(answers, fw);
+  const isoAxes  = aiuCalcIsoClauseScores(answers, fw);
   const gaps = aiuWeightedGaps(answers, fw);
   const score = scores.overall ?? 0;
   const commentary = (run.answers || {})._exec_commentary || '';
@@ -1700,30 +1707,28 @@ async function aiuExportWord() {
     document.body.removeChild(_gc);
   }
 
-  // Canvas radar
-  let radarImg = null;
-  const validGroups = groupScores.filter(g => g.pct !== null);
-  if (validGroups.length) {
-    const _rc = document.createElement('canvas');
-    _rc.width = 320; _rc.height = 280;
-    _rc.style.cssText = 'position:fixed;left:-9999px;pointer-events:none';
-    document.body.appendChild(_rc);
-    aiuDrawRadarOffscreen(_rc, validGroups);
-    radarImg = _rc.toDataURL('image/png');
-    document.body.removeChild(_rc);
+  // Off-screen framework radars
+  let nistRadarImg = null, isoRadarImg = null;
+  if (fw.nist !== false && nistAxes.filter(a=>a.pct!==null).length) {
+    const _nc = document.createElement('canvas');
+    _nc.width = 280; _nc.height = 260;
+    _nc.style.cssText = 'position:fixed;left:-9999px;pointer-events:none';
+    document.body.appendChild(_nc);
+    aiuDrawFrameworkRadar(_nc, nistAxes, 'rgba(29,78,216,0.12)', '#1d4ed8');
+    nistRadarImg = _nc.toDataURL('image/png');
+    document.body.removeChild(_nc);
+  }
+  if (fw.iso !== false && isoAxes.filter(a=>a.pct!==null).length) {
+    const _ic = document.createElement('canvas');
+    _ic.width = 280; _ic.height = 260;
+    _ic.style.cssText = 'position:fixed;left:-9999px;pointer-events:none';
+    document.body.appendChild(_ic);
+    aiuDrawFrameworkRadar(_ic, isoAxes, 'rgba(15,118,110,0.12)', '#0f766e');
+    isoRadarImg = _ic.toDataURL('image/png');
+    document.body.removeChild(_ic);
   }
 
   const fwLabel = [fw.nist !== false ? 'NIST AI RMF v1.0' : '', fw.iso !== false ? 'ISO/IEC 42001:2023' : ''].filter(Boolean).join(' + ');
-
-  const groupRowsHtml = groupScores.filter(g => g.pct !== null).map(g => {
-    const gm = AI_GROUP_META[g.grp];
-    const scoreCol = g.pct >= 75 ? '#15803d' : g.pct >= 50 ? '#b45309' : '#dc2626';
-    return `<tr>
-      <td style="padding:5px 10px;font-weight:700;color:${gm.txt||gm.color}">${gm.label}</td>
-      <td style="padding:5px 10px;text-align:center;font-weight:800;color:${scoreCol}">${g.pct}%</td>
-      <td style="padding:5px 10px;text-align:center;color:#5a6a8a">${g.answered}/${g.total}</td>
-    </tr>`;
-  }).join('');
 
   const top5 = gaps.slice(0, 5);
   const gapRowsHtml = top5.map((g, i) => {
@@ -1766,13 +1771,22 @@ async function aiuExportWord() {
     </div>
   </div>
 
-  <h2>Domain Coverage</h2>
-  <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
-    ${radarImg ? `<img src="${radarImg}" style="width:260px;display:block">` : ''}
-    <table style="flex:1;min-width:220px">
-      <thead><tr><th>Domain</th><th style="text-align:center">Score</th><th style="text-align:center">Questions</th></tr></thead>
-      <tbody>${groupRowsHtml}</tbody>
-    </table>
+  <h2>Framework Breakdown</h2>
+  <div style="display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap;justify-content:space-around">
+    ${nistRadarImg ? `<div style="text-align:center">
+      <div style="font-size:10pt;font-weight:700;color:#1d4ed8;margin-bottom:8px">NIST AI RMF</div>
+      <img src="${nistRadarImg}" style="width:220px;display:block;margin:0 auto">
+      <div style="display:flex;justify-content:center;gap:12px;margin-top:6px;flex-wrap:wrap">
+        ${nistAxes.filter(a=>a.pct!==null).map(a=>`<div style="font-size:9pt;text-align:center"><div style="font-weight:800;color:#1d4ed8">${a.pct}%</div><div style="color:#5a6a8a">${a.label}</div></div>`).join('')}
+      </div>
+    </div>` : ''}
+    ${isoRadarImg ? `<div style="text-align:center">
+      <div style="font-size:10pt;font-weight:700;color:#0f766e;margin-bottom:8px">ISO 42001</div>
+      <img src="${isoRadarImg}" style="width:220px;display:block;margin:0 auto">
+      <div style="display:flex;justify-content:center;gap:12px;margin-top:6px;flex-wrap:wrap">
+        ${isoAxes.filter(a=>a.pct!==null).map(a=>`<div style="font-size:9pt;text-align:center"><div style="font-weight:800;color:#0f766e">${a.pct}%</div><div style="color:#5a6a8a">${a.label}</div></div>`).join('')}
+      </div>
+    </div>` : ''}
   </div>
 
   <h2>Top Priority Gaps</h2>
@@ -1794,6 +1808,105 @@ async function aiuExportWord() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   toast('✓ Word report exported', '#15803d');
+}
+
+// ── FRAMEWORK RADAR HELPERS ───────────────────────────────────────────────────
+
+function aiuCalcNistFunctionScores(answers, fw) {
+  if (fw?.nist === false) return [];
+  const fnDefs = [
+    { fn: 'GOVERN', label: 'Govern'  },
+    { fn: 'MAP',    label: 'Map'     },
+    { fn: 'MEASURE',label: 'Measure' },
+    { fn: 'MANAGE', label: 'Manage'  },
+  ];
+  return fnDefs.map(({ fn, label }) => {
+    const controls = AI_UNIFIED_CONTROLS.filter(c =>
+      c.nist && c.nist.some(id => id.startsWith(fn + '-')) && c.frameworks !== 'iso'
+    );
+    let totalW = 0, earnedW = 0;
+    controls.forEach(c => {
+      const v = answers[c.id];
+      const val = v==='yes'?1:v==='partial'?0.5:v==='no'?0:null;
+      if (val===null) return;
+      totalW += c.weight; earnedW += val*c.weight;
+    });
+    return { fn, label, pct: totalW>0?Math.round(earnedW/totalW*100):null, total: controls.length };
+  });
+}
+
+function aiuCalcIsoClauseScores(answers, fw) {
+  if (fw?.iso === false) return [];
+  const clauseDefs = [
+    { cl:'4',  label:'Context'     },
+    { cl:'5',  label:'Leadership'  },
+    { cl:'6',  label:'Planning'    },
+    { cl:'7',  label:'Support'     },
+    { cl:'8',  label:'Operation'   },
+    { cl:'9',  label:'Performance' },
+    { cl:'10', label:'Improvement' },
+    { cl:'A',  label:'Annex A'     },
+  ];
+  return clauseDefs.map(({ cl, label }) => {
+    const prefix = cl==='A'?'A.':cl+'.';
+    const controls = AI_UNIFIED_CONTROLS.filter(c =>
+      c.iso && c.iso.some(id => id.startsWith(prefix)) && c.frameworks !== 'nist'
+    );
+    let totalW = 0, earnedW = 0;
+    controls.forEach(c => {
+      const v = answers[c.id];
+      const val = v==='yes'?1:v==='partial'?0.5:v==='no'?0:null;
+      if (val===null) return;
+      totalW += c.weight; earnedW += val*c.weight;
+    });
+    return { cl, label, pct: totalW>0?Math.round(earnedW/totalW*100):null, total: controls.length };
+  }).filter(c => c.total > 0);
+}
+
+function aiuDrawFrameworkRadar(canvas, axes, fillColor, strokeColor) {
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  const valid = axes.filter(a => a.pct !== null);
+  const N = valid.length;
+  if (!N) return;
+  const cx = W/2, cy = H/2+6, R = Math.min(W,H)*0.30, labelPad = 40;
+  function angle(i) { return (Math.PI*2*i/N) - Math.PI/2; }
+  function ptR(i, r) { return [cx + r*Math.cos(angle(i)), cy + r*Math.sin(angle(i))]; }
+  function pt(i, val) { return ptR(i, (val/100)*R); }
+  [0.25, 0.5, 0.75, 1].forEach(level => {
+    ctx.beginPath();
+    for (let i=0; i<N; i++) { const p=ptR(i,level*R); i===0?ctx.moveTo(p[0],p[1]):ctx.lineTo(p[0],p[1]); }
+    ctx.closePath();
+    ctx.strokeStyle = level===1?'#9ca3af':'#e5e7eb'; ctx.lineWidth = level===1?1.5:0.8;
+    if (level===1) ctx.setLineDash([4,3]); ctx.stroke(); ctx.setLineDash([]);
+  });
+  for (let i=0; i<N; i++) {
+    const op = ptR(i, R); ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(op[0],op[1]);
+    ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 0.8; ctx.stroke();
+  }
+  ctx.beginPath();
+  valid.forEach((a,i) => { const p=pt(i,a.pct??0); i===0?ctx.moveTo(p[0],p[1]):ctx.lineTo(p[0],p[1]); });
+  ctx.closePath(); ctx.fillStyle = fillColor; ctx.fill();
+  ctx.strokeStyle = strokeColor; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.stroke();
+  valid.forEach((a,i) => {
+    const p = pt(i, a.pct??0);
+    ctx.beginPath(); ctx.arc(p[0],p[1],4,0,Math.PI*2);
+    ctx.fillStyle = a.pct>=70?'#15803d':a.pct>=40?'#d97706':'#dc2626';
+    ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+  });
+  for (let i=0; i<N; i++) {
+    const ang = angle(i);
+    const lp = [cx+(R+labelPad)*Math.cos(ang), cy+(R+labelPad)*Math.sin(ang)];
+    const xOff = Math.cos(ang);
+    ctx.textAlign = xOff>0.15?'left':xOff<-0.15?'right':'center';
+    ctx.font = 'bold 9px Arial'; ctx.fillStyle = '#374151';
+    ctx.fillText(valid[i].label, lp[0], lp[1]);
+    ctx.font = 'bold 10px Arial';
+    ctx.fillStyle = valid[i].pct>=70?'#15803d':valid[i].pct>=40?'#d97706':'#dc2626';
+    ctx.fillText((valid[i].pct??'—')+'%', lp[0], lp[1]+12);
+  }
 }
 
 function aiuCopyGapPrompt() {
