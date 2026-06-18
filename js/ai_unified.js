@@ -1441,35 +1441,92 @@ function aiuCopyReportPrompt() {
   const fw = aiuFrameworksFromRun(run);
   const scores = aiuCalcScore(answers, fw);
   const gaps = aiuWeightedGaps(answers, fw);
-  const runs = (orgAssessments[currentOrg?.id]||{})['ai_unified']||[];
-  const sorted = [...runs].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  const trend = sorted.map(r=>`${r.date}: ${r.score}%`).join(' → ');
-  const top5List = gaps.slice(0,5).map(g=>`- [${g.answer.toUpperCase()}] ${g.id} (${AI_WEIGHT_LABELS[g.weight]}): ${g.title}`).join('\n');
+  const nistAxes = aiuCalcNistFunctionScores(answers, fw);
+  const isoAxes  = aiuCalcIsoClauseScores(answers, fw);
+  const score = scores.overall ?? 0;
+  const band = aiuScoreBand(score);
 
-  const prompt = `Please write a professional AI governance executive report for the following organization.
+  const allRuns = (orgAssessments[currentOrg?.id]||{})['ai_unified']||[];
+  const sorted = [...allRuns].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const hasTrend = sorted.length >= 2;
+  const trendStr = hasTrend ? sorted.map(r=>`${r.date}: ${r.score}%`).join(' → ') : 'First assessment — no trend data';
+
+  const fwLabel = [fw.nist!==false?'NIST AI RMF v1.0':'', fw.iso!==false?'ISO/IEC 42001:2023':''].filter(Boolean).join(' + ');
+
+  const nistBreakdown = nistAxes.filter(a=>a.pct!==null).map(a=>`  ${a.label}: ${a.pct}%`).join('\n');
+  const isoBreakdown  = isoAxes.filter(a=>a.pct!==null).map(a=>`  ${a.label}: ${a.pct}%`).join('\n');
+
+  const noGaps = gaps.filter(g=>g.answer==='no').slice(0,8)
+    .map(g=>`• ${g.id} (${AI_WEIGHT_LABELS[g.weight]}) [${AI_GROUP_META[g.grp].label}]: ${g.title}`).join('\n');
+  const partGaps = gaps.filter(g=>g.answer==='partial').slice(0,5)
+    .map(g=>`• ${g.id} (${AI_WEIGHT_LABELS[g.weight]}) [${AI_GROUP_META[g.grp].label}]: ${g.title}`).join('\n');
+
+  const pyrState = aiuBuildPyramidState(answers);
+  const PYR_STATUS_LABEL = { green:'Implemented', yellow:'Partial', blue:'In Progress', red:'Not Addressed' };
+  const pyrSummary = AI_PYR_TIERS.map(tier => {
+    const segs = tier.cols.filter(c=>c.type==='seg');
+    const counts = { green:0, yellow:0, blue:0, red:0 };
+    segs.forEach(s => { counts[pyrState[s.id]||'red']++; });
+    return `  ${tier.label}: ${counts.green} Implemented / ${counts.yellow} Partial / ${counts.blue} In Progress / ${counts.red} Not Addressed`;
+  }).join('\n');
+
+  const prompt = `Write a professional AI governance executive report commentary for ${currentOrg?.name}. Target audience: non-technical CEO or board. Focus on business risk and practical outcomes — avoid jargon.
 
 ORGANISATION: ${currentOrg?.name}
 ASSESSMENT DATE: ${run.date||'Unknown'}
 ASSESSOR: ${run.conductedBy||'Not specified'}
-FRAMEWORKS: ${fw.nist!==false?'NIST AI RMF v1.0':''}${fw.nist!==false&&fw.iso!==false?' + ':''}${fw.iso!==false?'ISO/IEC 42001:2023':''}
+FRAMEWORKS: ${fwLabel}
+OVERALL SCORE: ${score}% — Risk Band: ${band}
+GAPS: ${gaps.filter(g=>g.answer==='no').length} Not Addressed, ${gaps.filter(g=>g.answer==='partial').length} Partial, ${gaps.length} total controls need attention
 
-OVERALL SCORE: ${scores.overall??'—'}%  (${aiuScoreBand(scores.overall)})
-${fw.nist!==false&&scores.nist!==null?`NIST AI RMF SCORE: ${scores.nist}%\n`:''}${fw.iso!==false&&scores.iso!==null?`ISO 42001 SCORE: ${scores.iso}%\n`:''}SCORE TREND: ${trend||'First assessment'}
-TOTAL GAPS: ${gaps.length} (${gaps.filter(g=>g.answer==='no').length} No, ${gaps.filter(g=>g.answer==='partial').length} Partial)
+${fw.nist!==false&&nistBreakdown?`NIST AI RMF FUNCTION SCORES:\n${nistBreakdown}\n`:''}${fw.iso!==false&&isoBreakdown?`ISO 42001 CLAUSE SCORES:\n${isoBreakdown}\n`:''}
+MATURITY PYRAMID (by tier):
+${pyrSummary}
 
-TOP 5 PRIORITY GAPS (ranked by maturity weight × severity):
-${top5List||'— No gaps —'}
+SCORE TREND: ${trendStr}
 
-Please write:
-1. EXECUTIVE SUMMARY (2–3 paragraphs): What the score means for AI governance maturity and business risk. What a CEO or board needs to understand.
-2. KEY FINDINGS (3–4 bullets): The most critical gaps written as business exposure, not technical jargon.
-3. PRIORITY ACTIONS (top 3): Each with a one-sentence business rationale and estimated effort (Quick Win / 30 days / 90 days).
+PRIORITY GAPS (Not Addressed, highest weight first):
+${noGaps||'— None —'}
 
-Write for a non-technical executive audience. Keep to one printed page. No section headers in the output — flowing professional prose.`;
+PARTIALLY ADDRESSED:
+${partGaps||'— None —'}
+
+─────────────────────────────────────────────
+CRITICAL FORMATTING RULES — non-negotiable:
+
+This text is parsed by a Word export engine and placed into sections of the document. Follow these rules exactly or the output will be broken.
+
+1. NO MARKDOWN. No **, no *, no ##, no -, no _. These appear literally in the printed report.
+2. BULLETS: Use the actual • character at the start of each line. Never use - or * for lists.
+3. PARAGRAPH BREAKS: Separate paragraphs and bullet blocks with exactly one blank line.
+4. NO SECTION LABELS in the prose. Do not write "Executive Summary:", "Key Findings:", etc. Write the content only — the report template adds all headings.
+5. USE THE EXACT SECTION MARKERS below. They are parsed by the export engine to place content in specific report sections. Do not alter, rename, or omit them.
+─────────────────────────────────────────────
+
+OUTPUT STRUCTURE — write EXACTLY in this order with EXACTLY these markers:
+
+Write 2–3 paragraphs of executive summary prose. Plain sentences. What does this ${score}% ${band} score mean for AI governance maturity and business readiness? What is working? Where is the primary risk exposure if gaps are not addressed? Reference the framework context (${fwLabel}) without being technical about it.
+
+Close the executive summary with 1–2 sentences on the recommended next step — whether to close existing gaps before expanding the programme scope, or to begin preparing for a formal certification or regulatory submission. Frame it as forward-looking business strategy, not a technical gap list.
+
+KEY FINDINGS
+• [Risk described as business impact — what could go wrong if this gap is not addressed — one sentence]
+• [3 to 4 findings total]
+• [Focus on consequence for the business, not on the control ID]
+• [Optional 4th finding]
+
+PRIORITY RECOMMENDATIONS
+• [Specific action with a one-sentence business rationale — why now, not later]
+• [2 to 3 recommendations total]
+• [Actionable, owner-assignable, not vague]`;
 
   navigator.clipboard.writeText(prompt)
-    .then(() => toast('✓ AI prompt copied — paste into Claude', '#152168'))
-    .catch(() => toast('Clipboard blocked', '#b45309'));
+    .then(() => toast('✓ AI prompt copied — paste into Claude to generate commentary', '#152168'))
+    .catch(() => {
+      const ta = document.getElementById('aiuReportCommentary');
+      if (ta) { ta.value = prompt; ta.select(); ta.scrollIntoView(); }
+      toast('Clipboard blocked — prompt placed in commentary field', '#b45309');
+    });
 }
 
 // ── COMPARE MATRIX ────────────────────────────────────────────────────────────
