@@ -1,8 +1,8 @@
 {
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "created": "2026-05-14",
-  "updated": "2026-06-18 (session 36)",
+  "updated": "2026-06-18 (session 37)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
