@@ -2061,27 +2061,41 @@ async function cisExportExcel() {
   const today = new Date().toISOString().split('T')[0];
   const goalLabel = goal ? `Goal: ${goal.toUpperCase()}` : 'No goal set';
 
+  // Load notes: use in-memory state if editing, otherwise load for the latest run
+  let notes = Object.assign({}, cisState.notes || {});
+  if (Object.keys(notes).length === 0) {
+    const runs = [...((orgAssessments[currentOrg?.id] || {})['cis'] || [])].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const latestId = runs[0]?.id;
+    if (latestId) {
+      try {
+        const rows = await sb.cisNotes.getForAssessment(latestId);
+        (rows || []).forEach(n => { if (n.comment) notes[n.safeguard_id] = n.comment; });
+      } catch {}
+    }
+  }
+
   const rows = [
     [`CIS Controls v8 Assessment — ${orgName}`],
     [`Generated: ${today}  |  ${goalLabel}  |  Valid answers: Yes / Partial / No / N/A`],
-    [`All ${CIS_SAFEGUARDS.length} safeguards included. Column B = IG tier. Fill Column G only. Leave blank to skip.`],
+    [`All ${CIS_SAFEGUARDS.length} safeguards. Column G = Answer. Column H = Assessor comment (optional — imported back with answers).`],
     [],
-    ['Safeguard', 'IG Level', 'Control #', 'Control Name', 'Safeguard Title', 'Description', 'Your Answer'],
+    ['Safeguard', 'IG Level', 'Control #', 'Control Name', 'Safeguard Title', 'Description', 'Your Answer', 'Comment'],
   ];
 
   CIS_SAFEGUARDS.forEach(s => {
     const raw = cisState.answers[s.sf] || '';
     const ans = raw === 'na' ? 'N/A' : raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : '';
-    rows.push([s.sf, `IG${s.ig}`, s.ctrl, s.ctrlName, s.title, s.sub, ans]);
+    const comment = notes[s.sf] || '';
+    rows.push([s.sf, `IG${s.ig}`, s.ctrl, s.ctrlName, s.title, s.sub, ans, comment]);
   });
 
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{ wch: 10 }, { wch: 9 }, { wch: 10 }, { wch: 42 }, { wch: 55 }, { wch: 85 }, { wch: 14 }];
+  ws['!cols'] = [{ wch: 10 }, { wch: 9 }, { wch: 10 }, { wch: 42 }, { wch: 55 }, { wch: 85 }, { wch: 14 }, { wch: 50 }];
   ws['!views'] = [{ state: 'frozen', xSplit: 0, ySplit: 5 }];
   XLSX.utils.book_append_sheet(wb, ws, 'CIS Assessment');
   XLSX.writeFile(wb, `CIS_Assessment_${orgName.replace(/[^a-zA-Z0-9]/g, '_')}_${today}.xlsx`);
-  toast('✓ Excel template downloaded');
+  toast('✓ Excel downloaded — edit Column G (answers) and Column H (comments), then import');
 }
 
 // ── IMPORT ────────────────────────────────────────────────────────────────────
@@ -2101,7 +2115,7 @@ function cisShowImportModal() {
       </div>
       <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:18px">
         Importing for: <strong style="color:var(--navy)">${escH(currentOrg?.name || '')}</strong><br>
-        Use the exported template — Column A = Safeguard ID, Column G = Answer.
+        Use the exported template — Column A = Safeguard ID, Column G = Answer, Column H = Comment (optional).
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
@@ -2221,6 +2235,7 @@ function cisParseImportFile(file) {
         }
 
         const answers = {};
+        const notes   = {};
         const issues = [];
         let skippedIds = 0;
 
@@ -2234,20 +2249,23 @@ function cisParseImportFile(file) {
             continue;
           }
           const ansRaw = fmt === 'B' ? String(row[0] || '').trim() : String(row[6] || '').trim();
-          if (!ansRaw) continue;
-          const mapped = mapAnswer(ansRaw);
-          if (!mapped) {
-            issues.push(`Unrecognised answer "${ansRaw}" for ${sfId} — skipped`);
-          } else {
-            answers[sfId] = mapped;
+          const commentRaw = fmt === 'A' ? String(row[7] || '').trim() : '';
+          if (ansRaw) {
+            const mapped = mapAnswer(ansRaw);
+            if (!mapped) {
+              issues.push(`Unrecognised answer "${ansRaw}" for ${sfId} — skipped`);
+            } else {
+              answers[sfId] = mapped;
+            }
           }
+          if (commentRaw) notes[sfId] = commentRaw;
         }
 
         if (skippedIds > 0) {
           issues.push(`${skippedIds} safeguard${skippedIds !== 1 ? 's' : ''} in this file are not in the platform's current safeguard list and were skipped. Scoring is based on the ${CIS_SAFEGUARDS.length} safeguards tracked by this platform — results will be consistent across all imports.`);
         }
 
-        resolve({ answers, issues });
+        resolve({ answers, notes, issues });
       } catch(err) {
         reject(new Error('Could not parse file: ' + err.message));
       }
@@ -2354,6 +2372,13 @@ async function cisImportSave() {
     orgAssessments[currentOrg.id]['cis'].push({ id: record?.id, date, score, answers: answersToSave, conductedBy: '' });
     // Keep runs sorted by date
     orgAssessments[currentOrg.id]['cis'].sort((a, b) => a.date.localeCompare(b.date));
+
+    // Save imported Column H comments
+    if (record?.id && cisImportParsed.notes && Object.keys(cisImportParsed.notes).length > 0) {
+      const noteRows = Object.entries(cisImportParsed.notes)
+        .map(([sf, comment]) => ({ assessment_id: record.id, org_id: currentOrg.id, safeguard_id: sf, comment: comment.trim() }));
+      try { await sb.cisNotes.upsertAll(noteRows); } catch (_) {}
+    }
 
     cisImportParsed = null;
     closeCisModal();
@@ -3238,71 +3263,71 @@ function cisDrawReportTrend(canvasId, runs) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
   const sorted = [...runs].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-  const W = canvas.offsetWidth || 340;
-  const H = 92;
+  const W = canvas.width || canvas.offsetWidth || 520;
+  const H = 110;
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, W, H);
 
   const n = sorted.length;
-  const padX = 10, padTop = 14, padBot = 14;
-  const legendW = 36;
-  const barMaxH = H - padTop - padBot;
-  const sectionH = barMaxH / 3;
-  const totalBarW = W - padX * 2 - legendW;
-  const barW = Math.max(14, Math.floor((totalBarW - Math.max(4, n - 1) * 6) / n));
-  const actualGap = n > 1 ? Math.floor((totalBarW - barW * n) / (n - 1)) : 0;
+  if (n < 1) return;
 
-  const tierColors = ['#15803d', '#1d4ed8', '#6d28d9'];
-  const tierLabels = ['IG1', 'IG2', 'IG3'];
+  const padL = 34, padR = 16, padTop = 22, padBot = 20;
+  const chartW = W - padL - padR;
+  const chartH = H - padTop - padBot;
 
-  sorted.forEach((r, i) => {
-    const x = padX + i * (barW + actualGap);
-    const cleanAns = Object.fromEntries(Object.entries(r.answers || {}).filter(([k]) => !k.startsWith('_')));
-    const prog = cisIgProgress(cleanAns);
-
-    [0, 1, 2].forEach(ti => {
-      const t = prog[ti];
-      const sc = t.total - t.na;
-      const score = sc > 0 ? (t.yes + t.partial * 0.5) / sc : 0;
-      const segY = H - padBot - (ti + 1) * sectionH;
-
-      // Track
-      ctx.fillStyle = '#f1f5f9';
-      ctx.fillRect(x, segY, barW, sectionH - 1);
-
-      // Fill
-      const fillH = score * (sectionH - 1);
-      ctx.fillStyle = tierColors[ti];
-      ctx.globalAlpha = 0.88;
-      ctx.fillRect(x, segY + (sectionH - 1 - fillH), barW, fillH);
-      ctx.globalAlpha = 1;
-    });
-
-    // Overall score label above bar
-    const col = r.score >= 75 ? '#15803d' : r.score >= 50 ? '#b45309' : '#dc2626';
-    ctx.fillStyle = col;
-    ctx.font = 'bold 9px Inter,sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(r.score + '%', x + barW / 2, padTop - 2);
-
-    // Date label below bar
+  // Grid lines at 25, 50, 75, 100
+  [25, 50, 75, 100].forEach(v => {
+    const y = padTop + chartH - (v / 100) * chartH;
+    ctx.strokeStyle = v === 50 ? '#cbd5e1' : '#e2e8f0';
+    ctx.lineWidth = v === 50 ? 1.5 : 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+    ctx.setLineDash([]);
     ctx.fillStyle = '#94a3b8';
-    ctx.font = '9px Inter,sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText((r.date || '').slice(5), x + barW / 2, H - 1);
+    ctx.font = '8px Inter,sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(v + '%', padL - 4, y + 3);
   });
 
-  // IG legend — top right
-  ctx.textAlign = 'right';
-  tierLabels.forEach((lbl, li) => {
-    ctx.fillStyle = tierColors[li];
-    ctx.globalAlpha = 0.88;
-    ctx.fillRect(W - 30, 1 + li * 11, 8, 8);
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = '#6b7280';
+  // Compute points
+  const pts = sorted.map((r, i) => ({
+    x: n === 1 ? padL + chartW / 2 : padL + (i / (n - 1)) * chartW,
+    y: padTop + chartH - (Math.min(100, Math.max(0, r.score)) / 100) * chartH,
+    score: r.score,
+    date: (r.date || '').slice(5),
+    col: r.score >= 75 ? '#15803d' : r.score >= 50 ? '#b45309' : '#dc2626',
+  }));
+
+  // Connecting line
+  if (pts.length > 1) {
+    ctx.strokeStyle = '#152168';
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+    ctx.stroke();
+  }
+
+  // Dots + labels
+  pts.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = p.col;
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = p.col;
+    ctx.font = 'bold 9px Inter,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(p.score + '%', p.x, p.y - 9);
+
+    ctx.fillStyle = '#94a3b8';
     ctx.font = '8px Inter,sans-serif';
-    ctx.fillText(lbl, W - 4, 9 + li * 11);
+    ctx.fillText(p.date, p.x, H - 3);
   });
 }
 
@@ -3338,7 +3363,7 @@ function cisGenerateReportPrompt() {
     .map(s => `- ${s.sf} [C${s.ctrl}: ${s.ctrlName}]: ${s.title}`)
     .join('\n');
 
-  const prompt = `Please write a professional executive cybersecurity report summary. This will be presented to a non-technical CEO or board — avoid jargon, focus on business risk and practical outcomes.
+  const prompt = `Please write a professional executive cybersecurity report commentary for ${currentOrg.name}. This will be presented to a non-technical CEO or board — avoid jargon, focus on business risk and practical outcomes.
 
 ORGANISATION: ${currentOrg.name}
 ASSESSMENT DATE: ${run.date || 'Unknown'}
@@ -3354,12 +3379,34 @@ ${noGaps || '— None —'}
 PARTIALLY ADDRESSED CONTROLS:
 ${partGaps || '— None —'}
 
-Please write:
-1. EXECUTIVE SUMMARY (2–3 paragraphs): Overall security posture, what the ${score}% score means in plain business terms, and the key message for leadership. Note any positive trend if scores are improving.
-2. KEY FINDINGS (3–4 bullets): The most significant risks, written as business exposure — what is the real-world impact if these gaps go unaddressed?
-3. PRIORITY RECOMMENDATIONS (3 actions): Each with a one-sentence business rationale explaining why it matters now.
+─────────────────────────────────────────────
+CRITICAL FORMATTING RULES — read before writing:
 
-Keep the total to one printed page. Write in flowing professional prose under each heading — no labels like "Executive Summary:" in the output.`;
+This text will be pasted directly into a Word report export. The export engine renders it as follows:
+  • A blank line between paragraphs → new paragraph in the document
+  • A single line break within a block → line break within the same paragraph
+  • Plain text characters are passed through exactly as typed
+
+Therefore you MUST follow these rules or the output will be corrupted in the Word document:
+
+1. NO MARKDOWN. Do not use ** for bold, * or - for bullet lists, ## or # for headings, or _ for italic. These characters will appear literally in the printed report.
+2. NO SECTION LABELS. Do not write "Executive Summary:", "Key Findings:", or any heading labels. The report template already provides the section heading "Executive Commentary" — just write the content.
+3. BULLETS: If you need a bullet list, use the actual bullet character • at the start of each line (not a dash, not an asterisk).
+4. PARAGRAPH BREAKS: Separate each paragraph or bullet block with exactly one blank line.
+5. KEEP IT TO ONE PAGE: 3 short paragraphs of prose, then a bullet list of 3–4 findings, then 2–3 priority actions as short sentences. No more.
+─────────────────────────────────────────────
+
+CONTENT TO WRITE:
+
+Paragraph 1 — Overall posture: What does a ${score}% ${band} score mean for this organisation in plain business terms? What is working?
+
+Paragraph 2 — Key risk exposure: What is the real-world business impact of the top gaps listed above? Describe as business risk, not technical failure.
+
+Paragraph 3 — Trend and trajectory: ${runs.length >= 2 ? `Scores have trended: ${trend}. Describe what this movement means for the business and what still needs attention.` : `This is the first assessment. Set expectations for the improvement journey ahead.`}
+
+Bullet section — 3 to 4 findings as • bullets. Each bullet is one concise sentence: the risk, written as what could go wrong for the business, not as a technical gap.
+
+Final paragraph — 2 to 3 priority actions written as plain sentences. Each action should include a one-sentence rationale explaining why it matters now, not later.`;
 
   navigator.clipboard.writeText(prompt)
     .then(() => toast('✓ AI prompt copied — paste into Claude to generate commentary', '#152168'))
@@ -3425,6 +3472,65 @@ function cisExportReportWord() {
   const prevRun = sorted.length >= 2 ? sorted[sorted.length - 2] : null;
   const scoreChange = prevRun ? score - prevRun.score : null;
   const changeStr = scoreChange === null ? 'First assessment' : (scoreChange > 0 ? '+' + scoreChange + '%' : scoreChange + '%');
+
+  // Capture chart images from already-rendered exec report canvases
+  const radarCanvas = document.getElementById('cisReportRadar');
+  const radarImg = radarCanvas ? radarCanvas.toDataURL('image/png') : null;
+  const trendCanvas = document.getElementById('cisReportTrend');
+  const trendImg = (trendCanvas && sorted.length >= 2) ? trendCanvas.toDataURL('image/png') : null;
+
+  const radarSection = radarImg ? `
+  <h2>Maturity Radar</h2>
+  <div style="text-align:center;margin-bottom:16pt">
+    <img src="${radarImg}" style="max-width:300pt;width:70%;display:inline-block">
+  </div>` : '';
+
+  const trendSection = sorted.length >= 2 ? (trendImg ? `
+  <h2>Score Trend</h2>
+  <div style="margin-bottom:12pt">
+    <img src="${trendImg}" style="width:100%;display:block">
+  </div>` : `
+  <h2>Score Trend</h2>
+  <table>
+    <thead><tr><th>Date</th><th>Score</th><th>Coverage</th><th>Change</th><th>Conducted By</th></tr></thead>
+    <tbody>
+      ${sorted.map((r, i) => {
+        const rA = Object.fromEntries(Object.entries(r.answers || {}).filter(([k]) => !k.startsWith('_')));
+        const rG = (r.answers || {})._goal || goal;
+        const { score: rS, yes: rY, partial: rP, total: rT } = cisCalcScore(rA, rG);
+        const rCov = Math.round((rY + rP) / rT * 100);
+        const rPrev = sorted[i - 1];
+        const rChg = rPrev ? (rS - rPrev.score) : null;
+        const rCol = rS >= 75 ? '#15803d' : rS >= 50 ? '#b45309' : '#dc2626';
+        return `<tr>
+          <td>${r.date || '—'}</td>
+          <td style="font-weight:bold;color:${rCol}">${rS}%</td>
+          <td>${rCov}%</td>
+          <td>${rChg === null ? '—' : (rChg > 0 ? '+' + rChg + '%' : rChg + '%')}</td>
+          <td style="color:#5a6a8a">${escH(r.conductedBy || '—')}</td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>`) : '';
+
+  // Full controls listing for the detail page
+  const _aL = { yes: 'Yes', partial: 'Partial', no: 'No', na: 'N/A' };
+  const _aC = { yes: '#15803d', partial: '#b45309', no: '#dc2626', na: '#94a3b8' };
+  const _byC = {};
+  CIS_SAFEGUARDS.forEach(s => { if (!_byC[s.ctrl]) _byC[s.ctrl] = { name: s.ctrlName, sfs: [] }; _byC[s.ctrl].sfs.push(s); });
+  const ctrlsHtml = Object.keys(_byC).sort((a, b) => +a - +b).map(cn => {
+    const sfRows = _byC[cn].sfs.map(s => {
+      const ans = answers[s.sf] || '';
+      return `<tr>
+        <td style="font-weight:bold;color:#152168;white-space:nowrap;font-size:9pt">${s.sf}</td>
+        <td style="text-align:center"><span class="ig${s.ig}">IG${s.ig}</span></td>
+        <td style="font-weight:bold;color:${_aC[ans]||'#94a3b8'};text-align:center;white-space:nowrap;font-size:9pt">${_aL[ans]||'—'}</td>
+        <td><strong style="font-size:9.5pt">${escH(s.title)}</strong><br>
+            <span style="font-size:8.5pt;color:#5a6a8a">${escH(s.sub||'')}</span></td>
+      </tr>`;
+    }).join('');
+    return `<tr><td colspan="4" style="background:#152168;color:#fff;font-weight:bold;font-size:9.5pt;padding:5pt 8pt;border:none">Control ${cn}: ${escH(_byC[cn].name)}</td></tr>${sfRows}`;
+  }).join('');
 
   const html = `<!DOCTYPE html>
 <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
@@ -3497,29 +3603,8 @@ function cisExportReportWord() {
     </div>
   </div>
 
-  ${sorted.length >= 2 ? `
-  <h2>Score Trend</h2>
-  <table>
-    <thead><tr><th>Date</th><th>Score</th><th>Coverage</th><th>Change</th><th>Conducted By</th></tr></thead>
-    <tbody>
-      ${sorted.map((r, i) => {
-        const rA = Object.fromEntries(Object.entries(r.answers || {}).filter(([k]) => !k.startsWith('_')));
-        const rG = (r.answers || {})._goal || goal;
-        const { score: rS, yes: rY, partial: rP, total: rT } = cisCalcScore(rA, rG);
-        const rCov = Math.round((rY + rP) / rT * 100);
-        const rPrev = sorted[i - 1];
-        const rChg = rPrev ? (rS - rPrev.score) : null;
-        const rCol = rS >= 75 ? '#15803d' : rS >= 50 ? '#b45309' : '#dc2626';
-        return `<tr>
-          <td>${r.date || '—'}</td>
-          <td style="font-weight:bold;color:${rCol}">${rS}%</td>
-          <td>${rCov}%</td>
-          <td>${rChg === null ? '—' : (rChg > 0 ? '+' + rChg + '%' : rChg + '%')}</td>
-          <td style="color:#5a6a8a">${escH(r.conductedBy || '—')}</td>
-        </tr>`;
-      }).join('')}
-    </tbody>
-  </table>` : ''}
+  ${radarSection}
+  ${trendSection}
 
   <h2>IG Tier Progress</h2>
   <table>
@@ -3555,6 +3640,19 @@ function cisExportReportWord() {
   ${commentary ? `
   <h2>Executive Commentary</h2>
   ${commentary.split(/\n\n+/).map(p => `<p style="font-size:11pt;line-height:1.75;margin:0 0 10pt 0">${escH(p).replace(/\n/g, '<br>')}</p>`).join('')}` : ''}
+
+  <div style="page-break-before: always">
+    <h2>Full Assessment &mdash; All Controls &amp; Safeguards</h2>
+    <table>
+      <thead><tr>
+        <th style="width:52pt">Safeguard</th>
+        <th style="width:30pt">IG</th>
+        <th style="width:44pt">Answer</th>
+        <th>Title &amp; Description</th>
+      </tr></thead>
+      <tbody>${ctrlsHtml}</tbody>
+    </table>
+  </div>
 
   <div class="footer">
     Generated by Abbott Cyber Consulting GRC Platform &nbsp;&middot;&nbsp;

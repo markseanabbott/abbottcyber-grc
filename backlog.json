@@ -1,8 +1,8 @@
 {
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "created": "2026-05-14",
-  "updated": "2026-06-18 (session 27)",
+  "updated": "2026-06-18 (session 28)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -270,13 +270,20 @@
         {
           "id": "cis3",
           "text": "CIS assessment PDF/Excel export: produce a formatted report card showing score, IG progress, per-control summary, and gap list — branded Abbott Cyber.",
-          "done": false
+          "done": true,
+          "notes": "Session 28: Excel export (cisExportExcel) now includes Column H 'Comment' populated with existing assessor notes; import (cisParseImportFile + cisImportSave) reads Column H back and saves to cis_safeguard_notes. Word exec report (cisExportReportWord) now embeds radar chart + dot/line trend chart as inline PNG images captured from cisReportRadar and cisReportTrend canvases, plus a page-break section with the full 18-control/153-safeguard detail listing showing each safeguard ID, IG tier, answer (colour-coded), title and description."
+        },
+        {
+          "id": "cis_report_print",
+          "text": "CIS exec report Print / Save as PDF button: add a 'Print' button on the exec report view that calls window.print() with @media print CSS to hide nav/buttons and produce a clean client-presentable PDF directly from the browser, without needing to open the Word download.",
+          "done": false,
+          "priority": "Medium"
         },
         {
           "id": "cis_exec_report",
           "text": "CIS Executive Report: per-assessment report view with gauge/speedometer chart, answer distribution donut, score trend line, IG tier progress bars, control group coverage bars, top gaps table, and executive commentary section with 'Generate AI Prompt' button to produce AI-written narrative via Claude.",
           "done": true,
-          "notes": "Built. cisOpenReport() opens report view, renderCISReport() renders full layout. cisDrawGauge(), cisDrawDonut(), cisDrawReportTrend() draw Canvas charts. cisGenerateReportPrompt() copies data-rich prompt to clipboard. cisSaveCommentary() persists commentary to assessment answers._exec_commentary via PATCH. 📊 Report button added to each assessment row. Commentary preserved through re-edits of the full assessment form. Session 8 overhaul: replaced gauge+donut with score strip (yes/partial/not-done/N/A counts + coverage bar + maturity% + fully-implemented%); added 18-spoke canvas radar chart (cisDrawRadar()); accordion redesigned with CIS_REPORT_LAYERS (6 layers) — each layer header shows per-control columns (short name, dot grid, ctrl%) side-by-side. Both trend charts (cisTrendDraw + cisDrawReportTrend) rewritten as stacked bar charts — bars split into IG1/IG2/IG3 segments with legend. Assessment history now sorts newest-first and shows % columns instead of raw counts. Assessor name pre-fills from most recent run on new assessments."
+          "notes": "Built. cisOpenReport() opens report view, renderCISReport() renders full layout. cisDrawGauge(), cisDrawDonut(), cisDrawReportTrend() draw Canvas charts. cisGenerateReportPrompt() copies data-rich prompt to clipboard. cisSaveCommentary() persists commentary to assessment answers._exec_commentary via PATCH. 📊 Report button added to each assessment row. Commentary preserved through re-edits of the full assessment form. Session 8 overhaul: replaced gauge+donut with score strip; added 18-spoke canvas radar chart (cisDrawRadar()); accordion redesigned with CIS_REPORT_LAYERS. Session 28: cisDrawReportTrend() rewritten from stacked bars to dot/line chart — navy connecting line, colour-coded dots (green/amber/red), score labels above, date labels below, percentage grid lines. cisExportReportWord() now captures cisReportRadar and cisReportTrend canvases as PNG data URLs and embeds them as images in the HTML/Word export. Controls detail page added (page-break-before) listing all 18 controls with safeguard rows showing ID, IG, answer (colour-coded), title and description. cisGenerateReportPrompt() rewritten with explicit formatting rules: no markdown, use • for bullets, blank line = paragraph break — prevents literal ** characters appearing in the Word export."
         },
         {
           "id": "cis4",
