@@ -438,7 +438,7 @@ function aiuToggleDashFw(fw) {
   if (fw === 'nist') f.nist = !f.nist;
   else f.iso = !f.iso;
   if (!f.nist && !f.iso) { f.nist = true; f.iso = true; } // prevent both off
-  renderMain(); setTimeout(aiuTrendDraw, 80);
+  renderMain(); setTimeout(aiuDashDrawCharts, 80);
 }
 
 function aiuToggleFormFw(fw) {
@@ -468,6 +468,11 @@ function renderAiUnifiedDashboard() {
     Object.fromEntries(Object.entries(prevRun.answers||{}).filter(([k])=>!k.startsWith('_'))), fw
   ) : null;
   const scoreChange = (scores.overall !== null && prevScores?.overall != null) ? scores.overall - prevScores.overall : null;
+
+  const nistAxes = latest ? aiuCalcNistFunctionScores(answers, fw) : [];
+  const isoAxes  = latest ? aiuCalcIsoClauseScores(answers, fw) : [];
+  const showNistRadar = fw.nist !== false && nistAxes.some(a => a.pct !== null);
+  const showIsoRadar  = fw.iso  !== false && isoAxes.some(a => a.pct !== null);
 
   const groupBarsHtml = groupScores.filter(g => g.pct !== null).map(g => {
     const m = AI_GROUP_META[g.grp];
@@ -526,7 +531,7 @@ function renderAiUnifiedDashboard() {
     </div>
   </div>
 
-  <div class="card" style="padding:1.25rem">
+  <div class="card" style="padding:1.25rem;margin-bottom:1.25rem">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;flex-wrap:wrap;gap:8px">
       <div style="font-size:14px;font-weight:700;color:var(--text)">Assessment History</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -555,7 +560,6 @@ function renderAiUnifiedDashboard() {
       </tr></thead>
       <tbody>`;
 
-    // Sort newest-first for display; preserve original index for action button callbacks
     const sortedRuns = runs.map((r, origIdx) => ({ r, origIdx }))
       .sort((a, b) => (b.r.date||'').localeCompare(a.r.date||''));
     sortedRuns.forEach(({ r, origIdx }) => {
@@ -592,7 +596,64 @@ function renderAiUnifiedDashboard() {
     html += `</tbody></table>`;
   }
   html += `</div>`;
+
+  // ── Framework Radars ──────────────────────────────────────────────────────────
+  if (showNistRadar || showIsoRadar) {
+    html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.25rem;margin-bottom:1.25rem">`;
+
+    if (showNistRadar) {
+      const nistScore = scores.nist ?? '—';
+      const nistLegend = nistAxes.filter(a => a.pct !== null).map(a =>
+        `<tr><td style="padding:2px 8px 2px 0;font-size:11px;color:var(--muted);white-space:nowrap">${a.label}</td><td style="padding:2px 0;font-size:11px;font-weight:700;color:${a.pct>=70?'#15803d':a.pct>=40?'#d97706':'#dc2626'};text-align:right">${a.pct}%</td></tr>`
+      ).join('');
+      html += `<div class="card" style="padding:1.25rem">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem">
+          <div style="width:10px;height:10px;border-radius:2px;background:#1d4ed8;flex-shrink:0"></div>
+          <div style="font-size:13px;font-weight:700;color:var(--text)">NIST AI RMF</div>
+          <div style="margin-left:auto;font-size:20px;font-weight:800;color:#1d4ed8">${nistScore}${nistScore!=='—'?'%':''}</div>
+        </div>
+        <canvas id="aiuDashNistRadar" width="260" height="220" style="display:block;margin:0 auto 1rem"></canvas>
+        <table style="width:100%;border-collapse:collapse">${nistLegend}</table>
+      </div>`;
+    }
+
+    if (showIsoRadar) {
+      const isoScore = scores.iso ?? '—';
+      const isoLegend = isoAxes.filter(a => a.pct !== null).map(a =>
+        `<tr><td style="padding:2px 8px 2px 0;font-size:11px;color:var(--muted);white-space:nowrap">${a.label}</td><td style="padding:2px 0;font-size:11px;font-weight:700;color:${a.pct>=70?'#15803d':a.pct>=40?'#d97706':'#dc2626'};text-align:right">${a.pct}%</td></tr>`
+      ).join('');
+      html += `<div class="card" style="padding:1.25rem">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem">
+          <div style="width:10px;height:10px;border-radius:2px;background:#0f766e;flex-shrink:0"></div>
+          <div style="font-size:13px;font-weight:700;color:var(--text)">ISO/IEC 42001</div>
+          <div style="margin-left:auto;font-size:20px;font-weight:800;color:#0f766e">${isoScore}${isoScore!=='—'?'%':''}</div>
+        </div>
+        <canvas id="aiuDashIsoRadar" width="260" height="220" style="display:block;margin:0 auto 1rem"></canvas>
+        <table style="width:100%;border-collapse:collapse">${isoLegend}</table>
+      </div>`;
+    }
+
+    html += `</div>`;
+  }
+
   return html;
+}
+
+function aiuDashDrawCharts() {
+  aiuTrendDraw();
+  const orgId = currentOrg?.id;
+  const runs = (orgAssessments[orgId] || {})['ai_unified'] || [];
+  const latestIdx = aiuLatestIdx(runs);
+  const latest = latestIdx >= 0 ? runs[latestIdx] : null;
+  if (!latest) return;
+  const answers = Object.fromEntries(Object.entries(latest.answers || {}).filter(([k]) => !k.startsWith('_')));
+  const fw = aiUnifiedState.frameworks;
+  const nistAxes = aiuCalcNistFunctionScores(answers, fw);
+  const isoAxes  = aiuCalcIsoClauseScores(answers, fw);
+  const nc = document.getElementById('aiuDashNistRadar');
+  if (nc && nistAxes.some(a => a.pct !== null)) aiuDrawFrameworkRadar(nc, nistAxes, 'rgba(29,78,216,0.10)', '#1d4ed8');
+  const ic = document.getElementById('aiuDashIsoRadar');
+  if (ic && isoAxes.some(a => a.pct !== null)) aiuDrawFrameworkRadar(ic, isoAxes, 'rgba(15,118,110,0.10)', '#0f766e');
 }
 
 function aiuTrendDraw() {
@@ -1184,7 +1245,7 @@ async function aiuSave() {
     aiUnifiedState.view = 'dashboard';
     toast('✓ AI Governance assessment saved', '#15803d');
     buildNav(); renderMain();
-    setTimeout(aiuTrendDraw, 80);
+    setTimeout(aiuDashDrawCharts, 80);
   } catch(e) {
     toast('Save failed: ' + e.message, '#dc2626');
   } finally {
@@ -1211,7 +1272,7 @@ function aiuNavToDashboard() {
   aiUnifiedState.reportRun = null;
   aiUnifiedState.poamRun = null;
   renderMain();
-  setTimeout(aiuTrendDraw, 80);
+  setTimeout(aiuDashDrawCharts, 80);
 }
 
 function aiuAnswer(id, val) {
@@ -2105,7 +2166,7 @@ function aiuCalcNistFunctionScores(answers, fw) {
     let totalW = 0, earnedW = 0;
     controls.forEach(c => {
       const v = answers[c.id];
-      const val = v==='yes'?1:v==='partial'?0.5:v==='no'?0:null;
+      const val = (v==='yes'||v==='cc')?1:v==='partial'?0.5:v==='no'?0:null;
       if (val===null) return;
       totalW += c.weight; earnedW += val*c.weight;
     });
@@ -2133,7 +2194,7 @@ function aiuCalcIsoClauseScores(answers, fw) {
     let totalW = 0, earnedW = 0;
     controls.forEach(c => {
       const v = answers[c.id];
-      const val = v==='yes'?1:v==='partial'?0.5:v==='no'?0:null;
+      const val = (v==='yes'||v==='cc')?1:v==='partial'?0.5:v==='no'?0:null;
       if (val===null) return;
       totalW += c.weight; earnedW += val*c.weight;
     });
