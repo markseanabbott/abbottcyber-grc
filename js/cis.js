@@ -900,7 +900,7 @@ function cisHydrate() {
   const last = runs[cisLatestIdx(runs)] || null;
   const rawAnswers = last ? Object.assign({}, last.answers || {}) : {};
   const answers = Object.fromEntries(Object.entries(rawAnswers).filter(([k]) => !k.startsWith('_')));
-  cisState = { answers, openPanels: {}, orgId: currentOrg?.id, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '', gapRun: null };
+  cisState = { answers, openPanels: {}, orgId: currentOrg?.id, view: 'dashboard', editId: null, conductedBy: '', editDate: '', notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '', gapRun: null };
 }
 
 // ── GOAL ──────────────────────────────────────────────────────────────────────
@@ -1174,7 +1174,7 @@ function renderCISForm() {
   const progress = cisIgProgress(cisState.answers);
   const runs = (orgAssessments[currentOrg.id] || {})['cis'] || [];
   const latestAssessor = cisState.editId
-    ? ''
+    ? (cisState.conductedBy || '')
     : ([...runs].sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0]?.conductedBy || '');
   const goalN = { ig1: 1, ig2: 2, ig3: 3 }[goal] || 0;
   const igColors = { 1: '#15803d', 2: '#1d4ed8', 3: '#6d28d9' };
@@ -1257,12 +1257,14 @@ function renderCISForm() {
         <div style="display:flex;align-items:flex-end;gap:6px;margin-top:4px;flex-wrap:wrap">
           <div>
             <div style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:3px">Assessment date</div>
-            <input type="date" id="cisSaveDate" value="${new Date().toISOString().split('T')[0]}"
+            <input type="date" id="cisSaveDate" value="${cisState.editId ? (cisState.editDate || new Date().toISOString().split('T')[0]) : new Date().toISOString().split('T')[0]}"
+              onchange="if(cisState)cisState.editDate=this.value"
               style="padding:5px 8px;border-radius:6px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-family:Inter,sans-serif;font-size:12px;color-scheme:dark">
           </div>
           <div>
             <div style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:3px">Conducted by</div>
             <input type="text" id="cisConductedBy" placeholder="Assessor name" value="${escH(latestAssessor)}"
+              oninput="if(cisState)cisState.conductedBy=this.value"
               style="padding:5px 8px;border-radius:6px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-family:Inter,sans-serif;font-size:12px;width:150px" autocomplete="off">
           </div>
           <button class="btn btn-cyan btn-sm" id="cisSaveBtn" onclick="cisSave()">${cisState.editId ? 'Update Assessment' : 'Save to Database'}</button>
@@ -1768,6 +1770,8 @@ async function cisOpenAssessment(idx) {
   cisState.openComments = {};
   cisState.view = 'form';
   cisState.editId = run.id || null;
+  cisState.conductedBy = run.conductedBy || '';
+  cisState.editDate = run.date || '';
   cisState.reportCommentary = (run.answers || {})._exec_commentary || '';
   if (run.id) {
     try {
@@ -1776,12 +1780,6 @@ async function cisOpenAssessment(idx) {
     } catch(e) { console.warn('Failed to load CIS notes', e); }
   }
   renderMain();
-  setTimeout(() => {
-    const d = document.getElementById('cisSaveDate');
-    if (d && run.date) d.value = run.date;
-    const cb = document.getElementById('cisConductedBy');
-    if (cb && run.conductedBy) cb.value = run.conductedBy;
-  }, 50);
 }
 
 async function cisDeleteAssessment(idx) {
