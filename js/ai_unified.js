@@ -1670,9 +1670,61 @@ async function aiuExportWord() {
   const isoAxes  = aiuCalcIsoClauseScores(answers, fw);
   const gaps = aiuWeightedGaps(answers, fw);
   const score = scores.overall ?? 0;
-  const commentary = (run.answers || {})._exec_commentary || '';
+  const band = aiuScoreBand(score);
+  const bandCol = aiuScoreColor(score);
+  const rawCommentary = aiUnifiedState.reportCommentary || (run.answers || {})._exec_commentary || '';
+  const fwLabel = [fw.nist !== false ? 'NIST AI RMF v1.0' : '', fw.iso !== false ? 'ISO/IEC 42001:2023' : ''].filter(Boolean).join(' + ');
 
-  // Canvas gauge
+  // ── Commentary parser — identical to CIS pattern ─────────────────────────────
+  // Supports prose paragraphs, KEY FINDINGS bullet table, PRIORITY RECOMMENDATIONS numbered table
+  function fmtCommentary(text, placeholder) {
+    if (!text) return placeholder
+      ? `<p style="color:#94a3b8;font-style:italic;font-size:10pt;margin:0 0 10pt 0">${placeholder}</p>`
+      : '';
+    let html = '';
+    let mode = 'prose';
+    let items = [];
+    function flushItems() {
+      if (!items.length) return;
+      if (mode === 'findings') {
+        html += '<table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">' +
+          items.map(l => `<tr>
+            <td style="width:14pt;vertical-align:top;padding:4pt 8pt 4pt 0;color:#152168;font-size:14pt;line-height:1">&#8226;</td>
+            <td style="font-size:11pt;line-height:1.65;padding:4pt 0;vertical-align:top;border-bottom:1pt solid #f1f5f9">${escH(l)}</td>
+          </tr>`).join('') + '</table>';
+      } else if (mode === 'recommendations') {
+        html += '<table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">' +
+          items.map((l, i) => `<tr>
+            <td style="background:#152168;color:#fff;width:24pt;text-align:center;font-size:11pt;font-weight:bold;vertical-align:top;padding:7pt 4pt;border-bottom:1pt solid #1e3080">${i + 1}</td>
+            <td style="padding:7pt 10pt;border-bottom:1pt solid #e8ecf4;font-size:11pt;line-height:1.65;vertical-align:top">${escH(l)}</td>
+          </tr>`).join('') + '</table>';
+      }
+      items = [];
+    }
+    text.split('\n').map(l => l.trim()).forEach(line => {
+      if (!line) return;
+      if (/^KEY FINDINGS$/i.test(line)) {
+        flushItems();
+        html += `<div style="font-size:9.5pt;color:#152168;font-weight:bold;text-transform:uppercase;letter-spacing:.5pt;margin:14pt 0 5pt 0;padding-bottom:3pt;border-bottom:1.5pt solid #152168">Key Findings</div>`;
+        mode = 'findings'; return;
+      }
+      if (/^PRIORITY RECOMMENDATIONS$/i.test(line)) {
+        flushItems();
+        html += `<div style="font-size:9.5pt;color:#152168;font-weight:bold;text-transform:uppercase;letter-spacing:.5pt;margin:14pt 0 5pt 0;padding-bottom:3pt;border-bottom:1.5pt solid #152168">Priority Recommendations</div>`;
+        mode = 'recommendations'; return;
+      }
+      const content = line.replace(/^[•\-]\s*/, '');
+      if (mode === 'findings' || mode === 'recommendations') {
+        items.push(content);
+      } else {
+        html += `<p style="font-size:11pt;line-height:1.75;margin:0 0 8pt 0">${escH(line)}</p>`;
+      }
+    });
+    flushItems();
+    return html;
+  }
+
+  // ── Canvas gauge ──────────────────────────────────────────────────────────────
   let gaugeImg = null;
   {
     const _gc = document.createElement('canvas');
@@ -1689,27 +1741,28 @@ async function aiuExportWord() {
     _grad.addColorStop(0.55, '#f59e0b'); _grad.addColorStop(0.75, '#84cc16');
     _grad.addColorStop(1.00, '#15803d');
     _ctx.beginPath(); _ctx.arc(cx, cy, r, Math.PI, 0, false);
-    _ctx.strokeStyle = _grad; _ctx.stroke();
+    _ctx.strokeStyle = _grad; _ctx.lineWidth = tw; _ctx.lineCap = 'butt'; _ctx.stroke();
     const nx = cx + r * 0.84 * Math.cos(Math.PI + t * Math.PI);
     const ny = cy + r * 0.84 * Math.sin(Math.PI + t * Math.PI);
     _ctx.beginPath(); _ctx.moveTo(cx, cy); _ctx.lineTo(nx, ny);
     _ctx.strokeStyle = '#152168'; _ctx.lineWidth = 3.5; _ctx.lineCap = 'round'; _ctx.stroke();
     _ctx.beginPath(); _ctx.arc(cx, cy, 9, 0, Math.PI * 2); _ctx.fillStyle = '#152168'; _ctx.fill();
     _ctx.beginPath(); _ctx.arc(cx, cy, 5, 0, Math.PI * 2); _ctx.fillStyle = '#fff'; _ctx.fill();
-    _ctx.font = 'bold 26px Arial'; _ctx.fillStyle = '#152168'; _ctx.textAlign = 'center';
-    _ctx.fillText(score + '%', cx, cy - 18);
-    _ctx.font = 'bold 13px Arial'; _ctx.fillStyle = aiuScoreColor(score);
-    _ctx.fillText(aiuScoreBand(score), cx, cy - 2);
-    _ctx.font = '10px Arial'; _ctx.fillStyle = '#9ca3af';
-    _ctx.textAlign = 'left'; _ctx.fillText('Low', cx - r + 4, cy + 14);
-    _ctx.textAlign = 'right'; _ctx.fillText('High', cx + r - 4, cy + 14);
+    _ctx.textAlign = 'center';
+    _ctx.font = 'bold 34px Arial, sans-serif'; _ctx.fillStyle = '#152168';
+    _ctx.fillText(score + '%', cx, 82);
+    _ctx.font = 'bold 12px Arial, sans-serif'; _ctx.fillStyle = bandCol;
+    _ctx.fillText(band, cx, 100);
+    _ctx.font = '9px Arial, sans-serif'; _ctx.fillStyle = '#94a3b8';
+    _ctx.textAlign = 'left';  _ctx.fillText('Low',  cx - r + 2,  150);
+    _ctx.textAlign = 'right'; _ctx.fillText('High', cx + r - 2, 150);
     gaugeImg = _gc.toDataURL('image/png');
     document.body.removeChild(_gc);
   }
 
-  // Off-screen framework radars
+  // ── Off-screen framework radars ───────────────────────────────────────────────
   let nistRadarImg = null, isoRadarImg = null;
-  if (fw.nist !== false && nistAxes.filter(a=>a.pct!==null).length) {
+  if (fw.nist !== false && nistAxes.filter(a => a.pct !== null).length) {
     const _nc = document.createElement('canvas');
     _nc.width = 280; _nc.height = 260;
     _nc.style.cssText = 'position:fixed;left:-9999px;pointer-events:none';
@@ -1718,7 +1771,7 @@ async function aiuExportWord() {
     nistRadarImg = _nc.toDataURL('image/png');
     document.body.removeChild(_nc);
   }
-  if (fw.iso !== false && isoAxes.filter(a=>a.pct!==null).length) {
+  if (fw.iso !== false && isoAxes.filter(a => a.pct !== null).length) {
     const _ic = document.createElement('canvas');
     _ic.width = 280; _ic.height = 260;
     _ic.style.cssText = 'position:fixed;left:-9999px;pointer-events:none';
@@ -1728,86 +1781,191 @@ async function aiuExportWord() {
     document.body.removeChild(_ic);
   }
 
-  const fwLabel = [fw.nist !== false ? 'NIST AI RMF v1.0' : '', fw.iso !== false ? 'ISO/IEC 42001:2023' : ''].filter(Boolean).join(' + ');
+  // ── Pyramid maturity state table ──────────────────────────────────────────────
+  const pyrState = aiuBuildPyramidState(answers);
+  const PYR_STATUS = {
+    green:  { label: 'Implemented',   bg: '#dcfce7', col: '#15803d' },
+    yellow: { label: 'Partial',        bg: '#fef3c7', col: '#b45309' },
+    blue:   { label: 'In Progress',    bg: '#dbeafe', col: '#1d4ed8' },
+    red:    { label: 'Not Addressed',  bg: '#fee2e2', col: '#dc2626' },
+  };
+  const pyrRowsHtml = AI_PYR_TIERS.map(tier => {
+    const tc = AI_PYR_TIER_COLORS[tier.label];
+    const segs = tier.cols.filter(c => c.type === 'seg');
+    const segRows = segs.map(seg => {
+      const st = PYR_STATUS[pyrState[seg.id]] || PYR_STATUS.red;
+      const cat = AI_PYR_CATALOGUE[seg.sku] || {};
+      return `<tr>
+        <td style="padding:4pt 8pt;font-size:9.5pt;font-weight:700">${escH(seg.name)}</td>
+        <td style="padding:4pt 8pt;font-size:8pt;color:#5a6a8a">${escH(cat.rmf || '')}</td>
+        <td style="padding:4pt 8pt;font-size:8pt;color:#5a6a8a">${escH(cat.iso || '')}</td>
+        <td style="padding:4pt 8pt;text-align:center">
+          <span style="background:${st.bg};color:${st.col};padding:2pt 8pt;border-radius:8pt;font-size:8.5pt;font-weight:bold;white-space:nowrap">${st.label}</span>
+        </td>
+      </tr>`;
+    }).join('');
+    return `<tr><td colspan="4" style="background:${tc.bg};color:${tc.text};font-weight:bold;font-size:9.5pt;padding:5pt 8pt;border:none;letter-spacing:.3pt">${escH(tier.label)}</td></tr>${segRows}`;
+  }).join('');
 
-  const top5 = gaps.slice(0, 5);
-  const gapRowsHtml = top5.map((g, i) => {
+  // ── Top 10 priority gaps ──────────────────────────────────────────────────────
+  const top10 = gaps.slice(0, 10);
+  const gapRowsHtml = top10.map((g, i) => {
     const gm = AI_GROUP_META[g.grp];
     const ansCol = g.answer === 'no' ? '#dc2626' : '#b45309';
     return `<tr>
-      <td style="padding:5px 10px;text-align:center;font-weight:900;color:${ansCol};font-size:14pt">${i + 1}</td>
-      <td style="padding:5px 10px;font-size:8pt;font-weight:700;color:${gm.color}">${g.id}</td>
-      <td style="padding:5px 10px;font-weight:700">${escH(g.title)}</td>
-      <td style="padding:5px 10px;text-align:center;font-weight:700;color:${ansCol}">${g.answer === 'no' ? 'No' : 'Partial'}</td>
-      <td style="padding:5px 10px;text-align:center;font-weight:700;color:${AI_WEIGHT_COLORS[g.weight]}">${AI_WEIGHT_LABELS[g.weight]}</td>
+      <td style="text-align:center;font-weight:900;color:${ansCol};font-size:13pt">${i + 1}</td>
+      <td style="font-weight:bold;color:#152168;white-space:nowrap;font-size:9pt">${g.id}</td>
+      <td style="font-size:9pt;font-weight:700;color:${gm.txt||gm.color}">${escH(gm.label)}</td>
+      <td style="font-weight:700">${escH(g.title)}</td>
+      <td style="text-align:center;font-weight:700;color:${ansCol}">${g.answer === 'no' ? 'No' : 'Partial'}</td>
+      <td style="text-align:center;font-weight:700;color:${AI_WEIGHT_COLORS[g.weight]}">${AI_WEIGHT_LABELS[g.weight]}</td>
     </tr>`;
   }).join('');
 
-  const docHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-  <title>AI Governance Assessment — Executive Report</title>
-  <style>
-    body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color: #1a2340; margin: 2cm; }
-    h1 { font-size: 20pt; color: #152168; margin-bottom: 4px; }
-    h2 { font-size: 13pt; color: #152168; border-bottom: 2px solid #07B4D9; padding-bottom: 4px; margin-top: 20px; margin-bottom: 10px; }
-    table { border-collapse: collapse; width: 100%; margin-bottom: 12px; }
-    th { background: #152168; color: #fff; padding: 7px 10px; font-size: 9pt; text-align: left; letter-spacing: .04em; text-transform: uppercase; }
-    td { padding: 5px 10px; border-bottom: 1px solid #e5e7eb; font-size: 10pt; vertical-align: top; }
-  </style>
-  </head><body>
-  <h1>AI Governance Assessment — Executive Report</h1>
-  <p style="color:#5a6a8a;font-size:10pt;margin-top:4px">${escH(currentOrg?.name || '')} &nbsp;·&nbsp; ${run.date || '—'} &nbsp;·&nbsp; ${escH(run.conductedBy || '—')} &nbsp;·&nbsp; ${fwLabel}</p>
+  // ── Full 44-control assessment ────────────────────────────────────────────────
+  const _aL = { yes: 'Yes', partial: 'Partial', no: 'No', na: 'N/A' };
+  const _aC = { yes: '#15803d', partial: '#b45309', no: '#dc2626', na: '#94a3b8' };
+  const byGrp = {};
+  AI_UNIFIED_CONTROLS.forEach(c => {
+    if (!byGrp[c.grp]) byGrp[c.grp] = [];
+    byGrp[c.grp].push(c);
+  });
+  const fullTableHtml = AI_GROUP_ORDER.filter(g => byGrp[g]).map(grpKey => {
+    const gm = AI_GROUP_META[grpKey];
+    const sfRows = byGrp[grpKey].map(c => {
+      const ans = answers[c.id] || '';
+      const fwBadge = c.frameworks === 'nist' ? '<span style="background:#dbeafe;color:#1d4ed8;padding:1pt 5pt;border-radius:6pt;font-size:7.5pt;font-weight:bold">NIST</span>'
+                    : c.frameworks === 'iso'  ? '<span style="background:#ccfbf1;color:#0f766e;padding:1pt 5pt;border-radius:6pt;font-size:7.5pt;font-weight:bold">ISO</span>'
+                    : '<span style="background:#ede9fe;color:#6d28d9;padding:1pt 5pt;border-radius:6pt;font-size:7.5pt;font-weight:bold">Both</span>';
+      return `<tr>
+        <td style="font-weight:bold;color:#152168;white-space:nowrap;font-size:9pt">${c.id}</td>
+        <td style="text-align:center">${fwBadge}</td>
+        <td style="font-weight:bold;color:${_aC[ans]||'#94a3b8'};text-align:center;font-size:9pt">${_aL[ans]||'—'}</td>
+        <td><strong style="font-size:9.5pt">${escH(c.title)}</strong><br>
+            <span style="font-size:8pt;color:#5a6a8a">${escH(c.desc||'')}</span></td>
+        <td style="text-align:center;font-size:8.5pt;font-weight:700;color:${AI_WEIGHT_COLORS[c.weight]}">${AI_WEIGHT_LABELS[c.weight]}</td>
+      </tr>`;
+    }).join('');
+    return `<tr><td colspan="5" style="background:${gm.color};color:#fff;font-weight:bold;font-size:9.5pt;padding:5pt 8pt;border:none">${gm.icon} ${gm.label}</td></tr>${sfRows}`;
+  }).join('');
 
-  <div style="display:flex;gap:24px;align-items:center;background:#f0f4fa;border-radius:8px;padding:16px;margin-bottom:16px">
-    <div><img src="${gaugeImg}" style="width:220px;display:block"></div>
-    <div>
-      <div style="font-size:10pt;font-weight:700;color:#5a6a8a;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">AI Governance Score</div>
-      <div style="font-size:36pt;font-weight:900;color:#152168;line-height:1">${score}%</div>
-      <div style="font-size:12pt;font-weight:700;color:${aiuScoreColor(score)};margin-top:4px">${aiuScoreBand(score)}</div>
-      <div style="display:flex;gap:20px;margin-top:14px;flex-wrap:wrap">
-        ${fw.nist !== false && scores.nist !== null ? `<div><div style="font-size:9pt;color:#5a6a8a">NIST AI RMF</div><div style="font-size:16pt;font-weight:800;color:#1d4ed8">${scores.nist}%</div></div>` : ''}
-        ${fw.iso !== false && scores.iso !== null ? `<div><div style="font-size:9pt;color:#5a6a8a">ISO 42001</div><div style="font-size:16pt;font-weight:800;color:#0f766e">${scores.iso}%</div></div>` : ''}
-        <div><div style="font-size:9pt;color:#5a6a8a">Total Gaps</div><div style="font-size:16pt;font-weight:800;color:#dc2626">${gaps.length}</div></div>
-      </div>
+  // ── Build HTML document ───────────────────────────────────────────────────────
+  const html = `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+<head>
+<meta charset="utf-8">
+<title>AI Governance Assessment — Executive Report — ${escH(currentOrg?.name || '')}</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 11pt; color: #1a2340; margin: 0; padding: 0; }
+  .page { padding: 2.5cm; max-width: 19cm; margin: 0 auto; }
+  h1 { font-size: 20pt; color: #152168; margin: 0 0 4pt 0; font-weight: bold; }
+  h2 { font-size: 11pt; color: #152168; margin: 20pt 0 6pt 0; font-weight: bold;
+       border-bottom: 1.5pt solid #152168; padding-bottom: 3pt;
+       text-transform: uppercase; letter-spacing: .5pt; }
+  .sub { font-size: 10pt; color: #5a6a8a; margin: 0 0 20pt 0; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 10pt; font-size: 10pt; }
+  th { background: #152168; color: #fff; text-align: left; padding: 5pt 8pt;
+       font-size: 9pt; text-transform: uppercase; letter-spacing: .4pt; }
+  td { padding: 5pt 8pt; border-bottom: 1pt solid #e8ecf4; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .footer { margin-top: 28pt; padding-top: 8pt; border-top: 1pt solid #dde3ef; font-size: 8pt; color: #94a3b8; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>AI Governance Assessment — Executive Report</h1>
+<div class="sub">
+  ${escH(currentOrg?.name || '')} &nbsp;&middot;&nbsp; ${fwLabel} &nbsp;&middot;&nbsp; ${run.date || '&mdash;'}${run.conductedBy ? ' &nbsp;&middot;&nbsp; Assessed by: ' + escH(run.conductedBy) : ''}
+</div>
+
+<h2>Executive Summary</h2>
+${fmtCommentary(rawCommentary, 'No executive commentary saved. Use the AI Prompt button in the exec report view to generate commentary, save it, then export.')}
+
+<h2>Overall Security Score</h2>
+<div style="display:flex;gap:24pt;margin-bottom:12pt;align-items:flex-start">
+  <div style="flex-shrink:0;text-align:center">${gaugeImg ? `<img src="${gaugeImg}" style="width:240px;display:block">` : ''}</div>
+  <div style="flex:1">
+    <table style="margin:0;font-size:10pt">
+      ${[
+        ['Framework',         fwLabel,                                                           '#152168'],
+        ['Overall Score',     score + '%  — ' + band,                                           bandCol],
+        fw.nist !== false && scores.nist !== null ? ['NIST AI RMF', scores.nist + '%', '#1d4ed8'] : null,
+        fw.iso  !== false && scores.iso  !== null ? ['ISO 42001',   scores.iso  + '%', '#0f766e'] : null,
+        ['Total Gaps',        gaps.length + ' controls need attention',                         gaps.length > 0 ? '#dc2626' : '#15803d'],
+        ['Assessed',          run.date || '—',                                                  '#5a6a8a'],
+        ['Assessor',          run.conductedBy || '—',                                           '#5a6a8a'],
+      ].filter(Boolean).map(([l, v, c]) => `<tr>
+        <td style="padding:4pt 8pt 4pt 0;border:none;color:#5a6a8a;font-size:9.5pt;white-space:nowrap">${l}</td>
+        <td style="padding:4pt 0;border:none;font-weight:bold;font-size:9.5pt;color:${c}">${v}</td>
+      </tr>`).join('')}
+    </table>
+  </div>
+</div>
+
+<h2>Framework Breakdown</h2>
+<div style="display:flex;gap:32pt;align-items:flex-start;flex-wrap:wrap;justify-content:space-around;margin-bottom:16pt">
+  ${nistRadarImg ? `<div style="text-align:center">
+    <div style="font-size:10pt;font-weight:bold;color:#1d4ed8;margin-bottom:8pt">NIST AI RMF</div>
+    <img src="${nistRadarImg}" style="width:220pt;display:block;margin:0 auto">
+    <div style="display:flex;justify-content:center;gap:12pt;margin-top:6pt;flex-wrap:wrap">
+      ${nistAxes.filter(a=>a.pct!==null).map(a=>`<div style="font-size:9pt;text-align:center"><div style="font-weight:800;color:#1d4ed8">${a.pct}%</div><div style="color:#5a6a8a">${a.label}</div></div>`).join('')}
     </div>
-  </div>
+  </div>` : ''}
+  ${isoRadarImg ? `<div style="text-align:center">
+    <div style="font-size:10pt;font-weight:bold;color:#0f766e;margin-bottom:8pt">ISO 42001</div>
+    <img src="${isoRadarImg}" style="width:220pt;display:block;margin:0 auto">
+    <div style="display:flex;justify-content:center;gap:12pt;margin-top:6pt;flex-wrap:wrap">
+      ${isoAxes.filter(a=>a.pct!==null).map(a=>`<div style="font-size:9pt;text-align:center"><div style="font-weight:800;color:#0f766e">${a.pct}%</div><div style="color:#5a6a8a">${a.label}</div></div>`).join('')}
+    </div>
+  </div>` : ''}
+</div>
 
-  <h2>Framework Breakdown</h2>
-  <div style="display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap;justify-content:space-around">
-    ${nistRadarImg ? `<div style="text-align:center">
-      <div style="font-size:10pt;font-weight:700;color:#1d4ed8;margin-bottom:8px">NIST AI RMF</div>
-      <img src="${nistRadarImg}" style="width:220px;display:block;margin:0 auto">
-      <div style="display:flex;justify-content:center;gap:12px;margin-top:6px;flex-wrap:wrap">
-        ${nistAxes.filter(a=>a.pct!==null).map(a=>`<div style="font-size:9pt;text-align:center"><div style="font-weight:800;color:#1d4ed8">${a.pct}%</div><div style="color:#5a6a8a">${a.label}</div></div>`).join('')}
-      </div>
-    </div>` : ''}
-    ${isoRadarImg ? `<div style="text-align:center">
-      <div style="font-size:10pt;font-weight:700;color:#0f766e;margin-bottom:8px">ISO 42001</div>
-      <img src="${isoRadarImg}" style="width:220px;display:block;margin:0 auto">
-      <div style="display:flex;justify-content:center;gap:12px;margin-top:6px;flex-wrap:wrap">
-        ${isoAxes.filter(a=>a.pct!==null).map(a=>`<div style="font-size:9pt;text-align:center"><div style="font-weight:800;color:#0f766e">${a.pct}%</div><div style="color:#5a6a8a">${a.label}</div></div>`).join('')}
-      </div>
-    </div>` : ''}
-  </div>
+<h2>AI Maturity Pyramid</h2>
+<table>
+  <thead><tr><th>Capability</th><th>NIST AI RMF</th><th>ISO 42001</th><th style="width:90pt;text-align:center">Status</th></tr></thead>
+  <tbody>${pyrRowsHtml}</tbody>
+</table>
 
-  <h2>Top Priority Gaps</h2>
-  ${top5.length ? `<table>
-    <thead><tr><th style="width:28px">#</th><th style="width:70px">ID</th><th>Gap</th><th style="width:60px;text-align:center">Status</th><th style="width:70px;text-align:center">Priority</th></tr></thead>
-    <tbody>${gapRowsHtml}</tbody>
-  </table>` : '<p style="color:#5a6a8a">No gaps — all assessed items are Yes or N/A.</p>'}
+<h2>Top ${top10.length} Priority Gaps</h2>
+${top10.length ? `<table>
+  <thead><tr><th style="width:20pt">#</th><th style="width:56pt">ID</th><th style="width:100pt">Domain</th><th>Gap</th><th style="width:44pt;text-align:center">Status</th><th style="width:56pt;text-align:center">Priority</th></tr></thead>
+  <tbody>${gapRowsHtml}</tbody>
+</table>` : '<p style="color:#15803d;font-weight:bold">&#10003; No gaps &mdash; all assessed controls are Yes or N/A.</p>'}
 
-  ${commentary ? `<h2>Executive Commentary</h2><div style="line-height:1.7;font-size:11pt">${escH(commentary).replace(/\n/g, '<br>')}</div>` : ''}
-  </body></html>`;
+<div style="page-break-before: always">
+  <h2>Full Assessment &mdash; All Controls</h2>
+  <table>
+    <thead><tr>
+      <th style="width:52pt">Control</th>
+      <th style="width:36pt">Framework</th>
+      <th style="width:44pt">Answer</th>
+      <th>Title &amp; Description</th>
+      <th style="width:52pt;text-align:center">Priority</th>
+    </tr></thead>
+    <tbody>${fullTableHtml}</tbody>
+  </table>
+</div>
 
-  const blob = new Blob([docHtml], { type: 'application/msword' });
+<div class="footer">
+  Generated by Abbott Cyber Consulting GRC Platform &nbsp;&middot;&nbsp;
+  ${fwLabel} &nbsp;&middot;&nbsp; ${run.date || '—'} &nbsp;&middot;&nbsp; ${escH(currentOrg?.name || '')} &nbsp;&middot;&nbsp; Confidential
+</div>
+
+</div>
+</body>
+</html>`;
+
+  const blob = new Blob(['﻿' + html], { type: 'application/msword' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  const slug = (currentOrg?.name || 'AI').replace(/[^a-z0-9]/gi, '_').toLowerCase();
-  a.download = `ai_governance_report_${slug}_${run.date || 'unknown'}.doc`;
+  const slug = (currentOrg?.name || 'AI').replace(/[^a-zA-Z0-9]/g, '_');
+  a.download = `AI_Exec_Report_${slug}_${run.date || 'unknown'}.doc`;
   document.body.appendChild(a); a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  toast('✓ Word report exported', '#15803d');
+  toast('✓ Word report downloaded', '#152168');
 }
 
 // ── FRAMEWORK RADAR HELPERS ───────────────────────────────────────────────────
