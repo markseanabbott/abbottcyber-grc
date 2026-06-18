@@ -2875,7 +2875,7 @@ function drawReportCharts() {
   const goalN = { ig1: 1, ig2: 2, ig3: 3 }[goal] || 3;
   cisDrawRadar('cisReportRadar', answers, goalN);
   const runs = (orgAssessments[currentOrg?.id] || {})['cis'] || [];
-  if (runs.length >= 2) cisDrawReportTrend('cisReportTrend', runs);
+  if (runs.length >= 1) cisDrawReportTrend('cisReportTrend', runs);
 }
 
 // ── REPORT ACCORDION ──────────────────────────────────────────────────────────
@@ -3277,66 +3277,93 @@ function cisDrawReportTrend(canvasId, runs) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
   const sorted = [...runs].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-  const W = canvas.offsetWidth || 340;
-  const H = 92;
+  if (!sorted.length) return;
+
+  const W = canvas.offsetWidth || 400;
+  const H = 130;
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, W, H);
 
   const n = sorted.length;
-  const padX = 10, padTop = 14, padBot = 14;
-  const legendW = 36;
-  const barMaxH = H - padTop - padBot;
-  const sectionH = barMaxH / 3;
-  const totalBarW = W - padX * 2 - legendW;
-  const barW = Math.max(14, Math.floor((totalBarW - Math.max(4, n - 1) * 6) / n));
-  const actualGap = n > 1 ? Math.floor((totalBarW - barW * n) / (n - 1)) : 0;
+  const padL = 8, padR = 40, padTop = 17, padBot = 16;
+  const chartW = W - padL - padR;
+  const chartH = H - padTop - padBot;
+  const sectionH = chartH / 3;
+
+  const barW = Math.max(18, Math.floor((chartW - Math.max(0, n - 1) * 8) / n));
+  const actualGap = n > 1 ? (chartW - barW * n) / (n - 1) : 0;
 
   const tierColors = ['#15803d', '#1d4ed8', '#6d28d9'];
-  const tierLabels = ['IG1', 'IG2', 'IG3'];
+  const tierBg    = ['#dcfce7', '#dbeafe', '#ede9fe'];
 
   sorted.forEach((r, i) => {
-    const x = padX + i * (barW + actualGap);
+    const x = Math.round(padL + i * (barW + actualGap));
     const cleanAns = Object.fromEntries(Object.entries(r.answers || {}).filter(([k]) => !k.startsWith('_')));
     const prog = cisIgProgress(cleanAns);
 
+    // Draw each IG tier as a zone within the bar: IG1 bottom, IG2 middle, IG3 top
     [0, 1, 2].forEach(ti => {
       const t = prog[ti];
       const sc = t.total - t.na;
       const score = sc > 0 ? (t.yes + t.partial * 0.5) / sc : 0;
-      const segY = H - padBot - (ti + 1) * sectionH;
+      // ti=0 (IG1) → bottom zone; ti=2 (IG3) → top zone
+      const zoneTop = padTop + (2 - ti) * sectionH;
+      const zoneH   = sectionH - 1;
 
-      ctx.fillStyle = '#f1f5f9';
-      ctx.fillRect(x, segY, barW, sectionH - 1);
+      // Background (light tint of tier colour)
+      ctx.fillStyle = tierBg[ti];
+      ctx.fillRect(x, zoneTop, barW, zoneH);
 
-      const fillH = score * (sectionH - 1);
+      // Fill from bottom of zone upward proportional to score
+      const fillH = Math.round(score * zoneH);
       ctx.fillStyle = tierColors[ti];
-      ctx.globalAlpha = 0.88;
-      ctx.fillRect(x, segY + (sectionH - 1 - fillH), barW, fillH);
+      ctx.globalAlpha = 0.85;
+      ctx.fillRect(x, zoneTop + zoneH - fillH, barW, fillH);
       ctx.globalAlpha = 1;
+
+      // Score % label centred in the zone (only if bar is wide enough)
+      if (barW >= 22 && fillH > 9) {
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 8px Inter,sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(Math.round(score * 100) + '%', x + barW / 2, zoneTop + zoneH - fillH / 2 + 3);
+      }
     });
 
+    // Zone dividers
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    for (let d = 1; d < 3; d++) {
+      const dy = padTop + d * sectionH;
+      ctx.beginPath(); ctx.moveTo(x, dy); ctx.lineTo(x + barW, dy); ctx.stroke();
+    }
+
+    // Overall score label above bar
     const col = r.score >= 75 ? '#15803d' : r.score >= 50 ? '#b45309' : '#dc2626';
     ctx.fillStyle = col;
     ctx.font = 'bold 9px Inter,sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(r.score + '%', x + barW / 2, padTop - 2);
+    ctx.fillText(r.score + '%', x + barW / 2, padTop - 3);
 
+    // Date label below
     ctx.fillStyle = '#94a3b8';
-    ctx.font = '9px Inter,sans-serif';
+    ctx.font = '8px Inter,sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText((r.date || '').slice(5), x + barW / 2, H - 1);
+    ctx.fillText((r.date || '').slice(5), x + barW / 2, H - 2);
   });
 
-  ctx.textAlign = 'right';
-  tierLabels.forEach((lbl, li) => {
-    ctx.fillStyle = tierColors[li];
-    ctx.globalAlpha = 0.88;
-    ctx.fillRect(W - 30, 1 + li * 11, 8, 8);
+  // Legend (right-hand side) — ordered top-to-bottom matching chart zones (IG3 top, IG1 bottom)
+  [['IG3', '#6d28d9'], ['IG2', '#1d4ed8'], ['IG1', '#15803d']].forEach(([lbl, col], li) => {
+    const ly = padTop + li * sectionH + sectionH / 2;
+    ctx.fillStyle = col;
+    ctx.globalAlpha = 0.85;
+    ctx.fillRect(W - 34, ly - 4, 8, 8);
     ctx.globalAlpha = 1;
     ctx.fillStyle = '#6b7280';
     ctx.font = '8px Inter,sans-serif';
-    ctx.fillText(lbl, W - 4, 9 + li * 11);
+    ctx.textAlign = 'left';
+    ctx.fillText(lbl, W - 24, ly + 4);
   });
 }
 
@@ -3575,20 +3602,62 @@ function cisExportReportWord() {
     _cMap[_cParts[i]] = (_cParts[i + 1] || '').trim();
   }
 
-  // Render commentary text as HTML paragraphs / • bullet lists
+  // Line-by-line commentary formatter.
+  // Detects KEY FINDINGS and PRIORITY RECOMMENDATIONS as styled sub-headings.
+  // Every subsequent line (with or without •) becomes a row in a styled table.
+  // Prose lines outside those sections become <p> tags.
+  // Works whether the AI used bullet characters, dashes, or plain sentences.
   function fmtCommentary(text, placeholder) {
     if (!text) return placeholder
       ? `<p style="color:#94a3b8;font-style:italic;font-size:10pt;margin:0 0 10pt 0">${placeholder}</p>`
       : '';
-    return text.split(/\n\n+/).map(p => {
-      const lines = p.split('\n').map(l => l.trim()).filter(Boolean);
-      if (lines.length && lines.every(l => l.startsWith('•'))) {
-        return '<ul style="margin:0 0 8pt 0;padding-left:16pt">' +
-          lines.map(l => `<li style="margin-bottom:3pt;font-size:11pt">${escH(l.replace(/^•\s*/, ''))}</li>`).join('') +
-          '</ul>';
+
+    let html = '';
+    let mode = 'prose'; // prose | findings | recommendations
+    let items = [];
+
+    function flushItems() {
+      if (!items.length) return;
+      if (mode === 'findings') {
+        html += '<table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">' +
+          items.map(l => `<tr>
+            <td style="width:14pt;vertical-align:top;padding:4pt 8pt 4pt 0;color:#152168;font-size:14pt;line-height:1">&#8226;</td>
+            <td style="font-size:11pt;line-height:1.65;padding:4pt 0;vertical-align:top;border-bottom:1pt solid #f1f5f9">${escH(l)}</td>
+          </tr>`).join('') + '</table>';
+      } else if (mode === 'recommendations') {
+        html += '<table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">' +
+          items.map((l, i) => `<tr>
+            <td style="background:#152168;color:#fff;width:24pt;text-align:center;font-size:11pt;font-weight:bold;vertical-align:top;padding:7pt 4pt;border-bottom:1pt solid #1e3080">${i + 1}</td>
+            <td style="padding:7pt 10pt;border-bottom:1pt solid #e8ecf4;font-size:11pt;line-height:1.65;vertical-align:top">${escH(l)}</td>
+          </tr>`).join('') + '</table>';
       }
-      return `<p style="font-size:11pt;line-height:1.75;margin:0 0 8pt 0">${escH(p).replace(/\n/g, '<br>')}</p>`;
-    }).join('');
+      items = [];
+    }
+
+    text.split('\n').map(l => l.trim()).forEach(line => {
+      if (!line) return;
+
+      if (/^KEY FINDINGS$/i.test(line)) {
+        flushItems();
+        html += `<div style="font-size:9.5pt;color:#152168;font-weight:bold;text-transform:uppercase;letter-spacing:.5pt;margin:14pt 0 5pt 0;padding-bottom:3pt;border-bottom:1.5pt solid #152168">Key Findings</div>`;
+        mode = 'findings'; return;
+      }
+      if (/^PRIORITY RECOMMENDATIONS$/i.test(line)) {
+        flushItems();
+        html += `<div style="font-size:9.5pt;color:#152168;font-weight:bold;text-transform:uppercase;letter-spacing:.5pt;margin:14pt 0 5pt 0;padding-bottom:3pt;border-bottom:1.5pt solid #152168">Priority Recommendations</div>`;
+        mode = 'recommendations'; return;
+      }
+
+      const content = line.replace(/^[•\-]\s*/, '');
+      if (mode === 'findings' || mode === 'recommendations') {
+        items.push(content);
+      } else {
+        html += `<p style="font-size:11pt;line-height:1.75;margin:0 0 8pt 0">${escH(line)}</p>`;
+      }
+    });
+
+    flushItems();
+    return html;
   }
 
   // ── Gauge SVG — semicircle dial, red (left) → green (right) ──────────────
@@ -3614,18 +3683,29 @@ function cisExportReportWord() {
     <text x="220" y="128" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#94a3b8">High</text>
   </svg>`;
 
-  // ── Charts ─────────────────────────────────────────────────────────────────
-  const radarCanvas = document.getElementById('cisReportRadar');
-  const radarImg = radarCanvas ? radarCanvas.toDataURL('image/png') : null;
+  // ── Charts — always draw fresh off-screen for reliable Word capture ─────────
+  // Radar
+  let radarImg = null;
+  {
+    const _rc = document.createElement('canvas');
+    _rc.id = '_cisRadExp';
+    _rc.width = 320; _rc.height = 320;
+    _rc.style.cssText = 'position:fixed;left:-9999px;width:320px;height:320px;pointer-events:none';
+    document.body.appendChild(_rc);
+    cisDrawRadar('_cisRadExp', answers, goalN);
+    radarImg = _rc.toDataURL('image/png');
+    document.body.removeChild(_rc);
+  }
 
+  // Dot/line trend
   let trendImg = null;
   if (sorted.length >= 2) {
-    const _tid = '_cisTE_' + Date.now();
-    const _tc  = document.createElement('canvas');
-    _tc.id = _tid; _tc.width = 560; _tc.height = 110;
+    const _tc = document.createElement('canvas');
+    _tc.id = '_cisTrExp';
+    _tc.width = 560; _tc.height = 110;
     _tc.style.cssText = 'position:fixed;left:-9999px;pointer-events:none';
     document.body.appendChild(_tc);
-    cisDrawTrendLine(_tid, sorted);
+    cisDrawTrendLine('_cisTrExp', sorted);
     trendImg = _tc.toDataURL('image/png');
     document.body.removeChild(_tc);
   }
