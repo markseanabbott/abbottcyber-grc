@@ -29,6 +29,9 @@ async function bootApp() {
     document.getElementById('dbStatus').textContent = '● Live';
     document.getElementById('userChipContainer').innerHTML = renderUserMenu();
 
+    const hashNav = location.hash.slice(1);
+    const validNavIds = NAV.flatMap(g => g.items).map(i => i.id);
+    if (hashNav && validNavIds.includes(hashNav)) activeNav = hashNav;
     updateOrgUI(); buildNav(); renderMain();
     idleStart();
   } catch (e) {
@@ -365,7 +368,7 @@ function toggleNavSection(id) {
 
 const _ADMIN_PAGES = { orgs: 'Organisation Manager', users: 'User Management' };
 
-function setNav(id) {
+function setNav(id, { pushState = true } = {}) {
   activeNav = id;
   const item = NAV.flatMap(g => g.items).find(i => i.id === id);
   const group = NAV.find(g => g.items.some(i => i.id === id));
@@ -374,8 +377,14 @@ function setNav(id) {
   document.getElementById('breadcrumb').innerHTML = adminLabel
     ? `<span style="color:var(--muted)">Admin</span> <span style="color:var(--muted)">›</span> <span style="color:var(--text);font-weight:700">${adminLabel}</span>`
     : `${group && visibleItems(group) > 1 ? `<span style="color:var(--muted)">${group.group}</span> <span style="color:var(--muted)">›</span> ` : ''}<span style="color:var(--text);font-weight:700">${item ? item.label : id}</span>`;
+  if (pushState) history.pushState({ nav: id }, '', '#' + id);
   buildNav(); renderMain();
 }
+
+window.addEventListener('popstate', e => {
+  const id = e.state?.nav || (location.hash.slice(1)) || 'home';
+  setNav(id, { pushState: false });
+});
 
 function visibleItems(group) {
   const adminUser = typeof isAdmin === 'function' ? isAdmin() : true;

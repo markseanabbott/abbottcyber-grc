@@ -1466,6 +1466,31 @@ function renderCISQuick() {
   return html;
 }
 
+// ── POAM REMEDIATION GUIDANCE ─────────────────────────────────────────────────
+// One entry per CIS control group (1–18).
+// action: what to do to close the gap. tool: category + example products.
+
+const CIS_REMEDIATION = {
+  1:  { action: 'Deploy automated asset discovery to build and maintain a complete inventory of all devices — including endpoints, servers, network gear, and IoT. Review DHCP logs and MDM data regularly. Remove or quarantine any unauthorised assets found during scans.', tool: 'Asset Management / MDM — e.g. Lansweeper, Microsoft Intune, Jamf' },
+  2:  { action: 'Maintain an authorised software list and scan all endpoints for unlicensed, unknown, or end-of-life applications. Block or remove unauthorised software. Implement application allowlisting on high-risk systems.', tool: 'Software Asset Management — e.g. PDQ Inventory, Jamf, ManageEngine Desktop Central' },
+  3:  { action: 'Classify data by sensitivity (Public / Internal / Confidential / Restricted) and apply encryption, access controls, and retention policies to each tier. Deploy DLP controls to detect and prevent unauthorised data transfer or exfiltration.', tool: 'DLP / Data Classification — e.g. Microsoft Purview, Varonis, Spirion' },
+  4:  { action: 'Establish hardened configuration baselines for all device types and operating systems using CIS Benchmarks or vendor hardening guides. Enforce baselines via MDM or Group Policy and audit for drift at least quarterly.', tool: 'Configuration Management / MDM — e.g. Microsoft Intune, Jamf, CIS-CAT Pro' },
+  5:  { action: 'Audit all accounts and remove or disable inactive, shared, or unnecessary ones. Implement a formal joiner-mover-leaver process tied to HR. Enforce least-privilege — users should have only the access their role requires.', tool: 'Identity & Access Management — e.g. Microsoft Entra ID, JumpCloud, Okta' },
+  6:  { action: 'Enforce MFA on all remote access, cloud services, and privileged accounts. Implement role-based access control with quarterly access reviews. Privileged accounts should be separate from standard user accounts and tightly controlled.', tool: 'MFA / PAM — e.g. Duo Security, Microsoft Entra MFA, CyberArk, BeyondTrust' },
+  7:  { action: 'Run authenticated vulnerability scans on a defined cadence (weekly for critical assets, monthly minimum for all). Establish SLA-driven patch timelines by severity: Critical ≤7 days, High ≤30 days. Track patch compliance and report exceptions.', tool: 'Vulnerability Management — e.g. Tenable Nessus, Qualys, Rapid7 InsightVM' },
+  8:  { action: 'Enable and centralise logging across all critical systems — endpoints, servers, firewalls, cloud platforms, and identity providers. Define log retention periods (minimum 90 days hot, 1 year archived). Ensure logs are tamper-protected and reviewed via automated alerting.', tool: 'SIEM / Log Management — e.g. Microsoft Sentinel, Splunk, Graylog, Wazuh' },
+  9:  { action: 'Deploy email security with anti-phishing, anti-spoofing (enforce SPF, DKIM, DMARC), link rewriting, and attachment sandboxing. Enable DNS filtering to block malicious domains at the network layer for all users including remote workers.', tool: 'Email Security / DNS Filtering — e.g. Microsoft Defender for O365, Proofpoint, Cisco Umbrella' },
+  10: { action: 'Deploy EDR on all endpoints and servers with centralised management, real-time alerting, and automatic updates. Ensure coverage extends to remote and unmanaged devices. Review EDR alerts weekly and respond to detections within defined SLAs.', tool: 'EDR / Anti-Malware — e.g. Microsoft Defender for Endpoint, CrowdStrike Falcon, SentinelOne' },
+  11: { action: 'Implement the 3-2-1 backup rule: three copies of data, on two different media types, with one copy offsite or in immutable cloud storage. Test restores quarterly. Document and verify RTO and RPO targets align with business requirements.', tool: 'Backup & Recovery — e.g. Veeam, Datto, Acronis, Azure Backup' },
+  12: { action: 'Segment networks to isolate critical assets and reduce blast radius of a breach. Document all network architecture. Enforce change control for any network modifications. Harden all network devices to vendor and CIS benchmark standards.', tool: 'Network Management / Firewall / Segmentation — e.g. Cisco, Palo Alto, Meraki, pfSense' },
+  13: { action: 'Deploy network detection and response (NDR) or IDS/IPS to monitor traffic for anomalies and known attack patterns. Establish a network traffic baseline and alert on deviations. Ensure monitoring covers both north-south and east-west traffic.', tool: 'NDR / IDS-IPS — e.g. Darktrace, Vectra AI, Zeek, Suricata, Cisco Secure IDS' },
+  14: { action: 'Deliver role-specific security awareness training at least annually for all staff. Run phishing simulations quarterly and track click rates over time. Provide targeted coaching to repeat clickers and role-specific content for privileged users.', tool: 'Security Awareness Training — e.g. KnowBe4, Proofpoint Security Awareness, Curricula' },
+  15: { action: 'Maintain a vendor register with risk tier, data access scope, contractual obligations, and last review date. Require SOC 2 Type II or equivalent certification for vendors handling sensitive data. Conduct formal reassessments annually or on material change.', tool: 'Third-Party Risk Management — use this platform\'s TPRA module, or OneTrust, ProcessUnity' },
+  16: { action: 'Apply secure development practices to all internally-developed software: SAST, DAST, dependency scanning, and code review gates. Deploy a WAF in front of all externally-facing web applications. Conduct annual application penetration testing.', tool: 'SAST / WAF / DAST — e.g. Snyk, Checkmarx, OWASP ZAP, Cloudflare WAF, AWS WAF' },
+  17: { action: 'Document an Incident Response Plan aligned to NIST IR phases (Prepare / Detect / Contain / Eradicate / Recover / Post-Incident). Define roles, communication chains, and breach notification timelines. Test the plan with a tabletop exercise at least annually.', tool: 'IR Plan / Tabletop — use this platform\'s Tabletop Exercise module for scenario-based testing' },
+  18: { action: 'Commission an annual external penetration test of internet-facing systems and internal network. Ensure findings are mapped to the POAM and risk register with tracked remediation. Supplement with quarterly internal vulnerability assessments.', tool: 'Penetration Testing — engage a qualified external pen tester; internal tooling e.g. Metasploit' },
+};
+
 // ── POAM VIEW ─────────────────────────────────────────────────────────────────
 
 function renderCISPoam() {
@@ -1543,45 +1568,70 @@ function renderCISPoam() {
         </tr>
       </thead>
       <tbody>
-        ${gaps.map(s => {
-          const ans  = answers[s.sf];
-          const item = items[s.sf] || {};
-          const note = (cisState.poamNotes || {})[s.sf] || '';
-          const rowBg = ans === 'no' ? 'background:rgba(220,38,38,.03)' : 'background:rgba(180,83,9,.03)';
-          const ansBadge = ans === 'no'
-            ? '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:#fee2e2;color:#dc2626">No</span>'
-            : '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:#fef3c7;color:#b45309">Partial</span>';
-          return `<tr data-sf="${s.sf}" style="border-bottom:1px solid var(--border);${rowBg}">
-            <td style="padding:8px 10px;font-weight:700;color:var(--navy);white-space:nowrap;vertical-align:top">${s.sf}</td>
-            <td style="padding:8px 6px;text-align:center;vertical-align:top"><span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:${igBg[s.ig]};color:${igTxt[s.ig]}">IG${s.ig}</span></td>
-            <td style="padding:8px 6px;text-align:center;vertical-align:top">${ansBadge}</td>
-            <td style="padding:8px 10px;font-size:11px;line-height:1.4;color:var(--text);vertical-align:top">
-              <div style="font-weight:600;margin-bottom:3px">${escH(s.title)}</div>
-              <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:${note?'3px':'0'}">${cisHintBadges(s.sf)}</div>
-              ${note ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;font-style:italic">&#x1F4DD; ${escH(note)}</div>` : ''}
-              ${(() => { const grp = parseInt(s.sf); const policies = typeof plibForCisGroup !== 'undefined' ? plibForCisGroup(grp) : []; return policies.length ? `<div style="margin-top:4px;display:flex;gap:3px;flex-wrap:wrap">${policies.map(p => `<button onclick="plibOpenFromPoam('${p.id}')" style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:6px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;cursor:pointer">&#x1F4C4; ${escH(p.name)}</button>`).join('')}</div>` : ''; })()}
-            </td>
-            <td style="padding:6px 8px;vertical-align:top"><input class="poam-assigned" type="text" placeholder="Name or team…" value="${escH(item.assigned_to || '')}" style="${inputSty}"></td>
-            <td style="padding:6px 8px;vertical-align:top"><input class="poam-date" type="date" value="${item.target_date || ''}" style="${inputSty}"></td>
-            <td style="padding:6px 8px;vertical-align:top">
-              <select class="poam-decision" style="${inputSty}">
-                <option value="" ${!item.risk_decision ? 'selected' : ''}>— Open</option>
-                <option value="remediate" ${item.risk_decision === 'remediate' ? 'selected' : ''}>Remediate</option>
-                <option value="accept"    ${item.risk_decision === 'accept'    ? 'selected' : ''}>Accept Risk</option>
-                <option value="transfer"  ${item.risk_decision === 'transfer'  ? 'selected' : ''}>Transfer / Insure</option>
-              </select>
-            </td>
-            <td style="padding:6px 8px;vertical-align:top"><input class="poam-rationale" type="text" placeholder="Justification or notes…" value="${escH(item.risk_rationale || '')}" style="${inputSty}"></td>
-            <td style="padding:6px 8px;vertical-align:top">
-              <select class="poam-status" style="${inputSty}">
-                <option value="open"        ${(item.status || 'open') === 'open'        ? 'selected' : ''}>Open</option>
-                <option value="in_progress" ${item.status === 'in_progress'              ? 'selected' : ''}>In Progress</option>
-                <option value="remediated"  ${item.status === 'remediated'               ? 'selected' : ''}>Remediated</option>
-                <option value="accepted"    ${item.status === 'accepted'                 ? 'selected' : ''}>Risk Accepted</option>
-              </select>
-            </td>
-          </tr>`;
-        }).join('')}
+        ${(() => {
+          let lastCtrl = null;
+          return gaps.map(s => {
+            const ans  = answers[s.sf];
+            const item = items[s.sf] || {};
+            const note = (cisState.poamNotes || {})[s.sf] || '';
+            const rowBg = ans === 'no' ? 'background:rgba(220,38,38,.03)' : 'background:rgba(180,83,9,.03)';
+            const ansBadge = ans === 'no'
+              ? '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:#fee2e2;color:#dc2626">No</span>'
+              : '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:#fef3c7;color:#b45309">Partial</span>';
+
+            let groupHeader = '';
+            if (s.ctrl !== lastCtrl) {
+              lastCtrl = s.ctrl;
+              const rem = CIS_REMEDIATION[s.ctrl] || {};
+              groupHeader = `<tr style="background:#f0f4fa;border-top:2px solid var(--navy)">
+                <td colspan="9" style="padding:10px 12px">
+                  <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px">CIS ${s.ctrl}: ${escH(s.ctrlName)}</div>
+                  ${rem.action ? `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start">
+                    <div style="flex:1;min-width:260px;background:#fff;border:1px solid var(--border);border-radius:6px;padding:7px 10px">
+                      <div style="font-size:9px;font-weight:800;color:#1d4ed8;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">💡 Suggested Action</div>
+                      <div style="font-size:11px;color:var(--text);line-height:1.55">${escH(rem.action)}</div>
+                    </div>
+                    <div style="min-width:200px;max-width:280px;background:#fff;border:1px solid var(--border);border-radius:6px;padding:7px 10px">
+                      <div style="font-size:9px;font-weight:800;color:#7c3aed;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">🔧 Suggested Tool</div>
+                      <div style="font-size:11px;color:var(--text);line-height:1.55">${escH(rem.tool)}</div>
+                    </div>
+                  </div>` : ''}
+                </td>
+              </tr>`;
+            }
+
+            return groupHeader + `<tr data-sf="${s.sf}" style="border-bottom:1px solid var(--border);${rowBg}">
+              <td style="padding:8px 10px;font-weight:700;color:var(--navy);white-space:nowrap;vertical-align:top">${s.sf}</td>
+              <td style="padding:8px 6px;text-align:center;vertical-align:top"><span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:${igBg[s.ig]};color:${igTxt[s.ig]}">IG${s.ig}</span></td>
+              <td style="padding:8px 6px;text-align:center;vertical-align:top">${ansBadge}</td>
+              <td style="padding:8px 10px;font-size:11px;line-height:1.4;color:var(--text);vertical-align:top">
+                <div style="font-weight:600;margin-bottom:3px">${escH(s.title)}</div>
+                <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:${note?'3px':'0'}">${cisHintBadges(s.sf)}</div>
+                ${note ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;font-style:italic">&#x1F4DD; ${escH(note)}</div>` : ''}
+                ${(() => { const grp = parseInt(s.sf); const policies = typeof plibForCisGroup !== 'undefined' ? plibForCisGroup(grp) : []; return policies.length ? `<div style="margin-top:4px;display:flex;gap:3px;flex-wrap:wrap">${policies.map(p => `<button onclick="plibOpenFromPoam('${p.id}')" style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:6px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;cursor:pointer">&#x1F4C4; ${escH(p.name)}</button>`).join('')}</div>` : ''; })()}
+              </td>
+              <td style="padding:6px 8px;vertical-align:top"><input class="poam-assigned" type="text" placeholder="Name or team…" value="${escH(item.assigned_to || '')}" style="${inputSty}"></td>
+              <td style="padding:6px 8px;vertical-align:top"><input class="poam-date" type="date" value="${item.target_date || ''}" style="${inputSty}"></td>
+              <td style="padding:6px 8px;vertical-align:top">
+                <select class="poam-decision" style="${inputSty}">
+                  <option value="" ${!item.risk_decision ? 'selected' : ''}>— Open</option>
+                  <option value="remediate" ${item.risk_decision === 'remediate' ? 'selected' : ''}>Remediate</option>
+                  <option value="accept"    ${item.risk_decision === 'accept'    ? 'selected' : ''}>Accept Risk</option>
+                  <option value="transfer"  ${item.risk_decision === 'transfer'  ? 'selected' : ''}>Transfer / Insure</option>
+                </select>
+              </td>
+              <td style="padding:6px 8px;vertical-align:top"><input class="poam-rationale" type="text" placeholder="Justification or notes…" value="${escH(item.risk_rationale || '')}" style="${inputSty}"></td>
+              <td style="padding:6px 8px;vertical-align:top">
+                <select class="poam-status" style="${inputSty}">
+                  <option value="open"        ${(item.status || 'open') === 'open'        ? 'selected' : ''}>Open</option>
+                  <option value="in_progress" ${item.status === 'in_progress'              ? 'selected' : ''}>In Progress</option>
+                  <option value="remediated"  ${item.status === 'remediated'               ? 'selected' : ''}>Remediated</option>
+                  <option value="accepted"    ${item.status === 'accepted'                 ? 'selected' : ''}>Risk Accepted</option>
+                </select>
+              </td>
+            </tr>`;
+          }).join('');
+        })()}
       </tbody>
     </table></div>
     <div style="margin-top:.75rem;display:flex;gap:8px;flex-wrap:wrap;align-items:center">

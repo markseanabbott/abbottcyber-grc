@@ -1,8 +1,8 @@
 {
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "created": "2026-05-14",
-  "updated": "2026-06-18 (session 41)",
+  "updated": "2026-06-18 (session 42)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -87,6 +87,12 @@
           "id": "d7",
           "text": "Per-org assessment history with trend line (2+ assessments)",
           "done": true
+        },
+        {
+          "id": "d10",
+          "text": "Browser back/forward navigation — clicking nav items pushes a URL hash state so back/forward buttons work correctly. Refreshing the page lands on the same section.",
+          "done": true,
+          "notes": "Session 42: setNav(id, {pushState=true}) in js/app.js — calls history.pushState({nav:id}, '', '#'+id) on every navigation. popstate listener calls setNav(id, {pushState:false}) to avoid double-push. bootApp() reads location.hash.slice(1) on initial load and sets activeNav if it matches a valid nav ID. Deep sub-states (open POAM, form, etc.) do not push their own entries — only top-level module navigation."
         },
         {
           "id": "d8",
@@ -259,8 +265,9 @@
         {
           "id": "cis_poam_rem",
           "text": "CIS POAM remediation suggestions — add a '💡 Suggested Action' block to each safeguard row in the CIS POAM, giving practitioners specific implementation guidance rather than just a gap reference. Same pattern as AI Unified POAM (AI_REMEDIATION lookup). Requires a CIS_REMEDIATION object or per-safeguard field added to CIS_SAFEGUARDS.",
-          "done": false,
-          "priority": "Medium"
+          "done": true,
+          "priority": "Medium",
+          "notes": "Session 42: CIS_REMEDIATION const added to js/cis.js (18 entries keyed by control group 1–18, each with action and tool strings). renderCISPoam() gaps rendering wrapped in IIFE with lastCtrl closure variable — each new control group inserts a full-width <tr colspan=9> header showing control name, 💡 Suggested Action (blue chip), and 🔧 Suggested Tool (purple chip). Grouped at control level rather than per-safeguard for cleaner POAM view."
         },
         {
           "id": "cis_poam_logo",
@@ -313,6 +320,12 @@
           "id": "cis_partial_badge",
           "text": "CIS dashboard history table: show 'In Progress' badge on saved assessments that have unanswered in-scope safeguards (answered < scoreable). Helps distinguish interim saves from complete assessments at a glance.",
           "done": false
+        },
+        {
+          "id": "cis_close",
+          "text": "CIS assessment close/finalise — explicit 'Mark as Complete' action on a saved assessment. Sets a completed flag so In Progress vs Complete is unambiguous. Closed assessments are read-only (no further edits without re-opening). Works alongside cis_partial_badge — In Progress = unanswered questions OR not yet closed; Complete = explicitly finalised by assessor.",
+          "done": false,
+          "priority": "Medium"
         }
       ]
     },
