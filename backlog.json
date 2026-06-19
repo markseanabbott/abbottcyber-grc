@@ -1,8 +1,8 @@
 {
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "created": "2026-05-14",
-  "updated": "2026-06-18 (session 42)",
+  "updated": "2026-06-18 (session 42b)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1625,6 +1625,13 @@
           "text": "CIS POAM backlinks — each POAM row shows a green policy chip for policies covering that CIS control group; clicking navigates to Policy Library and highlights the card",
           "done": true,
           "notes": "Session 20: plibForCisGroup(groupNum) maps CIS group numbers to POLICY_TEMPLATES entries via cisGroups arrays. plibOpenFromPoam(policyId) sets highlight state and calls setNav. Chip rendered inline in safeguard title cell in renderCISPoam() in cis.js."
+        },
+        {
+          "id": "ai_poam_rem",
+          "text": "AI Governance POAM remediation grouping — add group-level header rows to the AI Unified POAM (same pattern as CIS POAM), replacing per-control inline suggestions with group-level Suggested Action + Suggested Tool headers.",
+          "done": true,
+          "priority": "Medium",
+          "notes": "Session 42b: AI_GROUP_REMEDIATION const added to js/ai_unified.js (9 entries keyed by g1–g9, each with action and tool strings). renderAiUnifiedPoam() gaps rendering wrapped in IIFE with lastGrp closure — each new group inserts a full-width <tr colspan=6> header using group color from AI_GROUP_META, with group icon/label, 💡 Suggested Action (blue chip) and 🔧 Suggested Tool (purple chip). Per-control AI_REMEDIATION inline removed from individual rows."
         },
         {
           "id": "pl3",

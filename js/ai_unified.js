@@ -299,6 +299,45 @@ const AI_REMEDIATION = {
   'AIG-9.4': 'Tailor AI risk metrics to each deployment context. Avoid generic indicators — define measures that reflect the actual risks in your operational environment.',
 };
 
+const AI_GROUP_REMEDIATION = {
+  g1: {
+    action: 'Draft and publish an AI governance policy. Define AI risk tolerance, assign AI roles and responsibilities, and establish the scope of your AI program. Include an Acceptable Use Policy and get leadership sign-off.',
+    tool: 'AI Policy Templates (Policy Library) — NIST AI RMF Playbook, ISO 42001 implementation guide',
+  },
+  g2: {
+    action: 'Implement a repeatable AI risk assessment process. Create an AI section in your risk register, document treatment plans for each identified risk, and conduct impact assessments before AI deployments.',
+    tool: 'Risk Register (this platform) — AI Risk Assessment template, AI Impact Assessment worksheet',
+  },
+  g3: {
+    action: 'Establish human-in-the-loop review requirements for AI outputs. Run AI ethics awareness sessions, create responsible AI guidelines, and build disclosure practices into client engagement templates.',
+    tool: 'AI Awareness Training — disclosure language templates, responsible AI culture guidelines',
+  },
+  g4: {
+    action: 'Classify data before use in AI systems. Conduct privacy impact assessments for AI tools that handle personal data, implement data minimisation controls, and document your AI data handling policy.',
+    tool: 'Data Classification Policy (Policy Library) — Privacy Impact Assessment template, data governance framework',
+  },
+  g5: {
+    action: 'Document intended use and acceptance criteria for each AI system. Verify systems before deployment and establish post-deployment performance monitoring with defined KPIs and alert thresholds.',
+    tool: 'AI System Register (spreadsheet or this platform) — acceptance criteria template, AI performance monitoring dashboard',
+  },
+  g6: {
+    action: 'Define measurable AI risk indicators and conduct structured evaluation. Implement adversarial testing, bias and fairness checks, and schedule an annual independent review of AI practices.',
+    tool: 'MITRE ATLAS adversarial ML framework — bias testing libraries (e.g. Fairlearn, AI Fairness 360), independent audit engagement',
+  },
+  g7: {
+    action: 'Extend your incident response plan to cover AI incidents. Monitor vendor changelogs, establish stakeholder communication processes, conduct management reviews, and build a lessons-learned loop.',
+    tool: 'IR Plan / Tabletop — use this platform\'s AI Governance Tabletop module; AI incident log template',
+  },
+  g8: {
+    action: 'Establish the full AIMS documentation set required by ISO 42001. Set measurable AI objectives, formally allocate resources, and schedule internal audits with corrective action tracking.',
+    tool: 'ISO 42001 Documentation Kit — AIMS scope statement, AI policy template, internal audit checklist',
+  },
+  g9: {
+    action: 'Incorporate AI risk research into governance practices (NIST, ENISA, MITRE ATLAS). Formally allocate dedicated resources for AI risk management and tailor risk metrics to each deployment context.',
+    tool: 'NIST AI RMF Playbook — MITRE ATLAS, AI risk research subscriptions (NIST, ENISA, NCSC)',
+  },
+};
+
 const AI_WEIGHT_LABELS = { 5: 'Critical', 4: 'High', 3: 'Medium', 2: 'Low', 1: 'Info' };
 const AI_WEIGHT_COLORS = { 5: '#dc2626', 4: '#ea580c', 3: '#b45309', 2: '#4f46e5', 1: '#6b7280' };
 
@@ -943,52 +982,71 @@ function renderAiUnifiedPoam() {
         <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:.05em">Notes</th>
       </tr></thead>
       <tbody>
-        ${gaps.map((g, rank) => {
-          const item = poamData[g.id] || {};
-          const status = item.status || 'open';
-          const wColor = AI_WEIGHT_COLORS[g.weight];
-          const m = AI_GROUP_META[g.grp];
-          const remediation = AI_REMEDIATION[g.id] || '';
-          return `<tr style="border-bottom:1px solid var(--border);background:${statColors[status]||'#fff'}">
-            <td style="padding:8px 10px;vertical-align:top;white-space:nowrap">
-              <div style="font-size:16px;font-weight:900;color:${AI_WEIGHT_COLORS[g.weight]};text-align:center">#${rank+1}</div>
-              <div style="text-align:center;margin-top:2px"><span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:6px;background:${wColor}22;color:${wColor}">${AI_WEIGHT_LABELS[g.weight]}</span></div>
-            </td>
-            <td style="padding:8px 10px;vertical-align:top">
-              <div style="display:flex;align-items:baseline;gap:5px;margin-bottom:2px;flex-wrap:wrap">
-                <span style="font-size:10px;font-weight:700;color:${m.color}">${g.id}</span>
-                <span style="font-size:12px;font-weight:700;color:var(--text)">${escH(g.title)}</span>
-                <span style="font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;background:${g.answer==='no'?'#fee2e2':'#fef3c7'};color:${g.answer==='no'?'#dc2626':'#b45309'}">${g.answer==='no'?'No':'Partial'}</span>
-              </div>
-              <div style="display:flex;gap:3px;flex-wrap:wrap">
-                ${g.nist ? g.nist.map(id=>`<span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;background:#dbeafe;color:#1e40af">${id}</span>`).join('') : ''}
-                ${g.iso  ? g.iso.map(id =>`<span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;background:#ccfbf1;color:#0f766e">${id}</span>`).join('') : ''}
-              </div>
-              ${remediation ? `<div style="font-size:10px;color:#0369a1;background:#f0f9ff;border:1px solid #bae6fd;border-radius:4px;padding:4px 6px;margin-top:5px"><strong>💡 Suggested Action:</strong> ${escH(remediation)}</div>` : ''}
-            </td>
-            <td style="padding:8px 8px;vertical-align:top;text-align:center">
-              <select onchange="aiuPoamUpdate('${g.id}','status',this.value)"
-                style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-weight:700;background:#fff">
-                ${Object.entries(statuses).map(([k,v])=>`<option value="${k}"${status===k?' selected':''}>${v}</option>`).join('')}
-              </select>
-            </td>
-            <td style="padding:8px 8px;vertical-align:top">
-              <input type="text" placeholder="Owner…" value="${escH(item.owner||'')}"
-                onblur="aiuPoamUpdate('${g.id}','owner',this.value)"
-                style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px">
-            </td>
-            <td style="padding:8px 8px;vertical-align:top">
-              <input type="date" value="${item.targetDate||''}"
-                onblur="aiuPoamUpdate('${g.id}','targetDate',this.value)"
-                style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px">
-            </td>
-            <td style="padding:8px 10px;vertical-align:top">
-              <textarea placeholder="Action notes…" rows="2"
-                onblur="aiuPoamUpdate('${g.id}','notes',this.value)"
-                style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px;resize:vertical">${escH(item.notes||'')}</textarea>
-            </td>
-          </tr>`;
-        }).join('')}
+        ${(() => {
+          let lastGrp = null;
+          return gaps.map((g, rank) => {
+            const item = poamData[g.id] || {};
+            const status = item.status || 'open';
+            const wColor = AI_WEIGHT_COLORS[g.weight];
+            const m = AI_GROUP_META[g.grp];
+            let groupHeader = '';
+            if (g.grp !== lastGrp) {
+              lastGrp = g.grp;
+              const rem = AI_GROUP_REMEDIATION[g.grp] || {};
+              groupHeader = `<tr style="background:${m.light};border-top:2px solid ${m.color}">
+                <td colspan="6" style="padding:10px 12px">
+                  <div style="font-size:12px;font-weight:700;color:${m.color};margin-bottom:6px">${m.icon} ${m.label}</div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <div style="flex:1;min-width:240px;font-size:11px;color:#0369a1;background:#f0f9ff;border:1px solid #bae6fd;border-radius:5px;padding:6px 8px;line-height:1.5">
+                      <span style="font-weight:700">💡 Suggested Action:</span> ${escH(rem.action||'')}
+                    </div>
+                    <div style="min-width:200px;font-size:11px;color:#6d28d9;background:#faf5ff;border:1px solid #e9d5ff;border-radius:5px;padding:6px 8px;line-height:1.5">
+                      <span style="font-weight:700">🔧 Suggested Tool:</span> ${escH(rem.tool||'')}
+                    </div>
+                  </div>
+                </td>
+              </tr>`;
+            }
+            return groupHeader + `<tr style="border-bottom:1px solid var(--border);background:${statColors[status]||'#fff'}">
+              <td style="padding:8px 10px;vertical-align:top;white-space:nowrap">
+                <div style="font-size:16px;font-weight:900;color:${AI_WEIGHT_COLORS[g.weight]};text-align:center">#${rank+1}</div>
+                <div style="text-align:center;margin-top:2px"><span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:6px;background:${wColor}22;color:${wColor}">${AI_WEIGHT_LABELS[g.weight]}</span></div>
+              </td>
+              <td style="padding:8px 10px;vertical-align:top">
+                <div style="display:flex;align-items:baseline;gap:5px;margin-bottom:2px;flex-wrap:wrap">
+                  <span style="font-size:10px;font-weight:700;color:${m.color}">${g.id}</span>
+                  <span style="font-size:12px;font-weight:700;color:var(--text)">${escH(g.title)}</span>
+                  <span style="font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;background:${g.answer==='no'?'#fee2e2':'#fef3c7'};color:${g.answer==='no'?'#dc2626':'#b45309'}">${g.answer==='no'?'No':'Partial'}</span>
+                </div>
+                <div style="display:flex;gap:3px;flex-wrap:wrap">
+                  ${g.nist ? g.nist.map(id=>`<span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;background:#dbeafe;color:#1e40af">${id}</span>`).join('') : ''}
+                  ${g.iso  ? g.iso.map(id =>`<span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;background:#ccfbf1;color:#0f766e">${id}</span>`).join('') : ''}
+                </div>
+              </td>
+              <td style="padding:8px 8px;vertical-align:top;text-align:center">
+                <select onchange="aiuPoamUpdate('${g.id}','status',this.value)"
+                  style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-weight:700;background:#fff">
+                  ${Object.entries(statuses).map(([k,v])=>`<option value="${k}"${status===k?' selected':''}>${v}</option>`).join('')}
+                </select>
+              </td>
+              <td style="padding:8px 8px;vertical-align:top">
+                <input type="text" placeholder="Owner…" value="${escH(item.owner||'')}"
+                  onblur="aiuPoamUpdate('${g.id}','owner',this.value)"
+                  style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px">
+              </td>
+              <td style="padding:8px 8px;vertical-align:top">
+                <input type="date" value="${item.targetDate||''}"
+                  onblur="aiuPoamUpdate('${g.id}','targetDate',this.value)"
+                  style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px">
+              </td>
+              <td style="padding:8px 10px;vertical-align:top">
+                <textarea placeholder="Action notes…" rows="2"
+                  onblur="aiuPoamUpdate('${g.id}','notes',this.value)"
+                  style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px;resize:vertical">${escH(item.notes||'')}</textarea>
+              </td>
+            </tr>`;
+          }).join('');
+        })()}
       </tbody>
     </table>
   </div>
