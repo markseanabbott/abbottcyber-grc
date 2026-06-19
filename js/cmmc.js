@@ -366,6 +366,7 @@ function renderCMMCForm() {
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn btn-outline btn-sm" onclick="cmmcNavToDashboard()">← Back</button>
+      <button class="btn btn-outline btn-sm" id="cmmcPrefillBtn" onclick="cmmcPrefillFromTS()" title="Pre-populate practices from your Technology Stack survey">&#8681; From Tech Stack</button>
       <button class="btn btn-cyan btn-sm" id="cmmcSaveBtn" onclick="cmmcSaveAssessment()">💾 Save Assessment</button>
     </div>
   </div>

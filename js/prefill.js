@@ -93,6 +93,33 @@ function tsDeriveInsurance(tsAnswers) {
   return derived;
 }
 
+// ─── CMMC DERIVATION ──────────────────────────────────────────
+// Maps CMMC L1 practice IDs → Tech Stack question IDs
+const _CMMC_TS_MAP = [
+  { cmmc: 'IA.L1-3.5.1',  ts: ['jml'],                    strategy: 'best' }, // Identification — JML means accounts are managed/identified
+  { cmmc: 'IA.L1-3.5.2',  ts: ['mfa_users', 'mfa_admin'], strategy: 'best' }, // Authentication — any MFA = partial; phishing-resistant = yes
+  { cmmc: 'AC.L1-3.1.1',  ts: ['mfa_users', 'jml'],       strategy: 'best' }, // Authorized Access Control — MFA + JML evidences access limits
+  { cmmc: 'AC.L1-3.1.2',  ts: ['pam'],                    strategy: 'best' }, // Transaction & Function Control — PAM enforces least-privilege
+  { cmmc: 'SC.L1-3.13.1', ts: ['ngfw'],                   strategy: 'best' }, // Boundary Protection — NGFW monitors comms at boundary
+  { cmmc: 'SC.L1-3.13.5', ts: ['ngfw', 'dns_filter'],     strategy: 'best' }, // Public-Access Separation — NGFW/DNS = evidence of segmentation
+  { cmmc: 'SI.L1-3.14.1', ts: ['patching'],               strategy: 'best' }, // Flaw Remediation — patch management evidences flaw remediation
+  { cmmc: 'SI.L1-3.14.2', ts: ['edr'],                    strategy: 'best' }, // Malicious Code Protection — EDR is the primary control
+  { cmmc: 'SI.L1-3.14.4', ts: ['edr'],                    strategy: 'best' }, // Update Protection — EDR with auto-update = yes
+  { cmmc: 'SI.L1-3.14.5', ts: ['edr'],                    strategy: 'best' }, // System Scanning — EDR real-time scan = yes
+];
+
+function tsDeriveCMMC(tsAnswers) {
+  const derived = {};
+  _CMMC_TS_MAP.forEach(mapping => {
+    const tsAns = mapping.strategy === 'all'
+      ? _tsAllAns(mapping.ts, tsAnswers)
+      : _tsBestAns(mapping.ts, tsAnswers);
+    if (!tsAns) return;
+    derived[mapping.cmmc] = tsAns;
+  });
+  return derived;
+}
+
 // ─── PUBLIC ───────────────────────────────────────────────────
 function tsHasTechStackData() {
   return !!(tsState && Object.keys(tsState.answers || {}).length > 0);
@@ -181,6 +208,38 @@ async function cisPrefillFromTS() {
     toast('✓ ' + filled + ' CIS safeguards prefilled from Tech Stack — review and adjust before saving', '#152168');
   } else {
     toast('All mapped safeguards already answered — nothing to prefill', '#b45309');
+  }
+  renderMain();
+}
+
+// ─── CMMC PREFILL ACTION ──────────────────────────────────────
+async function cmmcPrefillFromTS() {
+  const btn = document.getElementById('cmmcPrefillBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
+  const loaded = await tsEnsureLoaded();
+  if (!loaded) {
+    toast('No Tech Stack data found — complete a Tech Stack assessment first', '#b45309');
+    if (btn) { btn.disabled = false; btn.innerHTML = '&#8681; From Tech Stack'; }
+    return;
+  }
+  const tsAnswers = (tsState && tsState.answers) || {};
+  const cmmc = tsDeriveCMMC(tsAnswers);
+  if (!Object.keys(cmmc).length) {
+    toast('No mappable Tech Stack answers found', '#b45309');
+    if (btn) { btn.disabled = false; btn.innerHTML = '&#8681; From Tech Stack'; }
+    return;
+  }
+  let filled = 0;
+  Object.keys(cmmc).forEach(practiceId => {
+    if (cmmcState.answers[practiceId] == null) {
+      cmmcState.answers[practiceId] = cmmc[practiceId];
+      filled++;
+    }
+  });
+  if (filled > 0) {
+    toast('✓ ' + filled + ' CMMC practices prefilled from Tech Stack — review and adjust before saving', '#152168');
+  } else {
+    toast('All mapped practices already answered — nothing to prefill', '#b45309');
   }
   renderMain();
 }
