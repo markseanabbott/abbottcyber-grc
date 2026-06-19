@@ -1,4 +1,4 @@
-const APP_VERSION = '1.1.6';
+const APP_VERSION = '1.2.0';
 
 // ============================================================
 // MULTIPLAYER — URL routing (detect ?join= or ?display= params)
