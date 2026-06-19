@@ -1293,7 +1293,7 @@ function renderCISForm() {
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn btn-outline btn-sm" onclick="cisNavToDashboard()">← Back to Dashboard</button>
-      ${!cisState.editId ? '<button class="btn btn-outline btn-sm" id="cisPrefillBtn" onclick="cisPrefillFromTS()" style="font-size:11px">&#8681; From Tech Stack</button>' : ''}
+      <button class="btn btn-outline btn-sm" id="cisPrefillBtn" onclick="cisPrefillFromTS()" style="font-size:11px">&#8681; From Tech Stack</button>
       <button class="btn btn-outline btn-sm" onclick="cisExportExcel()">↓ Export Excel</button>
       <button class="btn btn-outline btn-sm" onclick="cisShowImportModal()">↑ Import Excel</button>
     </div>
