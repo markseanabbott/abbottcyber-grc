@@ -1698,6 +1698,18 @@
           "text": "Policy Library — Word doc templates for 4 insurance placeholder cards (Email Security & Anti-Phishing, Backup & Recovery, Privileged Access Management, Endpoint Security). Comprehensive + SMB variants (8 docs total). Generator tool at generate-insurance-policies.html.",
           "done": true,
           "notes": "Session 44: generate-insurance-policies.html — browser-based generator; open once locally, click Generate All, move 8 .doc files to templates/. js/policy_lib.js — downloads arrays wired to expected filenames for all 4 cards (pol_emsp, pol_brp, pol_pamp, pol_esp). Files: ENT-Draft-POL-Email Security and Anti-Phishing-[Tier]-6.26.docx, ENT-Draft-POL-Backup and Recovery-[Tier]-6.26.docx, ENT-Draft-POL-Privileged Access Management-[Tier]-6.26.docx, ENT-Draft-POL-Endpoint Security-[Tier]-6.26.docx."
+        },
+        {
+          "id": "pl13",
+          "text": "Policy Library — native in-app policy doc generator: 'Generate Policy' button on each card that produces the Word doc on the fly from template content defined in code, without needing to open a separate generator HTML file. Eliminates the external generate-insurance-policies.html dependency.",
+          "done": false,
+          "priority": "Low"
+        },
+        {
+          "id": "rp1",
+          "text": "Exec report trend chart in Word export for AI modules: AI Unified, NIST AI RMF, and ISO 42001 Word exports currently have no trend chart. Add equivalent score trend line chart (matching the CIS cisDrawTrendLine() approach) to all three AI module Word exports.",
+          "done": false,
+          "priority": "Medium"
         }
       ]
     },
