@@ -26,6 +26,10 @@ const POLICY_TEMPLATES = [
     description: 'Establishes the organisation\'s commitment to protecting information assets, defines security scope, roles, and responsibilities across all systems and data.',
     cisGroups: [4, 8, 9, 10, 12, 13, 16],
     url: null,
+    downloads: [
+      { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-Information%20Security-Comprehensive-6.26.docx' },
+      { label: 'SMB', url: 'templates/ENT-Draft-POL-Information%20Security-SMB-6.26.docx' },
+    ],
   },
   {
     id: 'pol_rmp',
@@ -37,6 +41,10 @@ const POLICY_TEMPLATES = [
     description: 'Defines the risk management methodology, risk appetite, and how identified risks are assessed, treated, and monitored over time.',
     cisGroups: [4, 7],
     url: null,
+    downloads: [
+      { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-Risk%20Management-Comprehensive-6.26.docx' },
+      { label: 'SMB', url: 'templates/ENT-Draft-POL-Risk%20Management-SMB-6.26.docx' },
+    ],
   },
   {
     id: 'pol_acp',
@@ -48,6 +56,10 @@ const POLICY_TEMPLATES = [
     description: 'Governs how access to systems and data is provisioned, reviewed, and revoked. Covers MFA, least-privilege, and identity lifecycle management.',
     cisGroups: [5, 6],
     url: null,
+    downloads: [
+      { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-Access%20Control-Comprehensive-6.26.docx' },
+      { label: 'SMB', url: 'templates/ENT-Draft-POL-Access%20Control-SMB-6.26.docx' },
+    ],
   },
   {
     id: 'pol_irp',
@@ -59,6 +71,10 @@ const POLICY_TEMPLATES = [
     description: 'Defines how security incidents are identified, classified, contained, and reported. Includes roles, communication chains, and regulatory notification timelines.',
     cisGroups: [17],
     url: null,
+    downloads: [
+      { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-Incident%20Response-Comprehensive-6.26.docx' },
+      { label: 'SMB', url: 'templates/ENT-Draft-POL-Incident%20Response-SMB-6.26.docx' },
+    ],
   },
   {
     id: 'pol_amp',
@@ -70,6 +86,10 @@ const POLICY_TEMPLATES = [
     description: 'Establishes requirements for maintaining accurate inventories of hardware and software assets, including classification and ownership assignment.',
     cisGroups: [1, 2],
     url: null,
+    downloads: [
+      { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-Asset%20Management-Comprehensive-6.26.docx' },
+      { label: 'SMB', url: 'templates/ENT-Draft-POL-Asset%20Management-SMB-6.26.docx' },
+    ],
   },
   {
     id: 'pol_dcp',
@@ -81,6 +101,10 @@ const POLICY_TEMPLATES = [
     description: 'Defines how data is classified by sensitivity, handled in transit and at rest, retained, and securely disposed of at end of life.',
     cisGroups: [3],
     url: null,
+    downloads: [
+      { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-Data%20Classification%20and%20Handling-Comprehensive-6.26.docx' },
+      { label: 'SMB', url: 'templates/ENT-Draft-POL-Data%20Classification%20and%20Handling-SMB-6.26.docx' },
+    ],
   },
   {
     id: 'pol_vmp',
@@ -92,6 +116,10 @@ const POLICY_TEMPLATES = [
     description: 'Establishes frequency, scope, and remediation timelines for vulnerability scanning, patch management, and penetration testing programs.',
     cisGroups: [7, 18],
     url: null,
+    downloads: [
+      { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-Vulnerability%20Management-Comprehensive-6.26.docx' },
+      { label: 'SMB', url: 'templates/ENT-Draft-POL-Vulnerability%20Management-SMB-6.26.docx' },
+    ],
   },
   {
     id: 'pol_tprp',
@@ -103,6 +131,10 @@ const POLICY_TEMPLATES = [
     description: 'Governs how third-party vendors are assessed, onboarded, monitored, and offboarded. Includes contractual security requirements and ongoing review cadence.',
     cisGroups: [15],
     url: null,
+    downloads: [
+      { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-Third-Party%20and%20Vendor%20Risk-Comprehensive-6.26.docx' },
+      { label: 'SMB', url: 'templates/ENT-Draft-POL-Third-Party%20and%20Vendor%20Risk-SMB-6.26.docx' },
+    ],
   },
   {
     id: 'pol_satp',
@@ -114,6 +146,10 @@ const POLICY_TEMPLATES = [
     description: 'Defines mandatory security training requirements for all staff, training frequency, role-specific programs, and phishing simulation requirements.',
     cisGroups: [14],
     url: null,
+    downloads: [
+      { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-Security%20Awareness%20and%20Training-Comprehensive-6.26.docx' },
+      { label: 'SMB', url: 'templates/ENT-Draft-POL-Security%20Awareness%20and%20Training-SMB-6.26.docx' },
+    ],
   },
   {
     id: 'pol_bcrp',
@@ -125,6 +161,10 @@ const POLICY_TEMPLATES = [
     description: 'Establishes RTO/RPO targets, backup requirements, failover procedures, and the conditions under which the BC Plan is formally activated.',
     cisGroups: [11],
     url: null,
+    downloads: [
+      { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-Business%20Continuity%20and%20DR-Comprehensive-6.26.docx' },
+      { label: 'SMB', url: 'templates/ENT-Draft-POL-Business%20Continuity%20and%20DR-SMB-6.26.docx' },
+    ],
   },
 
   // ── NIST AI RMF ───────────────────────────────────────────────────────────
@@ -277,7 +317,7 @@ function renderPolicyLib() {
   return `${renderTierBanner()}
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:1rem">
     <div style="font-size:17px;font-weight:700">&#x1F4C4; Policy Library</div>
-    <div style="font-size:12px;color:var(--muted)">Templates are placeholders — download available once files are uploaded</div>
+    <div style="font-size:12px;color:var(--muted)">Comprehensive and SMB versions available for all frameworks</div>
   </div>
 
   <div class="view-tabs" style="margin-bottom:1.25rem">

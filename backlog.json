@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.2.2",
   "created": "2026-05-14",
-  "updated": "2026-06-18 (session 42b)",
+  "updated": "2026-06-19 (session 43)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1674,6 +1674,12 @@
           "text": "All NIST AI RMF policy Word docs wired — Comprehensive and SMB downloads added to all 5 remaining cards: AI Risk Management, AI Use Case Inventory, AI Incident Response, AI Transparency & Accountability, AI Data Quality & Bias Management",
           "done": true,
           "notes": "Session 40: Mark added 10 Word docs to templates/. downloads arrays added to pol_airmp, pol_aiinv, pol_aiirp, pol_aitap, pol_aidqp in js/policy_lib.js. All 7 NIST AI RMF cards now show green Available badge. All 10 NIST CSF cards remain Placeholder."
+        },
+        {
+          "id": "pl10",
+          "text": "All NIST CSF 2.0 policy Word docs wired — Comprehensive and SMB downloads added to all 10 NIST CSF 2.0 cards: Information Security, Risk Management, Access Control, Incident Response, Asset Management, Data Classification & Handling, Vulnerability Management, Third-Party & Vendor Risk, Security Awareness & Training, Business Continuity & DR",
+          "done": true,
+          "notes": "Session 43: Mark had added all 20 Word docs (10 policies × Comprehensive + SMB) plus Vulnerability Management docs to templates/. downloads arrays added to pol_isp, pol_rmp, pol_acp, pol_irp, pol_amp, pol_dcp, pol_vmp, pol_tprp, pol_satp, pol_bcrp in js/policy_lib.js. All 17 policy cards (10 CSF + 7 AI RMF) now show green Available badge. Policy Library header subtitle updated to reflect full availability."
         }
       ]
     },
