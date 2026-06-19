@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Abbott Cyber — Insurance Policy Generator</title>
+<style>
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f4fa; color: #1a2340; margin: 0; padding: 2rem; }
+  h1 { font-size: 20px; font-weight: 800; color: #152168; margin-bottom: 4px; }
+  .sub { font-size: 13px; color: #5a6a8a; margin-bottom: 2rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
+  .card { background: #fff; border-radius: 10px; padding: 1.2rem; border-top: 3px solid #15803d; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+  .card h2 { font-size: 14px; font-weight: 700; margin: 0 0 6px; }
+  .card p { font-size: 12px; color: #5a6a8a; margin: 0 0 1rem; line-height: 1.5; }
+  .btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  button { padding: 7px 14px; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .btn-comp { background: #152168; color: #fff; }
+  .btn-smb  { background: #07B4D9; color: #fff; }
+  button:hover { opacity: .88; }
+  .all-btn { background: #15803d; color: #fff; font-size: 13px; padding: 10px 20px; border-radius: 8px; margin-bottom: 1.5rem; border: none; cursor: pointer; font-weight: 700; }
+  .note { font-size: 12px; color: #5a6a8a; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 14px; margin-bottom: 1.5rem; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<h1>🛡️ Insurance Readiness Policy Generator</h1>
+<p class="sub">Abbott Cyber GRC Platform — generates policy template Word documents for the Policy Library</p>
+
+<div class="note">
+  <strong>Instructions:</strong> Click each button to download a policy document. Move the downloaded files into the <code>templates/</code> folder beside <code>index.html</code>. The Policy Library will then show them as Available.
+</div>
+
+<button class="all-btn" onclick="generateAll()">⬇ Generate All 8 Documents</button>
+
+<div class="grid">
+  <div class="card">
+    <h2>Email Security &amp; Anti-Phishing Policy</h2>
+    <p>Email filtering, SPF/DKIM/DMARC, phishing simulations, and reporting procedures.</p>
+    <div class="btns">
+      <button class="btn-comp" onclick="genEmailComp()">⬇ Comprehensive</button>
+      <button class="btn-smb"  onclick="genEmailSMB()">⬇ SMB</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Backup &amp; Recovery Policy</h2>
+    <p>3-2-1 rule, immutable backups, encryption, recovery testing, and RTO/RPO targets.</p>
+    <div class="btns">
+      <button class="btn-comp" onclick="genBackupComp()">⬇ Comprehensive</button>
+      <button class="btn-smb"  onclick="genBackupSMB()">⬇ SMB</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Privileged Access Management Policy</h2>
+    <p>Admin account controls, MFA enforcement, JIT access, and session monitoring.</p>
+    <div class="btns">
+      <button class="btn-comp" onclick="genPAMComp()">⬇ Comprehensive</button>
+      <button class="btn-smb"  onclick="genPAMSMB()">⬇ SMB</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Endpoint Security Policy</h2>
+    <p>EDR/AV coverage, disk encryption, patch cadence, and BYOD controls.</p>
+    <div class="btns">
+      <button class="btn-comp" onclick="genEndpointComp()">⬇ Comprehensive</button>
+      <button class="btn-smb"  onclick="genEndpointSMB()">⬇ SMB</button>
+    </div>
+  </div>
+</div>
+
+<script>
+
+function download(filename, html) {
+  const doc = `<html xmlns:o='urn:schemas-microsoft-com:office:office'
+    xmlns:w='urn:schemas-microsoft-com:office:word'
+    xmlns='http://www.w3.org/TR/REC-html40'>
+  <head><meta charset='utf-8'>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 11pt; color: #1a1a1a; margin: 2.5cm; line-height: 1.5; }
+    h1 { font-size: 18pt; font-weight: bold; color: #152168; border-bottom: 2px solid #152168; padding-bottom: 6pt; margin-bottom: 6pt; }
+    h2 { font-size: 13pt; font-weight: bold; color: #152168; margin-top: 18pt; margin-bottom: 6pt; border-bottom: 1px solid #dde3ef; padding-bottom: 3pt; }
+    h3 { font-size: 11pt; font-weight: bold; color: #1a2340; margin-top: 12pt; margin-bottom: 4pt; }
+    .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 18pt; font-size: 10pt; }
+    .meta-table td { padding: 5pt 8pt; border: 1px solid #dde3ef; vertical-align: top; }
+    .meta-table td:first-child { font-weight: bold; background: #f0f4fa; width: 28%; color: #152168; }
+    .classification { display: inline-block; padding: 3pt 10pt; border-radius: 4pt; font-weight: bold; font-size: 10pt; }
+    .cl-internal { background: #dbeafe; color: #1d4ed8; }
+    .cl-confidential { background: #fef3c7; color: #b45309; }
+    ul { margin: 6pt 0 10pt 0; padding-left: 18pt; }
+    li { margin-bottom: 4pt; }
+    .section-note { background: #f0f9ff; border-left: 3pt solid #07B4D9; padding: 8pt 12pt; margin: 10pt 0; font-size: 10pt; color: #0369a1; }
+    .brand { font-size: 9pt; color: #5a6a8a; text-align: right; margin-top: 24pt; padding-top: 8pt; border-top: 1px solid #dde3ef; }
+  </style>
+  </head><body>${html}<div class='brand'>Abbott Cyber Consulting &nbsp;|&nbsp; abbottcyber.com &nbsp;|&nbsp; Confidential Policy Template</div></body></html>`;
+  const blob = new Blob(['﻿', doc], { type: 'application/msword' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+// ── EMAIL SECURITY — COMPREHENSIVE ────────────────────────────────────────────
+
+function genEmailComp() {
+  download('ENT-Draft-POL-Email Security and Anti-Phishing-Comprehensive-6.26.docx', `
+<h1>Email Security &amp; Anti-Phishing Policy</h1>
+<table class="meta-table">
+  <tr><td>Document ID</td><td>POL-SEC-EMAIL-001</td></tr>
+  <tr><td>Version</td><td>1.0 — Draft</td></tr>
+  <tr><td>Classification</td><td><span class="classification cl-internal">Internal</span></td></tr>
+  <tr><td>Owner</td><td>IT / Security Lead</td></tr>
+  <tr><td>Approved By</td><td>[Name / Title]</td></tr>
+  <tr><td>Review Cycle</td><td>Annual or after a significant phishing incident</td></tr>
+  <tr><td>Last Reviewed</td><td>[Date]</td></tr>
+</table>
+
+<h2>1. Purpose</h2>
+<p>This policy establishes the minimum requirements for protecting the organisation's email environment against phishing, business email compromise (BEC), malware delivery, and unauthorised access. Phishing is the leading trigger for cyber insurance claims. This policy directly supports insurance readiness and regulatory compliance.</p>
+
+<h2>2. Scope</h2>
+<p>This policy applies to:</p>
+<ul>
+  <li>All organisational email accounts (corporate domain)</li>
+  <li>All staff, contractors, and third parties with access to corporate email</li>
+  <li>All devices used to access corporate email, including personal devices</li>
+  <li>Email infrastructure operated internally or via cloud providers (Microsoft 365, Google Workspace, etc.)</li>
+</ul>
+
+<h2>3. Policy Statement</h2>
+<p>The organisation is committed to maintaining a secure email environment. All email accounts must be protected by multi-factor authentication, technical filtering controls must be active at all times, and all staff must be trained to recognise and report phishing attempts.</p>
+
+<h2>4. Requirements</h2>
+
+<h3>4.1 Authentication &amp; Access</h3>
+<ul>
+  <li>Multi-factor authentication (MFA) is mandatory on all corporate email accounts — no exceptions.</li>
+  <li>Email access from unmanaged or untrusted devices must be reviewed and approved by IT.</li>
+  <li>Shared or generic email accounts (e.g., info@, admin@) require documented business justification and must not bypass MFA requirements.</li>
+  <li>Former employee accounts must be disabled within 24 hours of departure.</li>
+</ul>
+
+<h3>4.2 Email Filtering &amp; Technical Controls</h3>
+<ul>
+  <li>A commercial email security gateway or cloud filtering solution must be deployed and active at all times.</li>
+  <li>Inbound email must be scanned for malware, spam, and phishing indicators before delivery.</li>
+  <li>URL rewriting or sandboxing must be enabled to check links at the time of click.</li>
+  <li>Attachment sandboxing must be enabled for high-risk file types (.exe, .zip, macros, scripts).</li>
+  <li>External email headers or banners must be displayed to alert recipients that a message originated outside the organisation.</li>
+</ul>
+
+<h3>4.3 Email Authentication Records (SPF, DKIM, DMARC)</h3>
+<ul>
+  <li>SPF records must be published for all sending domains, with a hard fail (<code>-all</code>) policy.</li>
+  <li>DKIM signing must be enabled for all outbound email.</li>
+  <li>DMARC must be configured with at minimum a <em>quarantine</em> policy; a <em>reject</em> policy is the target state.</li>
+  <li>DMARC aggregate reports must be reviewed at least monthly to identify spoofing attempts.</li>
+  <li>Subdomains used for email must have equivalent controls; unused subdomains should have a restrictive DMARC record.</li>
+</ul>
+
+<h3>4.4 Phishing Awareness &amp; Training</h3>
+<ul>
+  <li>All staff must complete phishing awareness training upon onboarding and at least annually thereafter.</li>
+  <li>Simulated phishing campaigns must be conducted at least quarterly, using varied lure types.</li>
+  <li>Staff who repeatedly fail simulations must complete remedial training within 5 business days.</li>
+  <li>A clear and easy-to-use mechanism for reporting suspicious emails must be provided (e.g., "Report Phishing" button, dedicated mailbox).</li>
+  <li>All reported suspicious emails must be reviewed by IT within one business day.</li>
+</ul>
+
+<h3>4.5 Acceptable Use</h3>
+<ul>
+  <li>Corporate email accounts must not be used for personal purposes that could create legal or security risk.</li>
+  <li>Personal email accounts must not be used to conduct or relay business communications.</li>
+  <li>Sending bulk commercial email (newsletters, marketing) must use an approved platform — not corporate email.</li>
+  <li>Forwarding corporate email to personal accounts is prohibited without documented approval.</li>
+</ul>
+
+<h3>4.6 Incident Response</h3>
+<ul>
+  <li>Staff must report suspected phishing or account compromise to IT immediately.</li>
+  <li>Confirmed compromised accounts must be suspended and passwords reset before reinstatement.</li>
+  <li>Business Email Compromise (BEC) incidents involving financial transfers must follow the Incident Response Policy and be reported to leadership and insurer.</li>
+</ul>
+
+<h2>5. Roles &amp; Responsibilities</h2>
+<table class="meta-table">
+  <tr><td>IT Administrator</td><td>Configure and maintain email filtering, MFA, SPF/DKIM/DMARC, and monitoring. Investigate reported suspicious emails.</td></tr>
+  <tr><td>Security Lead</td><td>Oversee phishing simulation programme, review DMARC reports, manage exceptions.</td></tr>
+  <tr><td>All Staff</td><td>Complete training, report suspicious emails, and comply with acceptable use requirements.</td></tr>
+  <tr><td>Management</td><td>Approve exceptions, support policy enforcement.</td></tr>
+</table>
+
+<h2>6. Compliance &amp; Enforcement</h2>
+<p>Violations of this policy may result in disciplinary action up to and including termination. Intentional circumvention of email security controls (e.g., disabling filters, forwarding credentials) will be treated as a serious misconduct matter. Incidents resulting from non-compliance may affect insurance coverage.</p>
+
+<h2>7. Exceptions</h2>
+<p>Any exceptions to this policy must be requested in writing, approved by the Security Lead and a member of management, documented with business justification and a compensating control, and reviewed at least every 90 days.</p>
+
+<h2>8. Review &amp; Revision</h2>
+<p>This policy will be reviewed annually by the Security Lead and updated following any significant phishing incident, change in email provider, or material change in the threat landscape.</p>
+`);
+}
+
+// ── EMAIL SECURITY — SMB ──────────────────────────────────────────────────────
+
+function genEmailSMB() {
+  download('ENT-Draft-POL-Email Security and Anti-Phishing-SMB-6.26.docx', `
+<h1>Email Security &amp; Anti-Phishing Policy</h1>
+<table class="meta-table">
+  <tr><td>Version</td><td>1.0 — Draft</td></tr>
+  <tr><td>Owner</td><td>[IT Lead / Manager]</td></tr>
+  <tr><td>Review Date</td><td>[Annual — update date here]</td></tr>
+</table>
+
+<h2>Why This Matters</h2>
+<p>Phishing emails are the number one way cybercriminals break into small businesses. This policy sets out the basic controls we require to protect our email environment. Our cyber insurer expects these controls to be in place.</p>
+
+<h2>What We Must Do</h2>
+
+<h3>Multi-Factor Authentication</h3>
+<ul>
+  <li>Every email account must have MFA turned on — no exceptions.</li>
+  <li>When someone leaves, we disable their account the same day.</li>
+</ul>
+
+<h3>Email Filtering</h3>
+<ul>
+  <li>We use an email security service that scans all incoming mail for spam, malware, and phishing links before it reaches staff.</li>
+  <li>External emails are labelled so staff know the message came from outside our organisation.</li>
+</ul>
+
+<h3>SPF, DKIM, and DMARC</h3>
+<ul>
+  <li>Our IT team maintains SPF, DKIM, and DMARC records for our email domain to prevent criminals from sending email that appears to come from us.</li>
+</ul>
+
+<h3>Staff Training</h3>
+<ul>
+  <li>All staff complete phishing awareness training when they join and at least once per year.</li>
+  <li>We run practice phishing tests at least twice per year.</li>
+  <li>Anyone who is unsure about an email should forward it to [IT contact / email address] before clicking any links.</li>
+</ul>
+
+<h3>Personal Email</h3>
+<ul>
+  <li>Business communications must use company email accounts only — not personal Gmail, Outlook, etc.</li>
+  <li>Corporate email must not be forwarded to personal accounts.</li>
+</ul>
+
+<h2>If You Receive a Suspicious Email</h2>
+<ul>
+  <li>Do not click any links or open attachments.</li>
+  <li>Report it to [IT contact / email] straight away.</li>
+  <li>If you think you've been phished (clicked a link, entered a password), tell your manager and IT immediately.</li>
+</ul>
+
+<h2>Review</h2>
+<p>This policy is reviewed every year, or sooner if we have a phishing incident.</p>
+<p><strong>Owner:</strong> [Name] &nbsp;|&nbsp; <strong>Approved by:</strong> [Management] &nbsp;|&nbsp; <strong>Date:</strong> [Date]</p>
+`);
+}
+
+// ── BACKUP & RECOVERY — COMPREHENSIVE ─────────────────────────────────────────
+
+function genBackupComp() {
+  download('ENT-Draft-POL-Backup and Recovery-Comprehensive-6.26.docx', `
+<h1>Backup &amp; Recovery Policy</h1>
+<table class="meta-table">
+  <tr><td>Document ID</td><td>POL-SEC-BCK-001</td></tr>
+  <tr><td>Version</td><td>1.0 — Draft</td></tr>
+  <tr><td>Classification</td><td><span class="classification cl-internal">Internal</span></td></tr>
+  <tr><td>Owner</td><td>IT Administrator</td></tr>
+  <tr><td>Approved By</td><td>[Name / Title]</td></tr>
+  <tr><td>Review Cycle</td><td>Annual or after any data loss incident</td></tr>
+  <tr><td>Last Reviewed</td><td>[Date]</td></tr>
+</table>
+
+<h2>1. Purpose</h2>
+<p>This policy establishes requirements for backing up business-critical data and systems so that operations can be restored in the event of ransomware, hardware failure, accidental deletion, or disaster. A documented and tested backup program is a primary requirement of cyber insurance underwriters and reduces claim severity significantly in ransomware events.</p>
+
+<h2>2. Scope</h2>
+<p>This policy applies to all data and systems owned or managed by the organisation, including:</p>
+<ul>
+  <li>On-premises servers, file shares, and databases</li>
+  <li>Cloud-hosted services and SaaS data (where export is possible)</li>
+  <li>Endpoints containing business-critical data</li>
+  <li>Email and productivity suite data</li>
+</ul>
+
+<h2>3. Policy Statement</h2>
+<p>All business-critical data must be backed up regularly, stored securely, and recoverable within defined time objectives. Backups must be protected from ransomware encryption through immutable storage or air-gap separation. Recovery capability must be verified through regular testing.</p>
+
+<h2>4. Backup Requirements</h2>
+
+<h3>4.1 The 3-2-1 Rule</h3>
+<p>All critical data must comply with the 3-2-1 rule:</p>
+<ul>
+  <li><strong>3</strong> copies of data (1 primary + 2 backups)</li>
+  <li><strong>2</strong> different storage media types (e.g., local disk + cloud)</li>
+  <li><strong>1</strong> copy stored offsite or in a separate cloud environment</li>
+</ul>
+
+<h3>4.2 Backup Frequency</h3>
+<table class="meta-table">
+  <tr><td>Critical systems (databases, email, file servers)</td><td>Daily incremental, weekly full</td></tr>
+  <tr><td>Non-critical systems</td><td>Weekly full</td></tr>
+  <tr><td>Endpoints</td><td>Daily or on-change (where feasible)</td></tr>
+</table>
+
+<h3>4.3 Immutable &amp; Air-Gapped Backups</h3>
+<ul>
+  <li>At least one copy of critical data must be stored in immutable storage (write-once-read-many) or an air-gapped medium that cannot be reached or encrypted by a compromised system.</li>
+  <li>Cloud backup targets must use immutable object storage where available (e.g., S3 Object Lock, Azure Blob immutability).</li>
+  <li>Backup targets must use separate credentials from production systems — a compromised production environment must not be able to delete or modify backups.</li>
+</ul>
+
+<h3>4.4 Encryption</h3>
+<ul>
+  <li>All backup data must be encrypted at rest using AES-256 or equivalent.</li>
+  <li>Backup data in transit must be encrypted (TLS 1.2 minimum).</li>
+  <li>Encryption keys must be stored separately from the backup data.</li>
+</ul>
+
+<h3>4.5 Retention</h3>
+<table class="meta-table">
+  <tr><td>Daily backups</td><td>30 days minimum</td></tr>
+  <tr><td>Weekly backups</td><td>90 days minimum</td></tr>
+  <tr><td>Monthly backups</td><td>12 months minimum</td></tr>
+  <tr><td>Regulatory data</td><td>Per applicable retention requirements (e.g., 7 years for financial)</td></tr>
+</table>
+
+<h2>5. Recovery Testing</h2>
+<ul>
+  <li>Backup integrity must be verified automatically (checksum or verification job) after each backup run.</li>
+  <li>A full recovery test of at least one critical system must be conducted quarterly.</li>
+  <li>Recovery test results must be documented, including time to restore (actual vs. RTO target).</li>
+  <li>Failed recovery tests must be escalated to management and the root cause resolved before the next scheduled backup.</li>
+</ul>
+
+<h2>6. Recovery Objectives</h2>
+<table class="meta-table">
+  <tr><td>System Tier</td><td>RTO (Recovery Time Objective)</td><td>RPO (Recovery Point Objective)</td></tr>
+  <tr><td>Tier 1 — Critical (core business ops)</td><td>4 hours</td><td>1 hour</td></tr>
+  <tr><td>Tier 2 — Important (supporting systems)</td><td>24 hours</td><td>24 hours</td></tr>
+  <tr><td>Tier 3 — Non-critical</td><td>72 hours</td><td>72 hours</td></tr>
+</table>
+
+<h2>7. Access &amp; Security</h2>
+<ul>
+  <li>Access to backup systems and media must be restricted to IT administrators only.</li>
+  <li>Backup admin credentials must be unique and managed separately from production credentials.</li>
+  <li>Backup access must be logged and reviewed monthly.</li>
+  <li>Physical backup media must be stored in a locked, access-controlled location.</li>
+  <li>End-of-life media must be destroyed using certified secure disposal methods.</li>
+</ul>
+
+<h2>8. Roles &amp; Responsibilities</h2>
+<table class="meta-table">
+  <tr><td>IT Administrator</td><td>Configure backups, monitor completion, resolve failures, conduct recovery tests.</td></tr>
+  <tr><td>System Owners</td><td>Identify data criticality tier, confirm RTO/RPO requirements.</td></tr>
+  <tr><td>Management</td><td>Review quarterly recovery test results, approve recovery objectives.</td></tr>
+</table>
+
+<h2>9. Compliance &amp; Enforcement</h2>
+<p>Backup non-compliance (failed backups not remediated, untested recovery) must be escalated to management within 48 hours. Repeated failure to maintain backups may result in disciplinary action and could affect insurance coverage eligibility.</p>
+
+<h2>10. Review &amp; Revision</h2>
+<p>This policy will be reviewed annually and updated after any data loss incident, significant infrastructure change, or change in business criticality of systems.</p>
+`);
+}
+
+// ── BACKUP & RECOVERY — SMB ───────────────────────────────────────────────────
+
+function genBackupSMB() {
+  download('ENT-Draft-POL-Backup and Recovery-SMB-6.26.docx', `
+<h1>Backup &amp; Recovery Policy</h1>
+<table class="meta-table">
+  <tr><td>Version</td><td>1.0 — Draft</td></tr>
+  <tr><td>Owner</td><td>[IT Lead / Manager]</td></tr>
+  <tr><td>Review Date</td><td>[Annual — update date here]</td></tr>
+</table>
+
+<h2>Why This Matters</h2>
+<p>If ransomware hits or we lose data, our ability to recover depends entirely on our backups. Our cyber insurer specifically asks about backup controls. This policy sets out what we must have in place.</p>
+
+<h2>Backup Rules</h2>
+<ul>
+  <li><strong>3-2-1 Rule:</strong> We keep at least 3 copies of critical data, on 2 different types of storage, with 1 copy offsite or in a separate cloud environment.</li>
+  <li><strong>Immutable backups:</strong> At least one backup copy is stored in a location that ransomware cannot reach or delete — either a cloud service with immutable storage, or offline media.</li>
+  <li><strong>Separate credentials:</strong> Our backup system uses different login credentials from our regular systems. If our network is compromised, the attacker cannot delete our backups.</li>
+  <li><strong>Encrypted:</strong> All backups are encrypted so the data is protected even if media is lost or stolen.</li>
+</ul>
+
+<h2>How Often We Back Up</h2>
+<ul>
+  <li>Critical data (email, files, databases): daily</li>
+  <li>Other systems: weekly</li>
+  <li>We keep daily backups for 30 days and monthly backups for at least 12 months.</li>
+</ul>
+
+<h2>Testing — This Is Critical</h2>
+<ul>
+  <li>Every quarter, we test that we can actually restore from our backups. We document the result.</li>
+  <li>We also verify each backup ran successfully after it completes.</li>
+  <li>If a backup fails or a restore test fails, we escalate it immediately — it doesn't sit in a queue.</li>
+</ul>
+
+<h2>Recovery Targets</h2>
+<ul>
+  <li>Core business systems: back online within <strong>4 hours</strong>, data loss no more than <strong>1 hour</strong>.</li>
+  <li>Supporting systems: back online within <strong>24 hours</strong>.</li>
+</ul>
+
+<h2>Review</h2>
+<p>This policy is reviewed every year, or after any data loss event.</p>
+<p><strong>Owner:</strong> [Name] &nbsp;|&nbsp; <strong>Approved by:</strong> [Management] &nbsp;|&nbsp; <strong>Date:</strong> [Date]</p>
+`);
+}
+
+// ── PRIVILEGED ACCESS MANAGEMENT — COMPREHENSIVE ──────────────────────────────
+
+function genPAMComp() {
+  download('ENT-Draft-POL-Privileged Access Management-Comprehensive-6.26.docx', `
+<h1>Privileged Access Management (PAM) Policy</h1>
+<table class="meta-table">
+  <tr><td>Document ID</td><td>POL-SEC-PAM-001</td></tr>
+  <tr><td>Version</td><td>1.0 — Draft</td></tr>
+  <tr><td>Classification</td><td><span class="classification cl-confidential">Confidential</span></td></tr>
+  <tr><td>Owner</td><td>IT Administrator / Security Lead</td></tr>
+  <tr><td>Approved By</td><td>[Name / Title]</td></tr>
+  <tr><td>Review Cycle</td><td>Annual; quarterly access review</td></tr>
+  <tr><td>Last Reviewed</td><td>[Date]</td></tr>
+</table>
+
+<h2>1. Purpose</h2>
+<p>This policy governs the provisioning, use, and monitoring of privileged and administrative accounts. Compromised administrative credentials are a leading attack vector in ransomware and data breach incidents. Controlling privileged access reduces blast radius when credentials are compromised and is a standard requirement of cyber insurance underwriters.</p>
+
+<h2>2. Scope</h2>
+<p>This policy applies to all:</p>
+<ul>
+  <li>Domain administrator and local administrator accounts</li>
+  <li>Cloud platform administrator accounts (Azure, AWS, GCP, Microsoft 365, etc.)</li>
+  <li>Application and database administrator accounts</li>
+  <li>Service accounts and automated/scripted credentials</li>
+  <li>Network device management accounts (firewalls, switches, routers)</li>
+  <li>Security tool administrative accounts (EDR, SIEM, backup consoles)</li>
+</ul>
+
+<h2>3. Policy Statement</h2>
+<p>Privileged access must be granted on the basis of least privilege, monitored continuously, reviewed regularly, and protected by strong authentication. No privileged activity should occur through shared, generic, or standing admin accounts without documented exception.</p>
+
+<h2>4. Account Provisioning</h2>
+<ul>
+  <li>All privileged accounts must be individually named and assigned to a specific person. Shared admin accounts are prohibited.</li>
+  <li>Privileged accounts must be provisioned through a formal request and approval process with management sign-off.</li>
+  <li>Admin accounts must be separate from standard user accounts — IT staff must use their regular account for daily tasks and their admin account only for privileged operations.</li>
+  <li>Default manufacturer/vendor accounts (e.g., Administrator, root, admin) must be renamed, disabled, or have their default credentials changed before deployment.</li>
+  <li>Privileged access for contractors and third-party vendors must be time-bound and removed immediately upon engagement end.</li>
+</ul>
+
+<h2>5. Authentication Requirements</h2>
+<ul>
+  <li>Multi-factor authentication (MFA) is mandatory for all privileged accounts — no exceptions.</li>
+  <li>Privileged account passwords must be a minimum of 16 characters, randomly generated, and stored in an approved password manager or PAM vault.</li>
+  <li>Privileged accounts must not reuse passwords used on any other account.</li>
+  <li>Biometric authentication alone is not sufficient for privileged access.</li>
+</ul>
+
+<h2>6. Just-in-Time (JIT) Access</h2>
+<ul>
+  <li>Where technically feasible, privileged access should be granted on a just-in-time basis (temporary elevation) rather than standing administrator status.</li>
+  <li>JIT requests must specify the system, task, and expected duration.</li>
+  <li>JIT access must be automatically revoked after the approved window expires.</li>
+</ul>
+
+<h2>7. Use of Privileged Accounts</h2>
+<ul>
+  <li>Privileged accounts must only be used for tasks that require elevated permissions.</li>
+  <li>Browsing the internet, reading email, or other general tasks must never be performed on a privileged account.</li>
+  <li>Privileged sessions on critical systems should be conducted from a dedicated, hardened device where possible.</li>
+  <li>Remote privileged access must be performed over a VPN or secure bastion host — not directly over the internet.</li>
+</ul>
+
+<h2>8. Session Monitoring &amp; Logging</h2>
+<ul>
+  <li>All privileged account logins and administrative actions must be logged.</li>
+  <li>Logs must be retained for a minimum of 90 days and be stored in a location that cannot be modified by the accounts being logged.</li>
+  <li>Privileged account activity must be reviewed at least monthly for anomalies.</li>
+  <li>Alerts must be configured for after-hours privileged logins and access from unusual locations.</li>
+</ul>
+
+<h2>9. Access Reviews</h2>
+<ul>
+  <li>A formal review of all privileged accounts must be conducted quarterly.</li>
+  <li>Accounts belonging to staff who have changed roles must be adjusted immediately.</li>
+  <li>Accounts belonging to departed staff must be disabled within 24 hours and removed within 30 days.</li>
+  <li>Dormant privileged accounts (unused for 30+ days) must be disabled pending review.</li>
+</ul>
+
+<h2>10. Service Accounts</h2>
+<ul>
+  <li>All service accounts must have a documented owner, purpose, and scope of permissions.</li>
+  <li>Service accounts must follow least-privilege — permissions granted must be the minimum required for the function.</li>
+  <li>Service account credentials must be rotated at least annually, or immediately upon any suspected compromise.</li>
+  <li>Interactive logon must be disabled on service accounts where possible.</li>
+</ul>
+
+<h2>11. Roles &amp; Responsibilities</h2>
+<table class="meta-table">
+  <tr><td>IT Administrator</td><td>Provision/deprovision accounts, configure MFA, maintain logs, conduct access reviews.</td></tr>
+  <tr><td>Security Lead</td><td>Review access logs, manage exceptions, report on privileged access posture.</td></tr>
+  <tr><td>All Privileged Users</td><td>Use admin accounts only for intended purpose, report anomalies.</td></tr>
+  <tr><td>Management</td><td>Approve provisioning requests, review quarterly access reports.</td></tr>
+</table>
+
+<h2>12. Compliance &amp; Enforcement</h2>
+<p>Violations of this policy, including use of shared admin credentials, bypassing MFA, or using privileged accounts for general tasks, are treated as serious misconduct. Incidents attributable to PAM non-compliance may affect insurance coverage.</p>
+
+<h2>13. Review &amp; Revision</h2>
+<p>This policy is reviewed annually by the Security Lead and updated following any privileged account compromise, significant infrastructure change, or change in insurer requirements.</p>
+`);
+}
+
+// ── PRIVILEGED ACCESS MANAGEMENT — SMB ───────────────────────────────────────
+
+function genPAMSMB() {
+  download('ENT-Draft-POL-Privileged Access Management-SMB-6.26.docx', `
+<h1>Privileged Access Management (PAM) Policy</h1>
+<table class="meta-table">
+  <tr><td>Version</td><td>1.0 — Draft</td></tr>
+  <tr><td>Owner</td><td>[IT Lead / Manager]</td></tr>
+  <tr><td>Review Date</td><td>[Annual — update date here]</td></tr>
+</table>
+
+<h2>Why This Matters</h2>
+<p>Administrator accounts are the keys to the kingdom. When attackers get hold of admin credentials — usually through phishing or credential theft — they can take over the entire network, deploy ransomware, and lock out legitimate users. This policy sets out how we protect those accounts. Our cyber insurer expects these controls.</p>
+
+<h2>What We Must Do</h2>
+
+<h3>No Shared Admin Accounts</h3>
+<ul>
+  <li>Every person who needs admin access gets their own named account. No shared "admin" or "administrator" logins.</li>
+  <li>When someone leaves, their admin account is disabled the same day.</li>
+</ul>
+
+<h3>MFA on Every Admin Account</h3>
+<ul>
+  <li>Multi-factor authentication (MFA) must be enabled on every admin account — without exception.</li>
+  <li>This includes cloud admin accounts (Microsoft 365, Azure, Google Workspace, etc.) and on-premise domain admin accounts.</li>
+</ul>
+
+<h3>Separate Admin Accounts</h3>
+<ul>
+  <li>IT staff must use a regular user account for daily tasks like email and browsing.</li>
+  <li>The admin account is only used when admin access is actually needed for a task.</li>
+</ul>
+
+<h3>Strong Passwords</h3>
+<ul>
+  <li>Admin passwords must be at least 16 characters, unique, and stored in a password manager.</li>
+  <li>Default vendor passwords (e.g., "admin", "password") must be changed before any device goes live.</li>
+</ul>
+
+<h3>Access Reviews</h3>
+<ul>
+  <li>We review who has admin access every quarter and remove accounts that are no longer needed.</li>
+</ul>
+
+<h3>Remote Admin Access</h3>
+<ul>
+  <li>Admin access from outside the office must go through a VPN — not directly over the internet.</li>
+</ul>
+
+<h2>Review</h2>
+<p>This policy is reviewed every year, or after any admin account compromise.</p>
+<p><strong>Owner:</strong> [Name] &nbsp;|&nbsp; <strong>Approved by:</strong> [Management] &nbsp;|&nbsp; <strong>Date:</strong> [Date]</p>
+`);
+}
+
+// ── ENDPOINT SECURITY — COMPREHENSIVE ────────────────────────────────────────
+
+function genEndpointComp() {
+  download('ENT-Draft-POL-Endpoint Security-Comprehensive-6.26.docx', `
+<h1>Endpoint Security Policy</h1>
+<table class="meta-table">
+  <tr><td>Document ID</td><td>POL-SEC-EP-001</td></tr>
+  <tr><td>Version</td><td>1.0 — Draft</td></tr>
+  <tr><td>Classification</td><td><span class="classification cl-internal">Internal</span></td></tr>
+  <tr><td>Owner</td><td>IT Administrator</td></tr>
+  <tr><td>Approved By</td><td>[Name / Title]</td></tr>
+  <tr><td>Review Cycle</td><td>Annual or after significant endpoint security incident</td></tr>
+  <tr><td>Last Reviewed</td><td>[Date]</td></tr>
+</table>
+
+<h2>1. Purpose</h2>
+<p>This policy establishes minimum security requirements for all endpoints — including laptops, desktops, servers, and mobile devices — used to access the organisation's systems and data. Endpoint compromise is a primary attack vector in ransomware and data breach incidents. Endpoint Detection and Response (EDR) coverage and consistent patching are baseline requirements of most cyber insurers.</p>
+
+<h2>2. Scope</h2>
+<p>This policy applies to:</p>
+<ul>
+  <li>All organisation-owned laptops, desktops, and servers</li>
+  <li>Mobile devices enrolled in corporate device management</li>
+  <li>Personally-owned (BYOD) devices used to access corporate systems</li>
+  <li>Virtual machines and cloud-hosted workloads in scope for endpoint protection</li>
+</ul>
+
+<h2>3. Policy Statement</h2>
+<p>All endpoints accessing corporate systems must meet minimum security standards before access is granted, and must maintain those standards continuously. Non-compliant devices must be remediated or quarantined.</p>
+
+<h2>4. Endpoint Protection Software</h2>
+<ul>
+  <li>An Endpoint Detection &amp; Response (EDR) solution or enterprise antivirus must be deployed and active on 100% of managed endpoints at all times.</li>
+  <li>EDR/AV agents must be kept current — definition updates must occur at least daily; agent software within vendor-supported versions.</li>
+  <li>EDR/AV must be configured for real-time protection; scheduled scans must run at least weekly.</li>
+  <li>EDR alerts must be monitored. Critical alerts must be reviewed within 4 hours; high within 24 hours.</li>
+  <li>Tamper protection must be enabled — staff must not be able to disable endpoint protection software.</li>
+</ul>
+
+<h2>5. Encryption</h2>
+<ul>
+  <li>Full-disk encryption (FDE) must be enabled on all laptops, portable workstations, and mobile devices.</li>
+  <li>Encryption keys must be managed and escrowed centrally — not stored only on the device.</li>
+  <li>Servers hosting sensitive data must have at-rest encryption enabled for data volumes.</li>
+</ul>
+
+<h2>6. Patch Management</h2>
+<ul>
+  <li>Operating system security patches must be applied within 30 days of release.</li>
+  <li>Critical or actively exploited patches (e.g., CISA KEV listed) must be applied within 72 hours.</li>
+  <li>Third-party application patches must be applied within 30 days of release for in-scope applications.</li>
+  <li>End-of-life operating systems and applications must not be used in production without a documented compensating control and management approval.</li>
+  <li>Patch compliance must be reported to management monthly.</li>
+</ul>
+
+<h2>7. Device Management (MDM / UEM)</h2>
+<ul>
+  <li>All managed endpoints must be enrolled in a device management platform (e.g., Microsoft Intune, Jamf, similar).</li>
+  <li>Device management must enforce: screen lock policy, encryption status, EDR agent presence, and OS version compliance.</li>
+  <li>Non-compliant devices must be quarantined from corporate resources until remediated.</li>
+  <li>Lost or stolen devices must be reported to IT immediately and remotely wiped within 24 hours.</li>
+</ul>
+
+<h2>8. Screen Lock &amp; Session Security</h2>
+<ul>
+  <li>Workstations must automatically lock after 15 minutes of inactivity.</li>
+  <li>Mobile devices must lock after 5 minutes of inactivity.</li>
+  <li>Staff must lock their workstation when stepping away (Windows + L / Command + Control + Q).</li>
+</ul>
+
+<h2>9. Removable Media &amp; Peripheral Controls</h2>
+<ul>
+  <li>USB and removable media access must be restricted to approved devices and purposes only.</li>
+  <li>Where USB is permitted, data written to removable media must be encrypted.</li>
+  <li>Unmanaged USB storage devices must not be connected to corporate endpoints.</li>
+</ul>
+
+<h2>10. Software Installation</h2>
+<ul>
+  <li>Only IT-approved software may be installed on corporate endpoints.</li>
+  <li>Standard user accounts must not have local administrator rights that would allow software installation.</li>
+  <li>All software in use must be licensed, supported, and from a reputable source.</li>
+</ul>
+
+<h2>11. BYOD (Personally-Owned Devices)</h2>
+<ul>
+  <li>Personal devices may only access corporate resources through IT-approved methods (e.g., VPN, virtual desktop, conditional access policies).</li>
+  <li>Personal devices accessing corporate email must comply with minimum standards: screen lock, OS current, and no known malware.</li>
+  <li>Personal devices may not store corporate data locally unless approved in writing.</li>
+</ul>
+
+<h2>12. Roles &amp; Responsibilities</h2>
+<table class="meta-table">
+  <tr><td>IT Administrator</td><td>Deploy and maintain EDR, MDM, encryption, and patching. Respond to endpoint alerts. Manage device compliance.</td></tr>
+  <tr><td>Security Lead</td><td>Review EDR alert reports, patch compliance, and access exceptions. Oversee policy enforcement.</td></tr>
+  <tr><td>All Staff</td><td>Keep devices updated, report lost/stolen devices immediately, comply with acceptable use.</td></tr>
+  <tr><td>Management</td><td>Approve exceptions, enforce policy, review monthly compliance reports.</td></tr>
+</table>
+
+<h2>13. Compliance &amp; Enforcement</h2>
+<p>Devices found to be non-compliant (missing EDR, unpatched OS, disabled encryption) will be quarantined from corporate systems until remediated. Intentional circumvention of endpoint controls is treated as serious misconduct.</p>
+
+<h2>14. Review &amp; Revision</h2>
+<p>This policy is reviewed annually and updated following any endpoint compromise, change in EDR provider, or significant change in the threat landscape.</p>
+`);
+}
+
+// ── ENDPOINT SECURITY — SMB ───────────────────────────────────────────────────
+
+function genEndpointSMB() {
+  download('ENT-Draft-POL-Endpoint Security-SMB-6.26.docx', `
+<h1>Endpoint Security Policy</h1>
+<table class="meta-table">
+  <tr><td>Version</td><td>1.0 — Draft</td></tr>
+  <tr><td>Owner</td><td>[IT Lead / Manager]</td></tr>
+  <tr><td>Review Date</td><td>[Annual — update date here]</td></tr>
+</table>
+
+<h2>Why This Matters</h2>
+<p>Laptops and computers are the most common entry point for ransomware and cyberattacks. Keeping them protected, up to date, and encrypted is one of the most impactful things a small business can do — and one of the first things cyber insurers check.</p>
+
+<h2>What Every Device Must Have</h2>
+<ul>
+  <li><strong>Endpoint protection (EDR or AV):</strong> Every company device must have active security software. It must stay on at all times — staff cannot disable it.</li>
+  <li><strong>Disk encryption:</strong> Every laptop must have full-disk encryption turned on. If a laptop is lost or stolen, the data is protected.</li>
+  <li><strong>Operating system updates:</strong> Windows, macOS, and other OS updates must be installed within 30 days of release. Critical security patches must be applied within 72 hours.</li>
+  <li><strong>Screen lock:</strong> Devices must lock automatically after 15 minutes of not being used. Staff should lock their screen when they step away.</li>
+</ul>
+
+<h2>Software</h2>
+<ul>
+  <li>Only approved software may be installed on company devices. If you need a new application, ask IT.</li>
+  <li>Staff should not have admin rights on their own computer.</li>
+</ul>
+
+<h2>USB &amp; External Devices</h2>
+<ul>
+  <li>Do not plug in unknown USB drives or external devices without checking with IT first.</li>
+</ul>
+
+<h2>Lost or Stolen Devices</h2>
+<ul>
+  <li>Report a lost or stolen device to IT and management immediately. We can remotely lock or wipe it.</li>
+</ul>
+
+<h2>Personal Devices (BYOD)</h2>
+<ul>
+  <li>If you use your personal phone or computer for work, it must have a screen lock and current OS updates.</li>
+  <li>You may not store company data on personal devices unless IT has approved it.</li>
+</ul>
+
+<h2>Review</h2>
+<p>This policy is reviewed every year, or after any device-related security incident.</p>
+<p><strong>Owner:</strong> [Name] &nbsp;|&nbsp; <strong>Approved by:</strong> [Management] &nbsp;|&nbsp; <strong>Date:</strong> [Date]</p>
+`);
+}
+
+// ── GENERATE ALL ──────────────────────────────────────────────────────────────
+
+function generateAll() {
+  const fns = [genEmailComp, genEmailSMB, genBackupComp, genBackupSMB, genPAMComp, genPAMSMB, genEndpointComp, genEndpointSMB];
+  fns.forEach((fn, i) => setTimeout(fn, i * 400));
+}
+
+</script>
+</body>
+</html>

@@ -294,6 +294,10 @@ const POLICY_TEMPLATES = [
     cisGroups: [9],
     insurance: true,
     url: null,
+    downloads: [
+      { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-Email%20Security%20and%20Anti-Phishing-Comprehensive-6.26.docx' },
+      { label: 'SMB',           url: 'templates/ENT-Draft-POL-Email%20Security%20and%20Anti-Phishing-SMB-6.26.docx' },
+    ],
   },
   {
     id: 'pol_brp',
@@ -306,6 +310,10 @@ const POLICY_TEMPLATES = [
     cisGroups: [11],
     insurance: true,
     url: null,
+    downloads: [
+      { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-Backup%20and%20Recovery-Comprehensive-6.26.docx' },
+      { label: 'SMB',           url: 'templates/ENT-Draft-POL-Backup%20and%20Recovery-SMB-6.26.docx' },
+    ],
   },
   {
     id: 'pol_pamp',
@@ -318,6 +326,10 @@ const POLICY_TEMPLATES = [
     cisGroups: [5, 6],
     insurance: true,
     url: null,
+    downloads: [
+      { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-Privileged%20Access%20Management-Comprehensive-6.26.docx' },
+      { label: 'SMB',           url: 'templates/ENT-Draft-POL-Privileged%20Access%20Management-SMB-6.26.docx' },
+    ],
   },
   {
     id: 'pol_esp',
@@ -330,6 +342,10 @@ const POLICY_TEMPLATES = [
     cisGroups: [1, 2, 10],
     insurance: true,
     url: null,
+    downloads: [
+      { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-Endpoint%20Security-Comprehensive-6.26.docx' },
+      { label: 'SMB',           url: 'templates/ENT-Draft-POL-Endpoint%20Security-SMB-6.26.docx' },
+    ],
   },
 ];
 
