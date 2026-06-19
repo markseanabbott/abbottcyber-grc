@@ -91,7 +91,7 @@ let cmmcState = {
   orgId: null, view: 'dashboard',
   conductedBy: '', date: '', editId: null,
   poamRun: null, poamItems: {},
-  reportRun: null,
+  reportRun: null, reportCommentary: '',
 };
 
 function cmmcHydrate() {
@@ -105,7 +105,7 @@ function cmmcHydrate() {
     orgId: currentOrg?.id, view: 'dashboard',
     conductedBy: '', date: '', editId: null,
     poamRun: null, poamItems: {},
-    reportRun: null,
+    reportRun: null, reportCommentary: '',
   };
 }
 
@@ -506,83 +506,103 @@ function renderCMMCExec() {
   const run = cmmcState.reportRun;
   if (!run) { cmmcState.view = 'dashboard'; return renderCMMCDashboard(); }
 
-  const answers = Object.fromEntries(Object.entries(run.answers || {}).filter(([k]) => !k.startsWith('_')));
+  const answers    = Object.fromEntries(Object.entries(run.answers || {}).filter(([k]) => !k.startsWith('_')));
   const { score, yes, partial, no, na, total, scoreable, answered } = cmmcCalcScore(answers);
   const { band, bandCol } = acScoreBand(score);
-  const unanswered  = total - (yes + partial + no + na);
-  const fullImpl    = scoreable > 0 ? Math.round(yes / scoreable * 100) : 0;
-  const fiCol       = fullImpl >= 75 ? '#15803d' : fullImpl >= 50 ? '#b45309' : '#dc2626';
-  const domProg     = cmmcDomainProgress(answers);
-  const topGaps     = cmmcGetGaps(answers);
-  const sprs        = cmmcSprsCalc(answers);
+  const unanswered = total - (yes + partial + no + na);
+  const fullImpl   = scoreable > 0 ? Math.round(yes / scoreable * 100) : 0;
+  const fiCol      = fullImpl >= 75 ? '#15803d' : fullImpl >= 50 ? '#b45309' : '#dc2626';
+  const domProg    = cmmcDomainProgress(answers);
+  const topGaps    = cmmcGetGaps(answers);
+  const runs       = (orgAssessments[currentOrg.id] || {})['cmmc'] || [];
+  const commentary = cmmcState.reportCommentary || (run.answers || {})._exec_commentary || '';
+
+  // Stacked bar percentages (out of all 17 practices)
+  const barBase = total;
+  const yesPct  = barBase > 0 ? (yes       / barBase * 100).toFixed(1) : 0;
+  const partPct = barBase > 0 ? (partial   / barBase * 100).toFixed(1) : 0;
+  const noPct   = barBase > 0 ? (no        / barBase * 100).toFixed(1) : 0;
+  const naPct   = barBase > 0 ? (na        / barBase * 100).toFixed(1) : 0;
+  const unPct   = barBase > 0 ? (unanswered / barBase * 100).toFixed(1) : 0;
 
   const scoreStripHtml = acExecScoreStripHtml({
     yes, partial, no, na, unanswered, scopedTotal: total,
     score, bandCol, fullImpl, fiCol, goalLabel: 'L1',
   });
 
-  const domTableHtml = `
-  <div class="card" style="padding:1.1rem;margin-bottom:1rem">
+  const scoreBreakdownHtml = acExecScoreBreakdownHtml({
+    score, band, bandCol,
+    yesPct, partPct, noPct, naPct, unPct,
+    yesN: yes, partN: partial, noN: no, naN: na,
+    fullImpl, fiCol, scoreable,
+    scoreableLabel: 'scoreable practices',
+    metLabel: 'Met', partLabel: 'Partial', noLabel: 'Not Met', naLabel: 'N/A',
+  });
+
+  const domCoverageHtml = `
+  <div class="card" style="padding:1.1rem">
     <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Domain Coverage</div>
-    <table style="width:100%;border-collapse:collapse;font-size:12px">
-      <thead><tr style="border-bottom:2px solid var(--border)">
-        <th style="text-align:left;padding:6px 8px;font-size:10px;font-weight:700;color:var(--muted)">Domain</th>
-        <th style="text-align:center;padding:6px 8px;font-size:10px;font-weight:700;color:#15803d">Met</th>
-        <th style="text-align:center;padding:6px 8px;font-size:10px;font-weight:700;color:#b45309">Partial</th>
-        <th style="text-align:center;padding:6px 8px;font-size:10px;font-weight:700;color:#dc2626">Not Met</th>
-        <th style="text-align:center;padding:6px 8px;font-size:10px;font-weight:700;color:var(--muted)">Score</th>
-        <th style="padding:6px 8px;min-width:120px"></th>
-      </tr></thead>
-      <tbody>
-        ${domProg.map(d => `<tr style="border-bottom:1px solid var(--border)">
-          <td style="padding:8px 8px">
-            <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;background:${d.bg};color:${d.color}">${d.key}</span>
-            <span style="font-size:11px;color:var(--muted);margin-left:6px">${d.label}</span>
-          </td>
-          <td style="padding:8px 8px;text-align:center;font-weight:700;color:#15803d">${d.yes}</td>
-          <td style="padding:8px 8px;text-align:center;font-weight:700;color:#b45309">${d.partial}</td>
-          <td style="padding:8px 8px;text-align:center;font-weight:700;color:#dc2626">${d.no}</td>
-          <td style="padding:8px 8px;text-align:center;font-weight:700;color:${d.pct>=75?'#15803d':d.pct>=50?'#b45309':'#dc2626'}">${d.pct}%</td>
-          <td style="padding:8px 8px">
-            <div style="height:6px;background:var(--bg);border-radius:3px;overflow:hidden">
-              <div style="height:100%;width:${d.pct}%;background:${d.color};border-radius:3px;transition:width .4s"></div>
-            </div>
-          </td>
-        </tr>`).join('')}
-      </tbody>
-    </table>
+    ${domProg.map(d => `
+      <div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+          <span style="font-size:12px;font-weight:700;color:${d.color}">${d.key} <span style="font-size:10px;color:var(--muted);font-weight:400">— ${d.label}</span></span>
+          <span style="font-size:14px;font-weight:800;color:${d.pct>=75?'#15803d':d.pct>=50?'#b45309':'#dc2626'};font-family:monospace">${d.pct}%</span>
+        </div>
+        <div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden;display:flex">
+          <div style="width:${d.total > 0 ? (d.yes / d.total * 100).toFixed(1) : 0}%;background:${d.color}"></div>
+          <div style="width:${d.total > 0 ? (d.partial / d.total * 100).toFixed(1) : 0}%;background:${d.color};opacity:.45"></div>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">${d.yes} met · ${d.partial} partial · ${d.no} not met${d.na ? ' · ' + d.na + ' N/A' : ''} · ${d.total} practices</div>
+      </div>`).join('')}
+    ${runs.length >= 2
+      ? `<div style="margin-top:6px;padding-top:10px;border-top:1px solid var(--border)">
+          <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Score Trend</div>
+          <canvas id="cmmcReportTrend" style="width:100%;display:block"></canvas>
+         </div>`
+      : ''}
+  </div>`;
+
+  const radarHtml = `
+  <div class="card" style="padding:1.1rem;margin-bottom:1rem">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:6px">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">🎯 Domain Radar — CMMC L1</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">Score per domain · % of practices met or partial</div>
+      </div>
+    </div>
+    <canvas id="cmmcReportRadar" width="560" height="320" style="width:100%;max-width:560px;display:block;margin:0 auto"></canvas>
   </div>`;
 
   const gapsHtml = topGaps.length ? `
   <div class="card" style="padding:1.1rem;margin-bottom:1rem">
-    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Gaps to Address (${topGaps.length})</div>
-    ${topGaps.map(g => {
-      const meta = CMMC_DOMAIN_META[g.domain] || {};
-      const ans  = answers[g.id] || '';
-      return `<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
-        <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;background:${meta.bg};color:${meta.color};white-space:nowrap;margin-top:1px">${escH(g.id)}</span>
-        <div>
-          <div style="font-size:12px;font-weight:600">${escH(g.title)}</div>
-          <div style="font-size:11px;color:var(--muted)">${escH(g.desc)}</div>
-        </div>
-        <span style="margin-left:auto;font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;
-          background:${ans==='no'?'#fee2e2':'#fef3c7'};color:${ans==='no'?'#dc2626':'#b45309'};white-space:nowrap">
-          ${ans==='no'?'Not Met':'Partial'}
-        </span>
-      </div>`;
-    }).join('')}
-  </div>` : '';
-
-  const promptHtml = `
-  <div class="card" style="padding:1.1rem;margin-bottom:1rem;border-left:4px solid var(--cyan)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div style="font-size:13px;font-weight:700">📋 Executive Report Prompt</div>
-      <button class="btn btn-cyan btn-sm" onclick="cmmcCopyReportPrompt()">Copy to Clipboard</button>
-    </div>
-    <div style="font-size:11px;color:var(--muted);line-height:1.6">
-      Copy this prompt to Claude to generate a Word-ready executive report for ${escH(currentOrg.name)}.
-    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Priority Gaps — Not Met or Partial (${topGaps.length})</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <tbody>
+        ${topGaps.map(g => {
+          const meta = CMMC_DOMAIN_META[g.domain] || {};
+          const ans  = answers[g.id] || '';
+          return `<tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:6px 10px;font-weight:700;color:${meta.color};white-space:nowrap;width:140px">${escH(g.id)}</td>
+            <td style="padding:6px 6px;width:48px"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;background:${meta.bg};color:${meta.color}">${g.domain}</span></td>
+            <td style="padding:6px 10px;color:var(--text)">${escH(g.title)}</td>
+            <td style="padding:6px 10px;white-space:nowrap"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;
+              background:${ans==='no'?'#fee2e2':'#fef3c7'};color:${ans==='no'?'#dc2626':'#b45309'}">${ans==='no'?'Not Met':'Partial'}</span></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>` : `
+  <div class="card" style="padding:1.1rem;margin-bottom:1rem;text-align:center;color:#15803d">
+    <div style="font-size:18px;margin-bottom:4px">✅</div>
+    <div style="font-size:13px;font-weight:700">No gaps — all 17 Level 1 practices are Met or N/A</div>
   </div>`;
+
+  const commentaryHtml = acExecCommentaryHtml({
+    commentary,
+    commentaryId: 'cmmcReportCommentary',
+    copyFn: 'cmmcCopyReportPrompt',
+    saveFn: 'cmmcSaveCommentary',
+  });
 
   return `
   ${renderTierBanner()}
@@ -591,15 +611,20 @@ function renderCMMCExec() {
       <div style="font-size:17px;font-weight:700">📊 CMMC L1 Executive Report</div>
       <div style="font-size:12px;color:var(--muted)">${escH(currentOrg.name)} · ${run.date || '—'}${run.conductedBy ? ' · ' + escH(run.conductedBy) : ''}</div>
     </div>
-    <div style="display:flex;gap:6px">
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn btn-outline btn-sm" onclick="cmmcNavToDashboard()">← Back</button>
+      <button class="btn btn-outline btn-sm" onclick="cmmcExportReportWord()">📄 Export Word</button>
       <button class="btn btn-outline btn-sm" onclick="cmmcOpenSprs(null)">🏛 SPRS →</button>
     </div>
   </div>
   ${scoreStripHtml}
-  ${domTableHtml}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+    ${scoreBreakdownHtml}
+    ${domCoverageHtml}
+  </div>
+  ${radarHtml}
   ${gapsHtml}
-  ${promptHtml}`;
+  ${commentaryHtml}`;
 }
 
 // ── SPRS EXTENSION TAB ────────────────────────────────────────────────────────
@@ -975,4 +1000,345 @@ Bullet list: 3-4 practical next steps with specific, actionable language.`;
 
 function cmmcExportExcel() {
   toast('Excel export coming soon', '#b45309');
+}
+
+// ── COMMENTARY ────────────────────────────────────────────────────────────────
+
+async function cmmcSaveCommentary() {
+  const run = cmmcState.reportRun;
+  if (!run) return;
+  const commentary = document.getElementById('cmmcReportCommentary')?.value || '';
+  cmmcState.reportCommentary = commentary;
+  try {
+    const updated = { ...(run.answers || {}), _exec_commentary: commentary };
+    await sbFetch(`/rest/v1/assessments?id=eq.${encodeURIComponent(run.id)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ answers: updated }),
+    });
+    run.answers = updated;
+    toast('Commentary saved', '#15803d');
+  } catch (e) {
+    toast('Save failed: ' + e.message, '#dc2626');
+  }
+}
+
+// ── DOMAIN RADAR ──────────────────────────────────────────────────────────────
+
+function drawCmmcRadar(canvasId, answers) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const W = canvas.offsetWidth || 560;
+  const H = 320;
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+
+  const cx = W / 2, cy = H / 2, R = Math.min(cx, cy) - 45;
+  const domains   = Object.keys(CMMC_DOMAIN_META);
+  const n         = domains.length;
+  const angleStep = (Math.PI * 2) / n;
+  const startAngle = -Math.PI / 2;
+
+  const scores = domains.map(key => {
+    const practices = CMMC_L1_PRACTICES.filter(p => p.domain === key);
+    const yes  = practices.filter(p => answers[p.id] === 'yes').length;
+    const part = practices.filter(p => answers[p.id] === 'partial').length;
+    const na   = practices.filter(p => answers[p.id] === 'na').length;
+    const sc   = practices.length - na;
+    return sc > 0 ? (yes + part * 0.5) / sc : 0;
+  });
+
+  // Grid rings
+  [0.2, 0.4, 0.6, 0.8, 1.0].forEach(level => {
+    ctx.beginPath();
+    domains.forEach((_, i) => {
+      const angle = startAngle + i * angleStep;
+      const x = cx + R * level * Math.cos(angle);
+      const y = cy + R * level * Math.sin(angle);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+    ctx.strokeStyle = '#e8edf5';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    if (level < 1.0) {
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '8px Inter,Arial,sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${Math.round(level * 100)}%`, cx + R * level + 3, cy);
+    }
+  });
+
+  // Spokes
+  domains.forEach((_, i) => {
+    const angle = startAngle + i * angleStep;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + R * Math.cos(angle), cy + R * Math.sin(angle));
+    ctx.strokeStyle = '#e8edf5';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+
+  // Filled polygon
+  ctx.beginPath();
+  domains.forEach((_, i) => {
+    const angle = startAngle + i * angleStep;
+    const x = cx + R * scores[i] * Math.cos(angle);
+    const y = cy + R * scores[i] * Math.sin(angle);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(7,180,217,0.15)';
+  ctx.fill();
+  ctx.strokeStyle = '#07B4D9';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Dots + labels
+  ctx.textBaseline = 'alphabetic';
+  domains.forEach((key, i) => {
+    const angle    = startAngle + i * angleStep;
+    const val      = scores[i];
+    const meta     = CMMC_DOMAIN_META[key];
+
+    // Data dot
+    const dx = cx + R * val * Math.cos(angle);
+    const dy = cy + R * val * Math.sin(angle);
+    ctx.beginPath();
+    ctx.arc(dx, dy, 4.5, 0, Math.PI * 2);
+    ctx.fillStyle = meta.color;
+    ctx.fill();
+
+    // Axis label
+    const labelR = R + 26;
+    const lx = cx + labelR * Math.cos(angle);
+    const ly = cy + labelR * Math.sin(angle);
+    ctx.font = 'bold 11px Inter,Arial,sans-serif';
+    ctx.fillStyle = meta.color;
+    ctx.textAlign   = lx < cx - 5 ? 'right' : lx > cx + 5 ? 'left' : 'center';
+    ctx.textBaseline = ly < cy - 5 ? 'bottom' : ly > cy + 5 ? 'top' : 'middle';
+    ctx.fillText(key, lx, ly);
+
+    // Score sub-label
+    ctx.font = '9px Inter,Arial,sans-serif';
+    ctx.fillStyle = '#94a3b8';
+    const sdy = ly < cy - 5 ? ly - 13 : ly > cy + 5 ? ly + 13 : ly + 12;
+    ctx.fillText(`${Math.round(val * 100)}%`, lx, sdy);
+  });
+}
+
+// ── REPORT CHART ORCHESTRATION ────────────────────────────────────────────────
+
+function drawCmmcReportCharts() {
+  const run = cmmcState.reportRun;
+  if (!run || cmmcState.view !== 'report') return;
+  const answers = Object.fromEntries(Object.entries(run.answers || {}).filter(([k]) => !k.startsWith('_')));
+
+  // Trend canvas (inside Domain Coverage card)
+  const runs = (orgAssessments[currentOrg?.id] || {})['cmmc'] || [];
+  const trendCanvas = document.getElementById('cmmcReportTrend');
+  if (trendCanvas && runs.length >= 2) acTrendDraw('cmmcReportTrend', runs, '#0369a1');
+
+  // Radar canvas
+  drawCmmcRadar('cmmcReportRadar', answers);
+}
+
+// ── WORD EXPORT ───────────────────────────────────────────────────────────────
+
+function cmmcExportReportWord() {
+  const run = cmmcState.reportRun;
+  if (!run) return;
+
+  const answers  = Object.fromEntries(Object.entries(run.answers || {}).filter(([k]) => !k.startsWith('_')));
+  const { score, yes, partial, no, na, total, scoreable } = cmmcCalcScore(answers);
+  const { band, bandCol } = acScoreBand(score);
+  const fullImpl = scoreable > 0 ? Math.round(yes / scoreable * 100) : 0;
+  const fiCol    = fullImpl >= 75 ? '#15803d' : fullImpl >= 50 ? '#b45309' : '#dc2626';
+  const gaps     = cmmcGetGaps(answers);
+  const sprs     = cmmcSprsCalc(answers);
+  const domProg  = cmmcDomainProgress(answers);
+  const rawCommentary = cmmcState.reportCommentary || (run.answers || {})._exec_commentary || '';
+  const exportDate    = new Date().toLocaleDateString('en-CA');
+
+  // ── Gauge ──────────────────────────────────────────────────────────────────
+  let gaugeImg = null;
+  {
+    const _gc = document.createElement('canvas');
+    _gc.width = 280; _gc.height = 155;
+    _gc.style.cssText = 'position:fixed;left:-9999px;pointer-events:none';
+    document.body.appendChild(_gc);
+    const _ctx = _gc.getContext('2d');
+    const cx = 140, cy = 130, r = 105, tw = 18;
+    const t = Math.max(0.02, Math.min(0.98, score / 100));
+    _ctx.beginPath(); _ctx.arc(cx, cy, r, Math.PI, 0, false);
+    _ctx.strokeStyle = '#e8edf5'; _ctx.lineWidth = tw; _ctx.lineCap = 'butt'; _ctx.stroke();
+    const _g = _ctx.createLinearGradient(cx - r, 0, cx + r, 0);
+    _g.addColorStop(0, '#dc2626'); _g.addColorStop(0.30, '#f97316');
+    _g.addColorStop(0.55, '#f59e0b'); _g.addColorStop(0.75, '#84cc16'); _g.addColorStop(1.00, '#15803d');
+    _ctx.beginPath(); _ctx.arc(cx, cy, r, Math.PI, 0, false);
+    _ctx.strokeStyle = _g; _ctx.lineWidth = tw; _ctx.lineCap = 'butt'; _ctx.stroke();
+    const nx = cx + r * 0.84 * Math.cos(Math.PI + t * Math.PI);
+    const ny = cy + r * 0.84 * Math.sin(Math.PI + t * Math.PI);
+    _ctx.beginPath(); _ctx.moveTo(cx, cy); _ctx.lineTo(nx, ny);
+    _ctx.strokeStyle = '#152168'; _ctx.lineWidth = 3.5; _ctx.lineCap = 'round'; _ctx.stroke();
+    _ctx.beginPath(); _ctx.arc(cx, cy, 9, 0, Math.PI * 2); _ctx.fillStyle = '#152168'; _ctx.fill();
+    _ctx.beginPath(); _ctx.arc(cx, cy, 5, 0, Math.PI * 2); _ctx.fillStyle = '#fff'; _ctx.fill();
+    _ctx.textAlign = 'center';
+    _ctx.font = 'bold 34px Arial,sans-serif'; _ctx.fillStyle = '#152168';
+    _ctx.fillText(`${score}%`, cx, 82);
+    _ctx.font = 'bold 12px Arial,sans-serif'; _ctx.fillStyle = bandCol;
+    _ctx.fillText(band, cx, 100);
+    _ctx.font = '9px Arial,sans-serif'; _ctx.fillStyle = '#94a3b8';
+    _ctx.textAlign = 'left';  _ctx.fillText('Low',  cx - r + 2, 150);
+    _ctx.textAlign = 'right'; _ctx.fillText('High', cx + r - 2, 150);
+    gaugeImg = _gc.toDataURL('image/png');
+    document.body.removeChild(_gc);
+  }
+
+  // ── Radar ──────────────────────────────────────────────────────────────────
+  let radarImg = null;
+  {
+    const _rc = document.createElement('canvas');
+    _rc.id = '_cmmcRadExp';
+    _rc.width = 420; _rc.height = 280;
+    _rc.style.cssText = 'position:fixed;left:-9999px;pointer-events:none';
+    document.body.appendChild(_rc);
+    drawCmmcRadar('_cmmcRadExp', answers);
+    radarImg = _rc.toDataURL('image/png');
+    document.body.removeChild(_rc);
+  }
+
+  // ── Commentary formatter ───────────────────────────────────────────────────
+  function fmtCommentary(text) {
+    if (!text) return `<p style="color:#94a3b8;font-style:italic;font-size:10pt">No commentary entered — use Generate AI Prompt on the report screen to create one, paste it into Claude, then save the response.</p>`;
+    return text.split('\n').filter(l => l.trim()).map(line => {
+      return `<p style="font-size:11pt;line-height:1.75;margin:0 0 8pt 0">${escH(line.replace(/^[•\-\*\d+\.]\s*/, ''))}</p>`;
+    }).join('');
+  }
+
+  // ── Domain rows ────────────────────────────────────────────────────────────
+  const domRows = domProg.map(d =>
+    `<tr>
+      <td style="padding:5pt 8pt;font-weight:bold;color:${d.color};font-size:10pt">${d.key}</td>
+      <td style="padding:5pt 8pt;font-size:10pt">${d.label}</td>
+      <td style="padding:5pt 8pt;text-align:center;font-weight:bold;color:#15803d">${d.yes}</td>
+      <td style="padding:5pt 8pt;text-align:center;font-weight:bold;color:#b45309">${d.partial}</td>
+      <td style="padding:5pt 8pt;text-align:center;font-weight:bold;color:#dc2626">${d.no}</td>
+      <td style="padding:5pt 8pt;text-align:center;font-weight:bold;color:${d.pct>=75?'#15803d':d.pct>=50?'#b45309':'#dc2626'}">${d.pct}%</td>
+    </tr>`
+  ).join('');
+
+  // ── Gap rows ───────────────────────────────────────────────────────────────
+  const gapRows = gaps.slice(0, 15).map(g => {
+    const ans  = answers[g.id] || '';
+    const meta = CMMC_DOMAIN_META[g.domain] || {};
+    const sCol = ans === 'no' ? '#dc2626' : '#b45309';
+    return `<tr>
+      <td style="padding:5pt 8pt;font-weight:bold;color:${meta.color};font-size:9.5pt;white-space:nowrap">${escH(g.id)}</td>
+      <td style="padding:5pt 8pt;font-size:10pt">${escH(g.title)}</td>
+      <td style="padding:5pt 8pt;text-align:center;font-weight:bold;color:${sCol};font-size:9.5pt">${ans === 'no' ? 'Not Met' : 'Partial'}</td>
+    </tr>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+<head>
+<meta charset="utf-8">
+<title>CMMC L1 Executive Report — ${escH(currentOrg.name)}</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 11pt; color: #1a2340; margin: 0; padding: 0; }
+  .page { padding: 2.5cm; max-width: 19cm; margin: 0 auto; }
+  h1 { font-size: 20pt; color: #152168; margin: 0 0 4pt 0; font-weight: bold; }
+  h2 { font-size: 11pt; color: #152168; margin: 20pt 0 6pt 0; font-weight: bold;
+       border-bottom: 1.5pt solid #152168; padding-bottom: 3pt;
+       text-transform: uppercase; letter-spacing: .5pt; }
+  .sub { font-size: 10pt; color: #5a6a8a; margin: 0 0 20pt 0; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 10pt; font-size: 10pt; }
+  th { background: #152168; color: #fff; text-align: left; padding: 5pt 8pt;
+       font-size: 9pt; text-transform: uppercase; letter-spacing: .4pt; }
+  td { padding: 5pt 8pt; border-bottom: 1pt solid #e8ecf4; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .footer { margin-top: 28pt; padding-top: 8pt; border-top: 1pt solid #dde3ef; font-size: 8pt; color: #94a3b8; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div style="border-bottom:3pt solid #152168;padding-bottom:12pt;margin-bottom:16pt">
+    <div style="font-size:8pt;color:#07B4D9;font-weight:bold;text-transform:uppercase;letter-spacing:1pt;margin-bottom:4pt">Abbott Cyber Consulting — Confidential</div>
+    <h1>CMMC Level 1 — Executive Security Report</h1>
+    <p class="sub">${escH(currentOrg.name)} · Assessment Date: ${run.date || '—'} · Conducted By: ${run.conductedBy || '—'} · Exported: ${exportDate}</p>
+  </div>
+
+  <table style="margin-bottom:16pt">
+    <tr>
+      <td style="width:200pt;border:none;vertical-align:middle;padding:0 20pt 0 0">
+        <img src="${gaugeImg}" width="200" height="111" alt="Score gauge" style="display:block">
+      </td>
+      <td style="border:none;vertical-align:top;padding:0">
+        <table style="margin:0">
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>Overall Score</td><td style="font-weight:bold;color:${bandCol}">${score}% — ${band}</td></tr>
+          <tr><td>Practices Assessed</td><td>${total}</td></tr>
+          <tr><td>Met (Yes)</td><td style="font-weight:bold;color:#15803d">${yes}</td></tr>
+          <tr><td>Partial</td><td style="font-weight:bold;color:#b45309">${partial}</td></tr>
+          <tr><td>Not Met</td><td style="font-weight:bold;color:#dc2626">${no}</td></tr>
+          <tr><td>N/A</td><td style="color:#94a3b8">${na}</td></tr>
+          <tr><td>Fully Implemented</td><td style="font-weight:bold;color:${fiCol}">${fullImpl}%</td></tr>
+          <tr><td>Est. SPRS Contribution (L1)</td><td style="font-weight:bold">${sprs.contribution} / ${sprs.maxContribution} pts</td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <h2>Domain Coverage</h2>
+  <table>
+    <tr>
+      <th>Domain</th><th>Area</th>
+      <th style="text-align:center">Met</th><th style="text-align:center">Partial</th>
+      <th style="text-align:center">Not Met</th><th style="text-align:center">Score</th>
+    </tr>
+    ${domRows}
+  </table>
+
+  <h2>Domain Radar</h2>
+  <div style="text-align:center;margin-bottom:16pt">
+    <img src="${radarImg}" width="350" height="233" alt="Domain radar" style="display:block;margin:0 auto">
+  </div>
+
+  ${gaps.length > 0 ? `
+  <h2>Priority Gaps (${gaps.length})</h2>
+  <table>
+    <tr><th>Practice ID</th><th>Title</th><th style="text-align:center">Status</th></tr>
+    ${gapRows}
+    ${gaps.length > 15 ? `<tr><td colspan="3" style="color:#94a3b8;font-style:italic">+ ${gaps.length - 15} more — see the CMMC L1 assessment for the full list</td></tr>` : ''}
+  </table>` : `
+  <h2>Gaps</h2>
+  <p style="color:#15803d;font-weight:bold">No gaps — all 17 Level 1 practices are Met or N/A.</p>`}
+
+  <h2>SPRS Readiness Note</h2>
+  <p style="font-size:10pt;line-height:1.65;color:#5a6a8a">This assessment covers the 17 CMMC Level 1 practices. The estimated L1 contribution to the SPRS score is <strong>${sprs.contribution} of ${sprs.maxContribution} possible points</strong>. The full SPRS score (0–110) covers all 110 NIST SP 800-171 practices — additional assessment is required for a complete score. Annual self-attestation must be submitted at <strong>sprs.csd.disa.mil</strong> by a senior company official with authority to attest on behalf of the organization.</p>
+
+  <h2>Executive Commentary</h2>
+  ${fmtCommentary(rawCommentary)}
+
+  <div class="footer">Generated by Abbott Cyber GRC Platform · ${exportDate} · Confidential — Do not distribute without authorization.</div>
+
+</div>
+</body>
+</html>`;
+
+  const BOM  = '﻿';
+  const blob = new Blob([BOM + html], { type: 'application/msword' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `CMMC-L1-Report-${(currentOrg.name || 'Client').replace(/\s+/g, '-')}-${run.date || exportDate}.doc`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  toast('Word report downloaded', '#15803d');
 }

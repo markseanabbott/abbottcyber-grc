@@ -1,8 +1,8 @@
 {
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "created": "2026-05-14",
-  "updated": "2026-06-19 (session 44b)",
+  "updated": "2026-06-19 (session 45)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -330,6 +330,38 @@
         {
           "id": "cis_close",
           "text": "CIS assessment close/finalise — explicit 'Mark as Complete' action on a saved assessment. Sets a completed flag so In Progress vs Complete is unambiguous. Closed assessments are read-only (no further edits without re-opening). Works alongside cis_partial_badge — In Progress = unanswered questions OR not yet closed; Complete = explicitly finalised by assessor.",
+          "done": false,
+          "priority": "Medium"
+        }
+      ]
+    },
+    {
+      "id": "cmmc_l1",
+      "title": "CMMC Level 1 Assessment",
+      "phase": 1,
+      "description": "CMMC Level 1 self-assessment module — 17 practices across 6 domains (AC, IA, MP, PE, SC, SI). Built on assessment_core.js shared engine.",
+      "items": [
+        {
+          "id": "cmmc1",
+          "text": "CMMC L1 module: 17 practices, 6 domains, dashboard, assessment form with domain-grouped accordion, POAM (stored in answers._poam blob, no new table), SPRS extension tab, Tech Stack prefill (10 of 17 practices mapped), Assessments Hub card with Re-up. Built on assessment_core.js shared chrome.",
+          "done": true,
+          "notes": "js/cmmc.js (CMMC_L1_PRACTICES, CMMC_DOMAIN_META, cmmcState, full render suite). js/assessment_core.js (acScoreBand, acScoreHeroHtml, acHistoryTableHtml, acPoamTableHtml, acExecScoreStripHtml, acTrendDraw, acTabExtBar). SPRS tab (renderCMMCSprs) shows L1 contribution ~55 of 110 pts with disclaimer. Tech Stack prefill via _CMMC_TS_MAP in prefill.js (IA/AC/SC/SI domains covered; PE/MP need manual entry). Session 44."
+        },
+        {
+          "id": "cmmc2",
+          "text": "CMMC L1 Executive Report: Score Breakdown 2-col grid (score breakdown card left + domain coverage bars + trend canvas right), 6-domain radar chart, Priority Gaps table, Executive Commentary card with paste textarea, Generate AI Prompt button, Save Commentary (persists _exec_commentary to answers JSONB), Export Word (gauge + radar canvases → PNG embedded in .doc). Two new shared assessment_core.js functions: acExecScoreBreakdownHtml and acExecCommentaryHtml.",
+          "done": true,
+          "notes": "renderCMMCExec(), cmmcSaveCommentary(), drawCmmcRadar(), drawCmmcReportCharts(), cmmcExportReportWord() all in js/cmmc.js. acExecScoreBreakdownHtml() and acExecCommentaryHtml() added to js/assessment_core.js and exported on window. Session 45."
+        },
+        {
+          "id": "cmmc3",
+          "text": "CMMC Tech Stack mapping expansion: add PE/MP/AC-external questions to the Technology Stack survey so all 17 L1 practices can be pre-populated from TS data. Currently 7 practices (AC.L1-3.1.20, AC.L1-3.1.22, MP.L1-3.8.3, all 4 PE practices) require manual entry because they cover physical security — no TS questions exist for those areas.",
+          "done": false,
+          "priority": "Low"
+        },
+        {
+          "id": "cmmc4",
+          "text": "NIST CSF 2.0 assessment module using assessment_core.js: next logical framework module after CMMC. 6 Functions (Govern/Identify/Protect/Detect/Respond/Recover), subcategory scoring, maturity tier, Tech Stack prefill, exec report + Word export. Would be the third module to use the shared assessment engine.",
           "done": false,
           "priority": "Medium"
         }

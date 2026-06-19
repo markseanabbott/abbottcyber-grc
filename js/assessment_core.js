@@ -458,13 +458,113 @@ function acTabExtBar(coreTabsHtml, extensions, activeExtId, onSwitch) {
   </div>`;
 }
 
+// ── SCORE BREAKDOWN CARD ──────────────────────────────────────────────────────
+
+/**
+ * acExecScoreBreakdownHtml — Score Breakdown card (left column of 2-col exec grid).
+ * Shows big score + band number, stacked bar, legend chips, and fully-implemented box.
+ *
+ * @param {object} opts - { score, band, bandCol, yesPct, partPct, noPct, naPct, unPct,
+ *                          yesN, partN, noN, naN, fullImpl, fiCol, scoreable,
+ *                          scoreableLabel?, metLabel?, partLabel?, noLabel?, naLabel? }
+ * @returns {string} HTML — .card div
+ */
+function acExecScoreBreakdownHtml(opts) {
+  const {
+    score, band, bandCol,
+    yesPct = 0, partPct = 0, noPct = 0, naPct = 0, unPct = 0,
+    yesN = 0, partN = 0, noN = 0, naN = 0,
+    fullImpl = 0, fiCol = '#b45309',
+    scoreable = 0,
+    scoreableLabel = 'applicable items',
+    metLabel  = 'Yes',     partLabel = 'Partial',
+    noLabel   = 'No',      naLabel   = 'N/A',
+  } = opts;
+
+  return `<div class="card" style="padding:1.1rem">
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Score Breakdown</div>
+    <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:2px">
+      <span style="font-size:38px;font-weight:800;color:${bandCol};font-family:monospace;line-height:1">${score}%</span>
+      <span style="font-size:13px;font-weight:700;color:${bandCol}">${escH(band)}</span>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Maturity — partial answers earn 50% credit</div>
+    <div style="height:10px;background:var(--bg);border-radius:5px;overflow:hidden;display:flex;margin-bottom:8px">
+      <div style="width:${yesPct}%;background:#15803d"></div>
+      <div style="width:${partPct}%;background:#d97706"></div>
+      <div style="width:${noPct}%;background:#dc2626"></div>
+      <div style="width:${naPct}%;background:#cbd5e1"></div>
+      <div style="width:${unPct}%;background:#f1f5f9"></div>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+      ${[
+        { label: metLabel,  count: yesN,  color: '#15803d' },
+        { label: partLabel, count: partN, color: '#d97706' },
+        { label: noLabel,   count: noN,   color: '#dc2626' },
+        { label: naLabel,   count: naN,   color: '#94a3b8' },
+      ].map(x => `<div style="display:flex;align-items:center;gap:4px">
+        <div style="width:8px;height:8px;border-radius:2px;background:${x.color}"></div>
+        <span style="font-size:12px;font-weight:700;color:${x.color}">${x.count}</span>
+        <span style="font-size:10px;color:var(--muted)">${x.label}</span>
+      </div>`).join('')}
+    </div>
+    <div style="padding:10px 12px;background:var(--bg);border-radius:7px;border-left:3px solid ${fiCol}">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:2px">Fully Implemented — yes/met only, no partial credit</div>
+      <div style="display:flex;align-items:baseline;gap:6px">
+        <span style="font-size:26px;font-weight:800;color:${fiCol};font-family:monospace;line-height:1">${fullImpl}%</span>
+        <span style="font-size:11px;color:var(--muted)">${yesN} of ${scoreable} ${escH(scoreableLabel)} complete</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── COMMENTARY CARD ───────────────────────────────────────────────────────────
+
+/**
+ * acExecCommentaryHtml — Executive Commentary card with paste textarea,
+ * AI prompt button, and save button.
+ *
+ * @param {object} opts - { commentary, commentaryId, copyFn, saveFn, placeholder? }
+ * @returns {string} HTML — .card div
+ */
+function acExecCommentaryHtml(opts) {
+  const {
+    commentary   = '',
+    commentaryId = 'execReportCommentary',
+    copyFn       = '',
+    saveFn       = '',
+    placeholder  = 'Type your executive commentary here, or click ✨ Generate AI Prompt — paste the output into Claude, copy the response back here, then Save.',
+  } = opts;
+
+  return `<div class="card" style="padding:1.25rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Executive Commentary</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">Written narrative for client presentation</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        ${copyFn ? `<button class="btn btn-outline btn-sm" onclick="${escH(copyFn)}()" title="Generate a data-rich prompt to paste into Claude">✨ Generate AI Prompt</button>` : ''}
+        ${saveFn ? `<button class="btn btn-cyan btn-sm" onclick="${escH(saveFn)}()">Save Commentary</button>` : ''}
+      </div>
+    </div>
+    <textarea id="${escH(commentaryId)}" rows="8"
+      placeholder="${escH(placeholder)}"
+      style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border);font-family:Inter,sans-serif;font-size:13px;color:var(--text);resize:vertical;line-height:1.7"
+    >${escH(commentary)}</textarea>
+    <div style="font-size:10px;color:var(--muted);margin-top:6px">
+      💡 <strong>Generate AI Prompt</strong> copies a pre-filled prompt to your clipboard. Paste into Claude → get polished commentary → paste back above → Save.
+    </div>
+  </div>`;
+}
+
 // ── EXPORTS ───────────────────────────────────────────────────────────────────
 
-window.acScoreBand       = acScoreBand;
-window.acScoreHeroHtml   = acScoreHeroHtml;
-window.acHistoryTableHtml = acHistoryTableHtml;
-window.acStatsChipsHtml  = acStatsChipsHtml;
-window.acPoamTableHtml   = acPoamTableHtml;
-window.acExecScoreStripHtml = acExecScoreStripHtml;
-window.acTrendDraw       = acTrendDraw;
-window.acTabExtBar       = acTabExtBar;
+window.acScoreBand              = acScoreBand;
+window.acScoreHeroHtml          = acScoreHeroHtml;
+window.acHistoryTableHtml       = acHistoryTableHtml;
+window.acStatsChipsHtml         = acStatsChipsHtml;
+window.acPoamTableHtml          = acPoamTableHtml;
+window.acExecScoreStripHtml     = acExecScoreStripHtml;
+window.acExecScoreBreakdownHtml = acExecScoreBreakdownHtml;
+window.acExecCommentaryHtml     = acExecCommentaryHtml;
+window.acTrendDraw              = acTrendDraw;
+window.acTabExtBar              = acTabExtBar;
