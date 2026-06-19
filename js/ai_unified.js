@@ -1572,6 +1572,35 @@ function aiuCopyReportPrompt() {
   const hasTrend = sorted.length >= 2;
   const trendStr = hasTrend ? sorted.map(r=>`${r.date}: ${r.score}%`).join(' → ') : 'First assessment — no trend data';
 
+  // Delta vs immediately preceding run
+  const runIdx = sorted.findIndex(r => r.id === run.id);
+  const prevRun = runIdx > 0 ? sorted[runIdx - 1] : null;
+  let trendDelta = 'N/A — first assessment';
+  let improvedAreas = 'N/A — first assessment';
+  let regressedAreas = 'N/A — first assessment';
+  if (prevRun) {
+    const prevAns = Object.fromEntries(Object.entries(prevRun.answers||{}).filter(([k])=>!k.startsWith('_')));
+    const scoreDelta = score - prevRun.score;
+    trendDelta = `${scoreDelta >= 0 ? '+' : ''}${scoreDelta}% vs ${prevRun.date} (was ${prevRun.score}%)`;
+    const rank = v => ({ yes: 2, partial: 1, no: 0 }[v] ?? -1);
+    const improvedGrps = new Map(), regressedGrps = new Map();
+    const prevGaps = aiuWeightedGaps(prevAns, fw);
+    const allCtrlIds = new Set([...gaps.map(g=>g.id), ...prevGaps.map(g=>g.id)]);
+    const gapById = id => gaps.find(g=>g.id===id) || prevGaps.find(g=>g.id===id);
+    allCtrlIds.forEach(id => {
+      const pv = rank(prevAns[id] || 'no');
+      const cv = rank(answers[id] || 'no');
+      if (pv < 0 || cv < 0) return;
+      const ctrl = gapById(id);
+      if (!ctrl) return;
+      const grpLabel = AI_GROUP_META[ctrl.grp]?.label || ctrl.grp;
+      if (cv > pv) improvedGrps.set(ctrl.grp, grpLabel);
+      if (cv < pv) regressedGrps.set(ctrl.grp, grpLabel);
+    });
+    improvedAreas = improvedGrps.size ? [...improvedGrps.values()].join(', ') : 'None — no gains detected';
+    regressedAreas = regressedGrps.size ? [...regressedGrps.values()].join(', ') : 'None';
+  }
+
   const fwLabel = [fw.nist!==false?'NIST AI RMF v1.0':'', fw.iso!==false?'ISO/IEC 42001:2023':''].filter(Boolean).join(' + ');
 
   const nistBreakdown = nistAxes.filter(a=>a.pct!==null).map(a=>`  ${a.label}: ${a.pct}%`).join('\n');
@@ -1605,6 +1634,9 @@ MATURITY PYRAMID (by tier):
 ${pyrSummary}
 
 SCORE TREND: ${trendStr}
+TREND DELTA (vs previous run): ${trendDelta}
+IMPROVEMENT AREAS (AI governance domains with gains since last run): ${improvedAreas}
+REGRESSION AREAS (domains with losses since last run): ${regressedAreas}
 
 PRIORITY GAPS (Not Addressed, highest weight first):
 ${noGaps||'— None —'}
@@ -1628,7 +1660,11 @@ OUTPUT STRUCTURE — write EXACTLY in this order with EXACTLY these markers:
 
 Write 2–3 paragraphs of executive summary prose. Plain sentences. What does this ${score}% ${band} score mean for AI governance maturity and business readiness? What is working? Where is the primary risk exposure if gaps are not addressed? Reference the framework context (${fwLabel}) without being technical about it.
 
-Close the executive summary with 1–2 sentences on the recommended next step — whether to close existing gaps before expanding the programme scope, or to begin preparing for a formal certification or regulatory submission. Frame it as forward-looking business strategy, not a technical gap list.
+${hasTrend
+  ? `In the executive summary, weave in 1–2 sentences on trend and momentum: the score moved ${trendDelta}. ${improvedAreas && improvedAreas !== 'None — no gains detected' && improvedAreas !== 'N/A — first assessment' ? `Name the AI governance domains that strengthened (${improvedAreas}) and frame them as concrete progress the organisation made. ` : ''}${regressedAreas && regressedAreas !== 'None' && regressedAreas !== 'N/A — first assessment' ? `Acknowledge any areas that declined (${regressedAreas}) factually and briefly. ` : ''}What does this trajectory signal about programme momentum?`
+  : `Note in the executive summary that this is the first AI governance baseline for ${currentOrg?.name}. Frame it as the starting point for a structured programme — not a verdict.`}
+
+Close the executive summary with 1–2 sentences on the recommended next step — whether to close existing gaps before expanding scope, or begin preparing for formal certification or regulatory submission. Frame it as forward-looking business strategy, not a technical gap list.
 
 KEY FINDINGS
 • [Risk described as business impact — what could go wrong if this gap is not addressed — one sentence]

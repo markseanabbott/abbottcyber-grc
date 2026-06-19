@@ -3682,6 +3682,29 @@ function cisGenerateReportPrompt() {
     ? sortedRuns.map(r => `${r.date}: ${r.score}%`).join(' → ')
     : 'First assessment — no trend data';
 
+  // Delta vs immediately preceding run
+  const runIdx = sortedRuns.findIndex(r => r.id === run.id);
+  const prevRun = runIdx > 0 ? sortedRuns[runIdx - 1] : null;
+  let trendDelta = 'N/A — first assessment';
+  let improvedAreas = 'N/A — first assessment';
+  let regressedAreas = 'N/A — first assessment';
+  if (prevRun) {
+    const prevAns = Object.fromEntries(Object.entries(prevRun.answers || {}).filter(([k]) => !k.startsWith('_')));
+    const scoreDelta = score - prevRun.score;
+    trendDelta = `${scoreDelta >= 0 ? '+' : ''}${scoreDelta}% vs ${prevRun.date} (was ${prevRun.score}%)`;
+    const rank = v => ({ yes: 2, partial: 1, no: 0 }[v] ?? -1);
+    const improvedCtrls = new Map(), regressedCtrls = new Map();
+    cisGetSafeguards(goal).forEach(s => {
+      const pv = rank(prevAns[s.sf] || 'no');
+      const cv = rank(answers[s.sf] || 'no');
+      if (pv < 0 || cv < 0) return;
+      if (cv > pv) improvedCtrls.set(s.ctrl, `C${s.ctrl}: ${s.ctrlName}`);
+      if (cv < pv) regressedCtrls.set(s.ctrl, `C${s.ctrl}: ${s.ctrlName}`);
+    });
+    improvedAreas = improvedCtrls.size ? [...improvedCtrls.values()].join(', ') : 'None — no gains detected';
+    regressedAreas = regressedCtrls.size ? [...regressedCtrls.values()].join(', ') : 'None';
+  }
+
   const igProg = [1, 2, 3].filter(n => n <= goalN).map(n => {
     const sfs = CIS_SAFEGUARDS.filter(s => s.ig === n);
     const y = sfs.filter(s => cisIsYes(answers[s.sf])).length;
@@ -3729,6 +3752,9 @@ IMPLEMENTATION GROUP PROGRESS:
 ${igProg}
 
 SCORE TREND: ${trendStr}
+TREND DELTA (vs previous run): ${trendDelta}
+IMPROVEMENT AREAS (CIS Controls with gains since last run): ${improvedAreas}
+REGRESSION AREAS (CIS Controls with losses since last run): ${regressedAreas}
 
 ADVANCEMENT RECOMMENDATION: ${advancementNote}
 
@@ -3772,8 +3798,8 @@ Write 1–2 sentences about the IG tier progress breakdown. What does the score 
 
 ---TREND---
 ${hasTrend
-  ? `Write 1–2 sentences about the score progression: ${trendStr}. Is the trend improving, plateauing, or declining? What does this trajectory mean for the business and what does it signal about the program's momentum?`
-  : `Write 1 sentence noting this is the first assessment for ${currentOrg.name} and setting expectations for the improvement journey ahead.`}
+  ? `Write 1–2 sentences about the score trajectory: ${trendStr} (${trendDelta}). ${improvedAreas && improvedAreas !== 'None — no gains detected' && improvedAreas !== 'N/A — first assessment' ? `Name the specific control areas that improved (${improvedAreas}) and frame them as capabilities the organisation has strengthened — not just a number going up. ` : ''}${regressedAreas && regressedAreas !== 'None' && regressedAreas !== 'N/A — first assessment' ? `Acknowledge any areas that declined (${regressedAreas}) factually and briefly. ` : ''}What does this trajectory signal about programme momentum — is the organisation building on a foundation or at risk of stalling?`
+  : `Write 1 sentence establishing this as the first baseline assessment for ${currentOrg.name}. Set the tone: a baseline is the starting point, not a verdict — it tells us where to focus first.`}
 
 ---GAPS---
 Write 1 paragraph about the top priority gaps. What pattern do you see in where the gaps cluster — which controls, which capabilities? What is the combined business risk of these gaps, and what is the logical first step to close the most critical exposures?`;

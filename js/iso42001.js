@@ -913,6 +913,31 @@ function iso42001CopyReportPrompt() {
   const runs = (orgAssessments[currentOrg?.id] || {})['iso42001'] || [];
   const sorted = [...runs].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
   const trend = sorted.map(r => `${r.date}: ${r.score}%`).join(' → ');
+  const hasTrend = sorted.length >= 2;
+
+  // Delta vs immediately preceding run
+  const runIdx = sorted.findIndex(r => r.id === run.id);
+  const prevRun = runIdx > 0 ? sorted[runIdx - 1] : null;
+  let trendDelta = 'N/A — first assessment';
+  let improvedAreas = 'N/A — first assessment';
+  let regressedAreas = 'N/A — first assessment';
+  if (prevRun) {
+    const prevAns = Object.fromEntries(Object.entries(prevRun.answers || {}).filter(([k]) => !k.startsWith('_')));
+    const scoreDelta = score - prevRun.score;
+    trendDelta = `${scoreDelta >= 0 ? '+' : ''}${scoreDelta}% vs ${prevRun.date} (was ${prevRun.score}%)`;
+    const rank = v => ({ yes: 2, partial: 1, no: 0 }[v] ?? -1);
+    const improvedClauses = new Map(), regressedClauses = new Map();
+    ISO42001_CONTROLS.forEach(c => {
+      const pv = rank(prevAns[c.id] || 'no');
+      const cv = rank(answers[c.id] || 'no');
+      if (pv < 0 || cv < 0) return;
+      const clauseLabel = ISO42001_CLAUSE_META[c.clause]?.label || c.clause;
+      if (cv > pv) improvedClauses.set(c.clause, clauseLabel);
+      if (cv < pv) regressedClauses.set(c.clause, clauseLabel);
+    });
+    improvedAreas = improvedClauses.size ? [...improvedClauses.values()].join(', ') : 'None — no gains detected';
+    regressedAreas = regressedClauses.size ? [...regressedClauses.values()].join(', ') : 'None';
+  }
   const noGaps = ISO42001_CONTROLS.filter(c => answers[c.id] === 'no').slice(0, 8)
     .map(c => `- ${c.id} (${ISO42001_CLAUSE_META[c.clause]?.label}): ${c.title}`).join('\n');
   const partGaps = ISO42001_CONTROLS.filter(c => answers[c.id] === 'partial').slice(0, 5)
@@ -929,6 +954,9 @@ FRAMEWORK: ISO/IEC 42001:2023 — AI Management System
 OVERALL SCORE: ${score}% — Posture: ${band}
 RESPONSES: ${yes} Yes, ${partial} Partial, ${no} No
 SCORE TREND: ${trend || 'First assessment — no trend available'}
+TREND DELTA (vs previous run): ${trendDelta}
+IMPROVEMENT AREAS (ISO 42001 clauses with gains since last run): ${improvedAreas}
+REGRESSION AREAS (clauses with losses since last run): ${regressedAreas}
 
 CLAUSE BREAKDOWN:
 ${clauseBreakdown}
@@ -939,12 +967,28 @@ ${noGaps || '— None —'}
 PARTIAL CONFORMITIES:
 ${partGaps || '— None —'}
 
-Please write:
-1. EXECUTIVE SUMMARY (2–3 paragraphs): Overall AI management system maturity, what the score means in terms of certification readiness and business risk, and the key message for leadership.
-2. KEY FINDINGS (3–4 bullets): The most significant nonconformities, written as business exposure.
-3. PRIORITY RECOMMENDATIONS (3 actions): Each with a one-sentence business rationale.
+─────────────────────────────────────────────
+CRITICAL FORMATTING RULES — non-negotiable:
+1. NO MARKDOWN. No **, no *, no ##, no -, no _. These appear literally in the report.
+2. BULLETS: Use the actual • character. Never use - or * for lists.
+3. PARAGRAPH BREAKS: Separate blocks with exactly one blank line.
+4. NO SECTION LABELS in the prose — write the content only, no "Executive Summary:" headers.
+─────────────────────────────────────────────
 
-Keep to one printed page. Write in flowing professional prose — no section headers in the output.`;
+Write exactly in this order:
+
+Write 2–3 paragraphs of executive summary prose. What does this ${score}% ${band} score mean for AI management system maturity and certification readiness? What has the organisation done well, and where is the primary risk if nonconformities are left unaddressed? ${hasTrend ? `Weave in 1–2 sentences on trend and momentum: the overall change was ${trendDelta}. ${improvedAreas && improvedAreas !== 'None — no gains detected' && improvedAreas !== 'N/A — first assessment' ? `Name the ISO 42001 clauses that showed progress (${improvedAreas}) — frame these as concrete steps toward conformance the organisation has already taken. ` : ''}${regressedAreas && regressedAreas !== 'None' && regressedAreas !== 'N/A — first assessment' ? `Acknowledge regressions (${regressedAreas}) factually. ` : ''}` : `Note that this is the first ISO 42001 baseline for ${currentOrg?.name} — frame it as the starting point for a structured conformance journey. `}Close with 1–2 forward-looking sentences on the recommended next step toward certification readiness.
+
+KEY FINDINGS
+• [The most significant nonconformity written as a business or audit risk — what is the real-world exposure]
+• [3–4 findings total]
+• [Focus on consequence, not the clause number]
+• [Optional 4th finding]
+
+PRIORITY RECOMMENDATIONS
+• [Specific action with a one-sentence rationale tied to certification readiness or business risk]
+• [2–3 recommendations total]
+• [Actionable and owner-assignable]`;
 
   navigator.clipboard.writeText(prompt)
     .then(() => toast('✓ AI prompt copied — paste into Claude', '#152168'))

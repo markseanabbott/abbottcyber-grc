@@ -1052,6 +1052,31 @@ function nistAiCopyReportPrompt() {
   const runs = (orgAssessments[currentOrg?.id] || {})['nist_ai'] || [];
   const sorted = [...runs].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
   const trend = sorted.map(r => `${r.date}: ${r.score}%`).join(' → ');
+  const hasTrend = sorted.length >= 2;
+
+  // Delta vs immediately preceding run
+  const runIdx = sorted.findIndex(r => r.id === run.id);
+  const prevRun = runIdx > 0 ? sorted[runIdx - 1] : null;
+  let trendDelta = 'N/A — first assessment';
+  let improvedAreas = 'N/A — first assessment';
+  let regressedAreas = 'N/A — first assessment';
+  if (prevRun) {
+    const prevAns = Object.fromEntries(Object.entries(prevRun.answers || {}).filter(([k]) => !k.startsWith('_')));
+    const scoreDelta = score - prevRun.score;
+    trendDelta = `${scoreDelta >= 0 ? '+' : ''}${scoreDelta}% vs ${prevRun.date} (was ${prevRun.score}%)`;
+    const rank = v => ({ yes: 2, partial: 1, no: 0 }[v] ?? -1);
+    const improvedFns = new Map(), regressedFns = new Map();
+    NIST_AI_CONTROLS.forEach(c => {
+      const pv = rank(prevAns[c.id] || 'no');
+      const cv = rank(answers[c.id] || 'no');
+      if (pv < 0 || cv < 0) return;
+      const fnLabel = NIST_FN_META[c.fn]?.label || c.fn;
+      if (cv > pv) improvedFns.set(c.fn, fnLabel);
+      if (cv < pv) regressedFns.set(c.fn, fnLabel);
+    });
+    improvedAreas = improvedFns.size ? [...improvedFns.values()].join(', ') : 'None — no gains detected';
+    regressedAreas = regressedFns.size ? [...regressedFns.values()].join(', ') : 'None';
+  }
   const noGaps = NIST_AI_CONTROLS.filter(c => answers[c.id] === 'no').slice(0, 8)
     .map(c => `- ${c.id} [${NIST_FN_META[c.fn]?.label}]: ${c.title}`).join('\n');
   const partGaps = NIST_AI_CONTROLS.filter(c => answers[c.id] === 'partial').slice(0, 5)
@@ -1068,6 +1093,9 @@ OVERALL SCORE: ${score}% — Risk Band: ${band}
 AI RISK PROFILE: ${prof}
 RESPONSES: ${yes} Yes, ${partial} Partial, ${no} No
 SCORE TREND: ${trend || 'First assessment — no trend available'}
+TREND DELTA (vs previous run): ${trendDelta}
+IMPROVEMENT AREAS (NIST AI RMF functions with gains since last run): ${improvedAreas}
+REGRESSION AREAS (functions with losses since last run): ${regressedAreas}
 
 FUNCTION BREAKDOWN:
 ${fnBreakdown}
@@ -1078,12 +1106,28 @@ ${noGaps || '— None —'}
 PARTIALLY ADDRESSED CONTROLS:
 ${partGaps || '— None —'}
 
-Please write:
-1. EXECUTIVE SUMMARY (2–3 paragraphs): Overall AI risk posture, what the score means in business terms, and the key message for leadership about AI governance maturity.
-2. KEY FINDINGS (3–4 bullets): The most significant AI governance gaps, written as business exposure — what is the real-world risk if these gaps remain?
-3. PRIORITY RECOMMENDATIONS (3 actions): Each with a one-sentence business rationale.
+─────────────────────────────────────────────
+CRITICAL FORMATTING RULES — non-negotiable:
+1. NO MARKDOWN. No **, no *, no ##, no -, no _. These appear literally in the report.
+2. BULLETS: Use the actual • character. Never use - or * for lists.
+3. PARAGRAPH BREAKS: Separate blocks with exactly one blank line.
+4. NO SECTION LABELS in the prose — write the content only, no "Executive Summary:" headers.
+─────────────────────────────────────────────
 
-Keep the total to one printed page. Write in flowing professional prose — no section headers in the output.`;
+Write exactly in this order:
+
+Write 2–3 paragraphs of executive summary prose. What does this ${score}% ${band} score mean for the business in practical terms — what is the AI risk exposure, and what has been done well? ${hasTrend ? `Weave in 1–2 sentences on trend and momentum: the overall change was ${trendDelta}. ${improvedAreas && improvedAreas !== 'None — no gains detected' && improvedAreas !== 'N/A — first assessment' ? `Name the NIST AI RMF functions that strengthened (${improvedAreas}) as concrete evidence of progress. ` : ''}${regressedAreas && regressedAreas !== 'None' && regressedAreas !== 'N/A — first assessment' ? `Acknowledge regressions (${regressedAreas}) factually. ` : ''}` : `Note that this is the first AI risk management baseline for ${currentOrg?.name} — frame it as the starting point, not a verdict. `}Close with 1–2 forward-looking sentences on the recommended next step.
+
+KEY FINDINGS
+• [The most significant AI governance gap written as a business risk — what could go wrong if this is not addressed]
+• [3–4 findings total]
+• [Focus on real-world consequence, not the control ID]
+• [Optional 4th finding]
+
+PRIORITY RECOMMENDATIONS
+• [Specific action with a one-sentence business rationale — why this, why now]
+• [2–3 recommendations total]
+• [Actionable and owner-assignable]`;
 
   navigator.clipboard.writeText(prompt)
     .then(() => toast('✓ AI prompt copied — paste into Claude to generate commentary', '#152168'))
