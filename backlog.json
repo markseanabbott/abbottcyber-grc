@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.1.6",
   "created": "2026-05-14",
-  "updated": "2026-06-18 (session 40)",
+  "updated": "2026-06-18 (session 41)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -394,9 +394,15 @@
         },
         {
           "id": "auth12",
-          "text": "Move SB_SERVICE_KEY out of client-side code before any hosting or deployment — service role key bypasses all RLS and must never be in a publicly accessible file. Options: Supabase Edge Function for auth-admin operations, or a thin server-side proxy. Currently safe as a local-only tool but must be resolved before SaaS/white-label.",
+          "text": "Move SB_SERVICE_KEY out of client-side code before any hosting or deployment — service role key bypasses all RLS and must never be in a publicly accessible file.",
+          "done": true,
+          "notes": "Session 40: Service role key blanked from js/secrets.js. authAdminDeleteUser() in auth.js still exists but returns a config error when called (key is empty string). App user record + org access still delete cleanly; only the auth.users orphan cleanup is affected. Managed via Supabase dashboard (Authentication → Users) or the planned local admin tool (auth14)."
+        },
+        {
+          "id": "auth14",
+          "text": "Local-only Supabase admin tool — standalone HTML file (like backlog-manager.html, never deployed) with service role key hardcoded locally. Shows orphaned auth.users rows (auth account with no matching app users row) and lets admin delete them with one click. Replaces the in-app auth-delete flow safely.",
           "done": false,
-          "priority": "High"
+          "priority": "Medium"
         }
       ]
     },
