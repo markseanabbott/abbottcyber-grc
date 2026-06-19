@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.1.6",
   "created": "2026-05-14",
-  "updated": "2026-06-18 (session 39)",
+  "updated": "2026-06-18 (session 40)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -343,8 +343,8 @@
         {
           "id": "auth4",
           "text": "Remove anon RLS policies — tighten to authenticated-only once auth is confirmed stable.",
-          "done": false,
-          "notes": "PATCH_010 pending. Current state: both anon and authenticated policies active."
+          "done": true,
+          "notes": "Session 40: SUPABASE_PATCH_021.sql — dynamic DO block drops all anon policies across all tables via pg_policies. Revokes anon EXECUTE on all helper/sync functions. Site deployed to grc.abbottcyber.com via Cloudflare. Auth gate confirmed: private window hits login screen before any data. Supabase Auth Site URL set to https://grc.abbottcyber.com."
         },
         {
           "id": "auth5",
@@ -1642,6 +1642,12 @@
           "text": "AI Acceptable Use Policy Word doc — produce and add downloadable Comprehensive/SMB versions to the pol_aiaup card (same pattern as AI Governance)",
           "done": true,
           "notes": "Session 39: Mark added ENT-Draft-POL-AUP-Comprehensive-6.26.docx and ENT-Draft-POL-AUP-SMB-6.26.docx to templates/. downloads array added to pol_aiaup in js/policy_lib.js. Card now shows green Available badge with two download buttons."
+        },
+        {
+          "id": "pl9",
+          "text": "All NIST AI RMF policy Word docs wired — Comprehensive and SMB downloads added to all 5 remaining cards: AI Risk Management, AI Use Case Inventory, AI Incident Response, AI Transparency & Accountability, AI Data Quality & Bias Management",
+          "done": true,
+          "notes": "Session 40: Mark added 10 Word docs to templates/. downloads arrays added to pol_airmp, pol_aiinv, pol_aiirp, pol_aitap, pol_aidqp in js/policy_lib.js. All 7 NIST AI RMF cards now show green Available badge. All 10 NIST CSF cards remain Placeholder."
         }
       ]
     },

@@ -168,6 +168,10 @@ const POLICY_TEMPLATES = [
     description: 'Defines how AI-related risks are identified, classified, measured, and treated across the full AI system lifecycle from inception to decommission.',
     cisGroups: [],
     url: null,
+    downloads: [
+      { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-AI%20Risk%20Management-Comprehensive-6.26.docx' },
+      { label: 'SMB', url: 'templates/ENT-Draft-POL-AI%20Risk%20Management-SMB-6.26.docx' },
+    ],
   },
   {
     id: 'pol_aiinv',
@@ -179,6 +183,10 @@ const POLICY_TEMPLATES = [
     description: 'Requires a maintained register of all AI systems in use, their purpose, data inputs, risk classification, approval status, and responsible owner.',
     cisGroups: [],
     url: null,
+    downloads: [
+      { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-AI%20Use%20Case%20Inventory-Comprehensive-6.26.docx' },
+      { label: 'SMB', url: 'templates/ENT-Draft-POL-AI%20Use%20Case%20Inventory-SMB-6.26.docx' },
+    ],
   },
   {
     id: 'pol_aiirp',
@@ -190,6 +198,10 @@ const POLICY_TEMPLATES = [
     description: 'Defines how AI-specific incidents — harmful outputs, model drift, adversarial attacks, data poisoning — are detected, escalated, contained, and remediated.',
     cisGroups: [],
     url: null,
+    downloads: [
+      { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-AI%20Incident%20Response-Comprehensive-6.26.docx' },
+      { label: 'SMB', url: 'templates/ENT-Draft-POL-AI%20Incident%20Response-SMB-6.26.docx' },
+    ],
   },
   {
     id: 'pol_aitap',
@@ -201,6 +213,10 @@ const POLICY_TEMPLATES = [
     description: 'Establishes disclosure obligations for AI use to stakeholders, explainability standards, and accountability for AI-driven decisions affecting individuals.',
     cisGroups: [],
     url: null,
+    downloads: [
+      { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-AI%20Transparency%20and%20Accountability-Comprehensive-6.26.docx' },
+      { label: 'SMB', url: 'templates/ENT-Draft-POL-AI%20Transparency%20and%20Accountability-SMB-6.26.docx' },
+    ],
   },
   {
     id: 'pol_aidqp',
@@ -212,6 +228,10 @@ const POLICY_TEMPLATES = [
     description: 'Defines requirements for training and test data quality, bias detection methods, fairness evaluation criteria, and ongoing model performance monitoring.',
     cisGroups: [],
     url: null,
+    downloads: [
+      { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-AI%20Data%20Quality%20and%20Bias%20Management-Comprehensive-6.26.docx' },
+      { label: 'SMB', url: 'templates/ENT-Draft-POL-AI%20Data%20Quality%20and%20Bias%20Management-SMB-6.26.docx' },
+    ],
   },
 ];
 
