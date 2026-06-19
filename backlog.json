@@ -560,10 +560,10 @@
         },
         {
           "id": "s42a",
-          "text": "Consolidated risk dashboard for multi-property clients (grandfather/father tier) — aggregate CIS scores, AI readiness, and top risks across all child entities with per-property drill-down",
+          "text": "Consolidated risk dashboard at father and grandfather tiers — when viewing as a father or grandfather org, the home dashboard shows aggregated scores across all child/grandchild entities instead of a single-org view. Per-entity score cards, worst performers, top gaps across the portfolio, with drill-down to individual org.",
           "done": false,
           "priority": "High",
-          "notes": "Discussed session 39: tier semantics clarified — grandfather = multi-entity client (e.g. hotel group with multiple properties), father = single-entity client, child = individual property/location. Consolidated view needed at grandfather level. Visibility scoping already correct (grandfather sees self + fathers + children). Feature is the aggregated dashboard UI."
+          "notes": "Discussed session 39-40: grandfather = multi-entity client (hotel group, MSP), father = single-entity client or grouping with children. Both tiers need a consolidated view rather than the current single-org dashboard. Visibility scoping already correct. Requires detecting whether the selected org has children and switching the home dashboard render mode accordingly."
         }
       ]
     },
