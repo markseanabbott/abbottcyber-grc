@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.2.2",
   "created": "2026-05-14",
-  "updated": "2026-06-19 (session 43)",
+  "updated": "2026-06-19 (session 43b)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1680,6 +1680,12 @@
           "text": "All NIST CSF 2.0 policy Word docs wired — Comprehensive and SMB downloads added to all 10 NIST CSF 2.0 cards: Information Security, Risk Management, Access Control, Incident Response, Asset Management, Data Classification & Handling, Vulnerability Management, Third-Party & Vendor Risk, Security Awareness & Training, Business Continuity & DR",
           "done": true,
           "notes": "Session 43: Mark had added all 20 Word docs (10 policies × Comprehensive + SMB) plus Vulnerability Management docs to templates/. downloads arrays added to pol_isp, pol_rmp, pol_acp, pol_irp, pol_amp, pol_dcp, pol_vmp, pol_tprp, pol_satp, pol_bcrp in js/policy_lib.js. All 17 policy cards (10 CSF + 7 AI RMF) now show green Available badge. Policy Library header subtitle updated to reflect full availability."
+        },
+        {
+          "id": "pl11",
+          "text": "Policy Library — Insurance Readiness tab: 8 existing policies tagged insurance:true (isp, acp, irp, dcp, vmp, tprp, satp, bcrp); 4 new placeholder cards added (Email Security, Backup & Recovery, Privileged Access Management, Endpoint Security). Green accent colour for insurance-framework cards. Insurance badge shown on cross-framework cards when viewed in insurance tab.",
+          "done": true,
+          "notes": "Session 43b: js/policy_lib.js — added insurance:true flag to 8 NIST CSF policies; added 4 new framework:'insurance' placeholder cards (pol_emsp, pol_brp, pol_pamp, pol_esp); renderPolicyLib() filter logic extended for insurance tab (shows p.insurance===true OR p.framework==='insurance'); tab count computed dynamically; plibRenderCard() updated with isIns branch (green accent #15803d, chipBorder #bbf7d0); insBadge shown on cross-framework cards when insurance tab is active."
         }
       ]
     },

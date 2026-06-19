@@ -25,6 +25,7 @@ const POLICY_TEMPLATES = [
     controls: ['GV.OC', 'GV.PO'],
     description: 'Establishes the organisation\'s commitment to protecting information assets, defines security scope, roles, and responsibilities across all systems and data.',
     cisGroups: [4, 8, 9, 10, 12, 13, 16],
+    insurance: true,
     url: null,
     downloads: [
       { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-Information%20Security-Comprehensive-6.26.docx' },
@@ -55,6 +56,7 @@ const POLICY_TEMPLATES = [
     controls: ['PR.AA'],
     description: 'Governs how access to systems and data is provisioned, reviewed, and revoked. Covers MFA, least-privilege, and identity lifecycle management.',
     cisGroups: [5, 6],
+    insurance: true,
     url: null,
     downloads: [
       { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-Access%20Control-Comprehensive-6.26.docx' },
@@ -70,6 +72,7 @@ const POLICY_TEMPLATES = [
     controls: ['RS.MA', 'RS.CO', 'RC.RP'],
     description: 'Defines how security incidents are identified, classified, contained, and reported. Includes roles, communication chains, and regulatory notification timelines.',
     cisGroups: [17],
+    insurance: true,
     url: null,
     downloads: [
       { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-Incident%20Response-Comprehensive-6.26.docx' },
@@ -100,6 +103,7 @@ const POLICY_TEMPLATES = [
     controls: ['PR.DS'],
     description: 'Defines how data is classified by sensitivity, handled in transit and at rest, retained, and securely disposed of at end of life.',
     cisGroups: [3],
+    insurance: true,
     url: null,
     downloads: [
       { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-Data%20Classification%20and%20Handling-Comprehensive-6.26.docx' },
@@ -115,6 +119,7 @@ const POLICY_TEMPLATES = [
     controls: ['ID.RA', 'PR.PS'],
     description: 'Establishes frequency, scope, and remediation timelines for vulnerability scanning, patch management, and penetration testing programs.',
     cisGroups: [7, 18],
+    insurance: true,
     url: null,
     downloads: [
       { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-Vulnerability%20Management-Comprehensive-6.26.docx' },
@@ -130,6 +135,7 @@ const POLICY_TEMPLATES = [
     controls: ['GV.SC'],
     description: 'Governs how third-party vendors are assessed, onboarded, monitored, and offboarded. Includes contractual security requirements and ongoing review cadence.',
     cisGroups: [15],
+    insurance: true,
     url: null,
     downloads: [
       { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-Third-Party%20and%20Vendor%20Risk-Comprehensive-6.26.docx' },
@@ -145,6 +151,7 @@ const POLICY_TEMPLATES = [
     controls: ['PR.AT'],
     description: 'Defines mandatory security training requirements for all staff, training frequency, role-specific programs, and phishing simulation requirements.',
     cisGroups: [14],
+    insurance: true,
     url: null,
     downloads: [
       { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-Security%20Awareness%20and%20Training-Comprehensive-6.26.docx' },
@@ -160,6 +167,7 @@ const POLICY_TEMPLATES = [
     controls: ['RC.RP', 'RC.CO'],
     description: 'Establishes RTO/RPO targets, backup requirements, failover procedures, and the conditions under which the BC Plan is formally activated.',
     cisGroups: [11],
+    insurance: true,
     url: null,
     downloads: [
       { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-Business%20Continuity%20and%20DR-Comprehensive-6.26.docx' },
@@ -273,6 +281,56 @@ const POLICY_TEMPLATES = [
       { label: 'SMB', url: 'templates/ENT-Draft-POL-AI%20Data%20Quality%20and%20Bias%20Management-SMB-6.26.docx' },
     ],
   },
+
+  // ── INSURANCE READINESS (insurance-specific policies not covered above) ──────
+  {
+    id: 'pol_emsp',
+    name: 'Email Security & Anti-Phishing Policy',
+    framework: 'insurance',
+    frameworkLabel: 'Insurance Readiness',
+    domain: 'Phishing Prevention',
+    controls: ['Email Filtering', 'Anti-Phishing', 'SPF / DKIM / DMARC'],
+    description: 'Defines required email security controls: anti-phishing filters, SPF/DKIM/DMARC configuration, link sandboxing, user reporting procedures, and phishing simulation frequency. Phishing is the leading trigger for cyber insurance claims.',
+    cisGroups: [9],
+    insurance: true,
+    url: null,
+  },
+  {
+    id: 'pol_brp',
+    name: 'Backup & Recovery Policy',
+    framework: 'insurance',
+    frameworkLabel: 'Insurance Readiness',
+    domain: 'Ransomware Resilience',
+    controls: ['3-2-1 Backup Rule', 'Immutable Backups', 'Recovery Testing'],
+    description: 'Establishes backup frequency, retention schedules, immutable and air-gapped copy requirements, encryption of backup data, and mandatory recovery testing cadence. Directly addresses ransomware resilience questions asked by every insurer.',
+    cisGroups: [11],
+    insurance: true,
+    url: null,
+  },
+  {
+    id: 'pol_pamp',
+    name: 'Privileged Access Management Policy',
+    framework: 'insurance',
+    frameworkLabel: 'Insurance Readiness',
+    domain: 'Access Control',
+    controls: ['Admin Account Controls', 'Just-in-Time Access', 'Session Recording'],
+    description: 'Governs administrator and privileged accounts: unique named credentials, mandatory MFA, just-in-time provisioning, session monitoring, and prohibition of shared admin accounts. PAM controls are a standard underwriter requirement.',
+    cisGroups: [5, 6],
+    insurance: true,
+    url: null,
+  },
+  {
+    id: 'pol_esp',
+    name: 'Endpoint Security Policy',
+    framework: 'insurance',
+    frameworkLabel: 'Insurance Readiness',
+    domain: 'Endpoint Protection',
+    controls: ['EDR / AV Coverage', 'Device Encryption', 'Patch Cadence'],
+    description: 'Establishes minimum endpoint protection requirements: EDR or AV coverage across all managed devices, full-disk encryption, patch cadence (critical within 30 days), and controls for unmanaged and personal devices accessing corporate systems.',
+    cisGroups: [1, 2, 10],
+    insurance: true,
+    url: null,
+  },
 ];
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
@@ -303,15 +361,19 @@ function plibSetFilter(fw) {
 function renderPolicyLib() {
   const filtered = plibState.filter === 'all'
     ? POLICY_TEMPLATES
-    : POLICY_TEMPLATES.filter(p => p.framework === plibState.filter);
+    : plibState.filter === 'insurance'
+      ? POLICY_TEMPLATES.filter(p => p.insurance === true || p.framework === 'insurance')
+      : POLICY_TEMPLATES.filter(p => p.framework === plibState.filter);
 
   const csf  = POLICY_TEMPLATES.filter(p => p.framework === 'nist_csf').length;
   const ai   = POLICY_TEMPLATES.filter(p => p.framework === 'nist_ai').length;
+  const ins  = POLICY_TEMPLATES.filter(p => p.insurance === true || p.framework === 'insurance').length;
 
   const tabs = [
-    { id: 'all',      label: `All (${POLICY_TEMPLATES.length})` },
-    { id: 'nist_csf', label: `NIST CSF 2.0 (${csf})` },
-    { id: 'nist_ai',  label: `NIST AI RMF (${ai})` },
+    { id: 'all',       label: `All (${POLICY_TEMPLATES.length})` },
+    { id: 'nist_csf',  label: `NIST CSF 2.0 (${csf})` },
+    { id: 'nist_ai',   label: `NIST AI RMF (${ai})` },
+    { id: 'insurance', label: `🛡️ Insurance Readiness (${ins})` },
   ];
 
   return `${renderTierBanner()}
@@ -331,13 +393,15 @@ function renderPolicyLib() {
 
 function plibRenderCard(p) {
   const isCsf   = p.framework === 'nist_csf';
+  const isIns   = p.framework === 'insurance';
   const isHl    = plibState.highlight === p.id;
-  const accentCol = isCsf ? 'var(--navy)' : '#7c3aed';
-  const fwBg     = isCsf ? '#eff6ff' : '#f5f3ff';
-  const fwTxt    = isCsf ? '#1d4ed8' : '#6d28d9';
+  const accentCol = isCsf ? 'var(--navy)' : isIns ? '#15803d' : '#7c3aed';
+  const fwBg     = isCsf ? '#eff6ff' : isIns ? '#dcfce7' : '#f5f3ff';
+  const fwTxt    = isCsf ? '#1d4ed8' : isIns ? '#166534' : '#6d28d9';
+  const chipBorder = isCsf ? '#bfdbfe' : isIns ? '#bbf7d0' : '#ddd6fe';
 
   const controlChips = p.controls.map(c =>
-    `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px;background:${fwBg};color:${fwTxt};border:1px solid ${isCsf ? '#bfdbfe' : '#ddd6fe'}">${c}</span>`
+    `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px;background:${fwBg};color:${fwTxt};border:1px solid ${chipBorder}">${c}</span>`
   ).join('');
 
   const hasDownloads = p.downloads && p.downloads.length > 0;
@@ -354,10 +418,17 @@ function plibRenderCard(p) {
     ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#dcfce7;color:#15803d">&#x2713; Available</span>`
     : `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#fef3c7;color:#b45309">&#x23F3; Placeholder</span>`;
 
+  const insBadge = (p.insurance && !isIns && plibState.filter === 'insurance')
+    ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#dcfce7;color:#166534;white-space:nowrap">🛡️ Insurance</span>`
+    : '';
+
   return `<div id="plib-${p.id}" class="card" style="padding:1.1rem 1.2rem;border-top:3px solid ${accentCol};${isHl ? 'box-shadow:0 0 0 3px rgba(7,180,217,.35);' : ''}transition:box-shadow .2s">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:.6rem">
       <div style="font-size:13px;font-weight:700;color:var(--text);line-height:1.3">${escH(p.name)}</div>
-      <span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;background:${fwBg};color:${fwTxt};white-space:nowrap;flex-shrink:0">${p.frameworkLabel}</span>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0">
+        ${insBadge}
+        <span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;background:${fwBg};color:${fwTxt};white-space:nowrap">${p.frameworkLabel}</span>
+      </div>
     </div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:.55rem;font-weight:600;letter-spacing:.02em">${escH(p.domain)}</div>
     <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:.75rem">${controlChips}</div>
