@@ -9,68 +9,96 @@ function orgTreeActions(org, badge, badgeClass) {
 }
 
 function renderOrgManager() {
+  const renderedIds = new Set();
+
+  const hierarchyHtml = allOrgs.filter(o => o.tier === 'platform').map(platform => {
+    renderedIds.add(platform.id);
+    const gfs = allOrgs.filter(o => o.parent_id === platform.id);
+    return `<div>
+      <div class="org-tree-item" style="border-bottom:2px solid var(--cyan);padding-bottom:8px;margin-bottom:8px">
+        <div class="org-avatar av-platform" style="width:30px;height:30px;font-size:10px;flex-shrink:0">${tierInitials(platform.name)}</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700">${platform.name}</div>
+          <div style="font-size:10px;color:var(--muted)">Platform Owner · Sees all ${allOrgs.length} organisations</div>
+        </div>
+        ${orgTreeActions(platform, 'Platform', 'b-platform')}
+      </div>
+      ${gfs.map(gf => {
+        renderedIds.add(gf.id);
+        const fathers = allOrgs.filter(o => o.parent_id === gf.id);
+        return `<div style="margin-left:1rem;margin-bottom:6px">
+          <div class="org-tree-item">
+            <span style="color:rgba(7,180,217,0.4);font-size:14px;flex-shrink:0">└</span>
+            <div class="org-avatar av-gf" style="width:26px;height:26px;font-size:9px;flex-shrink:0">${tierInitials(gf.name)}</div>
+            <div style="flex:1">
+              <div style="font-size:12px;font-weight:700">${gf.name}</div>
+              <div style="font-size:10px;color:var(--muted)">Grandfather · ${fathers.length} Father groups</div>
+            </div>
+            ${orgTreeActions(gf, 'GF', 'b-cyan')}
+          </div>
+          ${fathers.map(f => {
+            renderedIds.add(f.id);
+            const kids = allOrgs.filter(o => o.parent_id === f.id);
+            return `<div style="margin-left:1.5rem">
+              <div class="org-tree-item">
+                <span style="color:rgba(79,70,229,0.4);font-size:14px;flex-shrink:0">└</span>
+                <div class="org-avatar av-f" style="width:24px;height:24px;font-size:9px;flex-shrink:0">${tierInitials(f.name)}</div>
+                <div style="flex:1">
+                  <div style="font-size:12px;font-weight:700">${f.name}</div>
+                  <div style="font-size:10px;color:var(--muted)">Father · ${kids.length} child clients</div>
+                </div>
+                ${orgTreeActions(f, 'Father', 'b-purple')}
+              </div>
+              ${kids.map(c => {
+                renderedIds.add(c.id);
+                return `<div style="margin-left:1.5rem">
+                  <div class="org-tree-item">
+                    <span style="color:rgba(22,163,74,0.4);font-size:14px;flex-shrink:0">└</span>
+                    <div class="org-avatar av-c" style="width:22px;height:22px;font-size:8px;flex-shrink:0">${tierInitials(c.name)}</div>
+                    <div style="flex:1">
+                      <div style="font-size:12px;font-weight:700">${c.name}</div>
+                      <div style="font-size:10px;color:var(--muted)">Child · ${c.industry || '—'}${orgProfiles[c.id]?.data_sensitivity ? ` · <span class="risk-profile-badge rpb-${(orgProfiles[c.id].data_sensitivity).toLowerCase()}">${orgProfiles[c.id].data_sensitivity} data sensitivity</span>` : ''}</div>
+                    </div>
+                    ${orgTreeActions(c, 'Child', 'b-green')}
+                  </div>
+                </div>`;
+              }).join('')}
+            </div>`;
+          }).join('')}
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+
+  const orphans = allOrgs.filter(o => !renderedIds.has(o.id));
+  const orphanHtml = orphans.length ? `
+    <div class="card" style="border-top:3px solid #f59e0b">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.75rem">
+        <div style="font-size:13px;font-weight:700;color:#92400e">⚠️ Unplaced Organisations (${orphans.length})</div>
+        <div style="font-size:11px;color:#92400e">These organisations are not visible in the hierarchy — edit each one to assign a valid tier and parent.</div>
+      </div>
+      ${orphans.map(o => `
+        <div class="org-tree-item" style="border-left:3px solid #f59e0b;padding-left:10px;margin-bottom:4px">
+          <div class="org-avatar" style="width:26px;height:26px;font-size:9px;flex-shrink:0;background:#fef3c7;color:#92400e;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700">${tierInitials(o.name)}</div>
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:700">${o.name}</div>
+            <div style="font-size:10px;color:var(--muted)">${o.tier.charAt(0).toUpperCase()+o.tier.slice(1)} · parent_id: ${o.parent_id ? o.parent_id.slice(0,8)+'…' : 'none'}</div>
+          </div>
+          ${orgTreeActions(o, o.tier.charAt(0).toUpperCase()+o.tier.slice(1), 'b-amber')}
+        </div>`).join('')}
+    </div>` : '';
+
   return `
   ${renderTierBanner()}
   <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:0.85rem;flex-wrap:wrap;gap:8px">
     <div><div style="font-size:17px;font-weight:700">🏢 Organisation Manager</div>
-    <div style="font-size:12px;color:var(--muted)">${allOrgs.length} organisations · Four-tier hierarchy</div></div>
+    <div style="font-size:12px;color:var(--muted)">${allOrgs.length} organisations · Four-tier hierarchy${orphans.length ? ` · <span style="color:#b45309;font-weight:700">${orphans.length} unplaced</span>` : ''}</div></div>
   </div>
   <div class="card">
     <div class="card-title">Full hierarchy</div>
-    ${allOrgs.filter(o => o.tier === 'platform').map(platform => {
-      const gfs = allOrgs.filter(o => o.parent_id === platform.id);
-      return `<div>
-        <div class="org-tree-item" style="border-bottom:2px solid var(--cyan);padding-bottom:8px;margin-bottom:8px">
-          <div class="org-avatar av-platform" style="width:30px;height:30px;font-size:10px;flex-shrink:0">${tierInitials(platform.name)}</div>
-          <div style="flex:1">
-            <div style="font-size:13px;font-weight:700">${platform.name}</div>
-            <div style="font-size:10px;color:var(--muted)">Platform Owner · Sees all ${allOrgs.length} organisations</div>
-          </div>
-          ${orgTreeActions(platform, 'Platform', 'b-platform')}
-        </div>
-        ${gfs.map(gf => {
-          const fathers = allOrgs.filter(o => o.parent_id === gf.id);
-          return `<div style="margin-left:1rem;margin-bottom:6px">
-            <div class="org-tree-item">
-              <span style="color:rgba(7,180,217,0.4);font-size:14px;flex-shrink:0">└</span>
-              <div class="org-avatar av-gf" style="width:26px;height:26px;font-size:9px;flex-shrink:0">${tierInitials(gf.name)}</div>
-              <div style="flex:1">
-                <div style="font-size:12px;font-weight:700">${gf.name}</div>
-                <div style="font-size:10px;color:var(--muted)">Grandfather · ${fathers.length} Father groups</div>
-              </div>
-              ${orgTreeActions(gf, 'GF', 'b-cyan')}
-            </div>
-            ${fathers.map(f => {
-              const kids = allOrgs.filter(o => o.parent_id === f.id);
-              return `<div style="margin-left:1.5rem">
-                <div class="org-tree-item">
-                  <span style="color:rgba(79,70,229,0.4);font-size:14px;flex-shrink:0">└</span>
-                  <div class="org-avatar av-f" style="width:24px;height:24px;font-size:9px;flex-shrink:0">${tierInitials(f.name)}</div>
-                  <div style="flex:1">
-                    <div style="font-size:12px;font-weight:700">${f.name}</div>
-                    <div style="font-size:10px;color:var(--muted)">Father · ${kids.length} child clients</div>
-                  </div>
-                  ${orgTreeActions(f, 'Father', 'b-purple')}
-                </div>
-                ${kids.map(c => `
-                  <div style="margin-left:1.5rem">
-                    <div class="org-tree-item">
-                      <span style="color:rgba(22,163,74,0.4);font-size:14px;flex-shrink:0">└</span>
-                      <div class="org-avatar av-c" style="width:22px;height:22px;font-size:8px;flex-shrink:0">${tierInitials(c.name)}</div>
-                      <div style="flex:1">
-                        <div style="font-size:12px;font-weight:700">${c.name}</div>
-                        <div style="font-size:10px;color:var(--muted)">Child · ${c.industry || '—'}${orgProfiles[c.id]?.data_sensitivity ? ` · <span class="risk-profile-badge rpb-${(orgProfiles[c.id].data_sensitivity).toLowerCase()}">${orgProfiles[c.id].data_sensitivity} data sensitivity</span>` : ''}</div>
-                      </div>
-                      ${orgTreeActions(c, 'Child', 'b-green')}
-                    </div>
-                  </div>`).join('')}
-              </div>`;
-            }).join('')}
-          </div>`;
-        }).join('')}
-      </div>`;
-    }).join('')}
+    ${hierarchyHtml}
   </div>
+  ${orphanHtml}
   <div class="card">
     <div class="card-title">Add new organisation</div>
     <div class="add-org-form">

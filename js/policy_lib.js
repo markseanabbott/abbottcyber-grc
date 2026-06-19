@@ -153,6 +153,10 @@ const POLICY_TEMPLATES = [
     description: 'Defines permitted and prohibited uses of AI tools by employees, contractors, and third parties. Covers data input restrictions, output verification requirements, disclosure obligations when AI-generated content is shared externally, and consequences for misuse.',
     cisGroups: [],
     url: null,
+    downloads: [
+      { label: 'Comprehensive', url: 'templates/ENT-Draft-POL-AUP-Comprehensive-6.26.docx' },
+      { label: 'SMB', url: 'templates/ENT-Draft-POL-AUP-SMB-6.26.docx' },
+    ],
   },
   {
     id: 'pol_airmp',

@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.1.6",
   "created": "2026-05-14",
-  "updated": "2026-06-18 (session 38)",
+  "updated": "2026-06-18 (session 39)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -551,6 +551,19 @@
           "id": "s40",
           "text": "Audit log: track who accessed or modified data at each tier",
           "done": false
+        },
+        {
+          "id": "s41a",
+          "text": "Org Manager — show unplaced organisations: orgs not rendered in the main hierarchy tree (wrong tier/parent combo) appear in an amber warning card with Edit access so they can be corrected",
+          "done": true,
+          "notes": "Session 39: renderOrgManager() in js/orgs.js refactored to track renderedIds Set during tree traversal. Any org not in renderedIds is collected into orphans[] and rendered in a separate amber-bordered card below the tree. Badge shows unplaced count in subtitle. Parent_id fragment shown as diagnostic. orgTreeActions() buttons (Edit/View/Delete) work normally from the unplaced card."
+        },
+        {
+          "id": "s42a",
+          "text": "Consolidated risk dashboard for multi-property clients (grandfather/father tier) — aggregate CIS scores, AI readiness, and top risks across all child entities with per-property drill-down",
+          "done": false,
+          "priority": "High",
+          "notes": "Discussed session 39: tier semantics clarified — grandfather = multi-entity client (e.g. hotel group with multiple properties), father = single-entity client, child = individual property/location. Consolidated view needed at grandfather level. Visibility scoping already correct (grandfather sees self + fathers + children). Feature is the aggregated dashboard UI."
         }
       ]
     },
@@ -1627,8 +1640,8 @@
         {
           "id": "pl8",
           "text": "AI Acceptable Use Policy Word doc — produce and add downloadable Comprehensive/SMB versions to the pol_aiaup card (same pattern as AI Governance)",
-          "done": false,
-          "priority": "High"
+          "done": true,
+          "notes": "Session 39: Mark added ENT-Draft-POL-AUP-Comprehensive-6.26.docx and ENT-Draft-POL-AUP-SMB-6.26.docx to templates/. downloads array added to pol_aiaup in js/policy_lib.js. Card now shows green Available badge with two download buttons."
         }
       ]
     },
