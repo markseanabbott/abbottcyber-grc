@@ -58,7 +58,8 @@ async function sbFetch(path, method = 'GET', body = null, extraHeaders = {}) {
 
   if (!res.ok) { const t = await res.text(); throw new Error(`${res.status}: ${t}`); }
   if (res.status === 204) return null;
-  return res.json();
+  const _t = await res.text();
+  return _t.trim() ? JSON.parse(_t) : null;
 }
 
 const sb = {
