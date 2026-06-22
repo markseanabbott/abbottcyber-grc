@@ -438,6 +438,7 @@ function renderMain() {
     }
     return;
   }
+  if (activeNav === 'company_profile') { el.innerHTML = renderCompanyProfile(); return; }
   if (activeNav === 'home') {
     el.innerHTML = renderHome();
     setTimeout(drawHomeCharts, 80);

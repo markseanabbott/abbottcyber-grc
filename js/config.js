@@ -99,6 +99,9 @@ const NAV = [
   { id: 'g_home', group: 'Home', icon: '🏠', items: [
     { id: 'home', icon: '🏠', label: 'Dashboard', live: true, phase: 1 },
   ]},
+  { id: 'g_company_profile', group: 'Start Here', icon: '🏢', items: [
+    { id: 'company_profile', icon: '🏢', label: 'Start Here', live: true, phase: 1 },
+  ]},
   { id: 'g_assessments', group: 'Assessments', icon: '📋', items: [
     { id: 'assessments', icon: '📋', label: 'Assessments Hub', live: true, phase: 1 },
     { id: 'insurance', icon: '🛡️', label: 'Insurance Readiness', live: true, phase: 1 },
