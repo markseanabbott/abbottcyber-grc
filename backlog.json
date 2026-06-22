@@ -1,8 +1,8 @@
 {
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "created": "2026-05-14",
-  "updated": "2026-06-22 (session 49)",
+  "updated": "2026-06-22 (session 50)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -105,6 +105,12 @@
           "text": "Dashboard top bar redesign — portfolio-aware 4-card stat bar replacing the static single-org view with live cross-org metrics",
           "done": true,
           "notes": "Session 49: js/home.js fully rewritten. Card 1: Org Identity (unchanged). Card 2: Portfolio Risk Score — child: inline composite avg of CIS/Insurance/TechStack from orgAssessments; father+: async portfolio avg across all scope orgs with expandable breakdown table (homeToggleBreakdown). Card 3: Open Critical Risks — portfolio-wide count from targeted risk_register query (?org_id=in.(ids)&select=inherent_risk_rating). Card 4: Assessment Coverage — child: Last Assessed date; father+: assessed org count / total org count %. homePortfolioState tracks scopeKey, loading, loaded, orgScores, riskCounts, assessedCount, totalCount, breakdownOpen. loadHomePortfolio() loads all scope org assessments in parallel (reuses loadAssessments cache), computes per-org composites, queries risk counts, guards against stale loads via scope key mismatch. _homePortfolioBreakdown() renders expandable score table sorted by composite. _scoreColor(s) helper for green/amber/red. New window exports: homeToggleBreakdown, loadHomePortfolio."
+        },
+        {
+          "id": "d12",
+          "text": "Tier display rename — grandfather → Group, father → Company, child → Entity; display layer only (DB values unchanged)",
+          "done": true,
+          "notes": "Session 50: Display-only rename. js/config.js: TIER_LABELS updated (feeds renderTierBanner() in app.js — affects all module tier banners). js/orgs.js: org tree sub-labels ('Group · 2 Company groups', 'Company · 3 entity clients'), badge text (Company/Entity), create modal select options, edit modal tier select (inline lookup map replaces charAt capitalise), parent and managed-by dropdown options, orphan card display. No DB changes, no CSS class changes, no JS conditional changes."
         }
       ]
     },
