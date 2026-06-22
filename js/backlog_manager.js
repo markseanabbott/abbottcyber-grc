@@ -60,7 +60,7 @@ async function blmLoad() {
     );
     blmState.items = Array.isArray(rows) ? rows : [];
   } catch (e) {
-    showToast('Failed to load backlog: ' + e.message, 'error');
+    toast('Failed to load backlog: ' + e.message, '#dc2626');
     blmState.items = [];
   }
   blmState.loading = false;
@@ -282,9 +282,9 @@ async function blmToggleDone(id, currentDone) {
     if (item) item.done = newDone;
     const el = document.getElementById('blmList');
     if (el) el.innerHTML = blmRenderList();
-    showToast(newDone ? '✓ Marked done' : 'Marked pending', 'success');
+    toast(newDone ? '✓ Marked done' : 'Marked pending', '#15803d');
   } catch(e) {
-    showToast('Failed to update: ' + e.message, 'error');
+    toast('Failed to update: ' + e.message, '#dc2626');
   }
 }
 
@@ -305,13 +305,13 @@ function blmCancelSeed() {
 
 async function blmConfirmSeed() {
   const ta = document.getElementById('blmSeedJson');
-  if (!ta || !ta.value.trim()) { showToast('Paste the backlog.json content first', 'error'); return; }
+  if (!ta || !ta.value.trim()) { toast('Paste the backlog.json content first', '#dc2626'); return; }
 
   let json;
-  try { json = JSON.parse(ta.value.trim()); } catch(e) { showToast('Invalid JSON: ' + e.message, 'error'); return; }
+  try { json = JSON.parse(ta.value.trim()); } catch(e) { toast('Invalid JSON: ' + e.message, '#dc2626'); return; }
 
   const sections = json.sections;
-  if (!Array.isArray(sections)) { showToast('JSON must have a "sections" array', 'error'); return; }
+  if (!Array.isArray(sections)) { toast('JSON must have a "sections" array', '#dc2626'); return; }
 
   // Flatten to rows
   const rows = [];
@@ -333,25 +333,30 @@ async function blmConfirmSeed() {
     });
   });
 
-  if (!rows.length) { showToast('No items found in JSON', 'error'); return; }
+  if (!rows.length) { toast('No items found in JSON', '#dc2626'); return; }
 
-  showToast(`Importing ${rows.length} items…`, 'info');
+  // Deduplicate by id — backlog.json has some ids (ai1, ai2, ai7) appearing in multiple sections
+  const rowMap = new Map();
+  rows.forEach(r => rowMap.set(r.id, r));
+  const deduped = Array.from(rowMap.values());
 
-  // Upsert in batches of 50 (PostgREST payload limit safety)
+  toast(`Importing ${deduped.length} items…`);
+
+  // Upsert in batches of 50 (avoids PostgreSQL duplicate-in-same-batch error)
   try {
-    for (let i = 0; i < rows.length; i += 50) {
-      const batch = rows.slice(i, i + 50);
+    for (let i = 0; i < deduped.length; i += 50) {
+      const batch = deduped.slice(i, i + 50);
       await sbFetch('backlog_items', 'POST', batch, {
         Prefer: 'resolution=merge-duplicates,return=minimal',
       });
     }
-    showToast(`✓ Imported ${rows.length} items`, 'success');
+    toast(`✓ Imported ${deduped.length} items`, '#15803d');
     blmState.seedMode = false;
     await blmLoad();
     const mc = document.getElementById('mainContent');
     if (mc) mc.innerHTML = renderBacklogManager();
   } catch(e) {
-    showToast('Seed failed: ' + e.message, 'error');
+    toast('Seed failed: ' + e.message, '#dc2626');
   }
 }
 
@@ -364,7 +369,7 @@ function blmCopyPrompt(id) {
   const sectionItems = blmState.items.filter(i => i.section_id === item.section_id);
   const prompt = _blmBuildPrompt(item, sectionItems);
   navigator.clipboard.writeText(prompt).then(() => {
-    showToast('📋 AI prompt copied to clipboard!', 'success');
+    toast('📋 AI prompt copied to clipboard!', '#15803d');
   }).catch(() => {
     // fallback: show in a textarea modal
     const modal = document.createElement('div');
