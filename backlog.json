@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.2.3",
   "created": "2026-05-14",
-  "updated": "2026-06-22 (session 47)",
+  "updated": "2026-06-22 (session 48)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -485,7 +485,7 @@
           "id": "auth15",
           "text": "Dynamic Backlog Manager (platform admin only) — Supabase-backed feature backlog in the Settings nav. Seed from backlog.json paste. Filter by phase/status/section/search. Toggle done/pending inline. Per-item 'AI Prompt' button generates a complete Claude Code build prompt (feature text, build context, section file references, done/pending sibling items, project conventions). PATCH_022 required.",
           "done": true,
-          "notes": "js/backlog_manager.js — blmState, blmLoad(), renderBacklogManager(), blmRenderList(), blmRenderSection(), blmRenderItem(), blmToggleDone(), blmToggleSection(), blmExpandAll(), blmCollapseAll(), blmToggleNotes(), blmSetFilter(), blmResetFilters(), blmOpenSeed(), blmCancelSeed(), blmConfirmSeed(), blmCopyPrompt(), _blmBuildPrompt(). _BLM_SECTION_FILES maps all 30 section_ids to relevant JS files for prompt context. Seed: paste backlog.json into textarea, upserts in batches of 50 (merge-duplicates). AI prompt includes: item text + notes, section file map, done/pending siblings, full project architecture conventions, numbered build instructions. Nav item 'backlog' added to g_settings in config.js. Render route in app.js loads blmLoad() on first visit. Script tag before app.js in index.html. sql/SUPABASE_PATCH_022.sql creates backlog_items table with platform_admin-only RLS. Session 47."
+          "notes": "js/backlog_manager.js — blmState, blmLoad(), renderBacklogManager(), blmRenderList(), blmRenderSection(), blmRenderItem(), blmToggleDone(), blmToggleSection(), blmExpandAll(), blmCollapseAll(), blmToggleNotes(), blmSetFilter(), blmResetFilters(), blmOpenSeed(), blmCancelSeed(), blmConfirmSeed(), blmCopyPrompt(), _blmBuildPrompt(). _BLM_SECTION_FILES maps all 30 section_ids to relevant JS files for prompt context. Seed: paste backlog.json into textarea, upserts in batches of 50 (merge-duplicates). AI prompt includes: item text + notes, section file map, done/pending siblings, full project architecture conventions, numbered build instructions. Nav item 'backlog' added to g_settings in config.js. Render route in app.js loads blmLoad() on first visit. Script tag before app.js in index.html. sql/SUPABASE_PATCH_022.sql creates backlog_items table with platform_admin-only RLS. Session 47. BUG FIX (session 48): all showToast() calls replaced with toast(msg, col) — this app uses toast() not showToast(); ReferenceError was silently aborting all button actions. Also added Map-based dedup of rows by id before batch upsert to handle duplicate ids in backlog.json (ai1/ai2/ai7 appear in multiple sections)."
         }
       ]
     },
