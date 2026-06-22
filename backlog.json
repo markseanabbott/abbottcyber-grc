@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.2.3",
   "created": "2026-05-14",
-  "updated": "2026-06-22 (session 48)",
+  "updated": "2026-06-22 (session 49)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -65,8 +65,8 @@
         {
           "id": "d9",
           "text": "Company Profile page — consolidates organisation_profiles + new fields (device count, user count, primary IT provider); becomes 'Start Here' intake; feeds framework auto-scoping",
-          "done": false,
-          "notes": "Requested session 23f. organisation_profiles table (PATCH_003) already has most data but is buried in Org Manager modal. New page promotes this to a first-class nav item. New fields needed: approx_device_count, approx_user_count (separate from employee_count_band), primary_msp. Should surface a Risk Context summary card (maturity tier recommendation based on profile inputs). Tech Stack is the 'tooling' half of Company Profile — may eventually move here or link from here. PATCH_019 needed for new columns."
+          "done": true,
+          "notes": "Session 49: js/company_profile.js (new file). renderCompanyProfile() — 5-section form (Company Overview, People & Devices, Data & Regulatory, IT & Cloud, Vendors), completeness progress bar (filled fields / total fields), Risk Context card shown after save, Step 2 CTA linking to Tech Stack. cpSave() upserts to organisation_profiles and updates org.industry, calls loadOrgProfiles() to refresh cache. cpUpdateSubIndustry() cascades sub-industry dropdown on industry change. _cpRiskContext(p) derives CIS IG recommendation: High sensitivity/2+ regs → IG2; medium/PII/1+ reg → IG1 amber; low → IG1 green. Uses cp_ prefixed IDs to avoid conflicts with orgs.js modal. config.js: separate g_company_profile nav group (single-item, renders as flat link below Dashboard). app.js: render route added. SUPABASE_PATCH_023 adds approx_device_count, approx_user_count (int), primary_msp (text) to organisation_profiles."
         },
         {
           "id": "d4",
@@ -99,6 +99,12 @@
           "text": "Nav rebuild — topbar org switcher, user avatar dropdown, regrouped nav sections",
           "done": true,
           "notes": "Nav regrouped into 6 groups (Home/Assessments/AI Readiness/Risk & Vendors/Exercises/Reports). Home rendered as flat single-item nav (no accordion). Org/company switcher moved from sidebar footer to topbar. User chip replaced with avatar dropdown containing Org Manager, User Management (admin only), and Sign Out. Admin pages removed from sidebar nav. js/config.js (NAV structure), js/app.js (buildNav flat items, _ADMIN_PAGES breadcrumb, setNav, click-outside), js/auth.js (renderUserMenu, toggleUserMenu, closeUserMenu), index.html (topbar org switcher, sidebar footer removed), css/core.css (.user-menu*, .nav-item-flat, .topbar-org-selector). Session 15 fix: dashboard org list now scoped to children of selected org (orgsUnderCurrent() in home.js) — platform handled separately, grandchildren included for grandfather/father tiers."
+        },
+        {
+          "id": "d11",
+          "text": "Dashboard top bar redesign — portfolio-aware 4-card stat bar replacing the static single-org view with live cross-org metrics",
+          "done": true,
+          "notes": "Session 49: js/home.js fully rewritten. Card 1: Org Identity (unchanged). Card 2: Portfolio Risk Score — child: inline composite avg of CIS/Insurance/TechStack from orgAssessments; father+: async portfolio avg across all scope orgs with expandable breakdown table (homeToggleBreakdown). Card 3: Open Critical Risks — portfolio-wide count from targeted risk_register query (?org_id=in.(ids)&select=inherent_risk_rating). Card 4: Assessment Coverage — child: Last Assessed date; father+: assessed org count / total org count %. homePortfolioState tracks scopeKey, loading, loaded, orgScores, riskCounts, assessedCount, totalCount, breakdownOpen. loadHomePortfolio() loads all scope org assessments in parallel (reuses loadAssessments cache), computes per-org composites, queries risk counts, guards against stale loads via scope key mismatch. _homePortfolioBreakdown() renders expandable score table sorted by composite. _scoreColor(s) helper for green/amber/red. New window exports: homeToggleBreakdown, loadHomePortfolio."
         }
       ]
     },
@@ -486,6 +492,12 @@
           "text": "Dynamic Backlog Manager (platform admin only) — Supabase-backed feature backlog in the Settings nav. Seed from backlog.json paste. Filter by phase/status/section/search. Toggle done/pending inline. Per-item 'AI Prompt' button generates a complete Claude Code build prompt (feature text, build context, section file references, done/pending sibling items, project conventions). PATCH_022 required.",
           "done": true,
           "notes": "js/backlog_manager.js — blmState, blmLoad(), renderBacklogManager(), blmRenderList(), blmRenderSection(), blmRenderItem(), blmToggleDone(), blmToggleSection(), blmExpandAll(), blmCollapseAll(), blmToggleNotes(), blmSetFilter(), blmResetFilters(), blmOpenSeed(), blmCancelSeed(), blmConfirmSeed(), blmCopyPrompt(), _blmBuildPrompt(). _BLM_SECTION_FILES maps all 30 section_ids to relevant JS files for prompt context. Seed: paste backlog.json into textarea, upserts in batches of 50 (merge-duplicates). AI prompt includes: item text + notes, section file map, done/pending siblings, full project architecture conventions, numbered build instructions. Nav item 'backlog' added to g_settings in config.js. Render route in app.js loads blmLoad() on first visit. Script tag before app.js in index.html. sql/SUPABASE_PATCH_022.sql creates backlog_items table with platform_admin-only RLS. Session 47. BUG FIX (session 48): all showToast() calls replaced with toast(msg, col) — this app uses toast() not showToast(); ReferenceError was silently aborting all button actions. Also added Map-based dedup of rows by id before batch upsert to handle duplicate ids in backlog.json (ai1/ai2/ai7 appear in multiple sections)."
+        },
+        {
+          "id": "blm2",
+          "text": "Backlog Manager status tabs — 4 lifecycle states (Add / Edit / Completed / Cancelled) replacing the binary done/pending toggle; per-status pill tabs with live counts, item rows styled by status, inline status select dropdown",
+          "done": true,
+          "notes": "Session 49: SUPABASE_PATCH_024 adds status text column (CHECK add/edit/completed/cancelled, DEFAULT add) to backlog_items; migrates existing done=true rows to status=completed, done=false to status=add. js/backlog_manager.js rewritten: BLM_STATUS const (4 states with label/icon/color/bg/border). _blmStatus(item) returns item.status or falls back to done boolean. Status pill tab bar (All + 4 per-status tabs with count badges). blmSetStatus(id, newStatus) PATCHes both status and done fields, re-renders full page so tab counts stay live. Item rows: styled <select> for status change (replaces checkbox). Completed/cancelled items rendered at opacity:.5 with strikethrough title. blmToggleDone() removed, replaced by blmSetStatus(). blmSetFilter() now re-renders full page (not just list) so tab badge counts stay in sync."
         }
       ]
     },
