@@ -933,49 +933,38 @@ function cmmcCopyReportPrompt() {
 
   const gapList = gaps.map(g => `- ${g.id} [${g.domain}]: ${g.title} — ${answers[g.id] === 'partial' ? 'Partial' : 'Not Met'}`).join('\n');
 
-  const prompt = `You are a cybersecurity consultant producing a Word-ready executive report. Use plain text formatting only — no markdown symbols, no asterisks, no pound signs. Use ALL-CAPS for section headings. Use numbered lists for recommendations. Use simple hyphens for bullets. Never use bold/italic markers.
+  const prompt = `You are a cybersecurity consultant writing the EXECUTIVE COMMENTARY section of a client report. The report already contains score tables, domain charts, gap tables, and a practice listing generated from the assessment data — you only need to write the narrative text that goes in the Executive Summary section.
+
+IMPORTANT OUTPUT RULES:
+- Output ONLY the three sections below, nothing else
+- No title, no score summary table, no domain analysis section, no SPRS note, no next steps, no disclaimer
+- Plain text only — no markdown, no asterisks, no pound signs, no bold markers
+- Use exactly these section headings in ALL-CAPS on their own line
+- Bullet points: start each with a hyphen and space "- "
+- Numbered items: start each with "1." "2." etc. Do NOT write a number prefix AND a separate label
 
 CLIENT: ${currentOrg.name}
-FRAMEWORK: CMMC Level 1 (DoD Contractor Self-Assessment)
-ASSESSMENT DATE: ${run.date || '—'}
-CONDUCTED BY: ${run.conductedBy || '—'}
+FRAMEWORK: CMMC Level 1 (17 practices, 6 domains)
+DATE: ${run.date || '—'} | ASSESSOR: ${run.conductedBy || '—'}
+SCORE: ${score}% (${band}) | MET: ${yes}/${scoreable} | PARTIAL: ${partial} | NOT MET: ${no}
+SPRS (L1 contribution): ${sprs.contribution} / ${sprs.maxContribution} pts
 
-SCORE SUMMARY:
-Overall Score: ${score}% (${band})
-Implemented (Met): ${yes} / ${scoreable} scoreable practices
-Partial: ${partial}
-Not Met: ${no}
-N/A: ${na}
-
-ESTIMATED SPRS CONTRIBUTION (L1 only): ${sprs.contribution} of ${sprs.maxContribution} possible points
-NOTE: Full SPRS score (0-110) requires all 110 NIST SP 800-171 practices — this assessment covers Level 1 only.
-
-DOMAIN BREAKDOWN:
+DOMAIN SCORES:
 ${domainSummary}
 
 ${gaps.length > 0 ? `GAPS (${gaps.length} practices not fully met):
-${gapList}` : 'GAPS: None — all 17 Level 1 practices are Met or N/A.'}
+${gapList}` : 'NO GAPS — all 17 Level 1 practices are Met or N/A.'}
 
-OUTPUT FORMAT:
-Produce a 1-2 page executive security report with these sections:
+OUTPUT — write exactly these three sections:
 
 EXECUTIVE SUMMARY
-One paragraph (4-6 sentences). State the assessment scope (CMMC L1, 17 practices, 6 domains). State the overall score and risk posture. Identify the strongest and weakest domains by name. Note the estimated SPRS contribution.
+Write 3-5 sentences. State the assessment scope (CMMC L1, 17 practices, 6 domains). Summarise the overall score and risk posture. Name the strongest and weakest domains. Mention the SPRS contribution and whether a full L2 assessment is needed.
 
 KEY FINDINGS
-3-5 bullet points covering the most important observations. Include: what is working well, critical gaps, and any domain with score below 50%.
-
-DOMAIN ANALYSIS
-One short paragraph per domain. State score and whether it is strong, acceptable, or a concern. Name specific practices that are gaps.
+4-6 bullet points. Each on its own line starting with "- ". Cover: what is working well, the most critical gaps, any domain at 0%, and any partial practices. Be specific — name practices and domains.
 
 PRIORITY RECOMMENDATIONS
-Numbered list of the top 5 actions. Each recommendation: one sentence what to do, one sentence why it matters for CMMC compliance. Order by impact on SPRS score (highest deduction practices first).
-
-SPRS READINESS NOTE
-One paragraph explaining what SPRS is, that the contractor must self-attest annually in the SPRS portal, and what the estimated L1 contribution means. Note that additional NIST SP 800-171 assessment is required for a complete SPRS score.
-
-NEXT STEPS
-Bullet list: 3-4 practical next steps with specific, actionable language.`;
+Top 5 numbered actions. Each on its own line starting with "1." through "5.". One sentence per item: what to do and why it matters for CMMC compliance. Order by SPRS impact (highest deduction practices first).`;
 
   navigator.clipboard.writeText(prompt).then(() => {
     toast('Report prompt copied to clipboard', '#15803d');
@@ -1158,52 +1147,80 @@ function cmmcExportReportWord() {
   const scoreChange = prevRun ? score - prevRun.score : null;
   const changeStr   = scoreChange === null ? 'First assessment' : (scoreChange > 0 ? '+' + scoreChange + '%' : scoreChange + '%');
 
-  // ── Commentary formatter — matches CIS: KEY FINDINGS + PRIORITY RECOMMENDATIONS ──
+  // ── Commentary formatter — KEY FINDINGS (bullets), PRIORITY RECOMMENDATIONS (numbered),
+  //    ALL-CAPS subheaders, prose bullets, numbered prose items ──────────────────────────
   function fmtCommentary(text, placeholder) {
     if (!text) return placeholder
       ? `<p style="color:#94a3b8;font-style:italic;font-size:10pt;margin:0 0 10pt 0">${placeholder}</p>`
       : '';
 
+    const BULLET_TBL = items => '<table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">' +
+      items.map(l => `<tr>
+        <td style="width:14pt;vertical-align:top;padding:4pt 8pt 4pt 0;color:#152168;font-size:14pt;line-height:1">&#8226;</td>
+        <td style="font-size:11pt;line-height:1.65;padding:4pt 0;vertical-align:top;border-bottom:1pt solid #f1f5f9">${escH(l)}</td>
+      </tr>`).join('') + '</table>';
+
+    const NUM_TBL = items => '<table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">' +
+      items.map((l, i) => `<tr>
+        <td style="background:#152168;color:#fff;width:24pt;text-align:center;font-size:11pt;font-weight:bold;vertical-align:top;padding:7pt 4pt;border-bottom:1pt solid #1e3080">${i + 1}</td>
+        <td style="padding:7pt 10pt;border-bottom:1pt solid #e8ecf4;font-size:11pt;line-height:1.65;vertical-align:top">${escH(l)}</td>
+      </tr>`).join('') + '</table>';
+
+    const SUBHEAD = label => `<div style="font-size:9.5pt;color:#152168;font-weight:bold;text-transform:uppercase;letter-spacing:.5pt;margin:14pt 0 5pt 0;padding-bottom:3pt;border-bottom:1.5pt solid #152168">${label}</div>`;
+
     let html = '';
-    let mode = 'prose';
+    let mode = 'prose'; // prose | findings | recommendations | bullets | numbered
     let items = [];
 
     function flushItems() {
       if (!items.length) return;
-      if (mode === 'findings') {
-        html += '<table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">' +
-          items.map(l => `<tr>
-            <td style="width:14pt;vertical-align:top;padding:4pt 8pt 4pt 0;color:#152168;font-size:14pt;line-height:1">&#8226;</td>
-            <td style="font-size:11pt;line-height:1.65;padding:4pt 0;vertical-align:top;border-bottom:1pt solid #f1f5f9">${escH(l)}</td>
-          </tr>`).join('') + '</table>';
-      } else if (mode === 'recommendations') {
-        html += '<table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">' +
-          items.map((l, i) => `<tr>
-            <td style="background:#152168;color:#fff;width:24pt;text-align:center;font-size:11pt;font-weight:bold;vertical-align:top;padding:7pt 4pt;border-bottom:1pt solid #1e3080">${i + 1}</td>
-            <td style="padding:7pt 10pt;border-bottom:1pt solid #e8ecf4;font-size:11pt;line-height:1.65;vertical-align:top">${escH(l)}</td>
-          </tr>`).join('') + '</table>';
-      }
+      if (mode === 'findings' || mode === 'bullets') html += BULLET_TBL(items);
+      else if (mode === 'recommendations' || mode === 'numbered') html += NUM_TBL(items);
       items = [];
     }
 
     text.split('\n').map(l => l.trim()).forEach(line => {
-      if (!line) return;
-      if (/^KEY FINDINGS$/i.test(line)) {
+      if (!line) {
+        // blank line: flush any pending list, return to prose
         flushItems();
-        html += `<div style="font-size:9.5pt;color:#152168;font-weight:bold;text-transform:uppercase;letter-spacing:.5pt;margin:14pt 0 5pt 0;padding-bottom:3pt;border-bottom:1.5pt solid #152168">Key Findings</div>`;
-        mode = 'findings'; return;
+        mode = 'prose';
+        return;
       }
-      if (/^PRIORITY RECOMMENDATIONS$/i.test(line)) {
+      // Named section headers
+      if (/^KEY FINDINGS$/i.test(line)) { flushItems(); html += SUBHEAD('Key Findings'); mode = 'findings'; return; }
+      if (/^PRIORITY RECOMMENDATIONS?$/i.test(line)) { flushItems(); html += SUBHEAD('Priority Recommendations'); mode = 'recommendations'; return; }
+      if (/^EXECUTIVE SUMMARY$/i.test(line)) { flushItems(); html += SUBHEAD('Executive Summary'); mode = 'prose'; return; }
+      // Any other ALL-CAPS-only line → styled subheader (catches DOMAIN ANALYSIS, SPRS NOTE, NEXT STEPS, etc.)
+      if (/^[A-Z][A-Z\s\(\)\-\/&0-9\.]+$/.test(line) && line.length > 3 && !/^\d/.test(line)) {
         flushItems();
-        html += `<div style="font-size:9.5pt;color:#152168;font-weight:bold;text-transform:uppercase;letter-spacing:.5pt;margin:14pt 0 5pt 0;padding-bottom:3pt;border-bottom:1.5pt solid #152168">Priority Recommendations</div>`;
-        mode = 'recommendations'; return;
+        html += SUBHEAD(line.charAt(0) + line.slice(1).toLowerCase());
+        mode = 'prose'; return;
       }
-      const content = line.replace(/^[•\-]\s*/, '');
-      if (mode === 'findings' || mode === 'recommendations') {
-        items.push(content);
-      } else {
-        html += `<p style="font-size:11pt;line-height:1.75;margin:0 0 8pt 0">${escH(line)}</p>`;
+      // In findings/recommendations mode: accept lines that start with bullet, number, or plain text
+      if (mode === 'findings' || mode === 'bullets') {
+        items.push(line.replace(/^[•\-\*]\s*/, ''));
+        return;
       }
+      if (mode === 'recommendations' || mode === 'numbered') {
+        items.push(line.replace(/^[•\-\*]\s*/, '').replace(/^\d+[\.\)]\s*/, ''));
+        return;
+      }
+      // Prose mode: detect bullet lines
+      if (/^[•\-\*]\s/.test(line)) {
+        if (mode !== 'bullets') { flushItems(); mode = 'bullets'; }
+        items.push(line.replace(/^[•\-\*]\s*/, ''));
+        return;
+      }
+      // Prose mode: detect numbered lines "1. text"
+      if (/^\d+[\.\)]\s/.test(line)) {
+        if (mode !== 'numbered') { flushItems(); mode = 'numbered'; }
+        items.push(line.replace(/^\d+[\.\)]\s*/, ''));
+        return;
+      }
+      // Plain prose
+      flushItems();
+      mode = 'prose';
+      html += `<p style="font-size:11pt;line-height:1.75;margin:0 0 8pt 0">${escH(line)}</p>`;
     });
     flushItems();
     return html;
