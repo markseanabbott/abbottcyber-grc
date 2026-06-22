@@ -32,7 +32,7 @@ function renderOrgManager() {
             <div class="org-avatar av-gf" style="width:26px;height:26px;font-size:9px;flex-shrink:0">${tierInitials(gf.name)}</div>
             <div style="flex:1">
               <div style="font-size:12px;font-weight:700">${gf.name}</div>
-              <div style="font-size:10px;color:var(--muted)">Grandfather · ${fathers.length} Father groups</div>
+              <div style="font-size:10px;color:var(--muted)">Group · ${fathers.length} Company groups</div>
             </div>
             ${orgTreeActions(gf, 'GF', 'b-cyan')}
           </div>
@@ -45,9 +45,9 @@ function renderOrgManager() {
                 <div class="org-avatar av-f" style="width:24px;height:24px;font-size:9px;flex-shrink:0">${tierInitials(f.name)}</div>
                 <div style="flex:1">
                   <div style="font-size:12px;font-weight:700">${f.name}</div>
-                  <div style="font-size:10px;color:var(--muted)">Father · ${kids.length} child clients</div>
+                  <div style="font-size:10px;color:var(--muted)">Company · ${kids.length} entity clients</div>
                 </div>
-                ${orgTreeActions(f, 'Father', 'b-purple')}
+                ${orgTreeActions(f, 'Company', 'b-purple')}
               </div>
               ${kids.map(c => {
                 renderedIds.add(c.id);
@@ -57,9 +57,9 @@ function renderOrgManager() {
                     <div class="org-avatar av-c" style="width:22px;height:22px;font-size:8px;flex-shrink:0">${tierInitials(c.name)}</div>
                     <div style="flex:1">
                       <div style="font-size:12px;font-weight:700">${c.name}</div>
-                      <div style="font-size:10px;color:var(--muted)">Child · ${c.industry || '—'}${orgProfiles[c.id]?.data_sensitivity ? ` · <span class="risk-profile-badge rpb-${(orgProfiles[c.id].data_sensitivity).toLowerCase()}">${orgProfiles[c.id].data_sensitivity} data sensitivity</span>` : ''}</div>
+                      <div style="font-size:10px;color:var(--muted)">Entity · ${c.industry || '—'}${orgProfiles[c.id]?.data_sensitivity ? ` · <span class="risk-profile-badge rpb-${(orgProfiles[c.id].data_sensitivity).toLowerCase()}">${orgProfiles[c.id].data_sensitivity} data sensitivity</span>` : ''}</div>
                     </div>
-                    ${orgTreeActions(c, 'Child', 'b-green')}
+                    ${orgTreeActions(c, 'Entity', 'b-green')}
                   </div>
                 </div>`;
               }).join('')}
@@ -82,9 +82,9 @@ function renderOrgManager() {
           <div class="org-avatar" style="width:26px;height:26px;font-size:9px;flex-shrink:0;background:#fef3c7;color:#92400e;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700">${tierInitials(o.name)}</div>
           <div style="flex:1">
             <div style="font-size:12px;font-weight:700">${o.name}</div>
-            <div style="font-size:10px;color:var(--muted)">${o.tier.charAt(0).toUpperCase()+o.tier.slice(1)} · parent_id: ${o.parent_id ? o.parent_id.slice(0,8)+'…' : 'none'}</div>
+            <div style="font-size:10px;color:var(--muted)">${{platform:'Platform',grandfather:'Group',father:'Company',child:'Entity'}[o.tier]||o.tier} · parent_id: ${o.parent_id ? o.parent_id.slice(0,8)+'…' : 'none'}</div>
           </div>
-          ${orgTreeActions(o, o.tier.charAt(0).toUpperCase()+o.tier.slice(1), 'b-amber')}
+          ${orgTreeActions(o, {platform:'Platform',grandfather:'Group',father:'Company',child:'Entity'}[o.tier]||o.tier, 'b-amber')}
         </div>`).join('')}
     </div>` : '';
 
@@ -114,9 +114,9 @@ function renderOrgManager() {
       <div class="form-row">
         <div><div class="field-lbl">Tier</div>
           <select id="newOrgTier" onchange="updateParentOptions()">
-            <option value="child">Child</option>
-            <option value="father">Father</option>
-            <option value="grandfather">Grandfather</option>
+            <option value="child">Entity</option>
+            <option value="father">Company</option>
+            <option value="grandfather">Group</option>
           </select>
         </div>
         <div><div class="field-lbl">Parent</div><select id="newOrgParent"></select></div>
@@ -264,7 +264,7 @@ function renderOrgEditModal(org) {
           <div class="field-lbl">Tier</div>
           <select id="editOrgTier" ${org.tier === 'platform' ? 'disabled' : ''} onchange="updateEditParentOptions()">
             ${['platform','grandfather','father','child'].map(t =>
-              `<option value="${t}" ${org.tier === t ? 'selected' : ''}>${t.charAt(0).toUpperCase()+t.slice(1)}</option>`
+              `<option value="${t}" ${org.tier === t ? 'selected' : ''}>${{platform:'Platform',grandfather:'Group',father:'Company',child:'Entity'}[t]}</option>`
             ).join('')}
           </select>
         </div>
@@ -275,7 +275,7 @@ function renderOrgEditModal(org) {
           <select id="editOrgParent">
             <option value="">— None (top-level) —</option>
             ${allOrgs.filter(o => o.id !== org.id).map(o =>
-              `<option value="${o.id}" ${org.parent_id === o.id ? 'selected' : ''}>${o.name} (${o.tier})</option>`
+              `<option value="${o.id}" ${org.parent_id === o.id ? 'selected' : ''}>${o.name} (${{platform:'Platform',grandfather:'Group',father:'Company',child:'Entity'}[o.tier]||o.tier})</option>`
             ).join('')}
           </select>
         </div>
@@ -298,7 +298,7 @@ function renderOrgEditModal(org) {
           <select id="editOrgManagedBy">
             <option value="">— Inherit from parent —</option>
             ${allOrgs.filter(o => ['platform','grandfather','father'].includes(o.tier)).map(o =>
-              `<option value="${o.id}" ${p.managed_by_org_id === o.id ? 'selected' : ''}>${o.name} (${o.tier})</option>`
+              `<option value="${o.id}" ${p.managed_by_org_id === o.id ? 'selected' : ''}>${o.name} (${{platform:'Platform',grandfather:'Group',father:'Company',child:'Entity'}[o.tier]||o.tier})</option>`
             ).join('')}
           </select>
         </div>
