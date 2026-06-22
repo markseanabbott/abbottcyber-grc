@@ -1644,38 +1644,32 @@ ${noGaps||'— None —'}
 PARTIALLY ADDRESSED:
 ${partGaps||'— None —'}
 
-─────────────────────────────────────────────
-CRITICAL FORMATTING RULES — non-negotiable:
+OUTPUT RULES — non-negotiable:
+- Plain text only. No markdown, no asterisks, no pound signs, no bold markers.
+- Bullets: use a hyphen and space "- " at the start of each line.
+- Numbered items: use "1." "2." etc. Do NOT write both a number and a bullet.
+- Do NOT write a title, score table, framework breakdown table, or any section not listed.
 
-This text is parsed by a Word export engine and placed into sections of the document. Follow these rules exactly or the output will be broken.
+OUTPUT — write EXACTLY these sections in this order:
 
-1. NO MARKDOWN. No **, no *, no ##, no -, no _. These appear literally in the printed report.
-2. BULLETS: Use the actual • character at the start of each line. Never use - or * for lists.
-3. PARAGRAPH BREAKS: Separate paragraphs and bullet blocks with exactly one blank line.
-4. NO SECTION LABELS in the prose. Do not write "Executive Summary:", "Key Findings:", etc. Write the content only — the report template adds all headings.
-5. USE THE EXACT SECTION MARKERS below. They are parsed by the export engine to place content in specific report sections. Do not alter, rename, or omit them.
-─────────────────────────────────────────────
-
-OUTPUT STRUCTURE — write EXACTLY in this order with EXACTLY these markers:
-
-Write 2–3 paragraphs of executive summary prose. Plain sentences. What does this ${score}% ${band} score mean for AI governance maturity and business readiness? What is working? Where is the primary risk exposure if gaps are not addressed? Reference the framework context (${fwLabel}) without being technical about it.
+Write 2–3 paragraphs of executive summary prose. What does this ${score}% ${band} score mean for AI governance maturity and business readiness? What is working? Where is the primary risk exposure? Reference the framework context (${fwLabel}) without being technical.
 
 ${hasTrend
-  ? `In the executive summary, weave in 1–2 sentences on trend and momentum: the score moved ${trendDelta}. ${improvedAreas && improvedAreas !== 'None — no gains detected' && improvedAreas !== 'N/A — first assessment' ? `Name the AI governance domains that strengthened (${improvedAreas}) and frame them as concrete progress the organisation made. ` : ''}${regressedAreas && regressedAreas !== 'None' && regressedAreas !== 'N/A — first assessment' ? `Acknowledge any areas that declined (${regressedAreas}) factually and briefly. ` : ''}What does this trajectory signal about programme momentum?`
-  : `Note in the executive summary that this is the first AI governance baseline for ${currentOrg?.name}. Frame it as the starting point for a structured programme — not a verdict.`}
+  ? `Weave in 1–2 sentences on trend and momentum: the score moved ${trendDelta}. ${improvedAreas && improvedAreas !== 'None — no gains detected' && improvedAreas !== 'N/A — first assessment' ? `Name the AI governance domains that strengthened (${improvedAreas}) and frame them as concrete progress. ` : ''}${regressedAreas && regressedAreas !== 'None' && regressedAreas !== 'N/A — first assessment' ? `Acknowledge any areas that declined (${regressedAreas}) factually and briefly. ` : ''}What does this trajectory signal about programme momentum?`
+  : `Note that this is the first AI governance baseline for ${currentOrg?.name}. Frame it as the starting point for a structured programme — not a verdict.`}
 
-Close the executive summary with 1–2 sentences on the recommended next step — whether to close existing gaps before expanding scope, or begin preparing for formal certification or regulatory submission. Frame it as forward-looking business strategy, not a technical gap list.
+Close the executive summary with 1–2 sentences on the recommended next step — close gaps, expand scope, or prepare for certification. Frame it as forward-looking business strategy.
 
 KEY FINDINGS
-• [Risk described as business impact — what could go wrong if this gap is not addressed — one sentence]
-• [3 to 4 findings total]
-• [Focus on consequence for the business, not on the control ID]
-• [Optional 4th finding]
+- [Risk described as business impact — what could go wrong if this gap is not addressed — one sentence]
+- [3 to 4 findings total]
+- [Focus on consequence for the business, not on the control ID]
+- [Optional 4th finding]
 
 PRIORITY RECOMMENDATIONS
-• [Specific action with a one-sentence business rationale — why now, not later]
-• [2 to 3 recommendations total]
-• [Actionable, owner-assignable, not vague]`;
+1. [Specific action with a one-sentence business rationale — why now, not later]
+2. [2 to 3 recommendations total]
+3. [Actionable, owner-assignable, not vague]`;
 
   navigator.clipboard.writeText(prompt)
     .then(() => toast('✓ AI prompt copied — paste into Claude to generate commentary', '#152168'))
@@ -1890,50 +1884,52 @@ async function aiuExportWord() {
   const rawCommentary = aiUnifiedState.reportCommentary || (run.answers || {})._exec_commentary || '';
   const fwLabel = [fw.nist !== false ? 'NIST AI RMF v1.0' : '', fw.iso !== false ? 'ISO/IEC 42001:2023' : ''].filter(Boolean).join(' + ');
 
-  // ── Commentary parser — identical to CIS pattern ─────────────────────────────
-  // Supports prose paragraphs, KEY FINDINGS bullet table, PRIORITY RECOMMENDATIONS numbered table
+  // ── Commentary formatter — KEY FINDINGS (bullet table), PRIORITY RECOMMENDATIONS
+  //    (numbered table), ALL-CAPS subheaders, prose bullets, numbered prose items ──────
   function fmtCommentary(text, placeholder) {
     if (!text) return placeholder
       ? `<p style="color:#94a3b8;font-style:italic;font-size:10pt;margin:0 0 10pt 0">${placeholder}</p>`
       : '';
-    let html = '';
-    let mode = 'prose';
-    let items = [];
+
+    const BULLET_TBL = items => '<table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">' +
+      items.map(l => `<tr>
+        <td style="width:14pt;vertical-align:top;padding:4pt 8pt 4pt 0;color:#152168;font-size:14pt;line-height:1">&#8226;</td>
+        <td style="font-size:11pt;line-height:1.65;padding:4pt 0;vertical-align:top;border-bottom:1pt solid #f1f5f9">${escH(l)}</td>
+      </tr>`).join('') + '</table>';
+
+    const NUM_TBL = items => '<table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">' +
+      items.map((l, i) => `<tr>
+        <td style="background:#152168;color:#fff;width:24pt;text-align:center;font-size:11pt;font-weight:bold;vertical-align:top;padding:7pt 4pt;border-bottom:1pt solid #1e3080">${i + 1}</td>
+        <td style="padding:7pt 10pt;border-bottom:1pt solid #e8ecf4;font-size:11pt;line-height:1.65;vertical-align:top">${escH(l)}</td>
+      </tr>`).join('') + '</table>';
+
+    const SUBHEAD = label => `<div style="font-size:9.5pt;color:#152168;font-weight:bold;text-transform:uppercase;letter-spacing:.5pt;margin:14pt 0 5pt 0;padding-bottom:3pt;border-bottom:1.5pt solid #152168">${label}</div>`;
+
+    let html = '', mode = 'prose', items = [];
+
     function flushItems() {
       if (!items.length) return;
-      if (mode === 'findings') {
-        html += '<table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">' +
-          items.map(l => `<tr>
-            <td style="width:14pt;vertical-align:top;padding:4pt 8pt 4pt 0;color:#152168;font-size:14pt;line-height:1">&#8226;</td>
-            <td style="font-size:11pt;line-height:1.65;padding:4pt 0;vertical-align:top;border-bottom:1pt solid #f1f5f9">${escH(l)}</td>
-          </tr>`).join('') + '</table>';
-      } else if (mode === 'recommendations') {
-        html += '<table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">' +
-          items.map((l, i) => `<tr>
-            <td style="background:#152168;color:#fff;width:24pt;text-align:center;font-size:11pt;font-weight:bold;vertical-align:top;padding:7pt 4pt;border-bottom:1pt solid #1e3080">${i + 1}</td>
-            <td style="padding:7pt 10pt;border-bottom:1pt solid #e8ecf4;font-size:11pt;line-height:1.65;vertical-align:top">${escH(l)}</td>
-          </tr>`).join('') + '</table>';
-      }
+      if (mode === 'findings' || mode === 'bullets') html += BULLET_TBL(items);
+      else if (mode === 'recommendations' || mode === 'numbered') html += NUM_TBL(items);
       items = [];
     }
+
     text.split('\n').map(l => l.trim()).forEach(line => {
-      if (!line) return;
-      if (/^KEY FINDINGS$/i.test(line)) {
-        flushItems();
-        html += `<div style="font-size:9.5pt;color:#152168;font-weight:bold;text-transform:uppercase;letter-spacing:.5pt;margin:14pt 0 5pt 0;padding-bottom:3pt;border-bottom:1.5pt solid #152168">Key Findings</div>`;
-        mode = 'findings'; return;
+      if (!line) { flushItems(); mode = 'prose'; return; }
+      if (/^KEY FINDINGS$/i.test(line)) { flushItems(); html += SUBHEAD('Key Findings'); mode = 'findings'; return; }
+      if (/^PRIORITY RECOMMENDATIONS?$/i.test(line)) { flushItems(); html += SUBHEAD('Priority Recommendations'); mode = 'recommendations'; return; }
+      if (/^EXECUTIVE SUMMARY$/i.test(line)) { flushItems(); html += SUBHEAD('Executive Summary'); mode = 'prose'; return; }
+      if (/^[A-Z][A-Z\s\(\)\-\/&0-9\.]+$/.test(line) && line.length > 3 && !/^\d/.test(line)) {
+        flushItems(); html += SUBHEAD(line.charAt(0) + line.slice(1).toLowerCase()); mode = 'prose'; return;
       }
-      if (/^PRIORITY RECOMMENDATIONS$/i.test(line)) {
-        flushItems();
-        html += `<div style="font-size:9.5pt;color:#152168;font-weight:bold;text-transform:uppercase;letter-spacing:.5pt;margin:14pt 0 5pt 0;padding-bottom:3pt;border-bottom:1.5pt solid #152168">Priority Recommendations</div>`;
-        mode = 'recommendations'; return;
+      if (mode === 'findings' || mode === 'bullets') { items.push(line.replace(/^[•\-\*]\s*/, '')); return; }
+      if (mode === 'recommendations' || mode === 'numbered') {
+        items.push(line.replace(/^[•\-\*]\s*/, '').replace(/^\d+[\.\)]\s*/, '')); return;
       }
-      const content = line.replace(/^[•\-]\s*/, '');
-      if (mode === 'findings' || mode === 'recommendations') {
-        items.push(content);
-      } else {
-        html += `<p style="font-size:11pt;line-height:1.75;margin:0 0 8pt 0">${escH(line)}</p>`;
-      }
+      if (/^[•\-\*]\s/.test(line)) { if (mode !== 'bullets') { flushItems(); mode = 'bullets'; } items.push(line.replace(/^[•\-\*]\s*/, '')); return; }
+      if (/^\d+[\.\)]\s/.test(line)) { if (mode !== 'numbered') { flushItems(); mode = 'numbered'; } items.push(line.replace(/^\d+[\.\)]\s*/, '')); return; }
+      flushItems(); mode = 'prose';
+      html += `<p style="font-size:11pt;line-height:1.75;margin:0 0 8pt 0">${escH(line)}</p>`;
     });
     flushItems();
     return html;

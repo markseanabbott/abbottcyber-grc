@@ -4100,45 +4100,40 @@ ${noGaps || '— None —'}
 PARTIALLY ADDRESSED:
 ${partGaps || '— None —'}
 
-─────────────────────────────────────────────
-CRITICAL FORMATTING RULES — non-negotiable:
+OUTPUT RULES — non-negotiable:
+- Plain text only. No markdown, no asterisks, no pound signs, no bold markers.
+- Bullets: use a hyphen and space "- " at the start of each line.
+- Numbered items: use "1." "2." etc. Do NOT write both a number and a separate bullet.
+- Use EXACTLY the section markers shown below — they are parsed by the export engine.
+- Do NOT write a title, score table, domain breakdown, or any section not listed below.
 
-This text is parsed by a Word export engine and placed into different sections of the document. Follow these rules exactly or the output will be broken.
+OUTPUT — write EXACTLY in this order:
 
-1. NO MARKDOWN. No **, no *, no ##, no -, no _. These appear literally in the printed report.
-2. BULLETS: Use the actual • character at the start of each line. Never use - or * for lists.
-3. PARAGRAPH BREAKS: Separate paragraphs and bullet blocks with exactly one blank line.
-4. NO SECTION LABELS in the prose. Do not write "Executive Summary:", "Key Findings:", etc. Write the content only — the report template adds all headings.
-5. USE THE EXACT SECTION MARKERS below. They are parsed by the export engine to place content in specific report sections. Do not alter, rename, or omit them.
-─────────────────────────────────────────────
+Write 2–3 paragraphs of executive summary prose. Plain sentences. What does this ${score}% ${band} score mean for the business? What is working? What is the primary risk if gaps are not addressed?
 
-OUTPUT STRUCTURE — write EXACTLY in this order with EXACTLY these markers:
-
-Write 2–3 paragraphs of executive summary prose. Plain sentences. What does this ${score}% ${band} score mean for the business in practical terms? What is working? What is the primary risk exposure if gaps are not addressed?
-
-Close the executive summary with 1–2 sentences on the recommended scope for next year's assessment. Use this as your basis: "${advancementNote}" Frame it as a forward-looking strategic recommendation, not a data point. Do not mention percentages or thresholds — speak to the programme maturity and the business case for expanding or consolidating.
+Close the executive summary with 1–2 forward-looking sentences on recommended scope. Use this as context: "${advancementNote}" Speak to programme maturity and the business case — not percentages or thresholds.
 
 KEY FINDINGS
-• [Risk described as business impact — what could go wrong, not a technical gap — one sentence]
-• [3 to 4 findings total]
-• [Focus on consequence for the business]
-• [Optional 4th finding]
+- [Risk described as business impact — what could go wrong, not a technical gap — one sentence]
+- [3 to 4 findings total]
+- [Focus on consequence for the business]
+- [Optional 4th finding]
 
 PRIORITY RECOMMENDATIONS
-• [Specific action with a one-sentence rationale — why now, not later]
-• [2 to 3 recommendations total]
-• [Actionable, not vague]
+1. [Specific action with a one-sentence rationale — why now, not later]
+2. [2 to 3 recommendations total]
+3. [Actionable, not vague]
 
 ---CONTROLS---
 Write 1–2 sentences about the IG tier progress breakdown. What does the score distribution across ${igScopeLabel} tell leadership about the depth vs. breadth of their security maturity? Is foundational (IG1) coverage solid before tackling advanced controls?
 
 ---TREND---
 ${hasTrend
-  ? `Write 1–2 sentences about the score trajectory: ${trendStr} (${trendDelta}). ${improvedAreas && improvedAreas !== 'None — no gains detected' && improvedAreas !== 'N/A — first assessment' ? `Name the specific control areas that improved (${improvedAreas}) and frame them as capabilities the organisation has strengthened — not just a number going up. ` : ''}${regressedAreas && regressedAreas !== 'None' && regressedAreas !== 'N/A — first assessment' ? `Acknowledge any areas that declined (${regressedAreas}) factually and briefly. ` : ''}What does this trajectory signal about programme momentum — is the organisation building on a foundation or at risk of stalling?`
-  : `Write 1 sentence establishing this as the first baseline assessment for ${currentOrg.name}. Set the tone: a baseline is the starting point, not a verdict — it tells us where to focus first.`}
+  ? `Write 1–2 sentences about the score trajectory: ${trendStr} (${trendDelta}). ${improvedAreas && improvedAreas !== 'None — no gains detected' && improvedAreas !== 'N/A — first assessment' ? `Name the specific control areas that improved (${improvedAreas}) and frame them as capabilities the organisation has strengthened — not just a number going up. ` : ''}${regressedAreas && regressedAreas !== 'None' && regressedAreas !== 'N/A — first assessment' ? `Acknowledge any areas that declined (${regressedAreas}) factually and briefly. ` : ''}What does this trajectory signal about programme momentum?`
+  : `Write 1 sentence establishing this as the first baseline assessment for ${currentOrg.name}. Set the tone: a baseline is the starting point, not a verdict.`}
 
 ---GAPS---
-Write 1 paragraph about the top priority gaps. What pattern do you see in where the gaps cluster — which controls, which capabilities? What is the combined business risk of these gaps, and what is the logical first step to close the most critical exposures?`;
+Write 1 paragraph about the top priority gaps. What pattern do you see in where gaps cluster? What is the combined business risk, and what is the logical first step to close the most critical exposures?`;
 
   navigator.clipboard.writeText(prompt)
     .then(() => toast('✓ AI prompt copied — paste into Claude to generate commentary', '#152168'))
@@ -4201,58 +4196,56 @@ function cisExportReportWord() {
     _cMap[_cParts[i]] = (_cParts[i + 1] || '').trim();
   }
 
-  // Line-by-line commentary formatter.
-  // Detects KEY FINDINGS and PRIORITY RECOMMENDATIONS as styled sub-headings.
-  // Every subsequent line (with or without •) becomes a row in a styled table.
-  // Prose lines outside those sections become <p> tags.
-  // Works whether the AI used bullet characters, dashes, or plain sentences.
+  // Commentary formatter — handles KEY FINDINGS (bullet table), PRIORITY RECOMMENDATIONS
+  // (numbered table), ALL-CAPS subheaders, prose bullet lines, and numbered prose items.
   function fmtCommentary(text, placeholder) {
     if (!text) return placeholder
       ? `<p style="color:#94a3b8;font-style:italic;font-size:10pt;margin:0 0 10pt 0">${placeholder}</p>`
       : '';
 
+    const BULLET_TBL = items => '<table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">' +
+      items.map(l => `<tr>
+        <td style="width:14pt;vertical-align:top;padding:4pt 8pt 4pt 0;color:#152168;font-size:14pt;line-height:1">&#8226;</td>
+        <td style="font-size:11pt;line-height:1.65;padding:4pt 0;vertical-align:top;border-bottom:1pt solid #f1f5f9">${escH(l)}</td>
+      </tr>`).join('') + '</table>';
+
+    const NUM_TBL = items => '<table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">' +
+      items.map((l, i) => `<tr>
+        <td style="background:#152168;color:#fff;width:24pt;text-align:center;font-size:11pt;font-weight:bold;vertical-align:top;padding:7pt 4pt;border-bottom:1pt solid #1e3080">${i + 1}</td>
+        <td style="padding:7pt 10pt;border-bottom:1pt solid #e8ecf4;font-size:11pt;line-height:1.65;vertical-align:top">${escH(l)}</td>
+      </tr>`).join('') + '</table>';
+
+    const SUBHEAD = label => `<div style="font-size:9.5pt;color:#152168;font-weight:bold;text-transform:uppercase;letter-spacing:.5pt;margin:14pt 0 5pt 0;padding-bottom:3pt;border-bottom:1.5pt solid #152168">${label}</div>`;
+
     let html = '';
-    let mode = 'prose'; // prose | findings | recommendations
+    let mode = 'prose'; // prose | findings | recommendations | bullets | numbered
     let items = [];
 
     function flushItems() {
       if (!items.length) return;
-      if (mode === 'findings') {
-        html += '<table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">' +
-          items.map(l => `<tr>
-            <td style="width:14pt;vertical-align:top;padding:4pt 8pt 4pt 0;color:#152168;font-size:14pt;line-height:1">&#8226;</td>
-            <td style="font-size:11pt;line-height:1.65;padding:4pt 0;vertical-align:top;border-bottom:1pt solid #f1f5f9">${escH(l)}</td>
-          </tr>`).join('') + '</table>';
-      } else if (mode === 'recommendations') {
-        html += '<table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">' +
-          items.map((l, i) => `<tr>
-            <td style="background:#152168;color:#fff;width:24pt;text-align:center;font-size:11pt;font-weight:bold;vertical-align:top;padding:7pt 4pt;border-bottom:1pt solid #1e3080">${i + 1}</td>
-            <td style="padding:7pt 10pt;border-bottom:1pt solid #e8ecf4;font-size:11pt;line-height:1.65;vertical-align:top">${escH(l)}</td>
-          </tr>`).join('') + '</table>';
-      }
+      if (mode === 'findings' || mode === 'bullets') html += BULLET_TBL(items);
+      else if (mode === 'recommendations' || mode === 'numbered') html += NUM_TBL(items);
       items = [];
     }
 
     text.split('\n').map(l => l.trim()).forEach(line => {
-      if (!line) return;
-
-      if (/^KEY FINDINGS$/i.test(line)) {
-        flushItems();
-        html += `<div style="font-size:9.5pt;color:#152168;font-weight:bold;text-transform:uppercase;letter-spacing:.5pt;margin:14pt 0 5pt 0;padding-bottom:3pt;border-bottom:1.5pt solid #152168">Key Findings</div>`;
-        mode = 'findings'; return;
+      if (!line) { flushItems(); mode = 'prose'; return; }
+      if (/^KEY FINDINGS$/i.test(line)) { flushItems(); html += SUBHEAD('Key Findings'); mode = 'findings'; return; }
+      if (/^PRIORITY RECOMMENDATIONS?$/i.test(line)) { flushItems(); html += SUBHEAD('Priority Recommendations'); mode = 'recommendations'; return; }
+      if (/^EXECUTIVE SUMMARY$/i.test(line)) { flushItems(); html += SUBHEAD('Executive Summary'); mode = 'prose'; return; }
+      // ANY other ALL-CAPS-only line → styled subheader
+      if (/^[A-Z][A-Z\s\(\)\-\/&0-9\.]+$/.test(line) && line.length > 3 && !/^\d/.test(line)) {
+        flushItems(); html += SUBHEAD(line.charAt(0) + line.slice(1).toLowerCase()); mode = 'prose'; return;
       }
-      if (/^PRIORITY RECOMMENDATIONS$/i.test(line)) {
-        flushItems();
-        html += `<div style="font-size:9.5pt;color:#152168;font-weight:bold;text-transform:uppercase;letter-spacing:.5pt;margin:14pt 0 5pt 0;padding-bottom:3pt;border-bottom:1.5pt solid #152168">Priority Recommendations</div>`;
-        mode = 'recommendations'; return;
+      if (mode === 'findings' || mode === 'bullets') { items.push(line.replace(/^[•\-\*]\s*/, '')); return; }
+      if (mode === 'recommendations' || mode === 'numbered') {
+        items.push(line.replace(/^[•\-\*]\s*/, '').replace(/^\d+[\.\)]\s*/, '')); return;
       }
-
-      const content = line.replace(/^[•\-]\s*/, '');
-      if (mode === 'findings' || mode === 'recommendations') {
-        items.push(content);
-      } else {
-        html += `<p style="font-size:11pt;line-height:1.75;margin:0 0 8pt 0">${escH(line)}</p>`;
-      }
+      // Prose: detect bullet or numbered lines
+      if (/^[•\-\*]\s/.test(line)) { if (mode !== 'bullets') { flushItems(); mode = 'bullets'; } items.push(line.replace(/^[•\-\*]\s*/, '')); return; }
+      if (/^\d+[\.\)]\s/.test(line)) { if (mode !== 'numbered') { flushItems(); mode = 'numbered'; } items.push(line.replace(/^\d+[\.\)]\s*/, '')); return; }
+      flushItems(); mode = 'prose';
+      html += `<p style="font-size:11pt;line-height:1.75;margin:0 0 8pt 0">${escH(line)}</p>`;
     });
 
     flushItems();

@@ -1106,28 +1106,26 @@ ${noGaps || '— None —'}
 PARTIALLY ADDRESSED CONTROLS:
 ${partGaps || '— None —'}
 
-─────────────────────────────────────────────
-CRITICAL FORMATTING RULES — non-negotiable:
-1. NO MARKDOWN. No **, no *, no ##, no -, no _. These appear literally in the report.
-2. BULLETS: Use the actual • character. Never use - or * for lists.
-3. PARAGRAPH BREAKS: Separate blocks with exactly one blank line.
-4. NO SECTION LABELS in the prose — write the content only, no "Executive Summary:" headers.
-─────────────────────────────────────────────
+OUTPUT RULES — non-negotiable:
+- Plain text only. No markdown, no asterisks, no pound signs, no bold markers.
+- Bullets: use a hyphen and space "- " at the start of each line.
+- Numbered items: use "1." "2." etc. Do NOT write both a number and a bullet.
+- Do NOT write a title, score table, function breakdown table, or any section not listed below.
 
-Write exactly in this order:
+OUTPUT — write EXACTLY these sections in this order:
 
-Write 2–3 paragraphs of executive summary prose. What does this ${score}% ${band} score mean for the business in practical terms — what is the AI risk exposure, and what has been done well? ${hasTrend ? `Weave in 1–2 sentences on trend and momentum: the overall change was ${trendDelta}. ${improvedAreas && improvedAreas !== 'None — no gains detected' && improvedAreas !== 'N/A — first assessment' ? `Name the NIST AI RMF functions that strengthened (${improvedAreas}) as concrete evidence of progress. ` : ''}${regressedAreas && regressedAreas !== 'None' && regressedAreas !== 'N/A — first assessment' ? `Acknowledge regressions (${regressedAreas}) factually. ` : ''}` : `Note that this is the first AI risk management baseline for ${currentOrg?.name} — frame it as the starting point, not a verdict. `}Close with 1–2 forward-looking sentences on the recommended next step.
+Write 2–3 paragraphs of executive summary prose. What does this ${score}% ${band} score mean for AI risk exposure, and what has been done well? ${hasTrend ? `Weave in 1–2 sentences on trend: the overall change was ${trendDelta}. ${improvedAreas && improvedAreas !== 'None — no gains detected' && improvedAreas !== 'N/A — first assessment' ? `Name the NIST AI RMF functions that strengthened (${improvedAreas}) as concrete evidence of progress. ` : ''}${regressedAreas && regressedAreas !== 'None' && regressedAreas !== 'N/A — first assessment' ? `Acknowledge regressions (${regressedAreas}) factually. ` : ''}` : `Note that this is the first AI risk management baseline for ${currentOrg?.name} — frame it as the starting point, not a verdict. `}Close with 1–2 forward-looking sentences on the recommended next step.
 
 KEY FINDINGS
-• [The most significant AI governance gap written as a business risk — what could go wrong if this is not addressed]
-• [3–4 findings total]
-• [Focus on real-world consequence, not the control ID]
-• [Optional 4th finding]
+- [The most significant AI governance gap written as a business risk — what could go wrong if this is not addressed]
+- [3–4 findings total]
+- [Focus on real-world consequence, not the control ID]
+- [Optional 4th finding]
 
 PRIORITY RECOMMENDATIONS
-• [Specific action with a one-sentence business rationale — why this, why now]
-• [2–3 recommendations total]
-• [Actionable and owner-assignable]`;
+1. [Specific action with a one-sentence business rationale — why this, why now]
+2. [2–3 recommendations total]
+3. [Actionable and owner-assignable]`;
 
   navigator.clipboard.writeText(prompt)
     .then(() => toast('✓ AI prompt copied — paste into Claude to generate commentary', '#152168'))

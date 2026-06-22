@@ -967,28 +967,26 @@ ${noGaps || '— None —'}
 PARTIAL CONFORMITIES:
 ${partGaps || '— None —'}
 
-─────────────────────────────────────────────
-CRITICAL FORMATTING RULES — non-negotiable:
-1. NO MARKDOWN. No **, no *, no ##, no -, no _. These appear literally in the report.
-2. BULLETS: Use the actual • character. Never use - or * for lists.
-3. PARAGRAPH BREAKS: Separate blocks with exactly one blank line.
-4. NO SECTION LABELS in the prose — write the content only, no "Executive Summary:" headers.
-─────────────────────────────────────────────
+OUTPUT RULES — non-negotiable:
+- Plain text only. No markdown, no asterisks, no pound signs, no bold markers.
+- Bullets: use a hyphen and space "- " at the start of each line.
+- Numbered items: use "1." "2." etc. Do NOT write both a number and a bullet.
+- Do NOT write a title, score table, clause breakdown table, or any section not listed below.
 
-Write exactly in this order:
+OUTPUT — write EXACTLY these sections in this order:
 
-Write 2–3 paragraphs of executive summary prose. What does this ${score}% ${band} score mean for AI management system maturity and certification readiness? What has the organisation done well, and where is the primary risk if nonconformities are left unaddressed? ${hasTrend ? `Weave in 1–2 sentences on trend and momentum: the overall change was ${trendDelta}. ${improvedAreas && improvedAreas !== 'None — no gains detected' && improvedAreas !== 'N/A — first assessment' ? `Name the ISO 42001 clauses that showed progress (${improvedAreas}) — frame these as concrete steps toward conformance the organisation has already taken. ` : ''}${regressedAreas && regressedAreas !== 'None' && regressedAreas !== 'N/A — first assessment' ? `Acknowledge regressions (${regressedAreas}) factually. ` : ''}` : `Note that this is the first ISO 42001 baseline for ${currentOrg?.name} — frame it as the starting point for a structured conformance journey. `}Close with 1–2 forward-looking sentences on the recommended next step toward certification readiness.
+Write 2–3 paragraphs of executive summary prose. What does this ${score}% ${band} score mean for AI management system maturity and certification readiness? What has the organisation done well, and where is the primary risk if nonconformities are left unaddressed? ${hasTrend ? `Weave in 1–2 sentences on trend: the overall change was ${trendDelta}. ${improvedAreas && improvedAreas !== 'None — no gains detected' && improvedAreas !== 'N/A — first assessment' ? `Name the ISO 42001 clauses that showed progress (${improvedAreas}) — frame these as concrete steps toward conformance. ` : ''}${regressedAreas && regressedAreas !== 'None' && regressedAreas !== 'N/A — first assessment' ? `Acknowledge regressions (${regressedAreas}) factually. ` : ''}` : `Note that this is the first ISO 42001 baseline for ${currentOrg?.name} — frame it as the starting point for a structured conformance journey. `}Close with 1–2 forward-looking sentences on the recommended next step toward certification readiness.
 
 KEY FINDINGS
-• [The most significant nonconformity written as a business or audit risk — what is the real-world exposure]
-• [3–4 findings total]
-• [Focus on consequence, not the clause number]
-• [Optional 4th finding]
+- [The most significant nonconformity written as a business or audit risk — what is the real-world exposure]
+- [3–4 findings total]
+- [Focus on consequence, not the clause number]
+- [Optional 4th finding]
 
 PRIORITY RECOMMENDATIONS
-• [Specific action with a one-sentence rationale tied to certification readiness or business risk]
-• [2–3 recommendations total]
-• [Actionable and owner-assignable]`;
+1. [Specific action with a one-sentence rationale tied to certification readiness or business risk]
+2. [2–3 recommendations total]
+3. [Actionable and owner-assignable]`;
 
   navigator.clipboard.writeText(prompt)
     .then(() => toast('✓ AI prompt copied — paste into Claude', '#152168'))
