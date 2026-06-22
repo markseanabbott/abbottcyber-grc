@@ -428,6 +428,16 @@ function renderMain() {
   const voB = viewOnlyBanner();  // empty string unless role=viewer
   if (activeNav === 'users') { el.innerHTML = renderUserManagement(); return; }
   if (activeNav === 'settings') { el.innerHTML = renderSettings(); setTimeout(settingsLoad, 50); return; }
+  if (activeNav === 'backlog') {
+    if (!blmState.items.length && !blmState.loading) {
+      blmState.loading = true;
+      el.innerHTML = renderBacklogManager();
+      blmLoad().then(() => { if (activeNav === 'backlog') el.innerHTML = renderBacklogManager(); });
+    } else {
+      el.innerHTML = renderBacklogManager();
+    }
+    return;
+  }
   if (activeNav === 'home') {
     el.innerHTML = renderHome();
     setTimeout(drawHomeCharts, 80);

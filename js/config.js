@@ -138,6 +138,7 @@ const NAV = [
   ]},
   { id: 'g_settings', group: 'Settings', icon: '⚙️', platformAdminOnly: true, items: [
     { id: 'settings', icon: '⚙️', label: 'Platform Settings', live: true, phase: 1 },
+    { id: 'backlog',  icon: '📋', label: 'Feature Backlog',   live: true, phase: 1 },
   ]},
 ];
 
