@@ -1,5 +1,293 @@
-// Returns orgs that sit beneath currentOrg in the hierarchy,
-// intersected with the user's auth scope so we never surface orgs they shouldn't see.
+// ============================================================
+// HOME DASHBOARD — js/home.js
+// ============================================================
+
+// Portfolio state for the 4 stat cards.
+// loadHomePortfolio() fills this async; renderHome() reads it.
+let homePortfolioState = {
+  scopeKey:      null,   // sorted join of scope orgIds — changes when org/scope changes
+  loading:       false,
+  loaded:        false,
+  orgScores:     [],     // [{orgId, name, tier, composite, modules:[{id,score}]}]
+  riskCounts:    { critical: 0, high: 0 },
+  assessedCount: 0,
+  totalCount:    0,
+  breakdownOpen: false,
+};
+
+function _scoreColor(s) {
+  if (s === null || s === undefined) return 'var(--text)';
+  return s >= 70 ? '#15803d' : s >= 40 ? '#b45309' : '#dc2626';
+}
+
+// Returns the orgs that determine portfolio scope for the current user/org.
+function _portfolioScopeOrgs() {
+  if (!currentOrg) return [];
+  if (currentOrg.tier === 'child') return [currentOrg];
+  return [currentOrg, ...orgsUnderCurrent()];
+}
+
+// ============================================================
+// PORTFOLIO LOAD
+// ============================================================
+async function loadHomePortfolio() {
+  if (!currentOrg) return;
+  const scopeOrgs = _portfolioScopeOrgs();
+  const key = scopeOrgs.map(o => o.id).sort().join(',');
+
+  // Already loaded for this scope
+  if (homePortfolioState.scopeKey === key && homePortfolioState.loaded) return;
+  // Already in-flight for this scope
+  if (homePortfolioState.loading && homePortfolioState.scopeKey === key) return;
+
+  homePortfolioState.loading  = true;
+  homePortfolioState.scopeKey = key;
+  homePortfolioState.loaded   = false;
+
+  try {
+    // Load assessments for every scope org (caches — skips already-loaded)
+    await Promise.all(scopeOrgs.map(o => loadAssessments(o.id)));
+
+    // Per-org composite scores (avg of last run per module, only modules with data)
+    const MODS = ['cis', 'insurance', 'techstack'];
+    const orgScores = [];
+    for (const org of scopeOrgs) {
+      const h    = orgAssessments[org.id] || {};
+      const mods = MODS.map(m => {
+        const runs = h[m] || [];
+        return runs.length ? { id: m, score: runs[runs.length - 1].score } : null;
+      }).filter(Boolean);
+      if (!mods.length) continue;
+      orgScores.push({
+        orgId:     org.id,
+        name:      org.name,
+        tier:      org.tier,
+        composite: Math.round(mods.reduce((s, m) => s + m.score, 0) / mods.length),
+        modules:   mods,
+      });
+    }
+
+    // Risk counts — single multi-org query
+    let riskCounts = { critical: 0, high: 0 };
+    try {
+      const ids   = scopeOrgs.map(o => o.id).join(',');
+      const risks = await sbFetch(
+        `risk_register?org_id=in.(${ids})&select=inherent_risk_rating`,
+        'GET', null, {}
+      );
+      (risks || []).forEach(r => {
+        if (r.inherent_risk_rating === 'Critical')   riskCounts.critical++;
+        else if (r.inherent_risk_rating === 'High')  riskCounts.high++;
+      });
+    } catch (_) {
+      // Fallback: use already-loaded rrState for single-org
+      if (rrState.orgId === currentOrg.id) {
+        rrState.rows.forEach(r => {
+          if (r.inherent_risk_rating === 'Critical')  riskCounts.critical++;
+          else if (r.inherent_risk_rating === 'High') riskCounts.high++;
+        });
+      }
+    }
+
+    // Stale check — org changed while we were loading
+    if (homePortfolioState.scopeKey !== key) return;
+
+    homePortfolioState.orgScores     = orgScores;
+    homePortfolioState.riskCounts    = riskCounts;
+    homePortfolioState.assessedCount = orgScores.length;
+    homePortfolioState.totalCount    = scopeOrgs.length;
+    homePortfolioState.loaded        = true;
+  } catch (_) {
+    if (homePortfolioState.scopeKey === key) homePortfolioState.loaded = false;
+  }
+
+  homePortfolioState.loading = false;
+
+  if (activeNav === 'home') {
+    const mc = document.getElementById('mainContent');
+    if (mc) { mc.innerHTML = renderHome(); setTimeout(drawHomeCharts, 80); }
+  }
+}
+
+function homeToggleBreakdown() {
+  homePortfolioState.breakdownOpen = !homePortfolioState.breakdownOpen;
+  if (activeNav === 'home') {
+    const mc = document.getElementById('mainContent');
+    if (mc) { mc.innerHTML = renderHome(); setTimeout(drawHomeCharts, 80); }
+  }
+}
+
+// Breakdown table rendered below the stat grid
+function _homePortfolioBreakdown() {
+  const po           = homePortfolioState;
+  const excludedCount = po.totalCount - po.assessedCount;
+
+  const sorted = [...po.orgScores].sort((a, b) => b.composite - a.composite);
+  const thStyle = 'padding:.45rem .85rem;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);text-align:center';
+  const modCols = ['cis', 'insurance', 'techstack'];
+  const modLabels = { cis: 'CIS', insurance: 'Insurance', techstack: 'Tech Stack' };
+
+  const bodyRows = sorted.map(o => {
+    const cols = modCols.map(m => {
+      const mod = o.modules.find(x => x.id === m);
+      return `<td style="padding:.4rem .85rem;font-size:11px;text-align:center;color:${mod ? _scoreColor(mod.score) : '#d1d5db'}">${mod ? mod.score + '%' : '—'}</td>`;
+    }).join('');
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:.4rem .85rem;font-size:12px;font-weight:600;color:var(--text)">${escH(o.name)}</td>
+      <td style="padding:.4rem .85rem;font-size:13px;font-weight:800;color:${_scoreColor(o.composite)};text-align:center">${o.composite}%</td>
+      ${cols}
+    </tr>`;
+  }).join('');
+
+  return `<div class="card" style="margin-top:-.5rem;margin-bottom:1rem;padding:0;overflow:hidden">
+    <div style="padding:.6rem 1rem;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+      <span style="font-size:10px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.05em">Score Breakdown</span>
+      <span style="font-size:11px;color:var(--muted)">Based on ${po.assessedCount} of ${po.totalCount} orgs with assessment data</span>
+      ${excludedCount > 0 ? `<span style="font-size:11px;color:var(--muted);font-weight:600">${excludedCount} org${excludedCount!==1?'s':''} excluded — no assessments recorded</span>` : ''}
+    </div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;min-width:380px">
+        <thead>
+          <tr style="background:var(--bg)">
+            <th style="${thStyle};text-align:left">Organisation</th>
+            <th style="${thStyle}">Composite</th>
+            ${modCols.map(m => `<th style="${thStyle}">${modLabels[m]}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>${bodyRows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ============================================================
+// STAT CARDS
+// ============================================================
+
+function _homeCard2(isChild, h, pLoaded, pLoading, po) {
+  if (isChild) {
+    // Child: compute own composite inline from already-loaded orgAssessments
+    const mods = ['cis','insurance','techstack'].map(m => {
+      const runs = h[m] || [];
+      return runs.length ? { id: m, label: {cis:'CIS',insurance:'Insurance',techstack:'Tech Stack'}[m], score: runs[runs.length-1].score } : null;
+    }).filter(Boolean);
+    const composite = mods.length
+      ? Math.round(mods.reduce((s, m) => s + m.score, 0) / mods.length)
+      : null;
+    const subLabel = mods.length ? mods.map(m => m.label).join(' · ') : 'No assessments yet';
+    return `<div class="wcard">
+      <div class="wcard-icon">🎯</div>
+      <div class="wcard-label">Risk Score</div>
+      <div class="wcard-val" style="color:${_scoreColor(composite)}">${composite !== null ? composite + '%' : '—'}</div>
+      <div class="wcard-sub">${subLabel}</div>
+    </div>`;
+  }
+
+  // Portfolio: father / grandfather / platform
+  const score = (pLoaded && po.orgScores.length)
+    ? Math.round(po.orgScores.reduce((s, o) => s + o.composite, 0) / po.orgScores.length)
+    : null;
+  const excluded = pLoaded ? po.totalCount - po.assessedCount : 0;
+  const metaNote = pLoaded
+    ? `Based on ${po.assessedCount} of ${po.totalCount} org${po.totalCount!==1?'s':''}`
+    : (pLoading ? 'Loading portfolio…' : '—');
+  const excludedNote = pLoaded && excluded > 0
+    ? ` · ${excluded} with no data`
+    : '';
+  const breakdownBtn = (pLoaded && po.orgScores.length > 0)
+    ? `<div style="margin-top:5px">
+        <button onclick="event.stopPropagation();homeToggleBreakdown()"
+          style="background:none;border:none;color:var(--cyan);font-size:11px;font-weight:700;cursor:pointer;padding:0;font-family:inherit">
+          ${po.breakdownOpen ? '▲ Hide breakdown' : '▾ Show breakdown'}
+        </button>
+      </div>`
+    : '';
+
+  const valHtml = score !== null
+    ? `<span style="color:${_scoreColor(score)}">${score}%</span>`
+    : `<span style="color:var(--muted);font-size:20px">${pLoading ? '…' : '—'}</span>`;
+
+  return `<div class="wcard">
+    <div class="wcard-icon">🎯</div>
+    <div class="wcard-label">Portfolio Risk Score</div>
+    <div class="wcard-val">${valHtml}</div>
+    <div class="wcard-sub">${metaNote}${excludedNote}</div>
+    ${breakdownBtn}
+  </div>`;
+}
+
+function _homeCard3(isChild, h, pLoaded, pLoading, po) {
+  let crit = 0, high = 0, ready = false;
+
+  if (pLoaded) {
+    crit  = po.riskCounts.critical;
+    high  = po.riskCounts.high;
+    ready = true;
+  } else if (isChild && rrState.orgId === currentOrg.id) {
+    // Fallback for child: use already-loaded rrState
+    rrState.rows.forEach(r => {
+      if (r.inherent_risk_rating === 'Critical') crit++;
+      else if (r.inherent_risk_rating === 'High') high++;
+    });
+    ready = true;
+  }
+
+  const total     = crit + high;
+  const valColor  = !ready ? 'var(--text)' : (total > 0 ? '#dc2626' : '#15803d');
+  const subLabel  = !ready ? (pLoading ? 'Loading…' : '—')
+                  : total === 0 ? 'None logged'
+                  : `${crit} Critical · ${high} High`;
+  const valHtml   = !ready
+    ? `<span style="color:var(--muted);font-size:20px">${pLoading ? '…' : '—'}</span>`
+    : `<span style="color:${valColor}">${total}</span>`;
+
+  return `<div class="wcard">
+    <div class="wcard-icon">⚠️</div>
+    <div class="wcard-label">Open Critical Risks</div>
+    <div class="wcard-val">${valHtml}</div>
+    <div class="wcard-sub">${subLabel}</div>
+  </div>`;
+}
+
+function _homeCard4(isChild, h, pLoaded, pLoading, po) {
+  if (isChild) {
+    // Last assessed date
+    const allRuns = Object.values(h).flat();
+    const lastDate = allRuns.length
+      ? [...allRuns].sort((a, b) => (b.date||'').localeCompare(a.date||''))[0].date
+      : null;
+    return `<div class="wcard">
+      <div class="wcard-icon">📅</div>
+      <div class="wcard-label">Last Assessed</div>
+      <div class="wcard-val" style="font-size:${lastDate?'15px':'22px'}">${lastDate ? lastDate.slice(0,10) : '—'}</div>
+      <div class="wcard-sub">${lastDate ? 'Most recent assessment' : 'Never assessed'}</div>
+    </div>`;
+  }
+
+  // Assessment Coverage
+  const covPct  = (pLoaded && po.totalCount > 0)
+    ? Math.round((po.assessedCount / po.totalCount) * 100)
+    : null;
+  const excluded = pLoaded ? po.totalCount - po.assessedCount : 0;
+  const valHtml  = covPct !== null
+    ? `<span style="color:${_scoreColor(covPct)}">${covPct}%</span>`
+    : `<span style="color:var(--muted);font-size:20px">${pLoading ? '…' : '—'}</span>`;
+  const subLabel = pLoaded
+    ? `${po.assessedCount} of ${po.totalCount} org${po.totalCount!==1?'s':''} assessed${excluded > 0 ? ` · ${excluded} with no data` : ''}`
+    : (pLoading ? 'Loading…' : '—');
+
+  return `<div class="wcard">
+    <div class="wcard-icon">📊</div>
+    <div class="wcard-label">Assessment Coverage</div>
+    <div class="wcard-val">${valHtml}</div>
+    <div class="wcard-sub">${subLabel}</div>
+  </div>`;
+}
+
+// ============================================================
+// HOME DASHBOARD — MAIN RENDER
+// ============================================================
+
 function orgsUnderCurrent() {
   if (!currentOrg) return [];
   const authVisible = new Set(visibleOrgs().map(o => o.id));
@@ -12,14 +300,20 @@ function orgsUnderCurrent() {
   return [...directChildren, ...grandchildren];
 }
 
-// ============================================================
-// HOME DASHBOARD
-// ============================================================
-
 function renderHome() {
   if (!currentOrg) return '';
-  const h = orgAssessments[currentOrg.id] || {};
-  const subOrgs = orgsUnderCurrent();
+
+  // Kick off portfolio data load if stale or missing
+  const _scopeKey = _portfolioScopeOrgs().map(o => o.id).sort().join(',');
+  if (!homePortfolioState.loaded || homePortfolioState.scopeKey !== _scopeKey) {
+    loadHomePortfolio();
+  }
+
+  const h        = orgAssessments[currentOrg.id] || {};
+  const isChild  = currentOrg.tier === 'child';
+  const po       = homePortfolioState;
+  const pLoaded  = po.loaded  && po.scopeKey === _scopeKey;
+  const pLoading = po.loading && po.scopeKey === _scopeKey;
 
   // Module access gates — respect viewAs role
   const _can = (gid) => typeof hasModuleAccess === 'function' ? hasModuleAccess(gid) : true;
@@ -27,17 +321,7 @@ function renderHome() {
   const canAI          = _can('g_ai_readiness');
   const canRisk        = _can('g_risk');
 
-  // Avg score: only from accessible modules
-  const scoredMods = [
-    ...(canAssessments ? ['cis','insurance','techstack'] : []),
-    ...(canAI          ? ['ai_unified'] : []),
-  ];
-  const scores = scoredMods
-    .map(k => { const r = h[k] || []; return r.length ? r[r.length-1].score : null; })
-    .filter(s => s !== null);
-  const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
-
-  // Quick links — only modules user can reach
+  // Quick links
   const quickLinks = [
     { id:'insurance',  icon:'🛡️', label:'Insurance Readiness', group:'g_assessments' },
     { id:'techstack',  icon:'🖥️', label:'Technology Stack',    group:'g_assessments' },
@@ -47,7 +331,7 @@ function renderHome() {
     { id:'ai_unified', icon:'🤖', label:'AI Readiness',         group:'g_ai_readiness' },
   ].filter(l => _can(l.group));
 
-  // Risk register rows (use rrState if loaded for this org)
+  // Risk register rows for risk chicklet (existing panel — single org, already loaded)
   const rrLoaded = rrState.orgId === currentOrg.id;
   const rrRows = rrLoaded
     ? [...rrState.rows]
@@ -59,7 +343,7 @@ function renderHome() {
         .slice(0, 8)
     : null;
 
-  // Build panel chicklets — only accessible ones
+  // Panel chicklets
   const panels = [];
   if (canAssessments) panels.push(_homeAssessmentsChicklet(h));
   if (canRisk)        panels.push(_homeRiskChicklet(rrRows, rrLoaded));
@@ -68,43 +352,38 @@ function renderHome() {
 
   const noPanels = panels.length === 0;
 
+  // Stat card HTML
+  const card1 = `<div class="wcard">
+    <div class="wcard-icon">${TIER_ICONS[currentOrg.tier]}</div>
+    <div class="wcard-label">Tier</div>
+    <div class="wcard-val" style="font-size:14px">${currentOrg.tier.charAt(0).toUpperCase() + currentOrg.tier.slice(1)}</div>
+    <div class="wcard-sub">${currentOrg.name}</div>
+  </div>`;
+
+  const card2 = _homeCard2(isChild, h, pLoaded, pLoading, po);
+  const card3 = _homeCard3(isChild, h, pLoaded, pLoading, po);
+  const card4 = _homeCard4(isChild, h, pLoaded, pLoading, po);
+
+  const breakdownPanel = (!isChild && po.breakdownOpen && pLoaded && po.orgScores.length > 0)
+    ? _homePortfolioBreakdown()
+    : '';
+
   return `
   ${renderTierBanner()}
 
-  <!-- 4 stat chicklets -->
+  <!-- 4 stat cards -->
   <div class="welcome-grid">
-    <div class="wcard">
-      <div class="wcard-icon">${TIER_ICONS[currentOrg.tier]}</div>
-      <div class="wcard-label">Tier</div>
-      <div class="wcard-val" style="font-size:14px">${currentOrg.tier.charAt(0).toUpperCase() + currentOrg.tier.slice(1)}</div>
-      <div class="wcard-sub">${currentOrg.name}</div>
-    </div>
-    <div class="wcard">
-      <div class="wcard-icon">👁️</div>
-      <div class="wcard-label">Sub-organisations</div>
-      <div class="wcard-val">${subOrgs.length}</div>
-      <div class="wcard-sub">${subOrgs.length ? 'Under this org' : 'No children'}</div>
-    </div>
-    <div class="wcard">
-      <div class="wcard-icon">📋</div>
-      <div class="wcard-label">Assessments run</div>
-      <div class="wcard-val">${canAssessments || canAI ? scores.length : '—'}</div>
-      <div class="wcard-sub">${canAssessments || canAI ? 'This org' : 'No access'}</div>
-    </div>
-    <div class="wcard">
-      <div class="wcard-icon">🎯</div>
-      <div class="wcard-label">Avg score</div>
-      <div class="wcard-val">${avg !== null ? avg + '%' : '—'}</div>
-      <div class="wcard-sub">${avg !== null ? 'Across active modules' : (canAssessments || canAI ? 'No data yet' : 'No access')}</div>
-    </div>
+    ${card1}${card2}${card3}${card4}
   </div>
 
-  <!-- Quick access links (filtered by module access) -->
+  ${breakdownPanel}
+
+  <!-- Quick access links -->
   ${quickLinks.length ? `<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin:.9rem 0 1.1rem">
     ${quickLinks.map(l => {
       const runs = h[l.id] || [];
       const last = runs.length ? runs[runs.length - 1] : null;
-      const dot = last ? (last.score >= 70 ? '#15803d' : last.score >= 40 ? '#b45309' : '#dc2626') : '#cbd5e1';
+      const dot  = last ? (last.score >= 70 ? '#15803d' : last.score >= 40 ? '#b45309' : '#dc2626') : '#cbd5e1';
       return `<button onclick="setNav('${l.id}')" style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid var(--border);border-radius:20px;background:#fff;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--cyan)';this.style.color='var(--cyan)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
         <span style="width:7px;height:7px;border-radius:50%;background:${dot};flex-shrink:0"></span>
         ${l.icon} ${l.label}
@@ -188,10 +467,10 @@ function _homeRiskChicklet(rows, loaded) {
 }
 
 function _homeAiChicklet(h) {
-  const runs = [...(h['ai_unified'] || [])].sort((a, b) => (b.date||'').localeCompare(a.date||''));
+  const runs   = [...(h['ai_unified'] || [])].sort((a, b) => (b.date||'').localeCompare(a.date||''));
   const latest = runs[0] || null;
-  const scoreVal = latest?.score ?? null;
-  const scoreColor = scoreVal !== null ? (scoreVal >= 70 ? '#15803d' : scoreVal >= 40 ? '#b45309' : '#dc2626') : 'var(--muted)';
+  const scoreVal   = latest?.score ?? null;
+  const scoreColor = scoreVal !== null ? _scoreColor(scoreVal) : 'var(--muted)';
 
   if (!latest) {
     return `<div class="card" style="padding:0;overflow:hidden">
@@ -235,14 +514,14 @@ function _homeAiChicklet(h) {
 }
 
 function _homeCisRadarChicklet(h) {
-  const runs = [...(h['cis'] || [])].sort((a, b) => (b.date||'').localeCompare(a.date||''));
+  const runs   = [...(h['cis'] || [])].sort((a, b) => (b.date||'').localeCompare(a.date||''));
   const latest = runs[0];
   if (!latest) return '';
-  const scoreVal = latest.score ?? null;
-  const scoreColor = scoreVal !== null ? (scoreVal >= 70 ? '#15803d' : scoreVal >= 40 ? '#b45309' : '#dc2626') : 'var(--muted)';
-  const goal = (latest.answers || {})._goal;
-  const igCols = { ig1: { bg: '#dcfce7', txt: '#15803d' }, ig2: { bg: '#dbeafe', txt: '#1d4ed8' }, ig3: { bg: '#ede9fe', txt: '#6d28d9' } };
-  const igC = igCols[goal];
+  const scoreVal   = latest.score ?? null;
+  const scoreColor = scoreVal !== null ? _scoreColor(scoreVal) : 'var(--muted)';
+  const goal    = (latest.answers || {})._goal;
+  const igCols  = { ig1: { bg: '#dcfce7', txt: '#15803d' }, ig2: { bg: '#dbeafe', txt: '#1d4ed8' }, ig3: { bg: '#ede9fe', txt: '#6d28d9' } };
+  const igC     = igCols[goal];
 
   return `<div class="card" style="padding:0;overflow:hidden;cursor:pointer" onclick="setNav('cis')" onmouseover="this.style.boxShadow='0 0 0 2px var(--cyan)'" onmouseout="this.style.boxShadow=''">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .9rem .5rem;border-bottom:1px solid var(--border)">
@@ -305,8 +584,8 @@ function _drawHomeAiRadar() {
   const runs = [...(h['ai_unified'] || [])].sort((a, b) => (b.date||'').localeCompare(a.date||''));
   const latest = runs[0];
   if (!latest) return;
-  const answers = Object.fromEntries(Object.entries(latest.answers || {}).filter(([k]) => !k.startsWith('_')));
-  const fw = aiuFrameworksFromRun(latest);
+  const answers  = Object.fromEntries(Object.entries(latest.answers || {}).filter(([k]) => !k.startsWith('_')));
+  const fw       = aiuFrameworksFromRun(latest);
   const nistAxes = aiuCalcNistFunctionScores(answers, fw);
   const isoAxes  = aiuCalcIsoClauseScores(answers, fw);
 
@@ -334,8 +613,8 @@ function _drawHomeCisRadar() {
   canvas.setAttribute('width', W);
   canvas.setAttribute('height', 280);
   const answers = Object.fromEntries(Object.entries(latest.answers || {}).filter(([k]) => !k.startsWith('_')));
-  const goal = (latest.answers || {})._goal;
-  const goalN = { ig1: 1, ig2: 2, ig3: 3 }[goal] || 3;
+  const goal    = (latest.answers || {})._goal;
+  const goalN   = { ig1: 1, ig2: 2, ig3: 3 }[goal] || 3;
   cisDrawRadar('home-cis-radar', answers, goalN);
 }
 
@@ -452,7 +731,7 @@ function drawAllHubTrends() {
 }
 
 function duplicateAssessment(moduleId) {
-  const h = orgAssessments[currentOrg?.id] || {};
+  const h    = orgAssessments[currentOrg?.id] || {};
   const runs = h[moduleId] || [];
   if (!runs.length) return;
   const last = runs[runs.length - 1];
@@ -483,3 +762,15 @@ function duplicateAssessment(moduleId) {
     setNav('techstack');
   }
 }
+
+// ============================================================
+// WINDOW EXPORTS
+// ============================================================
+window.renderHome          = renderHome;
+window.renderAssessmentsHub = renderAssessmentsHub;
+window.drawHomeCharts      = drawHomeCharts;
+window.drawAllHubTrends    = drawAllHubTrends;
+window.duplicateAssessment = duplicateAssessment;
+window.homeToggleBreakdown = homeToggleBreakdown;
+window.loadHomePortfolio   = loadHomePortfolio;
+window.orgsUnderCurrent    = orgsUnderCurrent;
