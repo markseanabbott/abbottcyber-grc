@@ -817,11 +817,7 @@ async function cmmcSaveAssessment() {
   try {
     if (cmmcState.editId) {
       // Update existing assessment
-      await sbFetch(`/rest/v1/assessments?id=eq.${encodeURIComponent(cmmcState.editId)}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ score, answers: answersToSave, assessed_at: date, conducted_by: conductedBy }),
-      });
+      await sb.updateAssessment(cmmcState.editId, { score, answers: answersToSave, assessed_at: date, conducted_by: conductedBy });
       // Update in-memory
       const runs = (orgAssessments[currentOrg.id] || {})['cmmc'] || [];
       const idx  = runs.findIndex(r => r.id === cmmcState.editId);
@@ -857,7 +853,7 @@ async function cmmcDeleteAssessment(idx) {
   if (!run) return;
   if (!confirm(`Delete the CMMC L1 assessment from ${run.date || '(no date)'}? This cannot be undone.`)) return;
   try {
-    await sbFetch(`/rest/v1/assessments?id=eq.${encodeURIComponent(run.id)}`, { method: 'DELETE' });
+    await sb.deleteAssessment(run.id);
     orgAssessments[currentOrg.id]['cmmc'].splice(idx, 1);
     toast('Assessment deleted', '#15803d');
     renderMain();
@@ -907,11 +903,7 @@ async function cmmcSavePoam() {
 
   const updatedAnswers = { ...(run.answers || {}), _poam: poamData };
   try {
-    await sbFetch(`/rest/v1/assessments?id=eq.${encodeURIComponent(run.id)}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ answers: updatedAnswers }),
-    });
+    await sb.updateAssessment(run.id, { answers: updatedAnswers });
     run.answers = updatedAnswers;
     cmmcState.poamItems = poamData;
     toast('POAM saved', '#15803d');
@@ -1011,11 +1003,7 @@ async function cmmcSaveCommentary() {
   cmmcState.reportCommentary = commentary;
   try {
     const updated = { ...(run.answers || {}), _exec_commentary: commentary };
-    await sbFetch(`/rest/v1/assessments?id=eq.${encodeURIComponent(run.id)}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ answers: updated }),
-    });
+    await sb.updateAssessment(run.id, { answers: updated });
     run.answers = updated;
     toast('Commentary saved', '#15803d');
   } catch (e) {
@@ -1156,15 +1144,72 @@ function cmmcExportReportWord() {
   const answers  = Object.fromEntries(Object.entries(run.answers || {}).filter(([k]) => !k.startsWith('_')));
   const { score, yes, partial, no, na, total, scoreable } = cmmcCalcScore(answers);
   const { band, bandCol } = acScoreBand(score);
-  const fullImpl = scoreable > 0 ? Math.round(yes / scoreable * 100) : 0;
-  const fiCol    = fullImpl >= 75 ? '#15803d' : fullImpl >= 50 ? '#b45309' : '#dc2626';
-  const gaps     = cmmcGetGaps(answers);
-  const sprs     = cmmcSprsCalc(answers);
-  const domProg  = cmmcDomainProgress(answers);
+  const fullImpl  = scoreable > 0 ? Math.round(yes / scoreable * 100) : 0;
+  const fiCol     = fullImpl >= 75 ? '#15803d' : fullImpl >= 50 ? '#b45309' : '#dc2626';
+  const gaps      = cmmcGetGaps(answers);
+  const sprs      = cmmcSprsCalc(answers);
+  const domProg   = cmmcDomainProgress(answers);
   const rawCommentary = cmmcState.reportCommentary || (run.answers || {})._exec_commentary || '';
   const exportDate    = new Date().toLocaleDateString('en-CA');
 
-  // ── Gauge ──────────────────────────────────────────────────────────────────
+  const runs   = (orgAssessments[currentOrg?.id] || {})['cmmc'] || [];
+  const sorted = [...runs].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const prevRun     = sorted.length >= 2 ? sorted[sorted.length - 2] : null;
+  const scoreChange = prevRun ? score - prevRun.score : null;
+  const changeStr   = scoreChange === null ? 'First assessment' : (scoreChange > 0 ? '+' + scoreChange + '%' : scoreChange + '%');
+
+  // ── Commentary formatter — matches CIS: KEY FINDINGS + PRIORITY RECOMMENDATIONS ──
+  function fmtCommentary(text, placeholder) {
+    if (!text) return placeholder
+      ? `<p style="color:#94a3b8;font-style:italic;font-size:10pt;margin:0 0 10pt 0">${placeholder}</p>`
+      : '';
+
+    let html = '';
+    let mode = 'prose';
+    let items = [];
+
+    function flushItems() {
+      if (!items.length) return;
+      if (mode === 'findings') {
+        html += '<table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">' +
+          items.map(l => `<tr>
+            <td style="width:14pt;vertical-align:top;padding:4pt 8pt 4pt 0;color:#152168;font-size:14pt;line-height:1">&#8226;</td>
+            <td style="font-size:11pt;line-height:1.65;padding:4pt 0;vertical-align:top;border-bottom:1pt solid #f1f5f9">${escH(l)}</td>
+          </tr>`).join('') + '</table>';
+      } else if (mode === 'recommendations') {
+        html += '<table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">' +
+          items.map((l, i) => `<tr>
+            <td style="background:#152168;color:#fff;width:24pt;text-align:center;font-size:11pt;font-weight:bold;vertical-align:top;padding:7pt 4pt;border-bottom:1pt solid #1e3080">${i + 1}</td>
+            <td style="padding:7pt 10pt;border-bottom:1pt solid #e8ecf4;font-size:11pt;line-height:1.65;vertical-align:top">${escH(l)}</td>
+          </tr>`).join('') + '</table>';
+      }
+      items = [];
+    }
+
+    text.split('\n').map(l => l.trim()).forEach(line => {
+      if (!line) return;
+      if (/^KEY FINDINGS$/i.test(line)) {
+        flushItems();
+        html += `<div style="font-size:9.5pt;color:#152168;font-weight:bold;text-transform:uppercase;letter-spacing:.5pt;margin:14pt 0 5pt 0;padding-bottom:3pt;border-bottom:1.5pt solid #152168">Key Findings</div>`;
+        mode = 'findings'; return;
+      }
+      if (/^PRIORITY RECOMMENDATIONS$/i.test(line)) {
+        flushItems();
+        html += `<div style="font-size:9.5pt;color:#152168;font-weight:bold;text-transform:uppercase;letter-spacing:.5pt;margin:14pt 0 5pt 0;padding-bottom:3pt;border-bottom:1.5pt solid #152168">Priority Recommendations</div>`;
+        mode = 'recommendations'; return;
+      }
+      const content = line.replace(/^[•\-]\s*/, '');
+      if (mode === 'findings' || mode === 'recommendations') {
+        items.push(content);
+      } else {
+        html += `<p style="font-size:11pt;line-height:1.75;margin:0 0 8pt 0">${escH(line)}</p>`;
+      }
+    });
+    flushItems();
+    return html;
+  }
+
+  // ── Gauge canvas → PNG ────────────────────────────────────────────────────
   let gaugeImg = null;
   {
     const _gc = document.createElement('canvas');
@@ -1199,56 +1244,84 @@ function cmmcExportReportWord() {
     document.body.removeChild(_gc);
   }
 
-  // ── Radar ──────────────────────────────────────────────────────────────────
+  // ── Radar canvas → PNG ────────────────────────────────────────────────────
   let radarImg = null;
   {
     const _rc = document.createElement('canvas');
     _rc.id = '_cmmcRadExp';
-    _rc.width = 420; _rc.height = 280;
-    _rc.style.cssText = 'position:fixed;left:-9999px;pointer-events:none';
+    _rc.width = 320; _rc.height = 320;
+    _rc.style.cssText = 'position:fixed;left:-9999px;width:320px;height:320px;pointer-events:none';
     document.body.appendChild(_rc);
     drawCmmcRadar('_cmmcRadExp', answers);
     radarImg = _rc.toDataURL('image/png');
     document.body.removeChild(_rc);
   }
 
-  // ── Commentary formatter ───────────────────────────────────────────────────
-  function fmtCommentary(text) {
-    if (!text) return `<p style="color:#94a3b8;font-style:italic;font-size:10pt">No commentary entered — use Generate AI Prompt on the report screen to create one, paste it into Claude, then save the response.</p>`;
-    return text.split('\n').filter(l => l.trim()).map(line => {
-      return `<p style="font-size:11pt;line-height:1.75;margin:0 0 8pt 0">${escH(line.replace(/^[•\-\*\d+\.]\s*/, ''))}</p>`;
-    }).join('');
+  // ── Trend canvas → PNG (only if 2+ runs) ─────────────────────────────────
+  let trendImg = null;
+  if (sorted.length >= 2) {
+    const _tc = document.createElement('canvas');
+    _tc.id = '_cmmcTrExp';
+    _tc.width = 560; _tc.height = 110;
+    _tc.style.cssText = 'position:fixed;left:-9999px;pointer-events:none';
+    document.body.appendChild(_tc);
+    acTrendDraw('_cmmcTrExp', sorted, '#0369a1');
+    trendImg = _tc.toDataURL('image/png');
+    document.body.removeChild(_tc);
   }
 
   // ── Domain rows ────────────────────────────────────────────────────────────
   const domRows = domProg.map(d =>
     `<tr>
-      <td style="padding:5pt 8pt;font-weight:bold;color:${d.color};font-size:10pt">${d.key}</td>
-      <td style="padding:5pt 8pt;font-size:10pt">${d.label}</td>
-      <td style="padding:5pt 8pt;text-align:center;font-weight:bold;color:#15803d">${d.yes}</td>
-      <td style="padding:5pt 8pt;text-align:center;font-weight:bold;color:#b45309">${d.partial}</td>
-      <td style="padding:5pt 8pt;text-align:center;font-weight:bold;color:#dc2626">${d.no}</td>
-      <td style="padding:5pt 8pt;text-align:center;font-weight:bold;color:${d.pct>=75?'#15803d':d.pct>=50?'#b45309':'#dc2626'}">${d.pct}%</td>
+      <td style="font-weight:bold;color:${d.color};white-space:nowrap;font-size:9pt">${d.key}</td>
+      <td>${escH(d.label)}</td>
+      <td style="text-align:center;font-weight:bold;color:#15803d">${d.yes}</td>
+      <td style="text-align:center;font-weight:bold;color:#b45309">${d.partial}</td>
+      <td style="text-align:center;font-weight:bold;color:${d.no > 0 ? '#dc2626' : '#15803d'}">${d.no}</td>
+      <td style="text-align:center;color:#94a3b8">${d.na}</td>
+      <td style="text-align:center;font-weight:bold;color:${d.pct>=75?'#15803d':d.pct>=50?'#b45309':'#dc2626'}">${d.pct}%</td>
     </tr>`
   ).join('');
 
   // ── Gap rows ───────────────────────────────────────────────────────────────
-  const gapRows = gaps.slice(0, 15).map(g => {
+  const topGaps = gaps.slice(0, 10);
+  const gapRows = topGaps.map(g => {
     const ans  = answers[g.id] || '';
     const meta = CMMC_DOMAIN_META[g.domain] || {};
-    const sCol = ans === 'no' ? '#dc2626' : '#b45309';
     return `<tr>
-      <td style="padding:5pt 8pt;font-weight:bold;color:${meta.color};font-size:9.5pt;white-space:nowrap">${escH(g.id)}</td>
-      <td style="padding:5pt 8pt;font-size:10pt">${escH(g.title)}</td>
-      <td style="padding:5pt 8pt;text-align:center;font-weight:bold;color:${sCol};font-size:9.5pt">${ans === 'no' ? 'Not Met' : 'Partial'}</td>
+      <td style="font-weight:bold;color:${meta.color};white-space:nowrap;font-size:9pt">${escH(g.id)}</td>
+      <td><span style="font-size:9pt;font-weight:bold;padding:1pt 6pt;border-radius:8pt;background:${meta.bg};color:${meta.color}">${g.domain}</span></td>
+      <td>${escH(g.title)}</td>
+      <td style="font-weight:bold;color:${ans==='no'?'#dc2626':'#b45309'};white-space:nowrap">${ans === 'no' ? 'Not Met' : 'Partial'}</td>
     </tr>`;
+  }).join('');
+
+  // ── Full practice listing ──────────────────────────────────────────────────
+  const _aL = { yes: 'Met', partial: 'Partial', no: 'Not Met', na: 'N/A' };
+  const _aC = { yes: '#15803d', partial: '#b45309', no: '#dc2626', na: '#94a3b8' };
+  const byDomain = {};
+  CMMC_L1_PRACTICES.forEach(p => {
+    if (!byDomain[p.domain]) byDomain[p.domain] = [];
+    byDomain[p.domain].push(p);
+  });
+  const practiceListHtml = Object.keys(byDomain).map(dom => {
+    const meta = CMMC_DOMAIN_META[dom] || {};
+    const rows = byDomain[dom].map(p => {
+      const ans = answers[p.id] || '';
+      return `<tr>
+        <td style="font-weight:bold;color:${meta.color};white-space:nowrap;font-size:9pt">${escH(p.id)}</td>
+        <td style="font-weight:bold;color:${_aC[ans]||'#94a3b8'};text-align:center;white-space:nowrap;font-size:9pt">${_aL[ans]||'—'}</td>
+        <td><strong style="font-size:9.5pt">${escH(p.title)}</strong><br><span style="font-size:8.5pt;color:#5a6a8a">${escH(p.desc)}</span></td>
+      </tr>`;
+    }).join('');
+    return `<tr><td colspan="3" style="background:#152168;color:#fff;font-weight:bold;font-size:9.5pt;padding:5pt 8pt;border:none">${dom} — ${escH(meta.label || dom)}</td></tr>${rows}`;
   }).join('');
 
   const html = `<!DOCTYPE html>
 <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
 <head>
 <meta charset="utf-8">
-<title>CMMC L1 Executive Report — ${escH(currentOrg.name)}</title>
+<title>CMMC Level 1 — Executive Report — ${escH(currentOrg.name)}</title>
 <style>
   body { font-family: Arial, sans-serif; font-size: 11pt; color: #1a2340; margin: 0; padding: 0; }
   .page { padding: 2.5cm; max-width: 19cm; margin: 0 auto; }
@@ -1268,77 +1341,127 @@ function cmmcExportReportWord() {
 <body>
 <div class="page">
 
-  <div style="border-bottom:3pt solid #152168;padding-bottom:12pt;margin-bottom:16pt">
-    <div style="font-size:8pt;color:#07B4D9;font-weight:bold;text-transform:uppercase;letter-spacing:1pt;margin-bottom:4pt">Abbott Cyber Consulting — Confidential</div>
-    <h1>CMMC Level 1 — Executive Security Report</h1>
-    <p class="sub">${escH(currentOrg.name)} · Assessment Date: ${run.date || '—'} · Conducted By: ${run.conductedBy || '—'} · Exported: ${exportDate}</p>
+  <h1>CMMC Level 1 — Executive Security Report</h1>
+  <div class="sub">
+    ${escH(currentOrg.name)} &nbsp;&middot;&nbsp; CMMC Level 1 (17 Practices) &nbsp;&middot;&nbsp; ${run.date || '&mdash;'}
+    ${run.conductedBy ? ' &nbsp;&middot;&nbsp; Assessed by: ' + escH(run.conductedBy) : ''}
   </div>
 
-  <table style="margin-bottom:16pt">
-    <tr>
-      <td style="width:200pt;border:none;vertical-align:middle;padding:0 20pt 0 0">
-        <img src="${gaugeImg}" width="200" height="111" alt="Score gauge" style="display:block">
-      </td>
-      <td style="border:none;vertical-align:top;padding:0">
-        <table style="margin:0">
-          <tr><th>Metric</th><th>Value</th></tr>
-          <tr><td>Overall Score</td><td style="font-weight:bold;color:${bandCol}">${score}% — ${band}</td></tr>
-          <tr><td>Practices Assessed</td><td>${total}</td></tr>
-          <tr><td>Met (Yes)</td><td style="font-weight:bold;color:#15803d">${yes}</td></tr>
-          <tr><td>Partial</td><td style="font-weight:bold;color:#b45309">${partial}</td></tr>
-          <tr><td>Not Met</td><td style="font-weight:bold;color:#dc2626">${no}</td></tr>
-          <tr><td>N/A</td><td style="color:#94a3b8">${na}</td></tr>
-          <tr><td>Fully Implemented</td><td style="font-weight:bold;color:${fiCol}">${fullImpl}%</td></tr>
-          <tr><td>Est. SPRS Contribution (L1)</td><td style="font-weight:bold">${sprs.contribution} / ${sprs.maxContribution} pts</td></tr>
-        </table>
-      </td>
-    </tr>
-  </table>
+  <h2>Executive Summary</h2>
+  ${fmtCommentary(rawCommentary, 'No executive commentary saved. Use the Generate AI Prompt button in the exec report view, paste the prompt into Claude, then save the response before exporting.')}
+
+  <h2>Overall Security Score</h2>
+  <div style="display:flex;gap:24pt;margin-bottom:12pt;align-items:flex-start">
+    <div style="flex-shrink:0;text-align:center">${gaugeImg ? `<img src="${gaugeImg}" style="width:240px;display:block">` : ''}</div>
+    <div style="flex:1">
+      <table style="margin:0;font-size:10pt">
+        ${[
+          ['Practices in scope',       total,                                                                           '#1a2340'],
+          ['Met (Yes)',                 yes + ' (' + Math.round(yes / total * 100) + '%)',                              '#15803d'],
+          ['Partial',                   partial + ' (' + Math.round(partial / total * 100) + '%)',                      '#b45309'],
+          ['Not Met',                   no + ' (' + Math.round(no / total * 100) + '%)',                               no > 0 ? '#dc2626' : '#15803d'],
+          ['N/A',                       na,                                                                             '#94a3b8'],
+          ['Overall Score',             score + '% — ' + band,                                                         bandCol],
+          ['Fully Implemented',         fullImpl + '%',                                                                 fiCol],
+          ['Est. SPRS Contribution',    sprs.contribution + ' of ' + sprs.maxContribution + ' pts',                    '#1a2340'],
+          ['vs Prior assessment',       changeStr,                                                                      '#1a2340'],
+          ['Date',                      run.date || '—',                                                                '#5a6a8a'],
+          ['Assessor',                  run.conductedBy || '—',                                                         '#5a6a8a'],
+        ].map(([l, v, c]) => `<tr>
+          <td style="padding:4pt 8pt 4pt 0;border:none;color:#5a6a8a;font-size:9.5pt;white-space:nowrap">${l}</td>
+          <td style="padding:4pt 0;border:none;font-weight:bold;font-size:9.5pt;color:${c}">${v}</td>
+        </tr>`).join('')}
+      </table>
+    </div>
+  </div>
+
+  ${radarImg ? `
+  <h2>Domain Radar</h2>
+  <div style="text-align:center;margin-bottom:16pt">
+    <img src="${radarImg}" style="max-width:280pt;width:65%;display:inline-block">
+  </div>` : ''}
 
   <h2>Domain Coverage</h2>
   <table>
-    <tr>
-      <th>Domain</th><th>Area</th>
+    <thead><tr>
+      <th style="width:36pt">Domain</th><th>Area</th>
       <th style="text-align:center">Met</th><th style="text-align:center">Partial</th>
-      <th style="text-align:center">Not Met</th><th style="text-align:center">Score</th>
-    </tr>
-    ${domRows}
+      <th style="text-align:center">Not Met</th><th style="text-align:center">N/A</th>
+      <th style="text-align:center">Score</th>
+    </tr></thead>
+    <tbody>${domRows}</tbody>
   </table>
 
-  <h2>Domain Radar</h2>
-  <div style="text-align:center;margin-bottom:16pt">
-    <img src="${radarImg}" width="350" height="233" alt="Domain radar" style="display:block;margin:0 auto">
-  </div>
+  ${sorted.length >= 2 ? `
+  <h2>Score Trend</h2>
+  ${trendImg ? `<div style="margin-bottom:12pt"><img src="${trendImg}" style="width:100%;display:block"></div>` : ''}` : ''}
 
-  ${gaps.length > 0 ? `
-  <h2>Priority Gaps (${gaps.length})</h2>
+  <h2>Top ${topGaps.length} Priority Gaps</h2>
+  ${topGaps.length ? `
   <table>
-    <tr><th>Practice ID</th><th>Title</th><th style="text-align:center">Status</th></tr>
-    ${gapRows}
-    ${gaps.length > 15 ? `<tr><td colspan="3" style="color:#94a3b8;font-style:italic">+ ${gaps.length - 15} more — see the CMMC L1 assessment for the full list</td></tr>` : ''}
-  </table>` : `
-  <h2>Gaps</h2>
-  <p style="color:#15803d;font-weight:bold">No gaps — all 17 Level 1 practices are Met or N/A.</p>`}
+    <thead><tr>
+      <th style="width:70pt">Practice ID</th><th style="width:36pt">Domain</th>
+      <th>Title</th><th style="width:54pt">Status</th>
+    </tr></thead>
+    <tbody>
+      ${gapRows}
+      ${gaps.length > 10 ? `<tr><td colspan="4" style="color:#94a3b8;font-style:italic;font-size:9pt">+ ${gaps.length - 10} more — see full assessment listing below</td></tr>` : ''}
+    </tbody>
+  </table>` : `<p style="color:#15803d;font-weight:bold">&#10003; No gaps &mdash; all 17 Level 1 practices are Met or N/A.</p>`}
 
   <h2>SPRS Readiness Note</h2>
-  <p style="font-size:10pt;line-height:1.65;color:#5a6a8a">This assessment covers the 17 CMMC Level 1 practices. The estimated L1 contribution to the SPRS score is <strong>${sprs.contribution} of ${sprs.maxContribution} possible points</strong>. The full SPRS score (0–110) covers all 110 NIST SP 800-171 practices — additional assessment is required for a complete score. Annual self-attestation must be submitted at <strong>sprs.csd.disa.mil</strong> by a senior company official with authority to attest on behalf of the organization.</p>
+  <p style="font-size:10pt;line-height:1.65;color:#5a6a8a">This assessment covers the 17 CMMC Level 1 practices. The estimated L1 contribution to the SPRS score is <strong>${sprs.contribution} of ${sprs.maxContribution} possible points</strong>. The full SPRS score (0–110) covers all 110 NIST SP 800-171 Rev 2 practices — a CMMC Level 2 assessment is required for a complete score. Annual self-attestation must be submitted at <strong>sprs.csd.disa.mil</strong> by a senior company official with authority to attest on behalf of the organization.</p>
 
-  <h2>Executive Commentary</h2>
-  ${fmtCommentary(rawCommentary)}
+  <div style="page-break-before: always">
+    <h2>Full Assessment — All 17 CMMC Level 1 Practices</h2>
+    <table>
+      <thead><tr>
+        <th style="width:80pt">Practice ID</th>
+        <th style="width:44pt">Status</th>
+        <th>Title &amp; Description</th>
+      </tr></thead>
+      <tbody>${practiceListHtml}</tbody>
+    </table>
+  </div>
 
-  <div class="footer">Generated by Abbott Cyber GRC Platform · ${exportDate} · Confidential — Do not distribute without authorization.</div>
+  <div class="footer">
+    Generated by Abbott Cyber Consulting GRC Platform &nbsp;&middot;&nbsp;
+    CMMC Level 1 &nbsp;&middot;&nbsp; ${run.date || exportDate} &nbsp;&middot;&nbsp; Confidential — Do not distribute without authorization.
+  </div>
 
 </div>
 </body>
 </html>`;
 
-  const BOM  = '﻿';
-  const blob = new Blob([BOM + html], { type: 'application/msword' });
+  const blob = new Blob(['﻿' + html], { type: 'application/msword' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href     = url;
-  a.download = `CMMC-L1-Report-${(currentOrg.name || 'Client').replace(/\s+/g, '-')}-${run.date || exportDate}.doc`;
+  a.download = `CMMC-L1-Report-${(currentOrg.name || 'Client').replace(/[^a-zA-Z0-9]/g, '_')}_${run.date || exportDate}.doc`;
+  document.body.appendChild(a);
   a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
   toast('Word report downloaded', '#15803d');
 }
+
+// ── WINDOW EXPORTS ─────────────────────────────────────────────────────────────
+window.renderCMMC              = renderCMMC;
+window.cmmcStartNew            = cmmcStartNew;
+window.cmmcOpenAssessment      = cmmcOpenAssessment;
+window.cmmcOpenPoam            = cmmcOpenPoam;
+window.cmmcOpenReport          = cmmcOpenReport;
+window.cmmcOpenSprs            = cmmcOpenSprs;
+window.cmmcNavToDashboard      = cmmcNavToDashboard;
+window.cmmcSaveAssessment      = cmmcSaveAssessment;
+window.cmmcDeleteAssessment    = cmmcDeleteAssessment;
+window.cmmcSavePoam            = cmmcSavePoam;
+window.cmmcCopyReportPrompt    = cmmcCopyReportPrompt;
+window.cmmcSaveCommentary      = cmmcSaveCommentary;
+window.cmmcExportReportWord    = cmmcExportReportWord;
+window.cmmcExportExcel         = cmmcExportExcel;
+window.cmmcSetAnswer           = cmmcSetAnswer;
+window.cmmcTogglePanel         = cmmcTogglePanel;
+window.cmmcTrendDraw           = cmmcTrendDraw;
+window.drawCmmcRadar           = drawCmmcRadar;
+window.drawCmmcReportCharts    = drawCmmcReportCharts;

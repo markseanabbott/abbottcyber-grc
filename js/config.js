@@ -105,6 +105,7 @@ const NAV = [
     { id: 'cis', icon: '✅', label: 'CIS Controls v8', live: true, phase: 1 },
     { id: 'techstack', icon: '🖥️', label: 'Technology Stack', live: true, phase: 1 },
     { id: 'cmmc', icon: '🛡️', label: 'CMMC Level 1', live: true, phase: 1 },
+    { id: 'cmmc2', icon: '🏛️', label: 'CMMC Level 2', live: true, phase: 1 },
     { id: 'nist', icon: '🏛️', label: 'NIST CSF 2.0', live: false, phase: 3 },
   ]},
   { id: 'g_ai_readiness', group: 'AI Readiness', icon: '🤖', items: [

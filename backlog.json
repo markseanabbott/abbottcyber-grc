@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.2.3",
   "created": "2026-05-14",
-  "updated": "2026-06-19 (session 45)",
+  "updated": "2026-06-22 (session 46)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -351,7 +351,7 @@
           "id": "cmmc2",
           "text": "CMMC L1 Executive Report: Score Breakdown 2-col grid (score breakdown card left + domain coverage bars + trend canvas right), 6-domain radar chart, Priority Gaps table, Executive Commentary card with paste textarea, Generate AI Prompt button, Save Commentary (persists _exec_commentary to answers JSONB), Export Word (gauge + radar canvases → PNG embedded in .doc). Two new shared assessment_core.js functions: acExecScoreBreakdownHtml and acExecCommentaryHtml.",
           "done": true,
-          "notes": "renderCMMCExec(), cmmcSaveCommentary(), drawCmmcRadar(), drawCmmcReportCharts(), cmmcExportReportWord() all in js/cmmc.js. acExecScoreBreakdownHtml() and acExecCommentaryHtml() added to js/assessment_core.js and exported on window. Session 45."
+          "notes": "renderCMMCExec(), cmmcSaveCommentary(), drawCmmcRadar(), drawCmmcReportCharts(), cmmcExportReportWord() all in js/cmmc.js. acExecScoreBreakdownHtml() and acExecCommentaryHtml() added to js/assessment_core.js and exported on window. Session 45. Session 46: cmmcExportReportWord() fully overhauled to match CIS export pattern — fmtCommentary() with KEY FINDINGS bulleted table + PRIORITY RECOMMENDATIONS numbered table; Executive Summary moved first; trend PNG added (if 2+ runs); score section gauge+table side-by-side; Domain Coverage table; Priority Gaps (top 15); full 17-practice listing (page-break section, grouped by domain, with status); SPRS note. Also fixed sbFetch signature errors (sb.updateAssessment/sb.deleteAssessment pattern) and added window export block."
         },
         {
           "id": "cmmc3",
@@ -364,6 +364,32 @@
           "text": "NIST CSF 2.0 assessment module using assessment_core.js: next logical framework module after CMMC. 6 Functions (Govern/Identify/Protect/Detect/Respond/Recover), subcategory scoring, maturity tier, Tech Stack prefill, exec report + Word export. Would be the third module to use the shared assessment engine.",
           "done": false,
           "priority": "Medium"
+        }
+      ]
+    },
+    {
+      "id": "cmmc_l2",
+      "title": "CMMC Level 2 Assessment",
+      "phase": 1,
+      "description": "CMMC Level 2 self-assessment module — 110 NIST SP 800-171 Rev 2 practices across 14 domains. Full SPRS scoring (0–110 weighted). DoD/CUI handling assessment for organisations pursuing Level 2 certification.",
+      "items": [
+        {
+          "id": "cl2_1",
+          "text": "CMMC L2 full module: 110 NIST SP 800-171 Rev 2 practices, 14 domains, dashboard, assessment form (domain-grouped accordion with L1 subset badges), SPRS score (110 − deductions), POAM (stored in answers._poam blob), exec report (gauge, 14-domain radar, domain coverage table, trend, priority gaps by SPRS impact, commentary), Word export (CIS-pattern: Executive Summary first, fmtCommentary KEY FINDINGS + PRIORITY RECOMMENDATIONS, gauge+table side-by-side, radar, trend PNG, domain coverage, top 15 gaps, full 110-practice listing page-break section), Assessments Hub card with Re-up. Built on assessment_core.js shared engine.",
+          "done": true,
+          "notes": "js/cmmc2.js (CMMC2_PRACTICES 110q, CMMC2_DOMAIN_META 14 domains, cmmc2State, full render suite). Key functions: cmmc2CalcScore, cmmc2SprsCalc, cmmc2GetGaps, cmmc2DomainProgress, renderCMMC2, renderCMMC2Dashboard, renderCMMC2Form, renderCMMC2Poam, renderCMMC2Exec, renderCMMC2Sprs, cmmc2SaveAssessment, cmmc2DeleteAssessment, cmmc2SavePoam, cmmc2SaveCommentary, cmmc2ExportReportWord, drawCmmc2Radar. SPRS scoring: 110 − Σ deductions (Not Met = full weight, Partial = ceil(weight/2), Met/NA = 0). sbFetch calls use sb.updateAssessment/sb.deleteAssessment pattern. All functions window-exported. config.js: cmmc2 nav entry. app.js: render route + trend/chart setTimeout. home.js: ASSESSMENT_CATALOG card + duplicateAssessment case. Script tag in index.html. Session 46."
+        },
+        {
+          "id": "cl2_2",
+          "text": "CMMC L2 Tech Stack prefill — map relevant Technology Stack survey answers to CMMC Level 2 practices via derive_strategy, pre-populating L2 form where TS data covers the control. Extends the existing _CMMC_TS_MAP in prefill.js.",
+          "done": false,
+          "priority": "Low"
+        },
+        {
+          "id": "cl2_3",
+          "text": "CMMC L1 → L2 pre-fill — when starting a CMMC L2 assessment, offer to pre-populate the 17 overlapping L1 practices from the most recent CMMC L1 assessment for the same org.",
+          "done": false,
+          "priority": "Low"
         }
       ]
     },

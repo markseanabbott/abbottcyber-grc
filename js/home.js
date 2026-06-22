@@ -347,6 +347,7 @@ const ASSESSMENT_CATALOG = [
   { id: 'cis',       label: 'CIS Controls v8',    icon: '✅', description: '153 safeguards across 18 controls. Per-org IG goal (IG1/IG2/IG3). Full assessment history.', nav: 'cis' },
   { id: 'insurance', label: 'Insurance Readiness', icon: '🛡️', description: 'Dual-weighted readiness score for cyber insurance applications.', nav: 'insurance' },
   { id: 'cmmc',      label: 'CMMC Level 1',        icon: '🛡️', description: '17 practices across 6 domains. SPRS score contribution. DoD contractor self-assessment.', nav: 'cmmc' },
+  { id: 'cmmc2',     label: 'CMMC Level 2',        icon: '🏛️', description: '110 NIST SP 800-171 practices across 14 domains. Full SPRS score (0–110). CUI handling assessment.', nav: 'cmmc2' },
   { id: 'nist',      label: 'NIST CSF 2.0',        icon: '🏛️', description: 'NIST Cybersecurity Framework 2.0 assessment.', nav: 'nist', comingSoon: true },
   { id: 'techstack', label: 'Technology Stack',    icon: '🖥️', description: 'Maps your technology to security frameworks and gaps.', nav: 'techstack' },
 ];
@@ -471,6 +472,12 @@ function duplicateAssessment(moduleId) {
     cmmcState = { ...cmmcState, answers, openPanels: {}, orgId: currentOrg?.id, view: 'form', editId: null, conductedBy: last.conductedBy || '', date: new Date().toISOString().slice(0, 10) };
     toast('✓ Copied last answers — update and re-save when ready', '#152168');
     setNav('cmmc');
+  } else if (moduleId === 'cmmc2') {
+    const rawAnswers = Object.assign({}, last.answers || {});
+    const answers = Object.fromEntries(Object.entries(rawAnswers).filter(([k]) => !k.startsWith('_')));
+    cmmc2State = { ...cmmc2State, answers, openPanels: {}, orgId: currentOrg?.id, view: 'form', editId: null, conductedBy: last.conductedBy || '', date: new Date().toISOString().slice(0, 10) };
+    toast('✓ Copied last answers — update and re-save when ready', '#152168');
+    setNav('cmmc2');
   } else if (moduleId === 'techstack') {
     toast('✓ Navigate to Technology Stack to review and re-run', '#152168');
     setNav('techstack');
