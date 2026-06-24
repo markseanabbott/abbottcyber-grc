@@ -633,6 +633,12 @@
           "text": "Add/Edit Module modal padding — content was flush with modal edges. Added 1.5rem padding wrapper. Description textarea increased to 4 rows with min-height 80px. Modal widened from 480px to 620px.",
           "done": true,
           "notes": "modules.js: modOpenModal() wraps content in padding:1.5rem div. index.html: modModalBox max-width changed to 620px."
+        },
+        {
+          "id": "mod12",
+          "text": "hasPageAccess() — use PAGE_REGISTRY as module gate boundary. Pages not in PAGE_REGISTRY (Settings, admin tools) bypass module gating entirely and are controlled by adminOnly/platformAdminOnly flags only. Removed org_admin role bypass — org admins at client orgs are now module-restricted like all other users. Only platform_admin is fully exempt.",
+          "done": true,
+          "notes": "modules.js: hasPageAccess() checks PAGE_REGISTRY.some(p => p.id === pageKey) before applying whitelist logic. Pages outside the registry (orgs, users, company_profile, settings, pricing_schedule) return true immediately. Fixes org admins at client orgs seeing all features regardless of purchased modules."
         }
       ]
     },
