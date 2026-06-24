@@ -169,6 +169,7 @@ let maState = {
   detailTab:'summary', expandedFindings:{},
   framing:{ target_name:'', deal_type:'', target_industry:'', target_employee_band:'',
             deal_value_band:'', risk_tolerance:'moderate', assessor:'', assessed_at:'',
+            user_count:'', endpoint_count:'',
             data_sources:[], include_ai_screen:false, include_insurance_review:false },
   answers:{}, poamItems:{}, currentAssessment:null,
 };
@@ -246,19 +247,26 @@ function maGetDealBreakers(answers, framing) {
 }
 
 function maCalcCosts(answers, framing) {
-  const band        = framing?.target_employee_band || '50-250';
-  const labor       = MA_LABOR_COSTS[band] || MA_LABOR_COSTS['50-250'];
-  const hc          = MA_HEADCOUNT[band]   || MA_HEADCOUNT['50-250'];
-  const toolExcl    = answers?._tooling_excludes || {};
-  const mkBucket    = () => ({ laborLow:0, laborHigh:0, toolLow:0, toolHigh:0, items:[] });
-  const result      = { preClose:mkBucket(), year1:mkBucket(), strategic:mkBucket() };
+  const band     = framing?.target_employee_band || '50-250';
+  const labor    = MA_LABOR_COSTS[band] || MA_LABOR_COSTS['50-250'];
+  const bandHC   = MA_HEADCOUNT[band]   || MA_HEADCOUNT['50-250'];
+  const uCount   = parseInt(framing?.user_count,     10) || 0;
+  const eCount   = parseInt(framing?.endpoint_count, 10) || 0;
+  const hc       = {
+    users:     uCount || bandHC.users,
+    endpoints: eCount || bandHC.endpoints,
+    explicit:  !!(uCount || eCount),
+  };
+  const toolExcl = answers?._tooling_excludes || {};
+  const mkBucket = () => ({ laborLow:0, laborHigh:0, toolLow:0, toolHigh:0, items:[] });
+  const result   = { preClose:mkBucket(), year1:mkBucket(), strategic:mkBucket() };
   for (const cat of _maAllCats(framing)) {
     for (const q of cat.questions) {
       if (q.contextOnly || !q.costBand || !q.priority) continue;
       if (q.conditional && answers[q.conditional.questionId] !== q.conditional.value) continue;
       const ans = answers[q.id] || 'unknown';
       if (ans === 'yes' || ans === 'na') continue;
-      const lb = labor[q.costBand] || labor['Low'];
+      const lb   = labor[q.costBand] || labor['Low'];
       const tool = MA_TOOLING[q.id];
       let tLow = 0, tHigh = 0, toolName = null, toolExcluded = false;
       if (tool) {
@@ -286,7 +294,26 @@ function maCalcCosts(answers, framing) {
   const sumToolHigh  = result.preClose.toolHigh  + result.year1.toolHigh  + result.strategic.toolHigh;
   const total = { laborLow:sumLaborLow, laborHigh:sumLaborHigh, toolLow:sumToolLow, toolHigh:sumToolHigh,
                   low:sumLaborLow+sumToolLow, high:sumLaborHigh+sumToolHigh };
-  return { ...result, total, hc };
+
+  // 5-year schedule — implementation is one-time; licensing recurs each year tools are active
+  // Pre-Close: preClose impl + preClose tools (year 1 of those licenses)
+  // Year 1:    year1 impl + preClose tools + year1 tools
+  // Year 2:    strategic impl + all tools
+  // Year 3–5:  all tools recurring only
+  const allToolLow  = sumToolLow;
+  const allToolHigh = sumToolHigh;
+  const schedule = [
+    { label:'Pre-Close', implLow: result.preClose.laborLow,  implHigh: result.preClose.laborHigh,  toolLow: result.preClose.toolLow,  toolHigh: result.preClose.toolHigh,  rowLow: result.preClose.laborLow  + result.preClose.toolLow,  rowHigh: result.preClose.laborHigh  + result.preClose.toolHigh  },
+    { label:'Year 1',    implLow: result.year1.laborLow,     implHigh: result.year1.laborHigh,     toolLow: result.preClose.toolLow  + result.year1.toolLow,  toolHigh: result.preClose.toolHigh  + result.year1.toolHigh,  rowLow: result.year1.laborLow + result.preClose.toolLow + result.year1.toolLow, rowHigh: result.year1.laborHigh + result.preClose.toolHigh + result.year1.toolHigh },
+    { label:'Year 2',    implLow: result.strategic.laborLow, implHigh: result.strategic.laborHigh, toolLow: allToolLow,               toolHigh: allToolHigh,               rowLow: result.strategic.laborLow + allToolLow, rowHigh: result.strategic.laborHigh + allToolHigh },
+    { label:'Year 3',    implLow:0, implHigh:0, toolLow: allToolLow, toolHigh: allToolHigh, rowLow: allToolLow, rowHigh: allToolHigh },
+    { label:'Year 4',    implLow:0, implHigh:0, toolLow: allToolLow, toolHigh: allToolHigh, rowLow: allToolLow, rowHigh: allToolHigh },
+    { label:'Year 5',    implLow:0, implHigh:0, toolLow: allToolLow, toolHigh: allToolHigh, rowLow: allToolLow, rowHigh: allToolHigh },
+  ];
+  const fiveYearLow  = schedule.reduce((s,r)=>s+r.rowLow,  0);
+  const fiveYearHigh = schedule.reduce((s,r)=>s+r.rowHigh, 0);
+
+  return { ...result, total, hc, schedule, fiveYearLow, fiveYearHigh };
 }
 
 function maGetFindings(answers, framing) {
@@ -424,6 +451,20 @@ function _renderMAStep1() {
           <option value="">— Select —</option>
           ${MA_EMP_BANDS.map(b=>`<option value="${b}" ${f.target_employee_band===b?'selected':''}>${b} employees</option>`).join('')}
         </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <div class="field-lbl">Number of users <span style="font-weight:400;color:var(--muted)">(actual count)</span></div>
+        <input type="number" min="1" value="${escH(f.user_count||'')}" placeholder="e.g. 85" oninput="maFramingSet('user_count',this.value)"
+          style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:12px"/>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">Total user accounts requiring licenses (MFA, PAM, email security)</div>
+      </div>
+      <div>
+        <div class="field-lbl">Number of endpoints <span style="font-weight:400;color:var(--muted)">(actual count)</span></div>
+        <input type="number" min="1" value="${escH(f.endpoint_count||'')}" placeholder="e.g. 92" oninput="maFramingSet('endpoint_count',this.value)"
+          style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:12px"/>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">Laptops, desktops, servers requiring EDR coverage</div>
       </div>
     </div>
     <div class="form-row">
@@ -676,6 +717,10 @@ function _renderMATabSummary(a, fr, ans, score, sCol, catScores, allCats, costs,
           <span>Total (Year 1 all-in)</span>
           <span>${_maCostRange(costs.total.low,costs.total.high)}</span>
         </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:#0369a1;padding-top:5px">
+          <span>5-Year Total Cost</span>
+          <span>${_maCostRange(costs.fiveYearLow,costs.fiveYearHigh)}</span>
+        </div>
       </div>
       ${cyberFactor ? `
       <div style="margin-top:10px;padding:8px 10px;background:#e0f2fe;border-radius:6px">
@@ -814,7 +859,7 @@ function _renderMAPoam(a, findings, allCostItems) {
 
 function _renderMATabPricing(costs, fr, ans) {
   const band     = fr.target_employee_band || '50-250';
-  const hc       = MA_HEADCOUNT[band] || MA_HEADCOUNT['50-250'];
+  const hc       = costs.hc;
   const excludes = ans._tooling_excludes || {};
   const a        = maState.currentAssessment;
 
@@ -823,30 +868,91 @@ function _renderMATabPricing(costs, fr, ans) {
     const matchItem = allItems.find(i => i.id === qId);
     const excluded  = !!excludes[qId];
     let unitModel = '', unitCount = 0, unitAnnual = 0, unitHigh = 0;
-    if (tool.perUserYear)          { unitModel = `$${tool.perUserYear[0]}–${tool.perUserYear[1]}/user/yr`;   unitCount = hc.users;     unitAnnual = tool.perUserYear[0]*hc.users;    unitHigh = tool.perUserYear[1]*hc.users; }
-    else if (tool.perEndpointYear) { unitModel = `$${tool.perEndpointYear[0]}–${tool.perEndpointYear[1]}/endpoint/yr`; unitCount = hc.endpoints; unitAnnual = tool.perEndpointYear[0]*hc.endpoints; unitHigh = tool.perEndpointYear[1]*hc.endpoints; }
+    if (tool.perUserYear)          { unitModel = `$${tool.perUserYear[0]}–${tool.perUserYear[1]}/user/yr`;           unitCount = hc.users;     unitAnnual = tool.perUserYear[0]*hc.users;         unitHigh = tool.perUserYear[1]*hc.users; }
+    else if (tool.perEndpointYear) { unitModel = `$${tool.perEndpointYear[0]}–${tool.perEndpointYear[1]}/device/yr`; unitCount = hc.endpoints; unitAnnual = tool.perEndpointYear[0]*hc.endpoints;  unitHigh = tool.perEndpointYear[1]*hc.endpoints; }
     else if (tool.fixedYear)       { unitModel = `fixed/yr`; unitCount = 1; unitAnnual = tool.fixedYear[0]; unitHigh = tool.fixedYear[1]; }
     const applicable = !!matchItem;
     return { qId, tool, excluded, unitModel, unitCount, unitAnnual, unitHigh, applicable };
   });
 
+  const fiveYearLow  = costs.fiveYearLow  || 0;
+  const fiveYearHigh = costs.fiveYearHigh || 0;
+  const schedule     = costs.schedule     || [];
+
   return `
+  <div class="card" style="margin-bottom:1rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div class="card-title" style="margin:0">5-Year Cost Schedule</div>
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:10px">
+      One-time implementation costs appear in the year they are expected. Licensing costs recur annually from the year each tool is deployed.
+    </div>
+    <div style="overflow-x:auto;margin-bottom:4px">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead>
+          <tr style="background:#f8fafc">
+            <th style="text-align:left;padding:6px 10px;border-bottom:2px solid var(--border);font-weight:700">Period</th>
+            <th style="text-align:right;padding:6px 10px;border-bottom:2px solid var(--border);font-weight:700">One-time impl.</th>
+            <th style="text-align:right;padding:6px 10px;border-bottom:2px solid var(--border);font-weight:700">Annual licensing</th>
+            <th style="text-align:right;padding:6px 10px;border-bottom:2px solid var(--border);font-weight:700;color:#0369a1">Period total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${schedule.map((row,i)=>{
+            const isPreClose = row.label === 'Pre-Close';
+            const hasImpl    = row.implLow > 0;
+            const hasTool    = row.toolLow > 0;
+            return `
+            <tr style="border-bottom:1px solid #f1f5f9;${i%2?'background:#fafafa':''}">
+              <td style="padding:7px 10px;font-weight:${isPreClose?'800':'600'};color:${isPreClose?'#dc2626':'var(--text)'}">
+                ${isPreClose?'⚡ ':''}${row.label}
+              </td>
+              <td style="padding:7px 10px;text-align:right;color:${hasImpl?'#b45309':'var(--muted)'}">
+                ${hasImpl ? _maCostRange(row.implLow,row.implHigh) : '—'}
+              </td>
+              <td style="padding:7px 10px;text-align:right;color:${hasTool?'#0369a1':'var(--muted)'}">
+                ${hasTool ? _maCostRange(row.toolLow,row.toolHigh)+'/yr' : '—'}
+              </td>
+              <td style="padding:7px 10px;text-align:right;font-weight:700">
+                ${row.rowLow > 0 ? _maCostRange(row.rowLow,row.rowHigh) : '—'}
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+        <tfoot>
+          <tr style="background:#eff6ff;border-top:2px solid #bfdbfe">
+            <td colspan="3" style="padding:8px 10px;font-weight:800;color:#1e40af">5-Year Total</td>
+            <td style="padding:8px 10px;text-align:right;font-weight:800;color:#1e40af;font-size:13px">${_maCostRange(fiveYearLow,fiveYearHigh)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:1.25rem">* Licensing costs held flat — excludes inflation, headcount growth, and any new tool deployments.</div>
+  </div>
+
   <div class="card" style="margin-bottom:1rem">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
       <div class="card-title" style="margin:0">Cost Assumptions — Tooling</div>
       <button class="btn btn-outline btn-sm" onclick="maPricingSave('${a?.id||''}')">Save Assumptions</button>
     </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:4px">
+      Employee band: <strong>${escH(band)}</strong> ·
+      <span style="color:${hc.explicit?'#15803d':'#b45309'}">
+        ${hc.explicit
+          ? `<strong style="color:#15803d">✓ ${hc.users} users / ${hc.endpoints} endpoints</strong> (entered in framing)`
+          : `${hc.users} users / ${hc.endpoints} endpoints <em>(estimated from band — enter actual counts in framing for precise pricing)</em>`}
+      </span>
+    </div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:12px">
-      Employee band: <strong>${escH(band)}</strong> · ${hc.users} users · ${hc.endpoints} endpoints.
-      Toggle off tools where manual controls are sufficient or the tool is already in place. Excluded tools remove the licensing cost from the estimate (labor cost remains).
+      Toggle off tools where manual controls are sufficient or the tool is already licensed. Excluded tools remove the licensing cost from the estimate (labor cost remains).
     </div>
     <div style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:11px">
         <thead>
           <tr style="background:#f8fafc">
             <th style="text-align:left;padding:6px 8px;border-bottom:2px solid var(--border);font-weight:700">Tool</th>
-            <th style="text-align:left;padding:6px 8px;border-bottom:2px solid var(--border);font-weight:700">Pricing model</th>
-            <th style="text-align:right;padding:6px 8px;border-bottom:2px solid var(--border);font-weight:700">Est. annual</th>
+            <th style="text-align:left;padding:6px 8px;border-bottom:2px solid var(--border);font-weight:700">Rate</th>
+            <th style="text-align:right;padding:6px 8px;border-bottom:2px solid var(--border);font-weight:700">Annual est.</th>
             <th style="text-align:center;padding:6px 8px;border-bottom:2px solid var(--border);font-weight:700">Applies</th>
             <th style="text-align:center;padding:6px 8px;border-bottom:2px solid var(--border);font-weight:700">Include</th>
           </tr>
@@ -859,9 +965,9 @@ function _renderMATabPricing(costs, fr, ans) {
               <div style="font-size:10px;color:var(--muted);margin-top:2px">${escH(r.qId)} · ${r.tool.note ? escH(r.tool.note) : ''}</div>
               ${r.tool.manualAlt && !r.excluded ? `<div style="font-size:10px;color:#0369a1;margin-top:4px;padding:4px 7px;background:#e0f2fe;border-radius:4px">${escH(r.tool.manualAlt)}</div>` : ''}
             </td>
-            <td style="padding:7px 8px;vertical-align:top;color:var(--muted)">${r.unitModel}${r.unitCount>1?' × '+r.unitCount:''}</td>
+            <td style="padding:7px 8px;vertical-align:top;color:var(--muted);white-space:nowrap">${r.unitModel}${r.unitCount>1?' × '+r.unitCount:''}</td>
             <td style="padding:7px 8px;vertical-align:top;text-align:right;font-weight:700;${r.excluded?'color:var(--muted);text-decoration:line-through':''}">
-              ${r.excluded ? _maCostRange(r.unitAnnual,r.unitHigh) : _maCostRange(r.unitAnnual,r.unitHigh)+'/yr'}
+              ${_maCostRange(r.unitAnnual,r.unitHigh)}${r.excluded?'':'/yr'}
             </td>
             <td style="padding:7px 8px;vertical-align:top;text-align:center">
               ${r.applicable

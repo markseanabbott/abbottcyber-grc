@@ -143,7 +143,7 @@ async function selectOrg(id) {
   aiUnifiedState = { answers: {}, frameworks: { nist: true, iso: true }, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '', poamRun: null, poamItems: {}, matrixRuns: [], matrixGroup: 'g1' };
   if (ttState) { ttState.completedSessions = null; ttState.historicalSession = null; }
   exHubState = { opSessions: null };
-  if (typeof maState !== 'undefined') maState = { view:'list', stepIdx:0, editId:null, list:[], listLoaded:false, saving:false, detailTab:'summary', expandedFindings:{}, framing:{ target_name:'', deal_type:'', target_industry:'', target_employee_band:'', deal_value_band:'', risk_tolerance:'moderate', assessor:'', assessed_at:'', data_sources:[], include_ai_screen:false, include_insurance_review:false }, answers:{}, poamItems:{}, currentAssessment:null };
+  if (typeof maState !== 'undefined') maState = { view:'list', stepIdx:0, editId:null, list:[], listLoaded:false, saving:false, detailTab:'summary', expandedFindings:{}, framing:{ target_name:'', deal_type:'', target_industry:'', target_employee_band:'', deal_value_band:'', risk_tolerance:'moderate', assessor:'', assessed_at:'', user_count:'', endpoint_count:'', data_sources:[], include_ai_screen:false, include_insurance_review:false }, answers:{}, poamItems:{}, currentAssessment:null };
   await loadAssessments(id);
   updateOrgUI(); buildNav(); renderMain();
 }
