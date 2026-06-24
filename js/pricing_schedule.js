@@ -6,14 +6,17 @@
 
 const PS_GROUPS = [
   { label:'Identity & Access', types:[
-    { value:'mfa',          label:'MFA',                          model:'perUser' },
-    { value:'pam',          label:'PAM',                          model:'perUser' },
+    { value:'mfa',                 label:'MFA',                          model:'perUser' },
+    { value:'pam',                 label:'PAM',                          model:'perUser' },
+    { value:'password_vault',      label:'Password Vault',               model:'perUser' },
+    { value:'dark_web_monitoring', label:'Dark Web Monitoring',          model:'perUser' },
   ]},
   { label:'Endpoint & Detection', types:[
     { value:'edr',          label:'EDR',                          model:'perEndpoint' },
     { value:'mdr_device',   label:'MDR — Device',                 model:'perEndpoint' },
     { value:'mdr_identity', label:'MDR — Identity',               model:'perUser' },
     { value:'mdr_soc',      label:'MDR / SOC',                    model:'fixed' },
+    { value:'mdm',          label:'MDM',                          model:'perEndpoint' },
   ]},
   { label:'Email & Messaging', types:[
     { value:'email',            label:'Email Security',           model:'perUser' },
@@ -25,6 +28,8 @@ const PS_GROUPS = [
   { label:'Network & Infrastructure', types:[
     { value:'ngfw',          label:'NGFW',                        model:'fixed' },
     { value:'cspm',          label:'CSPM',                        model:'fixed' },
+    { value:'dns_filter',    label:'DNS Filter',                  model:'perEndpoint' },
+    { value:'ztna_vpn',      label:'ZTNA / VPN',                  model:'perUser' },
     { value:'vuln_external', label:'Vuln Scan — External',        model:'fixed' },
     { value:'vuln_internal', label:'Vuln Scan — Internal',        model:'fixed' },
     { value:'vuln_scanner',  label:'Vuln Scan (general)',         model:'fixed' },
@@ -62,12 +67,15 @@ const PS_OT_MODELS = [
 ];
 
 const PS_TEMPLATE_EXAMPLES = [
-  { name:'MFA (e.g. Entra ID / Duo / Okta)',             vendor:'', sku:'', tool_type:'mfa',               model:'perUser',     rate_low:3,    rate_high:6,    one_time_low:0,    one_time_high:0,    covers:'',                                        notes:'Often bundled with M365 BP' },
-  { name:'PAM (e.g. 1Password Business)',                vendor:'', sku:'', tool_type:'pam',               model:'perUser',     rate_low:4,    rate_high:10,   one_time_low:500,  one_time_high:2000, covers:'',                                        notes:'Add onboarding to one-time' },
+  { name:'MFA (e.g. Entra ID / Duo / Okta)',             vendor:'', sku:'', tool_type:'mfa',               model:'perUser',     rate_low:3,    rate_high:6,    one_time_low:0,    one_time_high:0,    one_time_model:'fixed',       covers:'',                                        notes:'Often bundled with M365 BP' },
+  { name:'PAM (e.g. CyberArk / BeyondTrust)',           vendor:'', sku:'', tool_type:'pam',               model:'perUser',     rate_low:4,    rate_high:10,   one_time_low:500,  one_time_high:2000, one_time_model:'fixed',       covers:'',                                        notes:'Add onboarding to one-time' },
+  { name:'Password Vault (e.g. 1Password / Bitwarden)', vendor:'', sku:'', tool_type:'password_vault',    model:'perUser',     rate_low:3,    rate_high:8,    one_time_low:0,    one_time_high:0,    one_time_model:'fixed',       covers:'',                                        notes:'SMB credential management' },
+  { name:'Dark Web Monitoring',                         vendor:'', sku:'', tool_type:'dark_web_monitoring',model:'perUser',     rate_low:2,    rate_high:5,    one_time_low:0,    one_time_high:0,    one_time_model:'fixed',       covers:'',                                        notes:'Credential breach alerting per identity' },
   { name:'EDR (e.g. CrowdStrike Falcon Go)',             vendor:'', sku:'', tool_type:'edr',               model:'perEndpoint', rate_low:4,    rate_high:12,   one_time_low:0,    one_time_high:0,    covers:'',                                        notes:'Falcon Go ~$4/endpoint/mo' },
   { name:'MDR — Device (managed EDR)',                   vendor:'', sku:'', tool_type:'mdr_device',        model:'perEndpoint', rate_low:10,   rate_high:20,   one_time_low:0,    one_time_high:0,    covers:'edr',                                     notes:'Covers EDR as bundle' },
   { name:'MDR — Identity',                              vendor:'', sku:'', tool_type:'mdr_identity',       model:'perUser',     rate_low:5,    rate_high:10,   one_time_low:0,    one_time_high:0,    covers:'',                                        notes:'' },
-  { name:'MDR / SOC (flat monthly)',                    vendor:'', sku:'', tool_type:'mdr_soc',            model:'fixed',       rate_low:2000, rate_high:8000, one_time_low:0,    one_time_high:0,    covers:'',                                        notes:'Often bundles EDR + identity' },
+  { name:'MDR / SOC (flat monthly)',                    vendor:'', sku:'', tool_type:'mdr_soc',            model:'fixed',       rate_low:2000, rate_high:8000, one_time_low:0,    one_time_high:0,    one_time_model:'fixed',       covers:'',                                        notes:'Often bundles EDR + identity' },
+  { name:'MDM (e.g. Intune / Jamf)',                    vendor:'', sku:'', tool_type:'mdm',                model:'perEndpoint', rate_low:2,    rate_high:8,    one_time_low:0,    one_time_high:0,    one_time_model:'fixed',       covers:'',                                        notes:'Device policy enforcement & compliance' },
   { name:'Barracuda Advanced',                          vendor:'Barracuda', sku:'', tool_type:'email',     model:'perUser',     rate_low:2,    rate_high:3,    one_time_low:0,    one_time_high:0,    covers:'',                                        notes:'Basic email security' },
   { name:'Barracuda Premium',                           vendor:'Barracuda', sku:'', tool_type:'email',     model:'perUser',     rate_low:3,    rate_high:5,    one_time_low:0,    one_time_high:0,    covers:'email_backup',                            notes:'Adds email backup' },
   { name:'Barracuda Premium Plus',                      vendor:'Barracuda', sku:'', tool_type:'email',     model:'perUser',     rate_low:5,    rate_high:7,    one_time_low:0,    one_time_high:0,    covers:'email_backup|email_archive|email_dlp|email_encryption', notes:'Full suite' },
@@ -75,7 +83,9 @@ const PS_TEMPLATE_EXAMPLES = [
   { name:'Email Archive / eDiscovery',                  vendor:'', sku:'', tool_type:'email_archive',      model:'perUser',     rate_low:1.5,  rate_high:4,    one_time_low:0,    one_time_high:0,    covers:'',                                        notes:'Legal hold & compliance' },
   { name:'Email DLP',                                   vendor:'', sku:'', tool_type:'email_dlp',          model:'perUser',     rate_low:2,    rate_high:5,    one_time_low:0,    one_time_high:0,    covers:'',                                        notes:'' },
   { name:'Email Encryption',                            vendor:'', sku:'', tool_type:'email_encryption',   model:'perUser',     rate_low:2,    rate_high:5,    one_time_low:0,    one_time_high:0,    covers:'',                                        notes:'' },
-  { name:'NGFW',                                        vendor:'', sku:'', tool_type:'ngfw',               model:'fixed',       rate_low:100,  rate_high:500,  one_time_low:500,  one_time_high:2000, covers:'',                                        notes:'Subscription + support' },
+  { name:'NGFW',                                        vendor:'', sku:'', tool_type:'ngfw',               model:'fixed',       rate_low:100,  rate_high:500,  one_time_low:500,  one_time_high:2000, one_time_model:'fixed',       covers:'',                                        notes:'Subscription + support' },
+  { name:'DNS Filter (e.g. Cisco Umbrella / DNSFilter)',vendor:'', sku:'', tool_type:'dns_filter',         model:'perEndpoint', rate_low:1,    rate_high:3,    one_time_low:0,    one_time_high:0,    one_time_model:'fixed',       covers:'',                                        notes:'Content filtering & malware blocking' },
+  { name:'ZTNA / VPN (e.g. Cloudflare / Twingate)',    vendor:'', sku:'', tool_type:'ztna_vpn',           model:'perUser',     rate_low:5,    rate_high:12,   one_time_low:0,    one_time_high:0,    one_time_model:'fixed',       covers:'',                                        notes:'Zero-trust network access' },
   { name:'CSPM (e.g. Defender for Cloud)',              vendor:'', sku:'', tool_type:'cspm',               model:'fixed',       rate_low:125,  rate_high:600,  one_time_low:0,    one_time_high:0,    covers:'',                                        notes:'Basic tier often free' },
   { name:'Vuln Scan — External',                        vendor:'', sku:'', tool_type:'vuln_external',      model:'fixed',       rate_low:100,  rate_high:300,  one_time_low:0,    one_time_high:0,    covers:'',                                        notes:'Internet-facing assets' },
   { name:'Vuln Scan — Internal',                        vendor:'', sku:'', tool_type:'vuln_internal',      model:'fixed',       rate_low:100,  rate_high:400,  one_time_low:0,    one_time_high:0,    covers:'',                                        notes:'Internal network scans' },
