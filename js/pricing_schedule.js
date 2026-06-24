@@ -112,6 +112,23 @@ let psState = {
 
 // ── LOAD ─────────────────────────────────────────────────────
 
+// Data-only load — no DOM side effects. Used by other modules (Gap Register,
+// remediation cost tabs) that need psGetForType() without opening the PS page.
+async function psEnsureData() {
+  if (psState.loaded && psState._orgId === currentOrg?.id) return;
+  try {
+    const own = await sbFetch(`pricing_schedule?org_id=eq.${currentOrg.id}&order=tool_type.asc,name.asc`, 'GET');
+    psState.rows = (own || []).map(r => ({ ...r, covers: r.covers || [], _dirty:false, _new:false, _deleted:false }));
+    psState.parentRows = [];
+    if (currentOrg.tier === 'father' && currentOrg.parent_id) {
+      const par = await sbFetch(`pricing_schedule?org_id=eq.${currentOrg.parent_id}&order=tool_type.asc,name.asc`, 'GET');
+      psState.parentRows = (par || []).map(r => ({ ...r, covers: r.covers || [] }));
+    }
+    psState.loaded = true;
+    psState._orgId = currentOrg?.id;
+  } catch(e) { /* non-fatal — psGetForType returns null for all */ }
+}
+
 async function psLoad() {
   psState.loaded = false;
   psState.rows = []; psState.parentRows = [];
@@ -672,6 +689,7 @@ function psGetForType(toolType) {
 
 window.renderPricingSchedule = renderPricingSchedule;
 window.psLoad                = psLoad;
+window.psEnsureData          = psEnsureData;
 window.psAddRow              = psAddRow;
 window.psRowSet              = psRowSet;
 window.psRowAutoModel        = psRowAutoModel;

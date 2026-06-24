@@ -45,6 +45,9 @@ async function grLoad() {
   const insRuns = (orgData['insurance'] || []).slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
   if (insRuns.length) grState.insRun = insRuns[0];
 
+  // Ensure pricing schedule data is loaded (psGetForType needs psState.rows)
+  try { await psEnsureData(); } catch(e) { /* non-critical */ }
+
   // Tech Stack: ensure tsState is loaded for this org
   if (!tsState || tsState.orgId !== currentOrg.id) {
     tsInit();
