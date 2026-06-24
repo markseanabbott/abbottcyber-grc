@@ -36,9 +36,19 @@ async function modAccessLoadGrants() {
 function hasPageAccess(pageKey) {
   // Platform admin always sees everything (real role, not view-as)
   if (authState?.profile?.role === 'platform_admin') return true;
+
+  // Org admins have full access within their org scope
+  const effectiveRole = viewAsState?.role || authState?.profile?.role;
+  if (effectiveRole === 'org_admin') return true;
+
   const moduleIds = modAccess.pageMap[pageKey]; // Set<module_id> or undefined
-  if (!moduleIds || moduleIds.size === 0) return true; // no module assigned = always visible
-  // Grant access if user has ANY module that includes this page
+
+  // User has no module grants → no restrictions apply (legacy / unrestricted accounts)
+  if (modAccess.grants.size === 0) return true;
+
+  // User has grants → whitelist mode: they can ONLY access pages in their granted modules.
+  // A page with no module assigned is blocked for grant-restricted users.
+  if (!moduleIds || moduleIds.size === 0) return false;
   for (const mid of moduleIds) {
     if (modAccess.grants.has(mid)) return true;
   }
@@ -264,6 +274,7 @@ function modOpenModal(id) {
   const m = id ? modState.modules.find(x => x.id === id) : null;
 
   document.getElementById('modModalBox').innerHTML = `
+    <div style="padding:1.5rem">
     <div class="modal-title">${id ? 'Edit Module' : 'Add Module'}</div>
     <div style="display:flex;flex-direction:column;gap:.75rem;margin-top:1rem">
       <div>
@@ -286,6 +297,7 @@ function modOpenModal(id) {
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem">
       <button class="btn btn-outline" onclick="modCloseModal()">Cancel</button>
       <button class="btn btn-primary" onclick="modSave()">Save Module</button>
+    </div>
     </div>`;
 
   document.getElementById('modModal').style.display = 'flex';
