@@ -722,73 +722,74 @@ function _drawHomeCisRadar() {
 const ASSESSMENT_CATALOG = [
   { id: 'cis',       label: 'CIS Controls v8',    icon: '✅', description: '153 safeguards across 18 controls. Per-org IG goal (IG1/IG2/IG3). Full assessment history.', nav: 'cis' },
   { id: 'insurance', label: 'Insurance Readiness', icon: '🛡️', description: 'Dual-weighted readiness score for cyber insurance applications.', nav: 'insurance' },
+  { id: 'techstack', label: 'Technology Stack',    icon: '🖥️', description: 'Maps your technology to security frameworks and gaps.', nav: 'techstack' },
   { id: 'cmmc',      label: 'CMMC Level 1',        icon: '🛡️', description: '17 practices across 6 domains. SPRS score contribution. DoD contractor self-assessment.', nav: 'cmmc' },
   { id: 'cmmc2',     label: 'CMMC Level 2',        icon: '🏛️', description: '110 NIST SP 800-171 practices across 14 domains. Full SPRS score (0–110). CUI handling assessment.', nav: 'cmmc2' },
+  { id: 'ma_cdd',    label: 'M&A Due Diligence',   icon: '🤝', description: 'Cybersecurity due diligence for mergers and acquisitions. Risk scoring across 8 domains.', nav: 'ma_cdd' },
   { id: 'nist',      label: 'NIST CSF 2.0',        icon: '🏛️', description: 'NIST Cybersecurity Framework 2.0 assessment.', nav: 'nist', comingSoon: true },
-  { id: 'techstack', label: 'Technology Stack',    icon: '🖥️', description: 'Maps your technology to security frameworks and gaps.', nav: 'techstack' },
 ];
 
 function renderAssessmentsHub() {
   if (!currentOrg) return '';
   const h = orgAssessments[currentOrg.id] || {};
+
+  const chicklets = ASSESSMENT_CATALOG.map(a => {
+    const runs = (h[a.id] || []).slice().sort((x, y) => (y.date||'').localeCompare(x.date||''));
+    const last = runs[0] || null;
+    const canDuplicate = runs.length > 0 && !a.comingSoon;
+
+    const scoreColor = !last ? 'var(--muted)'
+      : last.score >= 70 ? '#15803d'
+      : last.score >= 40 ? '#b45309'
+      : '#dc2626';
+
+    const igBadge = a.id === 'cis' ? (() => {
+      const g = (orgProfiles[currentOrg?.id] || {}).cis_goal;
+      const igCols = { ig1: { bg: '#dcfce7', txt: '#15803d' }, ig2: { bg: '#dbeafe', txt: '#1d4ed8' }, ig3: { bg: '#ede9fe', txt: '#6d28d9' } };
+      const c = igCols[g];
+      return g && c ? `<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;background:${c.bg};color:${c.txt}">${g.toUpperCase()}</span>` : '';
+    })() : '';
+
+    return `<div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column">
+      <div style="padding:1rem 1rem .6rem;flex:1">
+        <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.4rem">
+          <span style="font-size:1.1rem;flex-shrink:0">${a.icon}</span>
+          <div style="font-size:13px;font-weight:700;flex:1">${a.label}</div>
+          ${igBadge}
+        </div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.45">${a.description}</div>
+      </div>
+      <div style="padding:.5rem 1rem .6rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:.5rem">
+        <div>
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700">Last run</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text)">
+            ${last ? last.date : '<span style="color:var(--muted);font-weight:400">Never</span>'}
+            ${runs.length > 1 ? `<span style="font-size:9px;color:var(--muted);font-weight:400;margin-left:4px">${runs.length} runs</span>` : ''}
+          </div>
+        </div>
+        ${last ? `<div style="font-size:1.15rem;font-weight:800;color:${scoreColor}">${last.score}%</div>` : ''}
+      </div>
+      <div style="padding:.5rem 1rem .75rem;border-top:1px solid var(--border);display:flex;gap:5px">
+        ${a.comingSoon
+          ? `<span style="font-size:11px;font-weight:700;color:var(--muted);padding:4px 10px;border-radius:6px;background:var(--bg)">Coming soon</span>`
+          : `<button class="btn btn-cyan btn-sm" onclick="setNav('${a.nav}')" style="flex:1">${last ? 'View / Run' : 'Start'}</button>`}
+        ${canDuplicate ? `<button class="btn btn-outline btn-sm" title="Duplicate last assessment for a quick re-run" onclick="duplicateAssessment('${a.id}')">⧉ Re-up</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
   return `
   ${renderTierBanner()}
   <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:0.85rem;flex-wrap:wrap;gap:8px">
     <div>
       <div style="font-size:17px;font-weight:700">📋 Assessments</div>
-      <div style="font-size:12px;color:var(--muted)">All available assessments for ${currentOrg.name}</div>
+      <div style="font-size:12px;color:var(--muted)">All available assessments for ${escH(currentOrg.name)}</div>
     </div>
   </div>
-  <div class="card" style="padding:0;overflow:hidden">
-    <table class="assess-table">
-      <thead>
-        <tr>
-          <th>Assessment</th>
-          <th>IG Level</th>
-          <th>Last Run</th>
-          <th>Score</th>
-          <th style="min-width:110px">Trend</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${ASSESSMENT_CATALOG.map(a => {
-          const runs = h[a.id] || [];
-          const last = runs.length ? runs[runs.length - 1] : null;
-          const scorePillClass = !last ? 'asp-none' : last.score >= 75 ? 'asp-green' : last.score >= 50 ? 'asp-amber' : 'asp-red';
-          const canDuplicate = runs.length > 0 && !a.comingSoon;
-          return `<tr>
-            <td>
-              <div class="assess-row-name">${a.icon} ${a.label}</div>
-              <div class="assess-row-sub">${a.description}</div>
-            </td>
-            <td>${a.id === 'cis'
-              ? (() => { const g = (orgProfiles[currentOrg?.id] || {}).cis_goal; const igCols = { ig1: { bg: '#dcfce7', txt: '#15803d' }, ig2: { bg: '#dbeafe', txt: '#1d4ed8' }, ig3: { bg: '#ede9fe', txt: '#6d28d9' } }; const c = igCols[g]; return g && c ? `<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:${c.bg};color:${c.txt}">${g.toUpperCase()}</span>` : '<span style="font-size:10px;color:var(--muted)">No goal set</span>'; })()
-              : '<span style="color:var(--muted);font-size:11px">—</span>'}</td>
-            <td style="color:${last ? 'var(--text)' : 'var(--muted)'}">
-              ${last ? `<span style="font-size:11px">${last.date}</span>` : '<span style="font-size:11px">Never</span>'}
-              ${runs.length > 1 ? `<div style="font-size:10px;color:var(--muted)">${runs.length} runs total</div>` : ''}
-            </td>
-            <td><span class="assess-score-pill ${scorePillClass}">${last ? last.score + '/100' : 'Not run'}</span></td>
-            <td>
-              ${runs.length >= 2
-                ? `<canvas id="hub-trend-${a.id}" class="trend-canvas" width="110" height="36"></canvas>`
-                : `<span style="font-size:10px;color:var(--muted)">${runs.length === 1 ? '1 run — need 2+' : '—'}</span>`}
-            </td>
-            <td>
-              <div style="display:flex;gap:5px;flex-wrap:wrap">
-                ${a.comingSoon
-                  ? `<span style="font-size:10px;font-weight:700;color:var(--muted);padding:4px 8px;border-radius:6px;background:var(--bg)">Coming soon</span>`
-                  : `<button class="btn btn-cyan btn-sm" onclick="setNav('${a.nav}')">${last ? 'View / Run' : 'Start'}</button>`}
-                ${canDuplicate ? `<button class="btn btn-outline btn-sm" title="Duplicate for re-up assessment" onclick="duplicateAssessment('${a.id}')">⧉ Re-up</button>` : ''}
-              </div>
-            </td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem">
+    ${chicklets}
   </div>
-  <div style="font-size:11px;color:var(--muted);margin-top:8px">
+  <div style="font-size:11px;color:var(--muted);margin-top:.75rem">
     💡 <strong>Re-up</strong> duplicates the last assessment's answers (clearing evidence notes) so you can quickly run a follow-up without starting from scratch.
   </div>`;
 }

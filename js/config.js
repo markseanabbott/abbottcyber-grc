@@ -103,14 +103,7 @@ const NAV = [
     { id: 'company_profile', icon: '🏢', label: 'Start Here', live: true, phase: 1 },
   ]},
   { id: 'g_assessments', group: 'Assessments', icon: '📋', items: [
-    { id: 'assessments', icon: '📋', label: 'Assessments Hub', live: true, phase: 1 },
-    { id: 'insurance', icon: '🛡️', label: 'Insurance Readiness', live: true, phase: 1 },
-    { id: 'cis', icon: '✅', label: 'CIS Controls v8', live: true, phase: 1 },
-    { id: 'techstack', icon: '🖥️', label: 'Technology Stack', live: true, phase: 1 },
-    { id: 'cmmc', icon: '🛡️', label: 'CMMC Level 1', live: true, phase: 1 },
-    { id: 'cmmc2', icon: '🏛️', label: 'CMMC Level 2', live: true, phase: 1 },
-    { id: 'ma_cdd', icon: '🤝', label: 'M&A Due Diligence', live: true, phase: 1, moduleKey: 'ma_cdd' },
-    { id: 'nist', icon: '🏛️', label: 'NIST CSF 2.0', live: false, phase: 3 },
+    { id: 'assessments', icon: '📋', label: 'Assessments', live: true, phase: 1 },
   ]},
   { id: 'g_ai_readiness', group: 'AI Readiness', icon: '🤖', items: [
     { id: 'ai_readiness', icon: '🤖', label: 'AI Readiness Hub', live: true, phase: 1 },
