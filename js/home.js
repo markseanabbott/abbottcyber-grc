@@ -541,21 +541,39 @@ function _homeCisRadarChicklet(h) {
 }
 
 function _homeTopToolsChicklet() {
-  // Risk-priority ranked list of all tool types — first 5 missing ones are shown
-  const ALL_PRIORITY = [
-    { label:'EDR',                    sub:'Endpoint Detection & Response',  icon:'🛡️', toolType:'edr' },
-    { label:'MDR — Identity',         sub:'Identity threat detection',       icon:'👤', toolType:'mdr_identity' },
-    { label:'MDR — Endpoint',         sub:'Managed SOC for endpoints',       icon:'🔍', toolType:'mdr_device' },
-    { label:'Email Security',         sub:'Gateway + authentication',        icon:'📧', toolType:'email' },
-    { label:'Vulnerability Scanning', sub:'External attack surface',         icon:'📡', toolType:'vuln_external' },
-    { label:'Backup & Recovery',      sub:'3-2-1 backup strategy',           icon:'💾', toolType:'backup' },
-    { label:'MFA / Identity',         sub:'Multi-factor authentication',     icon:'🔐', toolType:'mfa' },
-    { label:'DNS Security',           sub:'Protective DNS filtering',        icon:'🌐', toolType:'dns' },
-    { label:'SIEM',                   sub:'Security event monitoring',       icon:'📊', toolType:'siem' },
-    { label:'Patch Management',       sub:'Automated patch deployment',      icon:'🔧', toolType:'patch' },
-    { label:'PAM',                    sub:'Privileged access management',    icon:'🛂', toolType:'pam' },
-    { label:'DLP',                    sub:'Data loss prevention',            icon:'🔒', toolType:'dlp' },
-  ];
+  // Risk priority rank per PS_ALL_TYPES tool type — lower = higher priority
+  const RISK_RANK = {
+    edr:                1,
+    mdr_soc:            2,
+    mdr_device:         3,
+    mdr_identity:       4,
+    mfa:                5,
+    email:              6,
+    vuln_external:      7,
+    vuln_internal:      8,
+    dns_filter:         9,
+    ngfw:              10,
+    ztna_vpn:          11,
+    mdm:               12,
+    sat:               13,
+    dlp:               14,
+    pii_scan:          15,
+    pam:               16,
+    cspm:              17,
+    password_vault:    18,
+    dark_web_monitoring:19,
+    pentest_external:  20,
+    pentest_internal:  21,
+    vciso:             22,
+    email_backup:      23,
+    email_dlp:         24,
+    email_encryption:  25,
+    email_archive:     26,
+    asc_external:      27,
+    vuln_scanner:      28,
+    security_assessment:29,
+    tabletop:          30,
+  };
 
   const rankColors = ['#dc2626','#ea580c','#d97706','#2563eb','#7c3aed'];
 
@@ -572,31 +590,28 @@ function _homeTopToolsChicklet() {
     </div>`;
   }
 
-  // Tech Stack is the authoritative "is this tool deployed?" signal.
-  // CIS/Insurance flag compliance gaps, not tool absence — using them here
-  // would show tools as missing even when deployed (e.g. EDR flagged by CIS
-  // because a safeguard isn't 100% even though Sentinel One is running).
-  const hasTSAnswers = tsState?.answers && tsState.orgId === currentOrg?.id
-    && Object.keys(tsState.answers).length > 0;
+  // Pull directly from the Tool Gap Register — same data, risk-priority sorted
+  const { rows: gapRows, catalogMode } = grBuildGapList();
 
-  if (!hasTSAnswers) {
+  if (catalogMode) {
     return `<div class="card" style="padding:0;overflow:hidden">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .9rem .5rem;border-bottom:1px solid var(--border)">
         <div style="font-size:13px;font-weight:700">🔧 Missing Tools</div>
         <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();setNav('gap_register')">Tool Gap Register →</button>
       </div>
       <div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:12px">
-        <div style="font-size:1.5rem;margin-bottom:.4rem">🖥️</div>
-        Run the <strong>Technology Stack</strong> survey<br>to identify which tools are missing.
+        <div style="font-size:1.5rem;margin-bottom:.4rem">📋</div>
+        Run a CIS, Insurance, or Tech Stack assessment<br>to identify which tools are missing.
       </div>
     </div>`;
   }
 
-  const { gaps: tsGaps } = rcExtractTSGaps();
-  const gapTypes = new Set(tsGaps.map(g => g.toolType));
-  const missing = ALL_PRIORITY.filter(t => gapTypes.has(t.toolType)).slice(0, 5);
+  // Sort all gaps by risk priority rank, take top 5
+  const missing = gapRows
+    .slice()
+    .sort((a, b) => (RISK_RANK[a.toolType] || 99) - (RISK_RANK[b.toolType] || 99))
+    .slice(0, 5);
 
-  // All priority tools are covered — great posture
   if (!missing.length) {
     return `<div class="card" style="padding:0;overflow:hidden">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .9rem .5rem;border-bottom:1px solid var(--border)">
@@ -605,22 +620,26 @@ function _homeTopToolsChicklet() {
       </div>
       <div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:12px">
         <div style="font-size:1.5rem;margin-bottom:.4rem">✅</div>
-        No priority tool gaps found in Technology Stack survey.
+        No tool gaps identified from current assessments.
       </div>
     </div>`;
   }
 
   const rows = missing.map((t, i) => {
-    const ps = (typeof psGetForType === 'function') ? psGetForType(t.toolType) : null;
+    const ps = t.ps || ((typeof psGetForType === 'function') ? psGetForType(t.toolType) : null);
     const priceNote = ps
       ? `<span style="font-size:10px;color:#15803d;font-weight:700">${escH(ps.name)}</span>`
       : `<span style="font-size:10px;color:#b45309;cursor:pointer" onclick="event.stopPropagation();setNav('pricing_schedule')">Add to Pricing Schedule →</span>`;
+    const frameworkBadges = [
+      t.cisS ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:#dbeafe;color:#1d4ed8">CIS</span>` : '',
+      t.insS ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:#dcfce7;color:#15803d">Ins</span>` : '',
+      t.tsS  ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:#fef3c7;color:#92400e">TS</span>` : '',
+    ].filter(Boolean).join(' ');
     return `<div style="display:flex;align-items:center;gap:.6rem;padding:.5rem .9rem;border-bottom:1px solid var(--border)">
       <div style="width:20px;height:20px;border-radius:50%;background:${rankColors[i]};color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i + 1}</div>
-      <span style="font-size:14px;flex-shrink:0">${t.icon}</span>
       <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:700">${t.label}</div>
-        <div style="font-size:10px;color:var(--muted)">${t.sub}</div>
+        <div style="font-size:12px;font-weight:700">${escH(t.label)}</div>
+        <div style="display:flex;gap:3px;margin-top:2px">${frameworkBadges}</div>
       </div>
       <div style="text-align:right;flex-shrink:0">${priceNote}</div>
     </div>`;
