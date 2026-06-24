@@ -597,6 +597,18 @@
           "text": "Edit User — remove hardcoded Section Access; Module Access section driven by modules table. When a new module is added in Module Management it automatically appears as a toggle in Edit User. module_access JSON column on users always written as null to clear legacy restrictions.",
           "done": true,
           "notes": "users.js: removed euModuleCheck section and all references. editUserRoleChanged() simplified to org-access show/hide only. submitEditUser() always passes module_access: null. Label renamed from Add-on Modules to Module Access."
+        },
+        {
+          "id": "mod6",
+          "text": "PAGE_REGISTRY in modules.js — static list of all 21 routable pages grouped by section (Home, Assessments, AI Readiness, Governance, Exercises, Reports, M&A). modGetPages() returns PAGE_REGISTRY directly instead of deriving from NAV. Page Access tab now shows individual pages, not just hub-level items.",
+          "done": true,
+          "notes": "modules.js: PAGE_REGISTRY const added above modGetPages(). 21 pages across 7 groups. Keys match activeNav values used in renderMain(). Settings pages excluded (always platform-admin gated)."
+        },
+        {
+          "id": "mod7",
+          "text": "Edit Module modal — widened from 480px to 620px; description textarea taller (4 rows, min-height 80px).",
+          "done": true,
+          "notes": "index.html: modModalBox max-width changed to 620px, width 95%. modules.js: modFldDesc rows=4, min-height:80px."
         }
       ]
     },
