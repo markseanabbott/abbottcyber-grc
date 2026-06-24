@@ -345,9 +345,10 @@ function renderHome() {
 
   // Panel chicklets
   const panels = [];
-  if (canAssessments) panels.push(_homeAssessmentsChicklet(h));
+  if (canAssessments) { const p = _homeAssessmentsChicklet(h); if (p) panels.push(p); }
   if (canRisk)        panels.push(_homeRiskChicklet(rrRows, rrLoaded));
-  if (canAI)          panels.push(_homeAiChicklet(h));
+  if (canRisk)        panels.push(_homeTopToolsChicklet());
+  if (canAI)          { const p = _homeAiChicklet(h); if (p) panels.push(p); }
   if (canAssessments && (h['cis'] || []).length > 0) panels.push(_homeCisRadarChicklet(h));
 
   const noPanels = panels.length === 0;
@@ -410,18 +411,23 @@ function _homeAssessmentsChicklet(h) {
     { id:'insurance', label:'Insurance Readiness', icon:'🛡️', nav:'insurance' },
     { id:'techstack', label:'Technology Stack',    icon:'🖥️', nav:'techstack' },
   ];
-  const rows = catalog.map(a => {
+
+  // Only show assessments that have been run
+  const done = catalog.filter(a => (h[a.id] || []).length > 0);
+  if (!done.length) return '';
+
+  const rows = done.map(a => {
     const runs = h[a.id] || [];
-    const last = runs.length ? runs[runs.length - 1] : null;
-    const scoreColor = !last ? 'var(--muted)' : last.score >= 70 ? '#15803d' : last.score >= 40 ? '#b45309' : '#dc2626';
+    const last = runs[runs.length - 1];
+    const scoreColor = last.score >= 70 ? '#15803d' : last.score >= 40 ? '#b45309' : '#dc2626';
     return `<div style="display:flex;align-items:center;gap:.5rem;padding:.5rem .9rem;border-bottom:1px solid var(--border);cursor:pointer" onclick="setNav('${a.nav}')" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
       <span style="font-size:13px;flex-shrink:0">${a.icon}</span>
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.label}</div>
-        <div style="font-size:10px;color:var(--muted)">${last ? last.date : 'Never run'}</div>
+        <div style="font-size:10px;color:var(--muted)">${last.date || '—'}</div>
       </div>
       ${runs.length >= 2 ? `<canvas id="home-trend-${a.id}" width="50" height="20" style="flex-shrink:0"></canvas>` : ''}
-      <span style="font-size:12px;font-weight:800;color:${scoreColor};flex-shrink:0;min-width:28px;text-align:right">${last ? last.score + '%' : '—'}</span>
+      <span style="font-size:12px;font-weight:800;color:${scoreColor};flex-shrink:0;min-width:28px;text-align:right">${last.score}%</span>
     </div>`;
   }).join('');
 
@@ -472,19 +478,7 @@ function _homeAiChicklet(h) {
   const scoreVal   = latest?.score ?? null;
   const scoreColor = scoreVal !== null ? _scoreColor(scoreVal) : 'var(--muted)';
 
-  if (!latest) {
-    return `<div class="card" style="padding:0;overflow:hidden">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .9rem .5rem;border-bottom:1px solid var(--border)">
-        <div style="font-size:13px;font-weight:700">🤖 AI Readiness</div>
-        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();setNav('ai_readiness')">View Hub →</button>
-      </div>
-      <div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:12px">
-        <div style="font-size:1.5rem;margin-bottom:.35rem">🤖</div>
-        No AI Governance assessment yet.<br>
-        <button class="btn btn-outline btn-sm" style="margin-top:.6rem" onclick="setNav('ai_unified')">Start Assessment →</button>
-      </div>
-    </div>`;
-  }
+  if (!latest) return '';
 
   return `<div class="card" style="padding:0;overflow:hidden;cursor:pointer" onclick="setNav('ai_readiness')" onmouseover="this.style.boxShadow='0 0 0 2px var(--cyan)'" onmouseout="this.style.boxShadow=''">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .9rem .5rem;border-bottom:1px solid var(--border)">
@@ -538,6 +532,45 @@ function _homeCisRadarChicklet(h) {
       <canvas id="home-cis-radar" style="display:block;width:100%;height:280px"></canvas>
     </div>
     <div style="padding:.35rem .9rem .75rem;text-align:center;font-size:11px;color:var(--cyan);font-weight:700">→ CIS Controls Assessment</div>
+  </div>`;
+}
+
+function _homeTopToolsChicklet() {
+  const tools = [
+    { rank:1, label:'EDR',                      sub:'Endpoint Detection & Response',  icon:'🛡️', toolType:'edr' },
+    { rank:2, label:'MDR — Identity',           sub:'Identity threat detection',       icon:'👤', toolType:'mdr_identity' },
+    { rank:3, label:'MDR — Endpoint',           sub:'Managed SOC for endpoints',       icon:'🔍', toolType:'mdr_device' },
+    { rank:4, label:'Email Security',           sub:'Gateway + authentication',        icon:'📧', toolType:'email' },
+    { rank:5, label:'Vulnerability Scanning',   sub:'External attack surface',         icon:'📡', toolType:'vuln_external' },
+  ];
+
+  const rankColors = ['#dc2626','#ea580c','#d97706','#2563eb','#7c3aed'];
+
+  const rows = tools.map((t, i) => {
+    const ps = (typeof psGetForType === 'function') ? psGetForType(t.toolType) : null;
+    const priceNote = ps
+      ? `<span style="font-size:10px;color:#15803d;font-weight:700">${escH(ps.name)}</span>`
+      : `<span style="font-size:10px;color:#b45309;cursor:pointer" onclick="event.stopPropagation();setNav('pricing_schedule')">Add to Pricing Schedule →</span>`;
+    return `<div style="display:flex;align-items:center;gap:.6rem;padding:.5rem .9rem;border-bottom:1px solid var(--border)">
+      <div style="width:20px;height:20px;border-radius:50%;background:${rankColors[i]};color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${t.rank}</div>
+      <span style="font-size:14px;flex-shrink:0">${t.icon}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:700">${t.label}</div>
+        <div style="font-size:10px;color:var(--muted)">${t.sub}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">${priceNote}</div>
+    </div>`;
+  }).join('');
+
+  return `<div class="card" style="padding:0;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .9rem .5rem;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:13px;font-weight:700">🔧 Top 5 Tools to Buy</div>
+        <div style="font-size:10px;color:var(--muted)">Priority order by risk reduction</div>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();setNav('gap_register')">Gap Register →</button>
+    </div>
+    ${rows}
   </div>`;
 }
 
