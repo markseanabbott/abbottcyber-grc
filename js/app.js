@@ -235,7 +235,7 @@ function idleStop() {
 // SIDEBAR
 // ============================================================
 function getModuleDot(id) {
-  if (!currentOrg || ['home', 'tabletop', 'tt_ai', 'orgs', 'assessments', 'ma_cdd'].includes(id)) return 'dot-none';
+  if (!currentOrg || ['home', 'tabletop', 'tt_ai', 'orgs', 'assessments', 'exercises', 'ma_cdd'].includes(id)) return 'dot-none';
   const h = (orgAssessments[currentOrg.id] || {})[id];
   if (!h || !h.length) return 'dot-none';
   const s = h[h.length - 1].score;
@@ -478,6 +478,7 @@ function renderMain() {
     return;
   }
   if (activeNav === 'assessments') { el.innerHTML = voB + renderAssessmentsHub(); setTimeout(drawAllHubTrends, 80); return; }
+  if (activeNav === 'exercises')   { el.innerHTML = voB + renderExercisesHub(); return; }
   if (activeNav === 'insurance') { el.innerHTML = voB + renderInsurance(); drawTrend(); return; }
   if (activeNav === 'cis') { el.innerHTML = voB + renderCIS(); setTimeout(() => { const c = document.getElementById('cisTrendChart'); if (c) cisTrendDraw(); if (cisState.view === 'report') drawReportCharts(); }, 80); return; }  // trend draw covers both dashboard + form views
   if (activeNav === 'orgs') { el.innerHTML = renderOrgManager(); setTimeout(updateParentOptions, 100); return; }
