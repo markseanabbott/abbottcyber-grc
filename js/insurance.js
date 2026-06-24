@@ -158,7 +158,8 @@ function renderInsuranceDashboard() {
                 </td>
                 <td style="padding:9px 10px;color:var(--muted);font-size:12px">${escH(r.conductedBy || '—')}</td>
                 <td style="padding:9px 10px;text-align:right">
-                  <button class="btn btn-outline btn-sm" onclick="insOpenAssessment(${i})" style="font-size:11px;padding:3px 9px">✏️ Edit</button>
+                  <button class="btn btn-outline btn-sm" onclick="insOpenAssessment(${i})" style="font-size:11px;padding:3px 9px;margin-right:4px">✏️ Edit</button>
+                  <button class="btn btn-red btn-sm" onclick="insDeleteAssessment('${r.id}')" style="font-size:11px;padding:3px 9px">Delete</button>
                 </td>
               </tr>`;
             }).join('')}
@@ -388,7 +389,7 @@ function insOpenAssessment(origIdx) {
     answers: Object.assign({}, run.answers || {}),
     openPanels: { [INS_SECTIONS[0].id]: true },
     view: 'form',
-    editId: null,
+    editId: run.id || null,
     conductedBy: run.conductedBy || '',
     date: run.date || new Date().toISOString().slice(0, 10),
   };
@@ -400,21 +401,39 @@ function insBackToDashboard() {
   renderMain();
 }
 
+async function insDeleteAssessment(id) {
+  if (!confirm('Delete this assessment? This cannot be undone.')) return;
+  try {
+    await sbFetch(`assessments?id=eq.${id}`, 'DELETE');
+    delete orgAssessments[currentOrg.id];
+    await loadAssessments(currentOrg.id);
+    toast('Assessment deleted', '#15803d');
+    buildNav(); renderMain();
+  } catch(e) {
+    toast('Delete failed: ' + e.message, '#dc2626');
+  }
+}
+
 async function insSave() {
   const r = insCalc();
   const date = insState.date || new Date().toISOString().slice(0, 10);
   document.querySelectorAll('#saveBtn,[onclick="insSave()"]').forEach(b => { b.disabled = true; b.innerHTML = '<span class="spinner"></span>Saving…'; });
+  const payload = {
+    org_id: currentOrg.id,
+    module: 'insurance',
+    score: r.score,
+    sec_pct: r.secPct,
+    ins_pct: r.insPct,
+    answers: insState.answers,
+    assessed_at: date,
+    conducted_by: insState.conductedBy || null,
+  };
   try {
-    await sb.saveAssessment({
-      org_id: currentOrg.id,
-      module: 'insurance',
-      score: r.score,
-      sec_pct: r.secPct,
-      ins_pct: r.insPct,
-      answers: insState.answers,
-      assessed_at: date,
-      conducted_by: insState.conductedBy || null,
-    });
+    if (insState.editId) {
+      await sbFetch(`assessments?id=eq.${insState.editId}`, 'PATCH', payload);
+    } else {
+      await sb.saveAssessment(payload);
+    }
     delete orgAssessments[currentOrg.id];
     await loadAssessments(currentOrg.id);
     insState.view = 'dashboard';
