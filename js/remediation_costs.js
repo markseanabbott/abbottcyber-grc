@@ -55,26 +55,85 @@ const RC_TS_TO_TOOL = {
   On_Call_Paging:           null,
 };
 
-// CIS control number (1–18) → pricing schedule tool_type(s)
-const RC_CIS_CTRL_MAP = {
-  1:  ['mdm'],                              // Inventory of enterprise assets
-  2:  [],                                   // Software inventory (process)
-  3:  ['dlp', 'pii_scan'],                 // Data protection
-  4:  ['mdm'],                              // Secure config of enterprise assets
-  5:  ['pam', 'password_vault'],           // Account management
-  6:  ['mfa', 'ztna_vpn'],                // Access control management
-  7:  ['vuln_external', 'vuln_internal'],  // Continuous vulnerability management
-  8:  ['mdr_soc'],                         // Audit log management / SIEM
-  9:  ['email', 'dns_filter'],            // Email & web browser protections
-  10: ['edr'],                             // Malware defenses
-  11: [],                                   // Data recovery (backup — not in pricing schedule)
-  12: ['ngfw'],                            // Network infrastructure management
-  13: ['mdr_soc'],                         // Network monitoring & defense
-  14: ['sat'],                             // Security awareness & skills training
-  15: [],                                   // Service provider management (TPRA — process)
-  16: [],                                   // Application software security (no tool)
-  17: ['tabletop', 'vciso'],              // Incident response management
-  18: ['pentest_external'],               // Penetration testing
+// CIS safeguard ID → pricing schedule tool_type(s)
+// Only safeguards that literally require deploying a specific tool.
+// Process, policy, config, and architecture safeguards are intentionally excluded.
+const RC_CIS_SF_MAP = {
+  // Control 1 — Inventory & Control of Enterprise Assets
+  '1.3':  ['mdm'],              // Utilise an Active Discovery Tool
+  '1.5':  ['mdm'],              // Use a Passive Asset Discovery Tool
+
+  // Control 2 — Inventory & Control of Software Assets
+  '2.4':  ['mdm'],              // Utilise Automated Software Inventory Tools
+  '2.5':  ['edr'],              // Allowlist Authorised Software
+  '2.6':  ['edr'],              // Allowlist Authorised Libraries
+  '2.7':  ['edr'],              // Allowlist Authorised Scripts
+
+  // Control 3 — Data Protection
+  '3.13': ['dlp'],              // Deploy a Data Loss Prevention Solution
+
+  // Control 4 — Secure Configuration
+  '4.11': ['mdm'],              // Enforce Remote Wipe Capability on Portable End-User Devices
+  '4.12': ['mdm'],              // Separate Enterprise Workspaces on Mobile End-User Devices
+
+  // Control 6 — Access Control Management
+  '6.3':  ['mfa'],              // Require MFA for Externally-Exposed Applications
+  '6.4':  ['mfa'],              // Require MFA for Remote Network Access
+  '6.5':  ['mfa'],              // Require MFA for Administrative Access
+  '6.7':  ['mfa'],              // Centralise Access Control (SSO/directory service)
+
+  // Control 7 — Continuous Vulnerability Management
+  '7.3':  ['mdm'],              // Perform Automated OS Patch Management
+  '7.4':  ['mdm'],              // Perform Automated Application Patch Management
+  '7.5':  ['vuln_internal'],    // Perform Automated Vulnerability Scans of Internal Enterprise Assets
+  '7.6':  ['vuln_external'],    // Perform Automated Vulnerability Scans of Externally-Exposed Enterprise Assets
+
+  // Control 8 — Audit Log Management
+  '8.9':  ['mdr_soc'],          // Centralise Audit Logs (SIEM/log management tool)
+
+  // Control 9 — Email & Web Browser Protections
+  '9.2':  ['dns_filter'],       // Use DNS Filtering Services
+  '9.3':  ['dns_filter'],       // Maintain & Enforce Network-Based URL Filters
+  '9.5':  ['email'],            // Implement DMARC (email security platform)
+  '9.6':  ['email'],            // Block Unnecessary File Types (email gateway)
+  '9.7':  ['email'],            // Deploy & Maintain Email Server Anti-Malware Protections
+
+  // Control 10 — Malware Defenses
+  '10.1': ['edr'],              // Deploy & Maintain Anti-Malware Software
+  '10.6': ['edr'],              // Centrally Manage Anti-Malware Software
+  '10.7': ['edr'],              // Use Behaviour-Based Anti-Malware Software
+
+  // Control 12 — Network Infrastructure Management
+  '12.7': ['ztna_vpn'],         // Ensure Remote Devices Utilise a VPN
+
+  // Control 13 — Network Monitoring & Defense
+  '13.1': ['mdr_soc'],          // Centralise Security Event Alerting (SIEM)
+  '13.2': ['edr'],              // Deploy a Host-Based Intrusion Detection Solution
+  '13.3': ['ngfw'],             // Deploy a Network Intrusion Detection Solution
+  '13.4': ['ngfw'],             // Perform Traffic Filtering Between Network Segments
+  '13.7': ['edr'],              // Deploy a Host-Based Intrusion Prevention Solution
+  '13.8': ['ngfw'],             // Deploy a Network Intrusion Prevention Solution
+  '13.10':['ngfw'],             // Perform Application Layer Filtering
+
+  // Control 14 — Security Awareness & Skills Training
+  '14.2': ['sat'],              // Train Workforce to Recognise Social Engineering Attacks
+  '14.3': ['sat'],              // Train Workforce on Authentication Best Practices
+  '14.4': ['sat'],              // Train Workforce on Data Handling Best Practices
+  '14.5': ['sat'],              // Train Workforce on Causes of Unintentional Data Exposure
+  '14.6': ['sat'],              // Train Workforce on Recognising & Reporting Security Incidents
+  '14.7': ['sat'],              // Train Workforce on Identifying & Reporting Missing Security Updates
+  '14.8': ['sat'],              // Train Workforce on Dangers of Insecure Networks
+  '14.9': ['sat'],              // Conduct Role-Specific Security Awareness & Skills Training
+
+  // Control 16 — Application Software Security
+  '16.13':['pentest_external'], // Conduct Application Penetration Testing
+
+  // Control 17 — Incident Response Management
+  '17.7': ['tabletop'],         // Conduct Routine Incident Response Exercises
+
+  // Control 18 — Penetration Testing
+  '18.2': ['pentest_external'], // Perform Periodic External Penetration Tests
+  '18.5': ['pentest_internal'], // Perform Periodic Internal Penetration Tests
 };
 
 // ── HEADCOUNT ─────────────────────────────────────────────────
@@ -189,9 +248,8 @@ function rcExtractCISGaps(answers, goal, poamItems) {
     (goal ? s.ig <= goalN : true) &&
     (answers[s.sf] === 'no' || answers[s.sf] === 'partial')
   ).forEach(s => {
-    const item    = items[s.sf] || {};
-    const ctrl    = parseInt(s.ctrl);
-    const types   = RC_CIS_CTRL_MAP[ctrl] || [];
+    const item  = items[s.sf] || {};
+    const types = RC_CIS_SF_MAP[s.sf] || [];
 
     if (item.risk_decision === 'accept') {
       accepted.push({ sf:s.sf, ctrlName:s.ctrlName, title:s.title, rationale:item.risk_rationale||'' });
@@ -199,15 +257,14 @@ function rcExtractCISGaps(answers, goal, poamItems) {
     }
 
     if (types.length === 0) {
-      // Track controls with no tool mapping
-      const key = `ctrl_${ctrl}`;
-      if (!noTool.find(x => x.ctrl === ctrl)) noTool.push({ ctrl, ctrlName:s.ctrlName });
+      // Safeguard has no tool mapping — process/policy/config safeguard
+      if (!noTool.find(x => x.ctrl === s.ctrl)) noTool.push({ ctrl:s.ctrl, ctrlName:s.ctrlName });
       return;
     }
 
     types.forEach(t => {
       if (!typeMap[t]) typeMap[t] = { toolType:t, sources:[] };
-      typeMap[t].sources.push(`${s.ctrl}.${s.sf.replace('cis_','')}`);
+      typeMap[t].sources.push(s.sf);
     });
   });
 
