@@ -246,8 +246,13 @@ function rcExtractTSGaps() {
     typeMap[toolType].sources.push(q.id);
   });
 
-  // Only return tool types where the org has no 'yes' at all — truly missing tools
-  return { gaps: Object.values(typeMap).filter(g => !typeHasYes[g.toolType]) };
+  // Only return tool types where the org has no 'yes' at all — truly missing tools.
+  // Also expose confirmedTypes so callers can suppress CIS/Insurance flags for
+  // tool types Tech Stack has confirmed as present (e.g. EDR with Sentinel One).
+  return {
+    gaps: Object.values(typeMap).filter(g => !typeHasYes[g.toolType]),
+    confirmedTypes: new Set(Object.keys(typeHasYes)),
+  };
 }
 
 // ── RENDER ────────────────────────────────────────────────────

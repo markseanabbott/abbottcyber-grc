@@ -98,7 +98,7 @@ function grBuildGapList() {
 
   const { gaps: cisGaps } = hasCIS ? rcExtractCISGaps(cisAnswers, cisGoal, grState.cisPoamItems) : { gaps: [] };
   const { gaps: insGaps } = hasIns ? rcExtractInsGaps(grState.insRun.answers || {}) : { gaps: [] };
-  const { gaps: tsGaps  } = rcExtractTSGaps();
+  const { gaps: tsGaps, confirmedTypes } = rcExtractTSGaps();
 
   const cisMap = Object.fromEntries(cisGaps.map(g => [g.toolType, g.sources]));
   const insMap = Object.fromEntries(insGaps.map(g => [g.toolType, g.sources]));
@@ -106,9 +106,13 @@ function grBuildGapList() {
 
   const rows = [];
   PS_ALL_TYPES.forEach(t => {
-    const cisS = cisMap[t.value] || null;
-    const insS = insMap[t.value] || null;
-    const tsS  = tsMap[t.value]  || null;
+    // Tech Stack is the source of truth for tool existence.
+    // If TS confirmed this tool type is present (any 'yes' answer), suppress
+    // CIS and Insurance flags — those reflect configuration gaps, not absence.
+    const tsConfirmed = confirmedTypes?.has(t.value);
+    const cisS = tsConfirmed ? null : (cisMap[t.value] || null);
+    const insS = tsConfirmed ? null : (insMap[t.value] || null);
+    const tsS  = tsMap[t.value] || null;
     if (!cisS && !insS && !tsS) return;
 
     const ps   = (typeof psGetForType === 'function') ? psGetForType(t.value) : null;
