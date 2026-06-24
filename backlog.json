@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.3.0",
   "created": "2026-05-14",
-  "updated": "2026-06-24 (session 52)",
+  "updated": "2026-06-24 (session 53)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -105,6 +105,20 @@
           "text": "Dashboard top bar redesign — portfolio-aware 4-card stat bar replacing the static single-org view with live cross-org metrics",
           "done": true,
           "notes": "Session 49: js/home.js fully rewritten. Card 1: Org Identity (unchanged). Card 2: Portfolio Risk Score — child: inline composite avg of CIS/Insurance/TechStack from orgAssessments; father+: async portfolio avg across all scope orgs with expandable breakdown table (homeToggleBreakdown). Card 3: Open Critical Risks — portfolio-wide count from targeted risk_register query (?org_id=in.(ids)&select=inherent_risk_rating). Card 4: Assessment Coverage — child: Last Assessed date; father+: assessed org count / total org count %. homePortfolioState tracks scopeKey, loading, loaded, orgScores, riskCounts, assessedCount, totalCount, breakdownOpen. loadHomePortfolio() loads all scope org assessments in parallel (reuses loadAssessments cache), computes per-org composites, queries risk counts, guards against stale loads via scope key mismatch. _homePortfolioBreakdown() renders expandable score table sorted by composite. _scoreColor(s) helper for green/amber/red. New window exports: homeToggleBreakdown, loadHomePortfolio."
+        },
+        {
+          "id": "d13",
+          "text": "Home dashboard — hide assessment panels with no data: Assessments chicklet (CIS/Insurance/TechStack) only shows modules with at least one completed run; AI Readiness panel hidden entirely when no assessment exists",
+          "done": true,
+          "priority": "Medium",
+          "notes": "Session 53: js/home.js. _homeAssessmentsChicklet() now filters catalog to only modules with runs.length > 0; returns '' if none. _homeAiChicklet() returns '' instead of an empty-state card when no AI assessment run exists. renderHome() uses if-check on return value from each chicklet function."
+        },
+        {
+          "id": "d14",
+          "text": "Home dashboard — Top 5 Tools to Buy panel: fixed-priority list (EDR, MDR Identity, MDR Endpoint, Email Security, Vulnerability Scanning) with per-tool pricing lookup from Pricing Schedule and link to Tool Gap Register",
+          "done": true,
+          "priority": "Medium",
+          "notes": "Session 53: js/home.js. _homeTopToolsChicklet() — rank badge (colour-coded by risk), tool label + sub-description, pricing from psGetForType() or 'Add to Pricing Schedule →' link if unpriced. Added to panels array in renderHome() after _homeRiskChicklet(). Header button links to gap_register."
         },
         {
           "id": "d12",
@@ -2016,6 +2030,13 @@
           "done": true,
           "priority": "High",
           "notes": "Session 52: js/gap_register.js (new file). grState tracks cisRun, cisPoamItems, insRun, orgId. grLoad() fetches latest CIS assessment + POAM items, latest Insurance run, ensures tsState is loaded. grBuildGapList() calls rcExtractCISGaps/rcExtractInsGaps/rcExtractTSGaps, merges by tool type against PS_ALL_TYPES, sorts by framework count then alphabetical. renderGapRegister() builds table: Tool type | Flagged by (CIS/Insurance/Tech Stack badges, hover shows specific IDs) | Pricing Schedule (from psGetForType) | Annual cost | One-time setup. Summary cards: total est. annual, total one-time, unpriced count. Yellow headcount banner when Company Profile missing. Refresh button. Handles no-assessment state. Config.js: gap_register item added to g_reporting (live:true). App.js: render route added. Index.html: script tag added between remediation_costs.js and app.js. Also fixed: rcExtractTSGaps() mapping bug — tool type now only flagged as missing if NO question mapped to it is answered 'yes'; partial/no on sub-features when a presence question is 'yes' no longer creates a spurious gap (fixed EDR appearing as Tech Stack gap despite Sentinel One being deployed)."
+        },
+        {
+          "id": "gr2",
+          "text": "Tool Gap Register — three fixes: (1) rename from 'Gap Register' to 'Tool Gap Register' throughout, (2) child org pricing: two-level inheritance (child → father → grandfather) so child orgs see MSP pricing in the gap register, (3) tier banner visibility count shows org's own tier scope rather than logged-in user's full visibility",
+          "done": true,
+          "priority": "High",
+          "notes": "Session 53: (1) Rename: config.js nav label, gap_register.js page headers (replace_all), home.js button. (2) psEnsureData() in pricing_schedule.js — added 'child' branch: loads father rows + grandfather rows (via allOrgs lookup), concatenates into psState.parentRows so psGetForType() finds them. cpSave() in company_profile.js now resets grState.loaded and psState.loaded so gap register re-fetches after profile update. (3) renderTierBanner() in app.js — replaces visibleOrgs().length with tier-appropriate count: platform=allOrgs.length, grandfather=1+fathers+grandchildren, father=1+children, child=1."
         }
       ]
     }
