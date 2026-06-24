@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.3.0",
   "created": "2026-05-14",
-  "updated": "2026-06-24 (session 57)",
+  "updated": "2026-06-24 (session 58)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -2058,6 +2058,13 @@
           "done": true,
           "priority": "High",
           "notes": "Session 57: remediation_costs.js rcExtractTSGaps() now also returns confirmedTypes (Set of tool type keys with at least one 'yes' answer). gap_register.js grBuildGapList() destructures confirmedTypes, sets cisS=null and insS=null for any tool type in confirmedTypes before building rows. Tool types with no TS coverage still surface CIS/Insurance gaps as before."
+        },
+        {
+          "id": "gr5",
+          "text": "Tool Gap Register — CIS → tool mapping corrected to safeguard level: only safeguards that literally require deploying a specific tool are mapped; process/config/policy safeguards excluded. RC_CIS_CTRL_MAP (control-level) replaced by RC_CIS_SF_MAP (safeguard-level). Key removals: 7.1/7.2/7.7 (VM process), 10.2-10.5 (OS configs), 8.1-8.8/8.10-8.12 (log config), 12.1-12.6/12.8 (network architecture), 17.1-17.6/17.8-17.9 (IR process), controls 5+15 removed entirely. New: 7.3/7.4→mdm, 13.2/13.7→edr, 2.5-2.7→edr, 16.13+18.5 added.",
+          "done": true,
+          "priority": "High",
+          "notes": "Session 58: remediation_costs.js — RC_CIS_CTRL_MAP deleted, RC_CIS_SF_MAP added (keyed by safeguard string like '7.5'). rcExtractCISGaps() updated: uses RC_CIS_SF_MAP[s.sf] instead of RC_CIS_CTRL_MAP[parseInt(s.ctrl)]. Sources now push s.sf directly (already correct format). pii_scan and vciso removed from CIS (no safeguard names the tool explicitly)."
         }
       ]
     }
