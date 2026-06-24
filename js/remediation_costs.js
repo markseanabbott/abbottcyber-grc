@@ -157,6 +157,24 @@ function _rcRange(lo, hi) {
   return `${_rcFmt(lo)} – ${_rcFmt(hi)}`;
 }
 
+// Insurance Readiness question → pricing schedule tool_type
+// Gaps = question answered at less than full score (< 1.0)
+const RC_INS_TO_TOOL = {
+  q1:  'mfa',      // MFA remote access
+  q2:  'mfa',      // MFA admin accounts
+  q3:  'mfa',      // MFA type/strength
+  q7:  'edr',      // EDR on endpoints
+  q8a: 'mdm',      // OS patch management
+  q8b: 'mdm',      // 3rd-party patch management
+  q10: 'email',    // Email security controls
+  q11: 'sat',      // Security awareness training
+  q12: 'tabletop', // IR plan (tested via tabletop)
+  q14: 'vciso',    // IR retainer / named contact
+  q15: 'pam',      // Least privilege
+  q16: 'pam',      // Privileged account separation
+  // q4/q5/q6 (backup) — no pricing schedule equivalent
+};
+
 // ── GAP EXTRACTION ────────────────────────────────────────────
 
 // From CIS answers + goal + (optional) POAM items for risk_decision
@@ -194,6 +212,18 @@ function rcExtractCISGaps(answers, goal, poamItems) {
   });
 
   return { gaps: Object.values(typeMap), accepted, noTool };
+}
+
+// From insurance answers — gap = answered below full score (< 1.0)
+function rcExtractInsGaps(answers) {
+  const typeMap = {};
+  Object.entries(RC_INS_TO_TOOL).forEach(([qId, toolType]) => {
+    const score = answers[qId];
+    if (score === undefined || score >= 1.0) return;
+    if (!typeMap[toolType]) typeMap[toolType] = { toolType, sources: [] };
+    if (!typeMap[toolType].sources.includes(qId)) typeMap[toolType].sources.push(qId);
+  });
+  return { gaps: Object.values(typeMap) };
 }
 
 // From tsState answers (tech stack)
@@ -393,7 +423,9 @@ function renderRemediationCosts(gaps, orgId, opts = {}) {
     ${noToolHtml}`;
 }
 
+window.RC_INS_TO_TOOL          = RC_INS_TO_TOOL;
 window.rcGetHeadcount          = rcGetHeadcount;
 window.renderRemediationCosts  = renderRemediationCosts;
 window.rcExtractCISGaps        = rcExtractCISGaps;
+window.rcExtractInsGaps        = rcExtractInsGaps;
 window.rcExtractTSGaps         = rcExtractTSGaps;

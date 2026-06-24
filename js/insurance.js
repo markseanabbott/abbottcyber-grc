@@ -54,6 +54,7 @@ function insCalc() {
 function renderInsurance() {
   if (!currentOrg) return '';
   if (insState.view === 'form') return renderInsuranceForm();
+  if (insState.view === 'cost') return renderInsuranceCostTab();
   return renderInsuranceDashboard();
 }
 
@@ -76,7 +77,10 @@ function renderInsuranceDashboard() {
       <div style="font-size:17px;font-weight:700;margin-bottom:3px">🛡️ Insurance Readiness</div>
       <div style="font-size:12px;color:var(--muted)">Dual-weighted scoring · Security 40% / Insurance 60% · <strong>${currentOrg.name}</strong></div>
     </div>
-    <button class="btn btn-cyan btn-sm" onclick="insNew()">+ New Assessment</button>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      ${latest ? `<button class="btn btn-outline btn-sm" style="border-color:#15803d;color:#15803d" onclick="insOpenCost()">💲 Cost to Remediate</button>` : ''}
+      <button class="btn btn-cyan btn-sm" onclick="insNew()">+ New Assessment</button>
+    </div>
   </div>
 
   <div class="score-hero-ins" style="margin-bottom:1.25rem">
@@ -346,6 +350,34 @@ function insNew() {
     fromNew: true,
   };
   renderMain();
+}
+
+function insOpenCost() {
+  const runs = (orgAssessments[currentOrg?.id] || {}).insurance || [];
+  const sorted = runs.map((r, i) => ({ r, i })).sort((a, b) => (b.r.date || '').localeCompare(a.r.date || ''));
+  if (!sorted.length) { toast('No assessments recorded yet', '#b45309'); return; }
+  insState.costRun = sorted[0].r;
+  insState.view = 'cost';
+  renderMain();
+}
+
+function renderInsuranceCostTab() {
+  const run = insState.costRun;
+  if (!run) return renderInsuranceDashboard();
+  const answers = run.answers || {};
+  const { gaps } = rcExtractInsGaps(answers);
+  const gapCount = Object.keys(RC_INS_TO_TOOL).filter(qId => (answers[qId] ?? -1) < 1.0 && answers[qId] !== undefined).length;
+
+  return `
+  ${renderTierBanner()}
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:17px;font-weight:700">💲 Cost to Remediate</div>
+      <div style="font-size:12px;color:var(--muted)">${escH(currentOrg.name)} · Insurance Readiness · ${run.date || '—'} · ${gapCount} gap${gapCount!==1?'s':''} across ${gaps.length} tool type${gaps.length!==1?'s':''}</div>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="insState.view='dashboard';renderMain()">← Back</button>
+  </div>
+  ${renderRemediationCosts(gaps, currentOrg.id, { runDate: run.date })}`;
 }
 
 function insOpenAssessment(origIdx) {
