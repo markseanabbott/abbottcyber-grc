@@ -37,13 +37,13 @@ function hasPageAccess(pageKey) {
   // Platform admin always sees everything (real role, not view-as)
   if (authState?.profile?.role === 'platform_admin') return true;
 
-  // Org admins have full access within their org scope
-  const effectiveRole = viewAsState?.role || authState?.profile?.role;
-  if (effectiveRole === 'org_admin') return true;
+  // Pages not in PAGE_REGISTRY (Settings, admin tools) are gated by adminOnly /
+  // platformAdminOnly flags only — module system does not apply to them.
+  if (!PAGE_REGISTRY.some(p => p.id === pageKey)) return true;
 
   const moduleIds = modAccess.pageMap[pageKey]; // Set<module_id> or undefined
 
-  // User has no module grants → no restrictions apply (legacy / unrestricted accounts)
+  // User has no module grants → no restrictions apply (unrestricted accounts)
   if (modAccess.grants.size === 0) return true;
 
   // User has grants → whitelist mode: they can ONLY access pages in their granted modules.
