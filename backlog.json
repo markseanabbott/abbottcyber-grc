@@ -609,6 +609,30 @@
           "text": "Edit Module modal — widened from 480px to 620px; description textarea taller (4 rows, min-height 80px).",
           "done": true,
           "notes": "index.html: modModalBox max-width changed to 620px, width 95%. modules.js: modFldDesc rows=4, min-height:80px."
+        },
+        {
+          "id": "mod8",
+          "text": "hasPageAccess() whitelist mode — users with any module grants can ONLY access pages in their granted modules. Unassigned pages are blocked for grant-restricted users. Users with no grants are unrestricted. Org admins bypass module gating.",
+          "done": true,
+          "notes": "modules.js: hasPageAccess() now checks modAccess.grants.size > 0 to enter whitelist mode. Unassigned pages (no moduleIds) return false in whitelist mode. effectiveRole check bypasses gating for org_admin. Fixes test where module-restricted user could still see all unassigned pages."
+        },
+        {
+          "id": "mod9",
+          "text": "Platform Admin nav section — Module Management and Feature Backlog moved from Settings into a dedicated g_platform group (platformAdminOnly: true, no tierOnly items). Org admins at grandfather/father tiers can no longer access these via the pricing_schedule tierOnly loophole.",
+          "done": true,
+          "notes": "config.js: g_platform group added with modules and backlog items. Both removed from g_settings. app.js: backlog added to getModuleDot exclusion list and _ADMIN_PAGES."
+        },
+        {
+          "id": "mod10",
+          "text": "PAGE_REGISTRY — 21 routable pages listed by section (Home, Assessments, AI Readiness, Governance, Exercises, Reports, M&A). modGetPages() returns PAGE_REGISTRY instead of NAV items. Page Access tab now shows individual pages not just hub-level items.",
+          "done": true,
+          "notes": "modules.js: PAGE_REGISTRY const defined above modGetPages(). Covers all activeNav keys from renderMain(). Settings pages excluded (always platform-admin gated)."
+        },
+        {
+          "id": "mod11",
+          "text": "Add/Edit Module modal padding — content was flush with modal edges. Added 1.5rem padding wrapper. Description textarea increased to 4 rows with min-height 80px. Modal widened from 480px to 620px.",
+          "done": true,
+          "notes": "modules.js: modOpenModal() wraps content in padding:1.5rem div. index.html: modModalBox max-width changed to 620px."
         }
       ]
     },
