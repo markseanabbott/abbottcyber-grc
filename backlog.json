@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.3.0",
   "created": "2026-05-14",
-  "updated": "2026-06-24 (session 51f)",
+  "updated": "2026-06-24 (session 52)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1994,8 +1994,9 @@
         {
           "id": "rc1",
           "text": "Insurance Readiness: Cost to Remediate tab — map insurance survey gaps (questions answered 'no' that affect score) to tool types and surface pricing schedule estimates, same pattern as CIS and Tech Stack cost tabs.",
-          "done": false,
-          "priority": "Medium"
+          "done": true,
+          "priority": "Medium",
+          "notes": "Session 51f: RC_INS_TO_TOOL map (16 entries: q1–q3=mfa, q7=edr, q8a/b=mdm, q10=email, q11=sat, q12=tabletop, q14=vciso, q15/16=pam). rcExtractInsGaps() in remediation_costs.js — gap = answer < 1.0. insOpenCost() sets insState.view='cost' from latest run. renderInsuranceCostTab() in insurance.js calls rcExtractInsGaps then renderRemediationCosts(). '💲 Cost to Remediate' button on dashboard when latest run exists. Also fixed: insurance edit creating new entry (editId was null — now set to run.id; insSave() PATCHes when editId set), and delete (insDeleteAssessment() added, Delete button added to history table rows)."
         },
         {
           "id": "rc2",
@@ -2008,6 +2009,13 @@
           "text": "Remediation cost: show 'also covers' on matched rows — when psGetForType() returns a bundle SKU (covers[] array), note which additional gap types it satisfies on the cost row (e.g. 'Also satisfies: Email Backup, Email DLP') so the assessor sees the full value of one purchase.",
           "done": false,
           "priority": "Low"
+        },
+        {
+          "id": "gr1",
+          "text": "Gap Register — consolidated cross-module gap list under Reports nav. Merges CIS Controls, Insurance Readiness, and Tech Stack gaps by tool type into one unified view with pricing from the Pricing Schedule.",
+          "done": true,
+          "priority": "High",
+          "notes": "Session 52: js/gap_register.js (new file). grState tracks cisRun, cisPoamItems, insRun, orgId. grLoad() fetches latest CIS assessment + POAM items, latest Insurance run, ensures tsState is loaded. grBuildGapList() calls rcExtractCISGaps/rcExtractInsGaps/rcExtractTSGaps, merges by tool type against PS_ALL_TYPES, sorts by framework count then alphabetical. renderGapRegister() builds table: Tool type | Flagged by (CIS/Insurance/Tech Stack badges, hover shows specific IDs) | Pricing Schedule (from psGetForType) | Annual cost | One-time setup. Summary cards: total est. annual, total one-time, unpriced count. Yellow headcount banner when Company Profile missing. Refresh button. Handles no-assessment state. Config.js: gap_register item added to g_reporting (live:true). App.js: render route added. Index.html: script tag added between remediation_costs.js and app.js. Also fixed: rcExtractTSGaps() mapping bug — tool type now only flagged as missing if NO question mapped to it is answered 'yes'; partial/no on sub-features when a presence question is 'yes' no longer creates a spurious gap (fixed EDR appearing as Tech Stack gap despite Sentinel One being deployed)."
         }
       ]
     }
