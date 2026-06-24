@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.3.0",
   "created": "2026-05-14",
-  "updated": "2026-06-24 (session 54)",
+  "updated": "2026-06-24 (session 55)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -118,7 +118,14 @@
           "text": "Home dashboard — Missing Tools panel: dynamic gap-filtered list showing up to 5 tool types that are actually missing (not deployed) based on current assessments, in risk-priority order. Only shows tools identified as gaps.",
           "done": true,
           "priority": "Medium",
-          "notes": "Session 53 (revised in 54): js/home.js _homeTopToolsChicklet(). Extended priority list to 12 tool types (EDR → MDR Identity → MDR Endpoint → Email → Vuln Scanning → Backup → MFA → DNS → SIEM → Patch → PAM → DLP). Filters against grBuildGapList().rows — only tool types that appear as gaps are shown. Three states: loading spinner (grLoad async), no-assessments prompt, all-covered success. renderHome() now triggers grLoad() if stale; grLoad() re-renders home when activeNav==='home' on completion. Session 54: fixed to hide tools that ARE deployed — panel renamed 'Missing Tools'."
+          "notes": "Session 53 (revised in 54, finalised in 55): js/home.js _homeTopToolsChicklet(). Reads grBuildGapList() (CIS + Insurance + Tech Stack merged) — same dataset as Tool Gap Register. RISK_RANK map covers all 30 PS_ALL_TYPES tool type IDs with correct keys (mdr_soc, ztna_vpn, dns_filter, pii_scan, etc.). Sorts all gap rows by risk rank, takes top 5. Rows show tool label from gap register + CIS/Ins/TS framework badges. Pricing pulled from t.ps on gap row. Three states: loading spinner, no-assessments catalog mode prompt, all-clear success."
+        },
+        {
+          "id": "d15",
+          "text": "Assessments Hub redesign — 3-column chicklet grid replacing table view; individual assessment sidebar items removed (single 'Assessments' nav item remains); M&A Due Diligence added to catalog",
+          "done": true,
+          "priority": "Medium",
+          "notes": "Session 55: js/home.js renderAssessmentsHub() rewritten — ASSESSMENT_CATALOG maps 7 assessments (added ma_cdd). Each chicklet: icon + name, description, last run date + score (colour-coded), Re-up + View/Run buttons. Coming Soon state for NIST CSF 2.0. Grid: grid-template-columns:repeat(3,1fr). js/config.js g_assessments group reduced to single item { id:'assessments', label:'Assessments' } — all individual nav items removed. All setNav() routing unchanged."
         },
         {
           "id": "d12",
