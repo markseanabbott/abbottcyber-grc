@@ -223,8 +223,9 @@ function maResolveTool(toolId) {
       if (ps.model === 'perUser')     { resolved.perUserYear = [lo, hi];     delete resolved.perEndpointYear; delete resolved.fixedYear; }
       if (ps.model === 'perEndpoint') { resolved.perEndpointYear = [lo, hi]; delete resolved.perUserYear;     delete resolved.fixedYear; }
       if (ps.model === 'fixed')       { resolved.fixedYear = [lo, hi];       delete resolved.perUserYear;     delete resolved.perEndpointYear; }
-      resolved.oneTimeLow  = ps.one_time_low  || 0;
-      resolved.oneTimeHigh = ps.one_time_high || ps.one_time_low || 0;
+      resolved.oneTimeLow   = ps.one_time_low   || 0;
+      resolved.oneTimeHigh  = ps.one_time_high  || ps.one_time_low || 0;
+      resolved.oneTimeModel = ps.one_time_model || 'fixed';
       return resolved;
     }
   }
@@ -325,8 +326,10 @@ function maCalcCosts(answers, framing) {
           if (tool.perUserYear)          { tLow = tool.perUserYear[0]*hc.users;         tHigh = tool.perUserYear[1]*hc.users;         }
           else if (tool.perEndpointYear) { tLow = tool.perEndpointYear[0]*hc.endpoints; tHigh = tool.perEndpointYear[1]*hc.endpoints; }
           else if (tool.fixedYear)       { tLow = tool.fixedYear[0];                    tHigh = tool.fixedYear[1];                    }
-          sLow  = tool.oneTimeLow  || 0;
-          sHigh = tool.oneTimeHigh || 0;
+          const otModel = tool.oneTimeModel || 'fixed';
+          if (otModel === 'perUser')     { sLow = (tool.oneTimeLow||0)*hc.users;     sHigh = (tool.oneTimeHigh||0)*hc.users;     }
+          else if (otModel === 'perEndpoint') { sLow = (tool.oneTimeLow||0)*hc.endpoints; sHigh = (tool.oneTimeHigh||0)*hc.endpoints; }
+          else                           { sLow = tool.oneTimeLow||0;                sHigh = tool.oneTimeHigh||0;                }
         }
       }
       const bucket = ans === 'partial' ? 'year1' : (q.priority || 'year1');
@@ -1043,7 +1046,7 @@ function _renderMATabPricing(costs, fr, ans) {
                 ${r.tool.source === 'parent' ? `<span style="font-size:9px;font-weight:700;color:#7c3aed;padding:1px 5px;background:#faf5ff;border-radius:3px">MSP</span>` : ''}
               </div>
               <div style="font-size:10px;color:var(--muted);margin-top:2px">${r.tool.note ? escH(r.tool.note) : ''}</div>
-              ${(r.tool.oneTimeLow > 0 && !r.excluded) ? `<div style="font-size:10px;color:#7c3aed;margin-top:2px">⚡ One-time: ${_maCostRange(r.tool.oneTimeLow, r.tool.oneTimeHigh)}</div>` : ''}
+              ${(r.tool.oneTimeLow > 0 && !r.excluded) ? `<div style="font-size:10px;color:#7c3aed;margin-top:2px">⚡ One-time: ${_maCostRange(r.tool.oneTimeLow, r.tool.oneTimeHigh)}${r.tool.oneTimeModel==='perUser'?' / user':r.tool.oneTimeModel==='perEndpoint'?' / device':''}</div>` : ''}
               ${r.tool.manualAlt && !r.excluded ? `<div style="font-size:10px;color:#0369a1;margin-top:4px;padding:4px 7px;background:#e0f2fe;border-radius:4px">${escH(r.tool.manualAlt)}</div>` : ''}
             </td>
             <td style="padding:7px 8px;vertical-align:top;color:var(--muted);white-space:nowrap">${r.unitModel}${r.unitCount>1?' × '+r.unitCount:''}</td>

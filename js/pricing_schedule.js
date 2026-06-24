@@ -55,6 +55,12 @@ const PS_MODELS = [
   { value:'fixed',       label:'flat / mo' },
 ];
 
+const PS_OT_MODELS = [
+  { value:'fixed',       label:'flat fee' },
+  { value:'perUser',     label:'per user' },
+  { value:'perEndpoint', label:'per device' },
+];
+
 const PS_TEMPLATE_EXAMPLES = [
   { name:'MFA (e.g. Entra ID / Duo / Okta)',             vendor:'', sku:'', tool_type:'mfa',               model:'perUser',     rate_low:3,    rate_high:6,    one_time_low:0,    one_time_high:0,    covers:'',                                        notes:'Often bundled with M365 BP' },
   { name:'PAM (e.g. 1Password Business)',                vendor:'', sku:'', tool_type:'pam',               model:'perUser',     rate_low:4,    rate_high:10,   one_time_low:500,  one_time_high:2000, covers:'',                                        notes:'Add onboarding to one-time' },
@@ -174,6 +180,7 @@ function renderPricingSchedule() {
             <th style="text-align:right;padding:7px 8px;border-bottom:2px solid var(--border);font-weight:700;min-width:68px">Mo High</th>
             <th style="text-align:right;padding:7px 8px;border-bottom:2px solid var(--border);font-weight:700;min-width:78px;color:#7c3aed">One-time</th>
             <th style="text-align:right;padding:7px 8px;border-bottom:2px solid var(--border);font-weight:700;min-width:78px;color:#7c3aed">OT High</th>
+            <th style="text-align:left;padding:7px 8px;border-bottom:2px solid var(--border);font-weight:700;min-width:90px;color:#7c3aed">OT Model</th>
             <th style="text-align:left;padding:7px 8px;border-bottom:2px solid var(--border);font-weight:700;min-width:170px">Also covers</th>
             <th style="text-align:left;padding:7px 8px;border-bottom:2px solid var(--border);font-weight:700;min-width:140px">Notes</th>
             <th style="padding:7px 8px;border-bottom:2px solid var(--border);width:32px"></th>
@@ -181,14 +188,14 @@ function renderPricingSchedule() {
         </thead>
         <tbody>
           ${activeRows.length === 0 && psState.parentRows.length === 0 ? `
-          <tr><td colspan="12" style="padding:2rem;text-align:center;color:var(--muted)">
+          <tr><td colspan="13" style="padding:2rem;text-align:center;color:var(--muted)">
             No entries — click <strong>+ Add Row</strong> or <strong>↑ Import CSV</strong>.
           </td></tr>` : ''}
           ${activeRows.map(r => _renderPSTableRow(r, psState.rows.indexOf(r))).join('')}
         </tbody>
         ${isFather && psState.parentRows.length > 0 ? `
         <tbody>
-          <tr><td colspan="12" style="padding:6px 8px;background:#e0f2fe;font-size:10px;font-weight:700;color:#0369a1;border-top:2px solid #bae6fd">
+          <tr><td colspan="13" style="padding:6px 8px;background:#e0f2fe;font-size:10px;font-weight:700;color:#0369a1;border-top:2px solid #bae6fd">
             📋 Inherited from ${escH(parentName)} (read-only — add a row with the same type to override)
           </td></tr>
           ${psState.parentRows.map(r => _renderPSParentRow(r)).join('')}
@@ -256,6 +263,12 @@ function _renderPSTableRow(r, realIdx) {
         style="width:100%;padding:4px 5px;border:1px solid var(--border);border-radius:4px;font-family:inherit;font-size:10px;text-align:right;color:#7c3aed"
         oninput="psRowSet(${realIdx},'one_time_high',this.value)"/>
     </td>
+    <td style="padding:4px 5px">
+      <select style="width:100%;padding:4px 5px;border:1px solid var(--border);border-radius:4px;font-family:inherit;font-size:10px;color:#7c3aed"
+        onchange="psRowSet(${realIdx},'one_time_model',this.value)">
+        ${PS_OT_MODELS.map(m=>`<option value="${m.value}" ${(r.one_time_model||'fixed')===m.value?'selected':''}>${m.label}</option>`).join('')}
+      </select>
+    </td>
     <td id="ps-covers-${realIdx}" style="padding:4px 5px">
       ${_renderCoversCell(r, realIdx)}
     </td>
@@ -309,6 +322,7 @@ function _renderPSParentRow(r) {
     <td style="padding:5px 8px;font-size:10px;text-align:right;color:var(--muted)">${r.rate_high?'$'+r.rate_high:'—'}</td>
     <td style="padding:5px 8px;font-size:10px;text-align:right;color:#7c3aed">${r.one_time_low?'$'+r.one_time_low:'—'}</td>
     <td style="padding:5px 8px;font-size:10px;text-align:right;color:var(--muted)">${r.one_time_high?'$'+r.one_time_high:'—'}</td>
+    <td style="padding:5px 8px;font-size:10px;color:#7c3aed">${PS_OT_MODELS.find(m=>m.value===(r.one_time_model||'fixed'))?.label||'flat fee'}</td>
     <td style="padding:5px 8px;font-size:10px">
       ${covered.length ? covered.map(t=>`<span style="font-size:8px;padding:1px 4px;background:#e0f2fe;color:#0369a1;border-radius:3px;margin-right:2px">${escH(PS_TYPE_META[t]?.label||t)}</span>`).join('') : '—'}
     </td>
@@ -322,7 +336,7 @@ function _renderPSParentRow(r) {
 function psAddRow() {
   psState.rows.push({ _new:true, _dirty:true, _deleted:false,
     tool_type:'', name:'', vendor:'', sku:'', model:'perUser',
-    rate_low:'', rate_high:'', one_time_low:'', one_time_high:'',
+    rate_low:'', rate_high:'', one_time_low:'', one_time_high:'', one_time_model:'fixed',
     covers:[], notes:'' });
   document.getElementById('mainContent').innerHTML = renderPricingSchedule();
   setTimeout(() => { const t = document.querySelector('table tbody'); if(t) t.lastElementChild?.scrollIntoView({behavior:'smooth'}); }, 50);
@@ -424,6 +438,7 @@ function _psBuildPayload(r) {
     rate_high:     parseFloat(r.rate_high) > 0   ? parseFloat(r.rate_high)      : null,
     one_time_low:  parseFloat(r.one_time_low)   || 0,
     one_time_high: parseFloat(r.one_time_high) > 0 ? parseFloat(r.one_time_high) : null,
+    one_time_model: ['fixed','perUser','perEndpoint'].includes(r.one_time_model) ? r.one_time_model : 'fixed',
     covers:        Array.isArray(r.covers) ? r.covers : [],
     notes:         r.notes         || null,
     active:        true,
@@ -432,7 +447,7 @@ function _psBuildPayload(r) {
 
 // ── IMPORT / EXPORT ──────────────────────────────────────────
 
-const PS_CSV_HEADERS = ['name','vendor','sku','tool_type','model','rate_low','rate_high','one_time_low','one_time_high','covers','notes'];
+const PS_CSV_HEADERS = ['name','vendor','sku','tool_type','model','rate_low','rate_high','one_time_low','one_time_high','one_time_model','covers','notes'];
 
 function _csvEscape(v) {
   const s = String(v ?? '');
@@ -514,6 +529,7 @@ function _parseCsvImport(text) {
       rate_high:     parseFloat(obj.rate_high)     > 0 ? parseFloat(obj.rate_high)     : null,
       one_time_low:  parseFloat(obj.one_time_low)  > 0 ? parseFloat(obj.one_time_low)  : 0,
       one_time_high: parseFloat(obj.one_time_high) > 0 ? parseFloat(obj.one_time_high) : null,
+      one_time_model: ['fixed','perUser','perEndpoint'].includes(obj.one_time_model) ? obj.one_time_model : 'fixed',
       covers:        coversRaw.filter(t => validTypes.has(t)),
       _valid: errors.length === 0, _errors: errors,
     };
@@ -608,6 +624,7 @@ async function psImportConfirm() {
         sku:r.sku||null, tool_type:r.tool_type, model:r.model,
         rate_low:r.rate_low, rate_high:r.rate_high||null,
         one_time_low:r.one_time_low||0, one_time_high:r.one_time_high||null,
+        one_time_model:r.one_time_model||'fixed',
         covers:r.covers||[], notes:r.notes||null, active:true };
       const res = await sbFetch('pricing_schedule','POST',payload,{'Prefer':'return=representation'});
       const row = Array.isArray(res)?res[0]:res;
