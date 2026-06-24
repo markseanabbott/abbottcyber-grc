@@ -1295,7 +1295,7 @@ async function maConfirmAddEntity(assessmentId) {
       { name, tier:'child', parent_id: parentId || currentOrg.id, industry: maState.currentAssessment?.framing?.target_industry || null },
       { 'Prefer':'return=representation' });
     const org = Array.isArray(newOrg) ? newOrg[0] : newOrg;
-    if (!org?.id) throw new Error('Organisation creation failed');
+    if (!org?.id) throw new Error('Organization creation failed');
     await sbFetch(`ma_assessments?id=eq.${assessmentId}`, 'PATCH', { linked_org_id: org.id });
     const a = maState.list.find(x => x.id === assessmentId);
     if (a) { a.linked_org_id = org.id; maState.currentAssessment = a; }

@@ -384,7 +384,7 @@ function toggleNavSection(id) {
   buildNav();
 }
 
-const _ADMIN_PAGES = { orgs: 'Organisation Manager', users: 'User Management' };
+const _ADMIN_PAGES = { orgs: 'Organization Manager', users: 'User Management' };
 
 function setNav(id, { pushState = true } = {}) {
   activeNav = id;

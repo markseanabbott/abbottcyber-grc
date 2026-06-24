@@ -19,7 +19,7 @@ function renderOrgManager() {
         <div class="org-avatar av-platform" style="width:30px;height:30px;font-size:10px;flex-shrink:0">${tierInitials(platform.name)}</div>
         <div style="flex:1">
           <div style="font-size:13px;font-weight:700">${platform.name}</div>
-          <div style="font-size:10px;color:var(--muted)">Platform Owner · Sees all ${allOrgs.length} organisations</div>
+          <div style="font-size:10px;color:var(--muted)">Platform Owner · Sees all ${allOrgs.length} organizations</div>
         </div>
         ${orgTreeActions(platform, 'Platform', 'b-platform')}
       </div>
@@ -74,8 +74,8 @@ function renderOrgManager() {
   const orphanHtml = orphans.length ? `
     <div class="card" style="border-top:3px solid #f59e0b">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.75rem">
-        <div style="font-size:13px;font-weight:700;color:#92400e">⚠️ Unplaced Organisations (${orphans.length})</div>
-        <div style="font-size:11px;color:#92400e">These organisations are not visible in the hierarchy — edit each one to assign a valid tier and parent.</div>
+        <div style="font-size:13px;font-weight:700;color:#92400e">⚠️ Unplaced Organizations (${orphans.length})</div>
+        <div style="font-size:11px;color:#92400e">These organizations are not visible in the hierarchy — edit each one to assign a valid tier and parent.</div>
       </div>
       ${orphans.map(o => `
         <div class="org-tree-item" style="border-left:3px solid #f59e0b;padding-left:10px;margin-bottom:4px">
@@ -91,8 +91,8 @@ function renderOrgManager() {
   return `
   ${renderTierBanner()}
   <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:0.85rem;flex-wrap:wrap;gap:8px">
-    <div><div style="font-size:17px;font-weight:700">🏢 Organisation Manager</div>
-    <div style="font-size:12px;color:var(--muted)">${allOrgs.length} organisations · Four-tier hierarchy${orphans.length ? ` · <span style="color:#b45309;font-weight:700">${orphans.length} unplaced</span>` : ''}</div></div>
+    <div><div style="font-size:17px;font-weight:700">🏢 Organization Manager</div>
+    <div style="font-size:12px;color:var(--muted)">${allOrgs.length} organizations · Four-tier hierarchy${orphans.length ? ` · <span style="color:#b45309;font-weight:700">${orphans.length} unplaced</span>` : ''}</div></div>
   </div>
   <div class="card">
     <div class="card-title">Full hierarchy</div>
@@ -121,7 +121,7 @@ function renderOrgManager() {
         </div>
         <div><div class="field-lbl">Parent</div><select id="newOrgParent"></select></div>
       </div>
-      <button class="btn btn-cyan" onclick="addOrg()">Add Organisation</button>
+      <button class="btn btn-cyan" onclick="addOrg()">Add Organization</button>
     </div>
   </div>`;
 }
@@ -150,7 +150,7 @@ async function addOrg() {
     buildNav(); renderMain();
   } catch (e) {
     toast('Error: ' + e.message, '#dc2626');
-    btn.disabled = false; btn.textContent = 'Add Organisation';
+    btn.disabled = false; btn.textContent = 'Add Organization';
   }
 }
 
@@ -220,7 +220,7 @@ function renderOrgEditModal(org) {
   <input type="hidden" id="orgEditId" value="${org.id}"/>
   <div class="modal-header">
     <div>
-      <div class="modal-title">Edit Organisation</div>
+      <div class="modal-title">Edit Organization</div>
       <div style="font-size:10px;color:var(--muted);margin-top:1px">${org.name} · ${org.tier.charAt(0).toUpperCase()+org.tier.slice(1)}</div>
     </div>
     <button class="modal-close" onclick="closeOrgModal()">✕</button>
@@ -228,7 +228,7 @@ function renderOrgEditModal(org) {
 
   <div style="padding:0.75rem 1.25rem 0;border-bottom:1px solid var(--border)">
     <div class="view-tabs" style="border-bottom:none;margin-bottom:0">
-      <button class="view-tab ${isDetails ? 'active' : ''}" onclick="switchOrgModalTab('details')">Organisation Details</button>
+      <button class="view-tab ${isDetails ? 'active' : ''}" onclick="switchOrgModalTab('details')">Organization Details</button>
       <button class="view-tab ${!isDetails ? 'active' : ''}" onclick="switchOrgModalTab('profile')">Risk Profile</button>
     </div>
   </div>
@@ -240,7 +240,7 @@ function renderOrgEditModal(org) {
       <div class="profile-section-title">Basic Information</div>
       <div class="form-row" style="margin-bottom:8px">
         <div>
-          <div class="field-lbl">Organisation Name</div>
+          <div class="field-lbl">Organization Name</div>
           <input type="text" id="editOrgName" value="${org.name}"/>
         </div>
         <div>
@@ -271,7 +271,7 @@ function renderOrgEditModal(org) {
       </div>
       <div class="form-row" style="margin-bottom:0">
         <div>
-          <div class="field-lbl">Parent Organisation</div>
+          <div class="field-lbl">Parent Organization</div>
           <select id="editOrgParent">
             <option value="">— None (top-level) —</option>
             ${allOrgs.filter(o => o.id !== org.id).map(o =>
@@ -564,7 +564,7 @@ function confirmDeleteOrg(orgId) {
   const box = document.getElementById('orgModalBox');
   box.innerHTML = `
     <div class="modal-header">
-      <div class="modal-title" style="color:#b91c1c">⚠️ Delete Organisation</div>
+      <div class="modal-title" style="color:#b91c1c">⚠️ Delete Organization</div>
       <button class="modal-close" onclick="closeOrgModal()">✕</button>
     </div>
     <div class="modal-body">
@@ -606,7 +606,7 @@ async function deleteOrgConfirmed(orgId) {
       currentOrg = allOrgs.find(o => o.tier === 'platform') || allOrgs[0];
     }
     auditLog('org_deleted', 'org', org?.name || orgId, { tier: org?.tier || null });
-    toast(`✓ ${org?.name || 'Organisation'} deleted`, '#15803d');
+    toast(`✓ ${org?.name || 'Organization'} deleted`, '#15803d');
     closeOrgModal();
     updateOrgUI(); buildNav(); renderMain();
   } catch (e) {

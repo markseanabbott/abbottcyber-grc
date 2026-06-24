@@ -1845,9 +1845,9 @@ async function cisExportPoam() {
     const statusLabel = { open: 'Open', in_progress: 'In Progress', remediated: 'Remediated', accepted: 'Risk Accepted' };
 
     const aoa = [
-      ['[Client logo — upload via Organisation Manager in a future release]', '', '', '', '', '', '', '', '', '', ''],
+      ['[Client logo — upload via Organization Manager in a future release]', '', '', '', '', '', '', '', '', '', ''],
       ['PLAN OF ACTION & MILESTONES (POAM)', '', '', '', '', '', '', '', '', '', ''],
-      ['Organisation:', currentOrg.name, '', 'Assessment Date:', run.date || '', '', 'IG Goal:', (goal || '—').toUpperCase(), '', '', ''],
+      ['Organization:', currentOrg.name, '', 'Assessment Date:', run.date || '', '', 'IG Goal:', (goal || '—').toUpperCase(), '', '', ''],
       ['Conducted By:', run.conductedBy || '—', '', 'Generated:', today, '', 'Total Gaps:', gaps.length, '', '', ''],
       [],
       ['Safeguard ID', 'Control Group', 'IG Level', 'Safeguard Title', 'Gap Status', 'Assessor Note', 'Assigned To', 'Target Date', 'Decision', 'Rationale / Notes', 'POAM Status'],

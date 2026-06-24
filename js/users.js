@@ -83,7 +83,7 @@ function renderUserMgmtInner() {
           <th style="padding:10px 14px;font-size:10px;font-weight:700;color:var(--muted);text-align:left;
             text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border)">Role</th>
           <th style="padding:10px 14px;font-size:10px;font-weight:700;color:var(--muted);text-align:left;
-            text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border)">Organisation</th>
+            text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border)">Organization</th>
           <th style="padding:10px 14px;font-size:10px;font-weight:700;color:var(--muted);text-align:left;
             text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border)">Auth</th>
           <th style="padding:10px 14px;border-bottom:1px solid var(--border)"></th>
@@ -166,14 +166,14 @@ function openCreateUserModal() {
           </select>
         </div>
         <div>
-          <label class="form-label">Primary Organisation</label>
+          <label class="form-label">Primary Organization</label>
           <select id="uOrgId" class="form-input">
             ${visOrgs.map(o => `<option value="${o.id}">${o.name}</option>`).join('')}
           </select>
         </div>
       </div>
       <div id="uOrgAccessSection" style="display:none;margin-bottom:12px">
-        <label class="form-label">Accessible Organisations <span style="color:var(--muted);font-weight:400">(select all they can see)</span></label>
+        <label class="form-label">Accessible Organizations <span style="color:var(--muted);font-weight:400">(select all they can see)</span></label>
         <div id="uOrgAccessList" style="border:1px solid var(--border);border-radius:8px;padding:8px;max-height:160px;overflow-y:auto">
           ${visOrgs.map(o => `<label style="display:flex;align-items:center;gap:8px;padding:4px 6px;cursor:pointer;border-radius:4px;font-size:12px">
             <input type="checkbox" class="uOrgCheck" value="${o.id}"> ${escH(o.name)}
@@ -330,14 +330,14 @@ async function openEditUserModal(userId) {
           </select>
         </div>
         <div>
-          <label class="form-label">Primary Organisation</label>
+          <label class="form-label">Primary Organization</label>
           <select id="euOrgId" class="form-input">
             ${visOrgs.map(o => `<option value="${o.id}" ${o.id===user.org_id?'selected':''}>${escH(o.name)}</option>`).join('')}
           </select>
         </div>
       </div>
       <div id="euOrgAccessSection" style="${['analyst','viewer'].includes(user.role) ? '' : 'display:none'};margin-bottom:12px">
-        <label class="form-label">Accessible Organisations</label>
+        <label class="form-label">Accessible Organizations</label>
         <div style="border:1px solid var(--border);border-radius:8px;padding:8px;max-height:160px;overflow-y:auto">
           ${visOrgs.map(o => `<label style="display:flex;align-items:center;gap:8px;padding:4px 6px;cursor:pointer;border-radius:4px;font-size:12px">
             <input type="checkbox" class="euOrgCheck" value="${o.id}" ${existingAccess.includes(o.id)?'checked':''}> ${escH(o.name)}
@@ -584,7 +584,7 @@ function renderAuditShell(days, rows, loading) {
     <table style="width:100%;border-collapse:collapse">
       <thead>
         <tr style="background:var(--bg)">
-          ${['Time','Actor','Event','Target','Organisation','Details'].map(h =>
+          ${['Time','Actor','Event','Target','Organization','Details'].map(h =>
             `<th style="padding:9px 14px;font-size:10px;font-weight:700;color:var(--muted);text-align:left;
               text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border)">${h}</th>`
           ).join('')}

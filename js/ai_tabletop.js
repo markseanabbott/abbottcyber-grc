@@ -364,7 +364,7 @@ function aittRenderSetup() {
     <div class="card-title">New exercise</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
       <div>
-        <div class="field-lbl">Organisation</div>
+        <div class="field-lbl">Organization</div>
         <input type="text" value="${currentOrg ? escH(currentOrg.name) : ''}" disabled style="opacity:0.6"/>
       </div>
       <div>
@@ -779,7 +779,7 @@ function aittCopyPrompt() {
   const notifReviewed = AITT_NOTIF_ITEMS.filter(i => aittState.notifChecks[i.id]).map(i => i.label).join(', ') || 'None checked';
   const prompt = `Generate a professional AI Governance Tabletop Exercise After Action Report.
 
-Organisation: ${currentOrg ? currentOrg.name : '[Organisation]'}
+Organization: ${currentOrg ? currentOrg.name : '[Organization]'}
 Facilitator: ${aittState.facilitatorName}
 Scenario: ${sc.id} — ${sc.name}
 Industry/Audience: ${sc.tag}

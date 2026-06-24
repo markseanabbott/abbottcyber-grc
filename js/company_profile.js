@@ -79,9 +79,9 @@ function renderCompanyProfile() {
     <!-- FORM CARD -->
     <div class="card" style="margin-bottom:1rem;padding:0;overflow:hidden">
 
-      <!-- ── Organisation ── -->
+      <!-- ── Organization ── -->
       <div style="padding:.65rem 1.25rem;background:var(--bg);border-bottom:1px solid var(--border)">
-        <span style="font-size:10px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.06em">Organisation</span>
+        <span style="font-size:10px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.06em">Organization</span>
       </div>
       <div style="padding:1rem 1.25rem 1.25rem;display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
         <div>
@@ -102,7 +102,7 @@ function renderCompanyProfile() {
           </select>
         </div>
         <div>
-          <div class="field-lbl">Organisation Structure</div>
+          <div class="field-lbl">Organization Structure</div>
           <select id="cp_org_structure">
             <option value="">— Select —</option>
             ${['Private Company','Public Company','Non-Profit','Government / Public Sector','Franchise','Partnership','Sole Trader','Other'].map(v =>

@@ -705,7 +705,7 @@ function ttRenderSetup() {
   <div class="card">
     <div class="card-title">New exercise</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-      <div><div class="field-lbl">Organisation</div>
+      <div><div class="field-lbl">Organization</div>
         <input type="text" value="${orgOk ? currentOrg.name : ''}" disabled style="opacity:0.6"/></div>
       <div><div class="field-lbl">Facilitator</div>
         <input type="text" id="ttFacName" placeholder="e.g. Mark Abbott" value="${ttState.facilitatorName || ''}"/></div>

@@ -149,7 +149,7 @@ function _homePortfolioBreakdown() {
       <table style="width:100%;border-collapse:collapse;min-width:380px">
         <thead>
           <tr style="background:var(--bg)">
-            <th style="${thStyle};text-align:left">Organisation</th>
+            <th style="${thStyle};text-align:left">Organization</th>
             <th style="${thStyle}">Composite</th>
             ${modCols.map(m => `<th style="${thStyle}">${modLabels[m]}</th>`).join('')}
           </tr>
