@@ -805,7 +805,7 @@ function renderAssessmentsHub() {
       <div style="font-size:12px;color:var(--muted)">All available assessments for ${escH(currentOrg.name)}</div>
     </div>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem">
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:.75rem">
     ${chicklets}
   </div>
   <div style="font-size:11px;color:var(--muted);margin-top:.75rem">

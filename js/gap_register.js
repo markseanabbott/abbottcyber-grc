@@ -188,19 +188,30 @@ function renderGapRegister() {
   const _rng = (lo,hi) => !lo && !hi ? '—' : (!hi || lo===hi) ? _fmt(lo) : `${_fmt(lo)} – ${_fmt(hi)}`;
 
   const tableRows = rows.map(r => {
-    // Module badges
+    // Clickable module badges + inline source IDs
     const cisBadge = r.cisS
-      ? `<span title="${r.cisS.join(', ')}" style="font-size:9px;font-weight:700;padding:1px 6px;background:#dbeafe;color:#1d4ed8;border-radius:3px;cursor:default">CIS</span>`
+      ? `<span onclick="setNav('cis')" style="font-size:9px;font-weight:700;padding:2px 7px;background:#dbeafe;color:#1d4ed8;border-radius:3px;cursor:pointer" title="Go to CIS assessment">CIS →</span>`
       : '';
     const insBadge = r.insS
-      ? `<span title="${r.insS.join(', ')}" style="font-size:9px;font-weight:700;padding:1px 6px;background:#dcfce7;color:#15803d;border-radius:3px;cursor:default">Insurance</span>`
+      ? `<span onclick="setNav('insurance')" style="font-size:9px;font-weight:700;padding:2px 7px;background:#dcfce7;color:#15803d;border-radius:3px;cursor:pointer" title="Go to Insurance assessment">Insurance →</span>`
       : '';
     const tsBadge = r.tsS
-      ? `<span title="${r.tsS.join(', ')}" style="font-size:9px;font-weight:700;padding:1px 6px;background:#fef3c7;color:#92400e;border-radius:3px;cursor:default">Tech Stack</span>`
+      ? `<span onclick="setNav('techstack')" style="font-size:9px;font-weight:700;padding:2px 7px;background:#fef3c7;color:#92400e;border-radius:3px;cursor:pointer" title="Go to Tech Stack survey">Tech Stack →</span>`
       : '';
     const badges = catalogMode
-      ? `<span style="font-size:9px;padding:1px 6px;background:#f1f5f9;color:var(--muted);border-radius:3px">Not assessed</span>`
+      ? `<span style="font-size:9px;padding:2px 7px;background:#f1f5f9;color:var(--muted);border-radius:3px">Not assessed</span>`
       : [cisBadge, insBadge, tsBadge].filter(Boolean).join(' ');
+
+    // Source detail lines — CIS shows safeguard IDs inline; TS shows question count
+    const cisDetail = r.cisS?.length
+      ? `<div style="font-size:9px;color:#1d4ed8;font-family:monospace;margin-top:3px;line-height:1.5">Safeguards: ${r.cisS.join(' · ')}</div>`
+      : '';
+    const insDetail = r.insS?.length
+      ? `<div style="font-size:9px;color:#15803d;font-family:monospace;margin-top:2px">Ins: ${r.insS.length} question${r.insS.length!==1?'s':''}</div>`
+      : '';
+    const tsDetail = r.tsS?.length
+      ? `<div style="font-size:9px;color:#92400e;font-family:monospace;margin-top:2px">TS: ${r.tsS.length} question${r.tsS.length!==1?'s':''} unanswered</div>`
+      : '';
 
     // Source count note
     const totalSrcs = [...(r.cisS||[]), ...(r.insS||[]), ...(r.tsS||[])].length;
@@ -233,6 +244,7 @@ function renderGapRegister() {
       </td>
       <td style="padding:8px 10px;vertical-align:top">
         <div style="display:flex;gap:4px;flex-wrap:wrap">${badges}</div>
+        ${cisDetail}${insDetail}${tsDetail}
       </td>
       <td style="padding:8px 10px;vertical-align:top">${pricingCell}</td>
       <td style="padding:8px 10px;text-align:right;vertical-align:top;white-space:nowrap">${annCell}</td>
