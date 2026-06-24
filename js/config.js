@@ -135,9 +135,11 @@ const NAV = [
     { id: 'audit', icon: '📜', label: 'Audit Readiness', live: false, phase: 3 },
   ]},
   { id: 'g_settings', group: 'Settings', icon: '⚙️', platformAdminOnly: true, items: [
-    { id: 'settings',          icon: '⚙️', label: 'Platform Settings', live: true, phase: 1, adminOnly: true },
-    { id: 'backlog',           icon: '📋', label: 'Feature Backlog',   live: true, phase: 1, adminOnly: true },
-    { id: 'pricing_schedule',  icon: '💲', label: 'Pricing Schedule',  live: true, phase: 1, tierOnly: ['grandfather','father'] },
+    { id: 'orgs',              icon: '🏢', label: 'Organization Manager', live: true, phase: 1, adminOnly: true },
+    { id: 'users',             icon: '👥', label: 'User Management',      live: true, phase: 1, adminOnly: true },
+    { id: 'settings',          icon: '⚙️', label: 'Platform Settings',    live: true, phase: 1, adminOnly: true },
+    { id: 'backlog',           icon: '📋', label: 'Feature Backlog',      live: true, phase: 1, adminOnly: true },
+    { id: 'pricing_schedule',  icon: '💲', label: 'Pricing Schedule',     live: true, phase: 1, tierOnly: ['grandfather','father'] },
   ]},
 ];
 

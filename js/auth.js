@@ -302,9 +302,6 @@ function renderUserMenu() {
         <div class="user-menu-name">${displayName}</div>
         <div class="user-menu-role">${roleLbl}</div>
       </div>
-      ${isAdminUser ? `<button class="user-menu-item" onclick="closeUserMenu();setNav('orgs')">🏢 Organization Manager</button>` : ''}
-      ${isAdminUser ? `<button class="user-menu-item" onclick="closeUserMenu();setNav('users')">👥 User Management</button>` : ''}
-      ${isAdminUser ? `<div class="user-menu-divider"></div>` : ''}
       <button class="user-menu-item danger" onclick="doSignOut()">🚪 Sign Out</button>
     </div>
   </div>`;
