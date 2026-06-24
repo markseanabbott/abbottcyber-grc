@@ -217,10 +217,14 @@ function maResolveTool(toolId) {
     if (ps) {
       const resolved = { ...dflt, name: ps.name || dflt.name,
         source: ps.source, sourceLabel: ps.sourceLabel };
-      const hi = ps.rate_high > 0 ? ps.rate_high : ps.rate_low;
-      if (ps.model === 'perUser')     { resolved.perUserYear = [ps.rate_low, hi];     delete resolved.perEndpointYear; delete resolved.fixedYear; }
-      if (ps.model === 'perEndpoint') { resolved.perEndpointYear = [ps.rate_low, hi]; delete resolved.perUserYear;     delete resolved.fixedYear; }
-      if (ps.model === 'fixed')       { resolved.fixedYear = [ps.rate_low, hi];       delete resolved.perUserYear;     delete resolved.perEndpointYear; }
+      // Pricing schedule rates are monthly → multiply × 12 for annual calcs
+      const lo = (ps.rate_low  || 0) * 12;
+      const hi = ((ps.rate_high > 0 ? ps.rate_high : ps.rate_low) || 0) * 12;
+      if (ps.model === 'perUser')     { resolved.perUserYear = [lo, hi];     delete resolved.perEndpointYear; delete resolved.fixedYear; }
+      if (ps.model === 'perEndpoint') { resolved.perEndpointYear = [lo, hi]; delete resolved.perUserYear;     delete resolved.fixedYear; }
+      if (ps.model === 'fixed')       { resolved.fixedYear = [lo, hi];       delete resolved.perUserYear;     delete resolved.perEndpointYear; }
+      resolved.oneTimeLow  = ps.one_time_low  || 0;
+      resolved.oneTimeHigh = ps.one_time_high || ps.one_time_low || 0;
       return resolved;
     }
   }
@@ -301,7 +305,7 @@ function maCalcCosts(answers, framing) {
     explicit:  !!(uCount || eCount),
   };
   const toolExcl = answers?._tooling_excludes || {};
-  const mkBucket = () => ({ laborLow:0, laborHigh:0, toolLow:0, toolHigh:0, items:[] });
+  const mkBucket = () => ({ laborLow:0, laborHigh:0, toolLow:0, toolHigh:0, setupLow:0, setupHigh:0, items:[] });
   const result   = { preClose:mkBucket(), year1:mkBucket(), strategic:mkBucket() };
   for (const cat of _maAllCats(framing)) {
     for (const q of cat.questions) {
@@ -311,7 +315,7 @@ function maCalcCosts(answers, framing) {
       if (ans === 'yes' || ans === 'na') continue;
       const lb   = labor[q.costBand] || labor['Low'];
       const tool = maResolveTool(q.id);
-      let tLow = 0, tHigh = 0, toolName = null, toolExcluded = false, toolSource = 'default';
+      let tLow = 0, tHigh = 0, sLow = 0, sHigh = 0, toolName = null, toolExcluded = false, toolSource = 'default';
       if (tool) {
         toolName   = tool.name;
         toolSource = tool.source || 'default';
@@ -321,14 +325,18 @@ function maCalcCosts(answers, framing) {
           if (tool.perUserYear)          { tLow = tool.perUserYear[0]*hc.users;         tHigh = tool.perUserYear[1]*hc.users;         }
           else if (tool.perEndpointYear) { tLow = tool.perEndpointYear[0]*hc.endpoints; tHigh = tool.perEndpointYear[1]*hc.endpoints; }
           else if (tool.fixedYear)       { tLow = tool.fixedYear[0];                    tHigh = tool.fixedYear[1];                    }
+          sLow  = tool.oneTimeLow  || 0;
+          sHigh = tool.oneTimeHigh || 0;
         }
       }
       const bucket = ans === 'partial' ? 'year1' : (q.priority || 'year1');
       const dest = result[bucket] || result.year1;
-      dest.laborLow += lb[0]; dest.laborHigh += lb[1];
-      dest.toolLow  += tLow;  dest.toolHigh  += tHigh;
+      dest.laborLow  += lb[0]; dest.laborHigh  += lb[1];
+      dest.toolLow   += tLow;  dest.toolHigh   += tHigh;
+      dest.setupLow  += sLow;  dest.setupHigh  += sHigh;
       dest.items.push({ id:q.id, text:q.text, category:cat.label, answer:ans,
         laborLow:lb[0], laborHigh:lb[1], toolName, toolLow:tLow, toolHigh:tHigh,
+        setupLow:sLow, setupHigh:sHigh,
         toolExcluded, toolSource, low:lb[0]+tLow, high:lb[1]+tHigh, priority:bucket });
     }
   }
@@ -346,13 +354,29 @@ function maCalcCosts(answers, framing) {
   // Year 3–5:  all tools recurring only
   const allToolLow  = sumToolLow;
   const allToolHigh = sumToolHigh;
+  const pc = result.preClose, y1 = result.year1, st = result.strategic;
   const schedule = [
-    { label:'Pre-Close', implLow: result.preClose.laborLow,  implHigh: result.preClose.laborHigh,  toolLow: result.preClose.toolLow,  toolHigh: result.preClose.toolHigh,  rowLow: result.preClose.laborLow  + result.preClose.toolLow,  rowHigh: result.preClose.laborHigh  + result.preClose.toolHigh  },
-    { label:'Year 1',    implLow: result.year1.laborLow,     implHigh: result.year1.laborHigh,     toolLow: result.preClose.toolLow  + result.year1.toolLow,  toolHigh: result.preClose.toolHigh  + result.year1.toolHigh,  rowLow: result.year1.laborLow + result.preClose.toolLow + result.year1.toolLow, rowHigh: result.year1.laborHigh + result.preClose.toolHigh + result.year1.toolHigh },
-    { label:'Year 2',    implLow: result.strategic.laborLow, implHigh: result.strategic.laborHigh, toolLow: allToolLow,               toolHigh: allToolHigh,               rowLow: result.strategic.laborLow + allToolLow, rowHigh: result.strategic.laborHigh + allToolHigh },
-    { label:'Year 3',    implLow:0, implHigh:0, toolLow: allToolLow, toolHigh: allToolHigh, rowLow: allToolLow, rowHigh: allToolHigh },
-    { label:'Year 4',    implLow:0, implHigh:0, toolLow: allToolLow, toolHigh: allToolHigh, rowLow: allToolLow, rowHigh: allToolHigh },
-    { label:'Year 5',    implLow:0, implHigh:0, toolLow: allToolLow, toolHigh: allToolHigh, rowLow: allToolLow, rowHigh: allToolHigh },
+    { label:'Pre-Close',
+      implLow:  pc.laborLow,  implHigh:  pc.laborHigh,
+      setupLow: pc.setupLow,  setupHigh: pc.setupHigh,
+      toolLow:  pc.toolLow,   toolHigh:  pc.toolHigh,
+      rowLow:   pc.laborLow  + pc.setupLow  + pc.toolLow,
+      rowHigh:  pc.laborHigh + pc.setupHigh + pc.toolHigh },
+    { label:'Year 1',
+      implLow:  y1.laborLow,  implHigh:  y1.laborHigh,
+      setupLow: y1.setupLow,  setupHigh: y1.setupHigh,
+      toolLow:  pc.toolLow  + y1.toolLow,  toolHigh: pc.toolHigh  + y1.toolHigh,
+      rowLow:   y1.laborLow  + y1.setupLow  + pc.toolLow  + y1.toolLow,
+      rowHigh:  y1.laborHigh + y1.setupHigh + pc.toolHigh + y1.toolHigh },
+    { label:'Year 2',
+      implLow:  st.laborLow,  implHigh:  st.laborHigh,
+      setupLow: st.setupLow,  setupHigh: st.setupHigh,
+      toolLow:  allToolLow,   toolHigh:  allToolHigh,
+      rowLow:   st.laborLow  + st.setupLow  + allToolLow,
+      rowHigh:  st.laborHigh + st.setupHigh + allToolHigh },
+    { label:'Year 3', implLow:0, implHigh:0, setupLow:0, setupHigh:0, toolLow:allToolLow, toolHigh:allToolHigh, rowLow:allToolLow, rowHigh:allToolHigh },
+    { label:'Year 4', implLow:0, implHigh:0, setupLow:0, setupHigh:0, toolLow:allToolLow, toolHigh:allToolHigh, rowLow:allToolLow, rowHigh:allToolHigh },
+    { label:'Year 5', implLow:0, implHigh:0, setupLow:0, setupHigh:0, toolLow:allToolLow, toolHigh:allToolHigh, rowLow:allToolLow, rowHigh:allToolHigh },
   ];
   const fiveYearLow  = schedule.reduce((s,r)=>s+r.rowLow,  0);
   const fiveYearHigh = schedule.reduce((s,r)=>s+r.rowHigh, 0);
@@ -939,15 +963,17 @@ function _renderMATabPricing(costs, fr, ans) {
           <tr style="background:#f8fafc">
             <th style="text-align:left;padding:6px 10px;border-bottom:2px solid var(--border);font-weight:700">Period</th>
             <th style="text-align:right;padding:6px 10px;border-bottom:2px solid var(--border);font-weight:700">One-time impl.</th>
-            <th style="text-align:right;padding:6px 10px;border-bottom:2px solid var(--border);font-weight:700">Annual licensing</th>
+            <th style="text-align:right;padding:6px 10px;border-bottom:2px solid var(--border);font-weight:700">Vendor setup</th>
+            <th style="text-align:right;padding:6px 10px;border-bottom:2px solid var(--border);font-weight:700">Monthly licensing</th>
             <th style="text-align:right;padding:6px 10px;border-bottom:2px solid var(--border);font-weight:700;color:#0369a1">Period total</th>
           </tr>
         </thead>
         <tbody>
           ${schedule.map((row,i)=>{
             const isPreClose = row.label === 'Pre-Close';
-            const hasImpl    = row.implLow > 0;
-            const hasTool    = row.toolLow > 0;
+            const hasImpl    = row.implLow  > 0;
+            const hasSetup   = row.setupLow > 0;
+            const hasTool    = row.toolLow  > 0;
             return `
             <tr style="border-bottom:1px solid #f1f5f9;${i%2?'background:#fafafa':''}">
               <td style="padding:7px 10px;font-weight:${isPreClose?'800':'600'};color:${isPreClose?'#dc2626':'var(--text)'}">
@@ -956,8 +982,11 @@ function _renderMATabPricing(costs, fr, ans) {
               <td style="padding:7px 10px;text-align:right;color:${hasImpl?'#b45309':'var(--muted)'}">
                 ${hasImpl ? _maCostRange(row.implLow,row.implHigh) : '—'}
               </td>
+              <td style="padding:7px 10px;text-align:right;color:${hasSetup?'#7c3aed':'var(--muted)'}">
+                ${hasSetup ? _maCostRange(row.setupLow,row.setupHigh) : '—'}
+              </td>
               <td style="padding:7px 10px;text-align:right;color:${hasTool?'#0369a1':'var(--muted)'}">
-                ${hasTool ? _maCostRange(row.toolLow,row.toolHigh)+'/yr' : '—'}
+                ${hasTool ? _maCostRange(row.toolLow,row.toolHigh)+'/mo×12' : '—'}
               </td>
               <td style="padding:7px 10px;text-align:right;font-weight:700">
                 ${row.rowLow > 0 ? _maCostRange(row.rowLow,row.rowHigh) : '—'}
@@ -967,7 +996,7 @@ function _renderMATabPricing(costs, fr, ans) {
         </tbody>
         <tfoot>
           <tr style="background:#eff6ff;border-top:2px solid #bfdbfe">
-            <td colspan="3" style="padding:8px 10px;font-weight:800;color:#1e40af">5-Year Total</td>
+            <td colspan="4" style="padding:8px 10px;font-weight:800;color:#1e40af">5-Year Total</td>
             <td style="padding:8px 10px;text-align:right;font-weight:800;color:#1e40af;font-size:13px">${_maCostRange(fiveYearLow,fiveYearHigh)}</td>
           </tr>
         </tfoot>
@@ -1014,11 +1043,13 @@ function _renderMATabPricing(costs, fr, ans) {
                 ${r.tool.source === 'parent' ? `<span style="font-size:9px;font-weight:700;color:#7c3aed;padding:1px 5px;background:#faf5ff;border-radius:3px">MSP</span>` : ''}
               </div>
               <div style="font-size:10px;color:var(--muted);margin-top:2px">${r.tool.note ? escH(r.tool.note) : ''}</div>
+              ${(r.tool.oneTimeLow > 0 && !r.excluded) ? `<div style="font-size:10px;color:#7c3aed;margin-top:2px">⚡ One-time: ${_maCostRange(r.tool.oneTimeLow, r.tool.oneTimeHigh)}</div>` : ''}
               ${r.tool.manualAlt && !r.excluded ? `<div style="font-size:10px;color:#0369a1;margin-top:4px;padding:4px 7px;background:#e0f2fe;border-radius:4px">${escH(r.tool.manualAlt)}</div>` : ''}
             </td>
             <td style="padding:7px 8px;vertical-align:top;color:var(--muted);white-space:nowrap">${r.unitModel}${r.unitCount>1?' × '+r.unitCount:''}</td>
             <td style="padding:7px 8px;vertical-align:top;text-align:right;font-weight:700;${r.excluded?'color:var(--muted);text-decoration:line-through':''}">
               ${_maCostRange(r.unitAnnual,r.unitHigh)}${r.excluded?'':'/yr'}
+              ${(!r.excluded && r.tool.source !== 'default' && r.unitAnnual > 0) ? `<div style="font-size:9px;color:var(--muted)">~$${Math.round(r.unitAnnual/12/Math.max(r.unitCount,1))}/unit/mo × ${r.unitCount}</div>` : ''}
             </td>
             <td style="padding:7px 8px;vertical-align:top;text-align:center">
               ${r.applicable
