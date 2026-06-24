@@ -119,10 +119,12 @@ const NAV = [
     { id: 'company_profile',   icon: '🏢', label: 'Organization Profile',  live: true, phase: 1, adminOnly: true },
     { id: 'orgs',              icon: '🏢', label: 'Organization Manager', live: true, phase: 1, adminOnly: true },
     { id: 'users',             icon: '👥', label: 'User Management',      live: true, phase: 1, adminOnly: true },
-    { id: 'modules',           icon: '📦', label: 'Module Management',    live: true, phase: 1, adminOnly: true },
     { id: 'settings',          icon: '⚙️', label: 'Platform Settings',    live: true, phase: 1, adminOnly: true },
-    { id: 'backlog',           icon: '📋', label: 'Feature Backlog',      live: true, phase: 1, adminOnly: true },
     { id: 'pricing_schedule',  icon: '💲', label: 'Pricing Schedule',     live: true, phase: 1, tierOnly: ['grandfather','father'] },
+  ]},
+  { id: 'g_platform', group: 'Platform Admin', icon: '🔧', platformAdminOnly: true, items: [
+    { id: 'modules',  icon: '📦', label: 'Module Management', live: true, phase: 1 },
+    { id: 'backlog',  icon: '📋', label: 'Feature Backlog',   live: true, phase: 1 },
   ]},
 ];
 

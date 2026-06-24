@@ -235,7 +235,7 @@ function idleStop() {
 // SIDEBAR
 // ============================================================
 function getModuleDot(id) {
-  if (!currentOrg || ['home', 'tabletop', 'tt_ai', 'orgs', 'assessments', 'exercises', 'governance', 'modules', 'ma_cdd'].includes(id)) return 'dot-none';
+  if (!currentOrg || ['home', 'tabletop', 'tt_ai', 'orgs', 'assessments', 'exercises', 'governance', 'modules', 'backlog', 'ma_cdd'].includes(id)) return 'dot-none';
   const h = (orgAssessments[currentOrg.id] || {})[id];
   if (!h || !h.length) return 'dot-none';
   const s = h[h.length - 1].score;
@@ -387,7 +387,7 @@ function toggleNavSection(id) {
   buildNav();
 }
 
-const _ADMIN_PAGES = { company_profile: 'Organization Profile', orgs: 'Organization Manager', users: 'User Management', modules: 'Module Management' };
+const _ADMIN_PAGES = { company_profile: 'Organization Profile', orgs: 'Organization Manager', users: 'User Management', modules: 'Module Management', backlog: 'Feature Backlog' };
 
 function setNav(id, { pushState = true } = {}) {
   activeNav = id;
