@@ -172,6 +172,7 @@ let maState = {
             user_count:'', endpoint_count:'',
             data_sources:[], include_ai_screen:false, include_insurance_review:false },
   answers:{}, poamItems:{}, currentAssessment:null,
+  pricingCatalog:{}, parentPricingCatalog:{}, pricingLoaded:false,
 };
 
 // --- HELPERS ---
@@ -198,6 +199,48 @@ function _maFmtK(n) {
 }
 
 function _maCostRange(low, high) { return `${_maFmtK(low)} – ${_maFmtK(high)}`; }
+
+// Maps M&A question IDs to Pricing Schedule tool_type tags
+const MA_TOOL_TYPE_MAP = { I1:'mfa', I2:'pam', I4:'edr', I7:'email', D3:'cspm', H3:'vuln_scanner' };
+
+// Resolves a tool definition:
+//   1. Pricing Schedule catalog (own org → parent org via psGetForType)
+//   2. Legacy ma_pricing JSONB on maState (deprecated, kept for backward compat)
+//   3. MA_TOOLING hardcoded platform default
+function maResolveTool(toolId) {
+  const dflt = MA_TOOLING[toolId];
+  if (!dflt) return null;
+  // 1. Pricing Schedule (new — preferred)
+  const toolType = MA_TOOL_TYPE_MAP[toolId];
+  if (toolType && typeof psGetForType === 'function') {
+    const ps = psGetForType(toolType);
+    if (ps) {
+      const resolved = { ...dflt, name: ps.name || dflt.name,
+        source: ps.source, sourceLabel: ps.sourceLabel };
+      const hi = ps.rate_high > 0 ? ps.rate_high : ps.rate_low;
+      if (ps.model === 'perUser')     { resolved.perUserYear = [ps.rate_low, hi];     delete resolved.perEndpointYear; delete resolved.fixedYear; }
+      if (ps.model === 'perEndpoint') { resolved.perEndpointYear = [ps.rate_low, hi]; delete resolved.perUserYear;     delete resolved.fixedYear; }
+      if (ps.model === 'fixed')       { resolved.fixedYear = [ps.rate_low, hi];       delete resolved.perUserYear;     delete resolved.perEndpointYear; }
+      return resolved;
+    }
+  }
+  // 2. Legacy ma_pricing JSONB (transitional fallback)
+  const own    = (maState.pricingCatalog    || {})[toolId];
+  const parent = (maState.parentPricingCatalog || {})[toolId];
+  const over   = own || parent;
+  if (over?.low > 0) {
+    const resolved = { ...dflt, name: over.name || dflt.name,
+      source: own ? 'org' : 'parent', sourceLabel: own ? currentOrg?.name : 'MSP' };
+    const model = over.model || (dflt.perUserYear ? 'perUser' : dflt.perEndpointYear ? 'perEndpoint' : 'fixed');
+    const hi = over.high > 0 ? over.high : over.low;
+    if (model === 'perUser')     { resolved.perUserYear = [over.low, hi];     delete resolved.perEndpointYear; delete resolved.fixedYear; }
+    if (model === 'perEndpoint') { resolved.perEndpointYear = [over.low, hi]; delete resolved.perUserYear;     delete resolved.fixedYear; }
+    if (model === 'fixed')       { resolved.fixedYear = [over.low, hi];       delete resolved.perUserYear;     delete resolved.perEndpointYear; }
+    return resolved;
+  }
+  // 3. Platform default
+  return { ...dflt, source:'default', sourceLabel:'Platform default' };
+}
 
 // --- SCORING ---
 
@@ -267,10 +310,11 @@ function maCalcCosts(answers, framing) {
       const ans = answers[q.id] || 'unknown';
       if (ans === 'yes' || ans === 'na') continue;
       const lb   = labor[q.costBand] || labor['Low'];
-      const tool = MA_TOOLING[q.id];
-      let tLow = 0, tHigh = 0, toolName = null, toolExcluded = false;
+      const tool = maResolveTool(q.id);
+      let tLow = 0, tHigh = 0, toolName = null, toolExcluded = false, toolSource = 'default';
       if (tool) {
-        toolName = tool.name;
+        toolName   = tool.name;
+        toolSource = tool.source || 'default';
         if (toolExcl[q.id]) {
           toolExcluded = true;
         } else {
@@ -285,7 +329,7 @@ function maCalcCosts(answers, framing) {
       dest.toolLow  += tLow;  dest.toolHigh  += tHigh;
       dest.items.push({ id:q.id, text:q.text, category:cat.label, answer:ans,
         laborLow:lb[0], laborHigh:lb[1], toolName, toolLow:tLow, toolHigh:tHigh,
-        toolExcluded, low:lb[0]+tLow, high:lb[1]+tHigh, priority:bucket });
+        toolExcluded, toolSource, low:lb[0]+tLow, high:lb[1]+tHigh, priority:bucket });
     }
   }
   const sumLaborLow  = result.preClose.laborLow  + result.year1.laborLow  + result.strategic.laborLow;
@@ -864,7 +908,9 @@ function _renderMATabPricing(costs, fr, ans) {
   const a        = maState.currentAssessment;
 
   const allItems = [...costs.preClose.items,...costs.year1.items,...costs.strategic.items];
-  const toolRows = Object.entries(MA_TOOLING).map(([qId, tool]) => {
+  const toolRows = Object.entries(MA_TOOLING).map(([qId]) => {
+    const tool      = maResolveTool(qId);
+    if (!tool) return null;
     const matchItem = allItems.find(i => i.id === qId);
     const excluded  = !!excludes[qId];
     let unitModel = '', unitCount = 0, unitAnnual = 0, unitHigh = 0;
@@ -873,7 +919,7 @@ function _renderMATabPricing(costs, fr, ans) {
     else if (tool.fixedYear)       { unitModel = `fixed/yr`; unitCount = 1; unitAnnual = tool.fixedYear[0]; unitHigh = tool.fixedYear[1]; }
     const applicable = !!matchItem;
     return { qId, tool, excluded, unitModel, unitCount, unitAnnual, unitHigh, applicable };
-  });
+  }).filter(Boolean);
 
   const fiveYearLow  = costs.fiveYearLow  || 0;
   const fiveYearHigh = costs.fiveYearHigh || 0;
@@ -962,7 +1008,12 @@ function _renderMATabPricing(costs, fr, ans) {
           <tr style="border-bottom:1px solid #f1f5f9;${i%2?'background:#fafafa':''}${!r.applicable?' opacity:0.45':''}">
             <td style="padding:7px 8px;vertical-align:top">
               <div style="font-weight:700;${r.excluded?'text-decoration:line-through;color:var(--muted)':''}">${escH(r.tool.name)}</div>
-              <div style="font-size:10px;color:var(--muted);margin-top:2px">${escH(r.qId)} · ${r.tool.note ? escH(r.tool.note) : ''}</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+                <span style="font-size:10px;color:var(--muted)">${escH(r.qId)}</span>
+                ${r.tool.source === 'org'    ? `<span style="font-size:9px;font-weight:700;color:#0369a1;padding:1px 5px;background:#e0f2fe;border-radius:3px">Custom</span>` : ''}
+                ${r.tool.source === 'parent' ? `<span style="font-size:9px;font-weight:700;color:#7c3aed;padding:1px 5px;background:#faf5ff;border-radius:3px">MSP</span>` : ''}
+              </div>
+              <div style="font-size:10px;color:var(--muted);margin-top:2px">${r.tool.note ? escH(r.tool.note) : ''}</div>
               ${r.tool.manualAlt && !r.excluded ? `<div style="font-size:10px;color:#0369a1;margin-top:4px;padding:4px 7px;background:#e0f2fe;border-radius:4px">${escH(r.tool.manualAlt)}</div>` : ''}
             </td>
             <td style="padding:7px 8px;vertical-align:top;color:var(--muted);white-space:nowrap">${r.unitModel}${r.unitCount>1?' × '+r.unitCount:''}</td>
@@ -1037,6 +1088,7 @@ function maNavToList() {
   maState.detailTab = 'summary'; maState.expandedFindings = {};
   document.getElementById('mainContent').innerHTML = renderMACDD();
 }
+
 function maNavToStep(idx) { maState.stepIdx = idx; document.getElementById('mainContent').innerHTML = renderMACDD(); }
 function maNext() {
   const steps = _maStepDefs(maState.framing);

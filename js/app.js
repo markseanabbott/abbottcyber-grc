@@ -143,7 +143,7 @@ async function selectOrg(id) {
   aiUnifiedState = { answers: {}, frameworks: { nist: true, iso: true }, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '', poamRun: null, poamItems: {}, matrixRuns: [], matrixGroup: 'g1' };
   if (ttState) { ttState.completedSessions = null; ttState.historicalSession = null; }
   exHubState = { opSessions: null };
-  if (typeof maState !== 'undefined') maState = { view:'list', stepIdx:0, editId:null, list:[], listLoaded:false, saving:false, detailTab:'summary', expandedFindings:{}, framing:{ target_name:'', deal_type:'', target_industry:'', target_employee_band:'', deal_value_band:'', risk_tolerance:'moderate', assessor:'', assessed_at:'', user_count:'', endpoint_count:'', data_sources:[], include_ai_screen:false, include_insurance_review:false }, answers:{}, poamItems:{}, currentAssessment:null };
+  if (typeof maState !== 'undefined') maState = { view:'list', stepIdx:0, editId:null, list:[], listLoaded:false, saving:false, detailTab:'summary', expandedFindings:{}, framing:{ target_name:'', deal_type:'', target_industry:'', target_employee_band:'', deal_value_band:'', risk_tolerance:'moderate', assessor:'', assessed_at:'', user_count:'', endpoint_count:'', data_sources:[], include_ai_screen:false, include_insurance_review:false }, answers:{}, poamItems:{}, currentAssessment:null, pricingCatalog:{}, parentPricingCatalog:{}, pricingLoaded:false };
   await loadAssessments(id);
   updateOrgUI(); buildNav(); renderMain();
 }
@@ -339,8 +339,16 @@ function buildNav() {
   const platformAdmin = typeof isPlatformAdmin === 'function' ? isPlatformAdmin() : true;
   document.getElementById('sidebarNav').innerHTML = NAV.map(g => {
     if (!hasModuleAccess(g.id)) return '';
-    if (g.platformAdminOnly && !platformAdmin) return '';
-    const visibleItems = g.items.filter(item => (!item.adminOnly || adminUser) && _hasItemAccess(item.moduleKey));
+    // platformAdminOnly groups: show if platform admin OR if any tierOnly item matches current tier
+    if (g.platformAdminOnly) {
+      const hasTierItem = g.items.some(i => i.tierOnly && i.tierOnly.includes(currentOrg?.tier));
+      if (!platformAdmin && !hasTierItem) return '';
+    }
+    const visibleItems = g.items.filter(item => {
+      if (item.adminOnly && !adminUser) return false;
+      if (item.tierOnly && !item.tierOnly.includes(currentOrg?.tier)) return false;
+      return _hasItemAccess(item.moduleKey);
+    });
     if (!visibleItems.length) return '';
     // Single-item groups render as flat items (no accordion wrapper)
     if (visibleItems.length === 1) {
@@ -502,6 +510,13 @@ function renderMain() {
     } else {
       el.innerHTML = renderMACDD();
     }
+    return;
+  }
+  if (activeNav === 'pricing_schedule') {
+    psState.loaded = false;
+    psState.list = []; psState.parentList = []; psState.addOpen = false; psState.editId = null;
+    el.innerHTML = renderPricingSchedule();
+    psLoad();
     return;
   }
   if (activeNav === 'tpra') {
