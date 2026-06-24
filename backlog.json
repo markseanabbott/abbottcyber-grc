@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.4.0",
   "created": "2026-05-14",
-  "updated": "2026-06-24 (session 59)",
+  "updated": "2026-06-24 (session 60)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -585,6 +585,18 @@
           "text": "TPRA moved to Assessments hub — card in ASSESSMENT_CATALOG with noScore:true flag (no score dot, shows View Assessments button). Start Here retired — company_profile moved to Settings sidebar as Organization Profile.",
           "done": true,
           "notes": "config.js: g_company_profile removed; company_profile added to g_settings. home.js: tpra added to ASSESSMENT_CATALOG with noScore:true; card render handles noScore flag. app.js: _ADMIN_PAGES updated with company_profile."
+        },
+        {
+          "id": "mod4",
+          "text": "page_module_map many-to-many — composite PK (page_key, module_id). A page can belong to multiple modules. PATCH_033 drops old single-PK table and recreates it.",
+          "done": true,
+          "notes": "modules.js: modAccess.pageMap is now {page_key: Set<module_id>}. hasPageAccess() loops the Set and grants if user holds ANY module. modState.pageMap is {page_key: {[module_id]: boolean}}. modTogglePageMap() replaces modSetPageMap(). _modRenderPageTab() rebuilt as column-per-module checkbox grid. modSavePageAccess() deletes all known-page rows then re-inserts desired pairs and reloads modAccessLoad()."
+        },
+        {
+          "id": "mod5",
+          "text": "Edit User — remove hardcoded Section Access; Module Access section driven by modules table. When a new module is added in Module Management it automatically appears as a toggle in Edit User. module_access JSON column on users always written as null to clear legacy restrictions.",
+          "done": true,
+          "notes": "users.js: removed euModuleCheck section and all references. editUserRoleChanged() simplified to org-access show/hide only. submitEditUser() always passes module_access: null. Label renamed from Add-on Modules to Module Access."
         }
       ]
     },
