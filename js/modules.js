@@ -7,14 +7,18 @@
 // ── MODULE ACCESS (used everywhere, loaded at boot) ───────────
 
 const modAccess = {
-  pageMap: {},      // { page_key: module_id }
+  pageMap: {},      // { page_key: Set<module_id> } — many-to-many
   grants:  new Set(), // module_ids the active user has been granted
 };
 
 async function modAccessLoad() {
   try {
     const rows = await sbFetch('page_module_map', 'GET') || [];
-    modAccess.pageMap = Object.fromEntries(rows.map(r => [r.page_key, r.module_id || '']));
+    modAccess.pageMap = {};
+    rows.forEach(r => {
+      if (!modAccess.pageMap[r.page_key]) modAccess.pageMap[r.page_key] = new Set();
+      modAccess.pageMap[r.page_key].add(r.module_id);
+    });
   } catch(e) { console.warn('modAccess pageMap load error', e); }
   await modAccessLoadGrants();
 }
@@ -32,16 +36,20 @@ async function modAccessLoadGrants() {
 function hasPageAccess(pageKey) {
   // Platform admin always sees everything (real role, not view-as)
   if (authState?.profile?.role === 'platform_admin') return true;
-  const moduleId = modAccess.pageMap[pageKey];
-  if (!moduleId) return true;  // no module assigned = always visible
-  return modAccess.grants.has(moduleId);
+  const moduleIds = modAccess.pageMap[pageKey]; // Set<module_id> or undefined
+  if (!moduleIds || moduleIds.size === 0) return true; // no module assigned = always visible
+  // Grant access if user has ANY module that includes this page
+  for (const mid of moduleIds) {
+    if (modAccess.grants.has(mid)) return true;
+  }
+  return false;
 }
 
 // ── ADMIN UI STATE (lazy-loaded when navigating to the admin page) ──
 
 let modState = {
   modules: [],   // rows from modules table
-  pageMap: {},   // { page_key: module_id | '' }
+  pageMap: {},   // { page_key: { [module_id]: boolean } } — many-to-many
   tab:     'modules',
   loading: false,
   editId:  null, // null = new, uuid = editing existing
@@ -69,7 +77,11 @@ async function modLoad() {
     modState.modules = mods;
 
     const mapRows = await sbFetch('page_module_map', 'GET') || [];
-    modState.pageMap = Object.fromEntries(mapRows.map(r => [r.page_key, r.module_id || '']));
+    modState.pageMap = {};
+    mapRows.forEach(r => {
+      if (!modState.pageMap[r.page_key]) modState.pageMap[r.page_key] = {};
+      modState.pageMap[r.page_key][r.module_id] = true;
+    });
   } catch(e) {
     console.error('modLoad error', e);
   }
@@ -83,8 +95,9 @@ function modSetTab(tab) {
   document.getElementById('mainContent').innerHTML = renderModulesAdmin();
 }
 
-function modSetPageMap(pageKey, moduleId) {
-  modState.pageMap[pageKey] = moduleId || '';
+function modTogglePageMap(pageKey, moduleId, checked) {
+  if (!modState.pageMap[pageKey]) modState.pageMap[pageKey] = {};
+  modState.pageMap[pageKey][moduleId] = checked;
 }
 
 // All nav pages except Settings (always admin-gated at a higher level)
@@ -166,36 +179,52 @@ function _modRenderModulesTab() {
 }
 
 function _modRenderPageTab() {
-  const pages    = modGetPages();
-  const actMods  = modState.modules.filter(m => m.is_active);
+  const pages   = modGetPages();
+  const actMods = modState.modules.filter(m => m.is_active);
 
-  const rows = pages.map(p => {
-    const cur  = modState.pageMap[p.id] || '';
-    const opts = `<option value="">— Unassigned (always visible) —</option>` +
-      actMods.map(m =>
-        `<option value="${m.id}"${cur === m.id ? ' selected' : ''}>${escH(m.name)}</option>`
-      ).join('');
-    return `<tr>
-      <td style="padding:8px 14px;font-size:11px;color:var(--muted);white-space:nowrap">${escH(p.group)}</td>
+  if (!actMods.length) {
+    return `<div class="card" style="text-align:center;padding:2rem;color:var(--muted)">
+      No active modules yet. Add a module on the Modules tab first.
+    </div>`;
+  }
+
+  // One column per active module
+  const modCols = actMods.map(m =>
+    `<th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);white-space:nowrap;min-width:100px">${escH(m.name)}</th>`
+  ).join('');
+
+  let lastGroup = '';
+  const rows = pages.map((p, i) => {
+    const groupCell = p.group !== lastGroup
+      ? `<td style="padding:8px 14px;font-size:11px;color:var(--muted);white-space:nowrap;vertical-align:middle" rowspan="${pages.filter(x => x.group === p.group).length}">${escH(p.group)}</td>`
+      : '';
+    if (p.group !== lastGroup) lastGroup = p.group;
+
+    const checks = actMods.map(m => {
+      const chk = !!(modState.pageMap[p.id]?.[m.id]);
+      return `<td style="padding:8px 10px;text-align:center;border-left:1px solid var(--border)">
+        <input type="checkbox" ${chk ? 'checked' : ''} onchange="modTogglePageMap('${p.id}','${m.id}',this.checked)">
+      </td>`;
+    }).join('');
+
+    return `<tr style="${i%2===1?'background:var(--bg)':''}">
+      ${groupCell}
       <td style="padding:8px 14px;font-size:13px;font-weight:600">${escH(p.label)}</td>
-      <td style="padding:8px 14px;min-width:220px">
-        <select style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;width:100%;background:#fff"
-          onchange="modSetPageMap('${p.id}',this.value)">${opts}</select>
-      </td>
+      ${checks}
     </tr>`;
   }).join('');
 
   return `
-  <div class="card" style="padding:0;overflow:hidden;margin-bottom:1rem">
-    <div style="padding:.65rem 1.25rem;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
-      <span style="font-size:10px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.06em">Page → Module Assignment</span>
-      <span style="font-size:11px;color:var(--muted)">Pages with no module assigned are always visible to all users</span>
-    </div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:.65rem">
+    Check the modules each page belongs to. A page with no module checked is always visible to all users.
+    A user gains access to a page if they hold <em>any</em> of its modules.
+  </div>
+  <div class="card" style="padding:0;overflow:auto;margin-bottom:1rem">
     <table style="width:100%;border-collapse:collapse">
       <thead><tr style="background:var(--bg)">
-        <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);width:130px">Section</th>
+        <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);width:120px">Section</th>
         <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)">Page</th>
-        <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)">Module</th>
+        ${modCols}
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
@@ -292,24 +321,28 @@ async function modDelete(id) {
 }
 
 async function modSavePageAccess() {
-  const pages    = modGetPages();
-  const toUpsert = [];
-  const toDel    = [];
+  const pages = modGetPages();
+  const pageKeys = pages.map(p => p.id);
 
+  // Collect all desired (page_key, module_id) pairs
+  const desired = [];
   pages.forEach(p => {
-    const mid = modState.pageMap[p.id];
-    if (mid) toUpsert.push({ page_key: p.id, module_id: mid });
-    else      toDel.push(p.id);
+    const mods = modState.pageMap[p.id] || {};
+    Object.entries(mods).forEach(([moduleId, checked]) => {
+      if (checked) desired.push({ page_key: p.id, module_id: moduleId });
+    });
   });
 
   try {
-    if (toUpsert.length) {
-      await sbFetch('page_module_map', 'POST', toUpsert,
-        { 'Prefer': 'resolution=merge-duplicates' });
+    // Delete all current assignments for known nav pages, then re-insert
+    if (pageKeys.length) {
+      await sbFetch(`page_module_map?page_key=in.(${pageKeys.join(',')})`, 'DELETE');
     }
-    if (toDel.length) {
-      await sbFetch(`page_module_map?page_key=in.(${toDel.join(',')})`, 'DELETE');
+    if (desired.length) {
+      await sbFetch('page_module_map', 'POST', desired);
     }
+    // Reload the boot-time cache so changes take effect immediately
+    await modAccessLoad();
     toast('✓ Page access saved', '#15803d');
   } catch(e) {
     toast('Error saving page access', '#dc2626');

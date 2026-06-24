@@ -353,20 +353,8 @@ async function openEditUserModal(userId) {
           </label>`).join('')}
         </div>
       </div>
-      <div style="margin-bottom:12px">
-        <label class="form-label">Section Access</label>
-        <div id="euModuleSection" style="border:1px solid var(--border);border-radius:8px;padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:2px">
-          ${[['assessments','📋 Assessments'],['ai','🤖 AI Readiness'],['risk','⚠️ Governance'],['exercises','🎯 Exercises'],['reports','📊 Reports'],['ma_cdd','🤝 M&amp;A Due Diligence']].map(([val,lbl]) => {
-            const canConfig = user.role !== 'platform_admin';
-            const ma = user.module_access;
-            const chk = !ma || ma[val] !== false;
-            return `<label style="display:flex;align-items:center;gap:6px;padding:5px 6px;border-radius:4px;font-size:12px;cursor:${canConfig?'pointer':'default'};opacity:${canConfig?'1':'0.45'}"><input type="checkbox" class="euModuleCheck" value="${val}" ${chk?'checked':''} ${canConfig?'':'disabled'}> ${lbl}</label>`;
-          }).join('')}
-        </div>
-        <div id="euModuleNote" style="font-size:10px;color:var(--muted);margin-top:4px">${user.role !== 'platform_admin' ? 'Uncheck sections to remove from their navigation.' : 'Platform Admin always has full access to all modules.'}</div>
-      </div>
       ${activeModules.length ? `<div style="margin-bottom:12px">
-        <label class="form-label">Add-on Modules</label>
+        <label class="form-label">Module Access</label>
         <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
           ${activeModules.map((m, i) => `
             <label style="display:flex;align-items:center;gap:.6rem;padding:8px 10px;cursor:pointer;${i ? 'border-top:1px solid var(--border)' : ''}">
@@ -378,7 +366,7 @@ async function openEditUserModal(userId) {
               ${m.monthly_cost > 0 ? `<div style="font-size:11px;color:var(--muted);white-space:nowrap">$${parseFloat(m.monthly_cost).toFixed(2)}/mo</div>` : ''}
             </label>`).join('')}
         </div>
-        <div style="font-size:10px;color:var(--muted);margin-top:4px">Controls access to add-on features assigned in Module Management.</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">Each module controls which pages the user can access. Manage page assignments in Module Management.</div>
       </div>` : ''}
       <div id="euError" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;
         padding:8px 10px;border-radius:6px;font-size:12px;margin-bottom:10px"></div>
@@ -392,18 +380,9 @@ async function openEditUserModal(userId) {
 
 function editUserRoleChanged() {
   const role = document.getElementById('euRole')?.value;
-  const canConfigModules = role !== 'platform_admin';
   const hasOrgAccess = ['analyst','viewer'].includes(role);
   const s1 = document.getElementById('euOrgAccessSection');
   if (s1) s1.style.display = hasOrgAccess ? '' : 'none';
-  const checks = document.querySelectorAll('.euModuleCheck');
-  const note = document.getElementById('euModuleNote');
-  checks.forEach(cb => {
-    cb.disabled = !canConfigModules;
-    cb.closest('label').style.opacity = canConfigModules ? '1' : '0.45';
-    cb.closest('label').style.cursor = canConfigModules ? 'pointer' : 'default';
-  });
-  if (note) note.textContent = canConfigModules ? 'Uncheck sections to remove from their navigation.' : 'Platform Admin always has full access to all modules.';
 }
 
 async function submitEditUser(userId) {
@@ -415,13 +394,8 @@ async function submitEditUser(userId) {
   btn.textContent = 'Saving…'; btn.disabled = true; errEl.style.display = 'none';
 
   try {
-    const isRestricted = role !== 'platform_admin';
-    let moduleAccess = null;
-    if (isRestricted) {
-      const checked = [...document.querySelectorAll('.euModuleCheck:checked')].map(cb => cb.value);
-      moduleAccess = { assessments: checked.includes('assessments'), ai: checked.includes('ai'), risk: checked.includes('risk'), exercises: checked.includes('exercises'), reports: checked.includes('reports'), ma_cdd: checked.includes('ma_cdd') };
-    }
-    await sb.users.update(userId, { name: name || null, role, org_id: orgId, module_access: moduleAccess });
+    // module_access JSON column is superseded by user_module_access table; always clear it
+    await sb.users.update(userId, { name: name || null, role, org_id: orgId, module_access: null });
 
     // Update org access for analyst/viewer
     await sb.userOrgAccess.deleteForUser(userId);
