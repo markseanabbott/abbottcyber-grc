@@ -34,8 +34,11 @@ async function modAccessLoadGrants() {
 }
 
 function hasPageAccess(pageKey) {
-  // Platform admin always sees everything (real role, not view-as)
-  if (authState?.profile?.role === 'platform_admin') return true;
+  // Platform admin always sees everything — but only when NOT in view-as mode,
+  // so "View As" accurately reflects what the impersonated user actually sees.
+  if (!viewAsState && authState?.profile?.role === 'platform_admin') return true;
+  // If impersonating a platform_admin, they see everything too.
+  if (viewAsState?.role === 'platform_admin') return true;
 
   // Pages not in PAGE_REGISTRY (Settings, admin tools) are gated by adminOnly /
   // platformAdminOnly flags only — module system does not apply to them.
