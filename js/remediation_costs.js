@@ -227,22 +227,27 @@ function rcExtractInsGaps(answers) {
 }
 
 // From tsState answers (tech stack)
+// A tool type is a gap only if NO question mapped to it is answered 'yes'.
+// If the org has the tool (at least one 'yes') but some features are partial/no,
+// that's a configuration gap — not a missing tool. Don't inflate the cost estimate.
 function rcExtractTSGaps() {
   if (!tsState?.answers) return { gaps: [] };
-  const allQs  = (typeof TS_CATS !== 'undefined') ? TS_CATS.flatMap(c => c.questions) : [];
-  const seenTypes = new Set();
+  const allQs     = (typeof TS_CATS !== 'undefined') ? TS_CATS.flatMap(c => c.questions) : [];
   const typeMap   = {};
+  const typeHasYes = {};
 
   allQs.forEach(q => {
-    const ans = tsState.answers[q.id];
-    if (!ans || ans.ans === 'yes' || ans.ans === 'na') return;
+    const ans      = tsState.answers[q.id];
     const toolType = RC_TS_TO_TOOL[q.tool_category];
     if (!toolType) return;
+    if (ans?.ans === 'yes') { typeHasYes[toolType] = true; }
+    if (!ans || ans.ans === 'yes' || ans.ans === 'na') return;
     if (!typeMap[toolType]) typeMap[toolType] = { toolType, sources:[] };
     typeMap[toolType].sources.push(q.id);
   });
 
-  return { gaps: Object.values(typeMap) };
+  // Only return tool types where the org has no 'yes' at all — truly missing tools
+  return { gaps: Object.values(typeMap).filter(g => !typeHasYes[g.toolType]) };
 }
 
 // ── RENDER ────────────────────────────────────────────────────
