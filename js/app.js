@@ -519,6 +519,15 @@ function renderMain() {
     psLoad();
     return;
   }
+  if (activeNav === 'gap_register') {
+    if (!grState.loaded || grState.orgId !== currentOrg.id) {
+      el.innerHTML = renderGapRegister();
+      grLoad();
+    } else {
+      el.innerHTML = renderGapRegister();
+    }
+    return;
+  }
   if (activeNav === 'tpra') {
     if (!tpraState || tpraState.orgId !== currentOrg.id) {
       tpraInit();
