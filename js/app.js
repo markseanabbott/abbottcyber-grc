@@ -143,6 +143,7 @@ async function selectOrg(id) {
   aiUnifiedState = { answers: {}, frameworks: { nist: true, iso: true }, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '', poamRun: null, poamItems: {}, matrixRuns: [], matrixGroup: 'g1' };
   if (ttState) { ttState.completedSessions = null; ttState.historicalSession = null; }
   exHubState = { opSessions: null };
+  if (typeof maState !== 'undefined') maState = { view:'list', stepIdx:0, editId:null, list:[], listLoaded:false, saving:false, framing:{ target_name:'', deal_type:'', target_industry:'', target_employee_band:'', deal_value_band:'', risk_tolerance:'moderate', assessor:'', assessed_at:'', data_sources:[], include_ai_screen:false, include_insurance_review:false }, answers:{}, poamItems:{}, currentAssessment:null };
   await loadAssessments(id);
   updateOrgUI(); buildNav(); renderMain();
 }
@@ -234,7 +235,7 @@ function idleStop() {
 // SIDEBAR
 // ============================================================
 function getModuleDot(id) {
-  if (!currentOrg || ['home', 'tabletop', 'tt_ai', 'orgs', 'assessments'].includes(id)) return 'dot-none';
+  if (!currentOrg || ['home', 'tabletop', 'tt_ai', 'orgs', 'assessments', 'ma_cdd'].includes(id)) return 'dot-none';
   const h = (orgAssessments[currentOrg.id] || {})[id];
   if (!h || !h.length) return 'dot-none';
   const s = h[h.length - 1].score;
@@ -248,6 +249,15 @@ const _GROUP_MODULE = {
   g_exercises: 'exercises',
   g_reporting: 'reports',
 };
+
+function _hasItemAccess(moduleKey) {
+  if (!moduleKey) return true;
+  const role = viewAsState?.role || authState?.profile?.role;
+  if (!role || role === 'platform_admin') return true;
+  const access = viewAsState?.module_access ?? authState?.profile?.module_access;
+  if (!access) return true;
+  return access[moduleKey] !== false;
+}
 
 function hasModuleAccess(groupId) {
   const role = viewAsState?.role || authState?.profile?.role;
@@ -330,7 +340,7 @@ function buildNav() {
   document.getElementById('sidebarNav').innerHTML = NAV.map(g => {
     if (!hasModuleAccess(g.id)) return '';
     if (g.platformAdminOnly && !platformAdmin) return '';
-    const visibleItems = g.items.filter(item => !item.adminOnly || adminUser);
+    const visibleItems = g.items.filter(item => (!item.adminOnly || adminUser) && _hasItemAccess(item.moduleKey));
     if (!visibleItems.length) return '';
     // Single-item groups render as flat items (no accordion wrapper)
     if (visibleItems.length === 1) {
@@ -481,6 +491,16 @@ function renderMain() {
       rrLoad().then(() => { if (activeNav === 'riskregister') el.innerHTML = renderRiskRegister(); });
     } else {
       el.innerHTML = renderRiskRegister();
+    }
+    return;
+  }
+  if (activeNav === 'ma_cdd') {
+    if (!maState.listLoaded) {
+      maState.listLoaded = true;
+      el.innerHTML = renderMACDD();
+      maLoadList().then(() => { if (activeNav === 'ma_cdd') el.innerHTML = renderMACDD(); });
+    } else {
+      el.innerHTML = renderMACDD();
     }
     return;
   }

@@ -1,4 +1,4 @@
-const APP_VERSION = '1.2.4';
+const APP_VERSION = '1.3.0';
 
 // ============================================================
 // MULTIPLAYER — URL routing (detect ?join= or ?display= params)
@@ -109,6 +109,7 @@ const NAV = [
     { id: 'techstack', icon: '🖥️', label: 'Technology Stack', live: true, phase: 1 },
     { id: 'cmmc', icon: '🛡️', label: 'CMMC Level 1', live: true, phase: 1 },
     { id: 'cmmc2', icon: '🏛️', label: 'CMMC Level 2', live: true, phase: 1 },
+    { id: 'ma_cdd', icon: '🤝', label: 'M&A Due Diligence', live: true, phase: 1, moduleKey: 'ma_cdd' },
     { id: 'nist', icon: '🏛️', label: 'NIST CSF 2.0', live: false, phase: 3 },
   ]},
   { id: 'g_ai_readiness', group: 'AI Readiness', icon: '🤖', items: [

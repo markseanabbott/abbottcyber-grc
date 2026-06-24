@@ -189,6 +189,7 @@ function openCreateUserModal() {
           <label style="display:flex;align-items:center;gap:6px;padding:5px 6px;cursor:pointer;border-radius:4px;font-size:12px"><input type="checkbox" class="uModuleCheck" value="risk" checked> ⚠️ Risk &amp; Vendors</label>
           <label style="display:flex;align-items:center;gap:6px;padding:5px 6px;cursor:pointer;border-radius:4px;font-size:12px"><input type="checkbox" class="uModuleCheck" value="exercises" checked> 🎯 Exercises</label>
           <label style="display:flex;align-items:center;gap:6px;padding:5px 6px;cursor:pointer;border-radius:4px;font-size:12px"><input type="checkbox" class="uModuleCheck" value="reports" checked> 📊 Reports</label>
+          <label style="display:flex;align-items:center;gap:6px;padding:5px 6px;cursor:pointer;border-radius:4px;font-size:12px"><input type="checkbox" class="uModuleCheck" value="ma_cdd"> 🤝 M&amp;A Due Diligence</label>
         </div>
         <div id="uModuleNote" style="font-size:10px;color:var(--muted);margin-top:4px"></div>
       </div>
@@ -252,7 +253,7 @@ async function submitCreateUser() {
     let moduleAccess = null;
     if (isRestricted) {
       const checked = [...document.querySelectorAll('.uModuleCheck:checked')].map(cb => cb.value);
-      moduleAccess = { assessments: checked.includes('assessments'), ai: checked.includes('ai'), risk: checked.includes('risk'), exercises: checked.includes('exercises'), reports: checked.includes('reports') };
+      moduleAccess = { assessments: checked.includes('assessments'), ai: checked.includes('ai'), risk: checked.includes('risk'), exercises: checked.includes('exercises'), reports: checked.includes('reports'), ma_cdd: checked.includes('ma_cdd') };
     }
     const newUser = await sb.users.create({
       name: name || null,
@@ -347,7 +348,7 @@ async function openEditUserModal(userId) {
       <div style="margin-bottom:12px">
         <label class="form-label">Module Access</label>
         <div id="euModuleSection" style="border:1px solid var(--border);border-radius:8px;padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:2px">
-          ${[['assessments','📋 Assessments'],['ai','🤖 AI Readiness'],['risk','⚠️ Risk &amp; Vendors'],['exercises','🎯 Exercises'],['reports','📊 Reports']].map(([val,lbl]) => {
+          ${[['assessments','📋 Assessments'],['ai','🤖 AI Readiness'],['risk','⚠️ Risk &amp; Vendors'],['exercises','🎯 Exercises'],['reports','📊 Reports'],['ma_cdd','🤝 M&amp;A Due Diligence']].map(([val,lbl]) => {
             const canConfig = user.role !== 'platform_admin';
             const ma = user.module_access;
             const chk = !ma || ma[val] !== false;
@@ -395,7 +396,7 @@ async function submitEditUser(userId) {
     let moduleAccess = null;
     if (isRestricted) {
       const checked = [...document.querySelectorAll('.euModuleCheck:checked')].map(cb => cb.value);
-      moduleAccess = { assessments: checked.includes('assessments'), ai: checked.includes('ai'), risk: checked.includes('risk'), exercises: checked.includes('exercises'), reports: checked.includes('reports') };
+      moduleAccess = { assessments: checked.includes('assessments'), ai: checked.includes('ai'), risk: checked.includes('risk'), exercises: checked.includes('exercises'), reports: checked.includes('reports'), ma_cdd: checked.includes('ma_cdd') };
     }
     await sb.users.update(userId, { name: name || null, role, org_id: orgId, module_access: moduleAccess });
 
