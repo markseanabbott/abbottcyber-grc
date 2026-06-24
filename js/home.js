@@ -572,23 +572,28 @@ function _homeTopToolsChicklet() {
     </div>`;
   }
 
-  const { rows: gapRows, catalogMode } = grBuildGapList();
+  // Tech Stack is the authoritative "is this tool deployed?" signal.
+  // CIS/Insurance flag compliance gaps, not tool absence — using them here
+  // would show tools as missing even when deployed (e.g. EDR flagged by CIS
+  // because a safeguard isn't 100% even though Sentinel One is running).
+  const hasTSAnswers = tsState?.answers && tsState.orgId === currentOrg?.id
+    && Object.keys(tsState.answers).length > 0;
 
-  // No assessments run yet
-  if (catalogMode) {
+  if (!hasTSAnswers) {
     return `<div class="card" style="padding:0;overflow:hidden">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .9rem .5rem;border-bottom:1px solid var(--border)">
         <div style="font-size:13px;font-weight:700">🔧 Missing Tools</div>
         <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();setNav('gap_register')">Tool Gap Register →</button>
       </div>
       <div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:12px">
-        <div style="font-size:1.5rem;margin-bottom:.4rem">📋</div>
-        Run a CIS, Insurance, or Tech Stack assessment<br>to identify which tools are missing.
+        <div style="font-size:1.5rem;margin-bottom:.4rem">🖥️</div>
+        Run the <strong>Technology Stack</strong> survey<br>to identify which tools are missing.
       </div>
     </div>`;
   }
 
-  const gapTypes = new Set(gapRows.map(r => r.toolType));
+  const { gaps: tsGaps } = rcExtractTSGaps();
+  const gapTypes = new Set(tsGaps.map(g => g.toolType));
   const missing = ALL_PRIORITY.filter(t => gapTypes.has(t.toolType)).slice(0, 5);
 
   // All priority tools are covered — great posture
@@ -600,7 +605,7 @@ function _homeTopToolsChicklet() {
       </div>
       <div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:12px">
         <div style="font-size:1.5rem;margin-bottom:.4rem">✅</div>
-        No priority tool gaps identified based on current assessments.
+        No priority tool gaps found in Technology Stack survey.
       </div>
     </div>`;
   }
