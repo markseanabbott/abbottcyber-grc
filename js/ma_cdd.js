@@ -11,71 +11,113 @@ const MA_CATS = [
   {
     id:'gov', label:'Governance & Compliance', icon:'📋', color:'#1d4ed8',
     questions:[
-      { id:'G1', text:'Documented Information Security Policy exists and is reviewed at least annually', weight:2, costBand:'Low', priority:'year1' },
-      { id:'G2', text:'Target holds an active security certification (SOC 2 Type II, ISO 27001, PCI DSS, or HIPAA attestation)', weight:2, costBand:'Medium', priority:'strategic' },
-      { id:'G3', text:'Dedicated security function or named security owner in role (CISO, Security Manager, or equivalent)', weight:2, costBand:'Low', priority:'year1' },
-      { id:'G4', text:'Target is subject to breach notification regulations (PIPEDA, GDPR, HIPAA, CCPA, or US state breach laws)', weight:1, costBand:null, priority:null, contextOnly:true },
-      { id:'G5', text:'No current or pending regulatory investigations, fines, or enforcement actions relating to data security or privacy', weight:3, costBand:'High', priority:'preclose', dealBreaker:'all' },
-      { id:'G6', text:'Independent third-party security audit or penetration test completed within the last 24 months', weight:2, costBand:'Medium', priority:'year1' },
+      { id:'G1', text:'Documented Information Security Policy exists and is reviewed at least annually', weight:2, costBand:'Low', priority:'year1',
+        note:'Look for a signed, dated policy with a change log showing annual review. Key sections: acceptable use, data classification, incident response, and access control. A policy that was written once and never updated is a gap.' },
+      { id:'G2', text:'Target holds an active security certification (SOC 2 Type II, ISO 27001, PCI DSS, or HIPAA attestation)', weight:2, costBand:'Medium', priority:'strategic',
+        note:'Request the current certificate or attestation letter. Check the scope — a SOC 2 covering a single product line may not include the systems being acquired. Type II (audit over time) is more rigorous than Type I (point-in-time).' },
+      { id:'G3', text:'Dedicated security function or named security owner in role (CISO, Security Manager, or equivalent)', weight:2, costBand:'Low', priority:'year1',
+        note:'Security should be someone\'s primary job, not an add-on to a generalist IT role. For small targets, a part-time CISO or vCISO arrangement is acceptable. Red flag: "the IT guy handles security" with no formal mandate.' },
+      { id:'G4', text:'Target is subject to breach notification regulations (PIPEDA, GDPR, HIPAA, CCPA, or US state breach laws)', weight:1, costBand:null, priority:null, contextOnly:true,
+        note:'Context only — determines whether a past or future breach triggers mandatory regulatory notifications and reporting timelines. Affects deal risk and post-close insurance obligations.' },
+      { id:'G5', text:'No current or pending regulatory investigations, fines, or enforcement actions relating to data security or privacy', weight:3, costBand:'High', priority:'preclose', dealBreaker:'all',
+        note:'Require a legal declaration and search publicly available regulatory databases (OPC Canada, SEC, FTC, ICO). Any active matter must be fully disclosed in the data room. Undisclosed regulatory action is a deal-breaker — it creates liability that transfers with the acquisition.' },
+      { id:'G6', text:'Independent third-party security audit or penetration test completed within the last 24 months', weight:2, costBand:'Medium', priority:'year1',
+        note:'Request the most recent report. Scope matters — a web application pen test alone may leave internal networks and cloud environments untested. Also look for a remediation log showing critical findings were closed, not just noted.' },
     ],
   },
   {
     id:'iam', label:'Identity, Access & Endpoint', icon:'🔐', color:'#7c3aed',
     questions:[
-      { id:'I1', text:'Multi-Factor Authentication (MFA) enforced for all user accounts including remote access and admin portals', weight:3, costBand:'Low', priority:'preclose' },
-      { id:'I2', text:'Privileged access managed through a PAM solution or equivalent — no shared or generic admin credentials in use', weight:3, costBand:'Medium', priority:'year1' },
-      { id:'I3', text:'Formal user lifecycle process (joiner / mover / leaver) with periodic access reviews documented', weight:2, costBand:'Low', priority:'year1' },
-      { id:'I4', text:'All endpoints protected by an Endpoint Detection & Response (EDR) solution with central management console', weight:2, costBand:'Medium', priority:'year1' },
-      { id:'I5', text:'Documented patching policy with critical/high severity patches applied within defined SLA (≤30 days for critical)', weight:2, costBand:'Low', priority:'year1' },
-      { id:'I6', text:'Remote access secured via VPN or Zero Trust — no direct RDP or SMB exposure to the public internet', weight:3, costBand:'Low', priority:'preclose', dealBreaker:'conservative' },
-      { id:'I7', text:'Email security controls active: DMARC, DKIM, SPF enforced; anti-phishing gateway in place', weight:2, costBand:'Low', priority:'year1' },
-      { id:'I8', text:'No standing shared or generic privileged credentials in use across systems or environments', weight:3, costBand:'Medium', priority:'preclose' },
+      { id:'I1', text:'Multi-Factor Authentication (MFA) enforced for all user accounts including remote access and admin portals', weight:3, costBand:'Low', priority:'preclose',
+        note:'MFA should cover: corporate email, VPN/remote access, cloud consoles (AWS, Azure, GCP), and financial or admin systems. Ask for MFA enrollment rates — below 90% is a gap. "MFA available but not enforced" is a No, not a Partial.' },
+      { id:'I2', text:'Privileged access managed through a PAM solution or equivalent — no shared or generic admin credentials in use', weight:3, costBand:'Medium', priority:'year1',
+        note:'Red flags: shared "admin" or "root" accounts, credentials stored in spreadsheets or a shared password document, no audit log of privileged actions. A basic PAM approach can be a properly configured password manager with access controls — a standalone CyberArk is not required for smaller targets.' },
+      { id:'I3', text:'Formal user lifecycle process (joiner / mover / leaver) with periodic access reviews documented', weight:2, costBand:'Low', priority:'year1',
+        note:'Ask for a sample offboarding checklist. Check that departing employees are disabled in Active Directory/Entra within 24–48 hours. Access reviews should be documented — quarterly for privileged accounts, annual for standard users is the baseline.' },
+      { id:'I4', text:'All endpoints protected by an Endpoint Detection & Response (EDR) solution with central management console', weight:2, costBand:'Medium', priority:'year1',
+        note:'Antivirus is not EDR. EDR tools (CrowdStrike, SentinelOne, Microsoft Defender for Endpoint) have behavioural detection, threat hunting, and incident response capabilities. Request a screenshot of the EDR console showing endpoint coverage percentage.' },
+      { id:'I5', text:'Documented patching policy with critical/high severity patches applied within defined SLA (≤30 days for critical)', weight:2, costBand:'Low', priority:'year1',
+        note:'Request patching reports for the last 3 months. Focus on servers and internet-facing systems first. Unpatched critical CVEs on internet-facing systems are a pre-close red flag regardless of overall score.' },
+      { id:'I6', text:'Remote access secured via VPN or Zero Trust — no direct RDP or SMB exposure to the public internet', weight:3, costBand:'Low', priority:'preclose', dealBreaker:'conservative',
+        note:'Run a quick check: use Shodan.io or Censys to scan the target\'s public IP ranges for open RDP (port 3389) or SMB (port 445). Direct exposure to the internet is one of the most common ransomware entry vectors and should be closed pre-close.' },
+      { id:'I7', text:'Email security controls active: DMARC, DKIM, SPF enforced; anti-phishing gateway in place', weight:2, costBand:'Low', priority:'year1',
+        note:'Check MX Toolbox (mxtoolbox.com) using the target\'s domain — it\'s free and takes 30 seconds. DMARC should be at p=reject or p=quarantine enforcement, not p=none (monitoring only). Missing DKIM or SPF makes the domain spoofable.' },
+      { id:'I8', text:'No standing shared or generic privileged credentials in use across systems or environments', weight:3, costBand:'Medium', priority:'preclose',
+        note:'Common examples: shared "administrator" Windows local accounts across servers, a single root AWS access key shared by the dev team, a generic "admin" account on the firewall with no individual accountability. Any found should be inventoried and a remediation plan agreed pre-close.' },
     ],
   },
   {
     id:'data', label:'Data Protection & Cloud', icon:'🔒', color:'#0f766e',
     questions:[
-      { id:'D1', text:'Data classification policy identifies and categorises sensitive data assets (PII, financial, health, IP, credentials)', weight:2, costBand:'Low', priority:'year1' },
-      { id:'D2', text:'Sensitive data encrypted at rest and in transit using current standards (AES-256, TLS 1.2+ minimum)', weight:3, costBand:'Medium', priority:'preclose' },
-      { id:'D3', text:'Cloud environments configured to a documented security baseline (CIS Benchmarks or CSP-native security defaults)', weight:2, costBand:'Medium', priority:'year1' },
-      { id:'D4', text:'Backups taken regularly, tested for restorability, and stored offline or immutably (resistant to ransomware deletion)', weight:3, costBand:'Low', priority:'preclose' },
-      { id:'D5', text:'Documented DR plan with tested and validated RTO/RPO targets', weight:2, costBand:'Low', priority:'year1' },
-      { id:'D6', text:'Complete software and SaaS asset inventory maintained and regularly reconciled', weight:1, costBand:'Low', priority:'strategic' },
-      { id:'D7', text:'Critical third-party and vendor dependencies inventoried; key vendors risk-assessed and contractually bound to security obligations', weight:2, costBand:'Medium', priority:'year1' },
+      { id:'D1', text:'Data classification policy identifies and categorises sensitive data assets (PII, financial, health, IP, credentials)', weight:2, costBand:'Low', priority:'year1',
+        note:'A data map or data flow diagram is the gold standard. At minimum there should be a documented list of where PII, financial data, IP, and credentials are stored and who has access. "We know where our data is" without documentation is a gap.' },
+      { id:'D2', text:'Sensitive data encrypted at rest and in transit using current standards (AES-256, TLS 1.2+ minimum)', weight:3, costBand:'Medium', priority:'preclose',
+        note:'Check: are databases encrypted at rest? Is data transmitted only over HTTPS/TLS? Are TLS certificates current and not self-signed in production? Partial credit applies if one direction (at-rest or in-transit) is covered but not both.' },
+      { id:'D3', text:'Cloud environments configured to a documented security baseline (CIS Benchmarks or CSP-native security defaults)', weight:2, costBand:'Medium', priority:'year1',
+        note:'Key checks: MFA on cloud console accounts, no public S3 buckets or Azure Blob Storage with open access, no overly permissive IAM policies, logging enabled. Request a cloud security posture report (CSPM output) if available. N/A if the target has no cloud presence.' },
+      { id:'D4', text:'Backups taken regularly, tested for restorability, and stored offline or immutably (resistant to ransomware deletion)', weight:3, costBand:'Low', priority:'preclose',
+        note:'Key question: can ransomware delete the backups? They should be either offline (disconnected media) or immutable (write-once S3, Azure Immutable Blob). Test evidence: a documented restore test in the last 12 months. Untested backups are not a backup strategy.' },
+      { id:'D5', text:'Documented DR plan with tested and validated RTO/RPO targets', weight:2, costBand:'Low', priority:'year1',
+        note:'RTO = how fast systems must be recovered. RPO = maximum acceptable data loss. Both should be documented, agreed with the business, and tested — not just estimated. Untested DR plans are extremely common and a significant post-close integration risk.' },
+      { id:'D6', text:'Complete software and SaaS asset inventory maintained and regularly reconciled', weight:1, costBand:'Low', priority:'strategic',
+        note:'An asset inventory should cover servers, workstations, network devices, and all SaaS applications. Shadow IT (tools staff use without IT approval) is a common gap. Integration complexity and licence costs map directly to this inventory — missing it creates post-close surprises.' },
+      { id:'D7', text:'Critical third-party and vendor dependencies inventoried; key vendors risk-assessed and contractually bound to security obligations', weight:2, costBand:'Medium', priority:'year1',
+        note:'Ask for a vendor list. Prioritise vendors with access to sensitive data or critical systems. Key contracts should include data processing agreements (DPAs), breach notification obligations, and right-to-audit clauses. Missing contracts for critical vendors is a risk.' },
     ],
   },
   {
     id:'incident', label:'Incident History & Response', icon:'🚨', color:'#dc2626',
     questions:[
-      { id:'H1', text:'No material data breach, ransomware attack, or significant security incident in the last 3 years', weight:3, costBand:'High', priority:'preclose' },
-      { id:'H1a', text:'(If breach) Incident was disclosed to affected parties and regulators as legally required', weight:2, costBand:null, priority:'preclose', dealBreaker:'all', conditional:{ questionId:'H1', value:'no' } },
-      { id:'H1b', text:'(If breach) Root cause has been fully remediated and independently verified', weight:2, costBand:'Medium', priority:'preclose', dealBreaker:'moderate', conditional:{ questionId:'H1', value:'no' } },
-      { id:'H1c', text:'(If breach) Security posture has materially improved since the incident (controls, process, staffing)', weight:2, costBand:'Medium', priority:'year1', conditional:{ questionId:'H1', value:'no' } },
-      { id:'H1d', text:'(If breach) No ongoing litigation or active regulatory action arising directly from the incident', weight:2, costBand:null, priority:'preclose', dealBreaker:'all', conditional:{ questionId:'H1', value:'no' } },
-      { id:'H2', text:'No undisclosed incidents, known active vulnerabilities under exploitation, or threat actor presence in environment', weight:3, costBand:'Significant', priority:'preclose', dealBreaker:'all' },
-      { id:'H3', text:'Vulnerability scanning runs on a regular cadence; critical and high CVEs remediated within defined SLA', weight:2, costBand:'Medium', priority:'year1' },
-      { id:'H4', text:'Documented IR plan with defined roles, tested procedures, and external contacts (legal, insurer, PR)', weight:2, costBand:'Low', priority:'year1' },
-      { id:'H5', text:'No end-of-life or vendor-unsupported software running in production environments', weight:2, costBand:'Medium', priority:'year1' },
-      { id:'H6', text:'Integration complexity is manageable — no undisclosed legacy systems, proprietary protocols, or material shadow IT', weight:1, costBand:null, priority:'strategic' },
-      { id:'H7', text:'Employee security awareness training program in place with documented completion tracking', weight:1, costBand:'Low', priority:'strategic' },
+      { id:'H1', text:'No material data breach, ransomware attack, or significant security incident in the last 3 years', weight:3, costBand:'High', priority:'preclose',
+        note:'Three years is the standard lookback. A disclosed, remediated breach that demonstrably improved the target\'s security posture is NOT a deal-breaker — it requires the sub-questions below. The real concern is undisclosed incidents or ongoing threat actor presence (H2).' },
+      { id:'H1a', text:'(If breach) Incident was disclosed to affected parties and regulators as legally required', weight:2, costBand:null, priority:'preclose', dealBreaker:'all', conditional:{ questionId:'H1', value:'no' },
+        note:'Mandatory under PIPEDA (Canada), GDPR (EU), most US state laws, and HIPAA. Failure to notify is itself a separate regulatory violation — potentially creating ongoing legal liability that transfers with the deal.' },
+      { id:'H1b', text:'(If breach) Root cause has been fully remediated and independently verified', weight:2, costBand:'Medium', priority:'preclose', dealBreaker:'moderate', conditional:{ questionId:'H1', value:'no' },
+        note:'Root cause fix should be independently verified — via a follow-up penetration test, a remediation validation from the original tester, or an updated security audit. Self-attestation by management alone is not sufficient evidence.' },
+      { id:'H1c', text:'(If breach) Security posture has materially improved since the incident (controls, process, staffing)', weight:2, costBand:'Medium', priority:'year1', conditional:{ questionId:'H1', value:'no' },
+        note:'Positive indicators: security owner hired post-incident, MFA and EDR added, backup strategy overhauled, staff training introduced. A well-managed post-breach improvement program actually signals a more mature security culture than a company that has never been tested.' },
+      { id:'H1d', text:'(If breach) No ongoing litigation or active regulatory action arising directly from the incident', weight:2, costBand:null, priority:'preclose', dealBreaker:'all', conditional:{ questionId:'H1', value:'no' },
+        note:'Check court records (PACER for US federal cases), provincial/federal regulatory registries, and require a legal declaration in the data room. Active litigation creates contingent liabilities that affect deal valuation and may not be fully quantifiable pre-close.' },
+      { id:'H2', text:'No undisclosed incidents, known active vulnerabilities under exploitation, or threat actor presence in environment', weight:3, costBand:'Significant', priority:'preclose', dealBreaker:'all',
+        note:'This is the hard stop. An undisclosed incident or known active threat actor presence (e.g. ransomware precursor activity detected but not shared) invalidates the basis for the deal\'s risk assumptions. Immediate escalation to legal counsel is required — do not proceed without full disclosure and third-party forensic validation.' },
+      { id:'H3', text:'Vulnerability scanning runs on a regular cadence; critical and high CVEs remediated within defined SLA', weight:2, costBand:'Medium', priority:'year1',
+        note:'Request a sample scan report from the last 90 days. Look for critical and high CVEs, particularly on internet-facing systems. Scan cadence should be at least monthly. No scanning program at all is a significant gap — the target has no visibility into its own exposure.' },
+      { id:'H4', text:'Documented IR plan with defined roles, tested procedures, and external contacts (legal, insurer, PR)', weight:2, costBand:'Low', priority:'year1',
+        note:'A real IR plan names who declares an incident, who calls legal, who calls the insurer, and who handles communications. Tabletop exercises give confidence the plan works under pressure. A plan that has never been tested is better than nothing but not a strong positive.' },
+      { id:'H5', text:'No end-of-life or vendor-unsupported software running in production environments', weight:2, costBand:'Medium', priority:'year1',
+        note:'Common EOL risks: Windows Server 2012 (EOL Oct 2023), Windows 10 (EOL Oct 2025), SQL Server 2012 (EOL Jul 2022), end-of-life network hardware. EOL systems cannot receive security patches — they are permanent vulnerabilities that cannot be fully mitigated without replacement.' },
+      { id:'H6', text:'Integration complexity is manageable — no undisclosed legacy systems, proprietary protocols, or material shadow IT', weight:1, costBand:null, priority:'strategic',
+        note:'Ask for a systems inventory and network diagram. Red flags: mainframe systems, bespoke ERP with no support contract, large on-premise infrastructure in a cloud-first deal, or staff using unapproved tools for core business functions. Complexity here drives post-close integration cost.' },
+      { id:'H7', text:'Employee security awareness training program in place with documented completion tracking', weight:1, costBand:'Low', priority:'strategic',
+        note:'Training evidence: LMS completion logs, phishing simulation reports, or signed training acknowledgements. Annual training covering phishing, password hygiene, and data handling is the baseline. Quarterly phishing simulations are the gold standard. No program = high and persistent human risk.' },
     ],
   },
 ];
 
 const MA_AI_QUESTIONS = [
-  { id:'A1', text:'AI tools that process customer, employee, or regulated data are used under documented governance controls', weight:2, costBand:'Medium', priority:'year1' },
-  { id:'A2', text:'Policy exists governing employee use of AI tools — including prohibition on uploading confidential data to unapproved services', weight:2, costBand:'Low', priority:'year1' },
-  { id:'A3', text:'AI is not used in regulated processes (credit, hiring, clinical, safety-critical) without documented oversight and audit trail', weight:3, costBand:'High', priority:'preclose', dealBreaker:'conservative' },
-  { id:'A4', text:'No AI products or features developed by the target would be classified as high-risk under EU AI Act', weight:2, costBand:null, priority:'preclose', contextOnly:false },
-  { id:'A5', text:'No known AI-related liability exposure (biased outputs, IP infringement from training data, harmful generated content)', weight:3, costBand:'High', priority:'preclose', dealBreaker:'moderate' },
-  { id:'A6', text:'Target has a documented AI incident response process covering model failure, prompt injection, and data exfiltration scenarios', weight:1, costBand:'Low', priority:'year1' },
+  { id:'A1', text:'AI tools that process customer, employee, or regulated data are used under documented governance controls', weight:2, costBand:'Medium', priority:'year1',
+    note:'AI tools processing regulated data include: ChatGPT/Claude/Copilot used with customer PII, AI-assisted CRM tools, AI-powered HR platforms. Governance controls means an approval process, documented data handling rules, and an audit trail of what was processed. "Staff use AI tools" without controls is a gap.' },
+  { id:'A2', text:'Policy exists governing employee use of AI tools — including prohibition on uploading confidential data to unapproved services', weight:2, costBand:'Low', priority:'year1',
+    note:'The most common AI risk is staff uploading confidential documents, customer PII, or proprietary IP into public AI tools (ChatGPT, etc.). A policy should name prohibited uses explicitly, have been communicated to all staff, and be enforced — not just documented.' },
+  { id:'A3', text:'AI is not used in regulated processes (credit, hiring, clinical, safety-critical) without documented oversight and audit trail', weight:3, costBand:'High', priority:'preclose', dealBreaker:'conservative',
+    note:'EU AI Act and emerging US/Canadian regulations treat AI in these use cases as high-risk. Using AI for hiring decisions, credit scoring, clinical recommendations, or safety-critical systems without documented human oversight creates regulatory and legal liability.' },
+  { id:'A4', text:'No AI products or features developed by the target would be classified as high-risk under EU AI Act', weight:2, costBand:null, priority:'preclose',
+    note:'EU AI Act applies if the target operates in the EU or sells to EU customers. High-risk AI systems (biometric ID, credit scoring, employment AI, education AI, critical infrastructure) require conformity assessments, human oversight, and extensive documentation before deployment. N/A if the target does not develop AI products.' },
+  { id:'A5', text:'No known AI-related liability exposure (biased outputs, IP infringement from training data, harmful generated content)', weight:3, costBand:'High', priority:'preclose', dealBreaker:'moderate',
+    note:'Known exposure areas: AI trained on copyrighted data without a license (NYT vs OpenAI-style claims), AI-generated content that caused reputational harm, biased AI outputs in regulated decisions (hiring, credit). Any known claims or complaints should be disclosed in the data room.' },
+  { id:'A6', text:'Target has a documented AI incident response process covering model failure, prompt injection, and data exfiltration scenarios', weight:1, costBand:'Low', priority:'year1',
+    note:'AI-specific incidents include: model producing harmful or biased output, prompt injection attack leading to data disclosure, AI vendor breach exposing training data or outputs. An AI-specific IR plan is still rare but increasingly expected by cyber insurers and regulators.' },
 ];
 
 const MA_INS_QUESTIONS = [
-  { id:'INS1', text:'Target holds active cyber liability insurance with current policy documentation available for review', weight:2, costBand:'Low', priority:'preclose' },
-  { id:'INS2', text:"Policy does NOT contain a change-of-control clause that would void or limit coverage at deal close", weight:3, costBand:null, priority:'preclose', dealBreaker:'all' },
-  { id:'INS3', text:"Coverage limit is appropriate for the target's data footprint and regulatory exposure (not materially underinsured)", weight:2, costBand:'Low', priority:'year1' },
-  { id:'INS4', text:'No known policy exclusions that would prevent a claim for the security gaps identified in this assessment', weight:2, costBand:null, priority:'year1' },
+  { id:'INS1', text:'Target holds active cyber liability insurance with current policy documentation available for review', weight:2, costBand:'Low', priority:'preclose',
+    note:'Request the current declarations page and full policy document. Check: policy limits, deductible, coverage trigger (claims-made vs occurrence — claims-made is standard for cyber), named insured, and renewal date. An expired or lapsed policy means there is a coverage gap that may already exist.' },
+  { id:'INS2', text:"Policy does NOT contain a change-of-control clause that would void or limit coverage at deal close", weight:3, costBand:null, priority:'preclose', dealBreaker:'all',
+    note:'Change-of-control clauses are common in cyber policies. They may require the insurer to be notified of the acquisition and can void coverage or require a fresh application and underwriting at close. This must be reviewed by the acquiring company\'s insurance broker before the deal signs — not after.' },
+  { id:'INS3', text:"Coverage limit is appropriate for the target's data footprint and regulatory exposure (not materially underinsured)", weight:2, costBand:'Low', priority:'year1',
+    note:'Rule of thumb: coverage limit should represent 5–10% of annual revenue for companies with significant data exposure. A $1M limit for a company processing large volumes of PII or operating in regulated sectors is likely underinsured. Compare against breach cost benchmarks for the target\'s industry.' },
+  { id:'INS4', text:'No known policy exclusions that would prevent a claim for the security gaps identified in this assessment', weight:2, costBand:null, priority:'year1',
+    note:'Common exclusions to check: nation-state attack exclusion (increasingly asserted by insurers), prior known incidents exclusion (any gap identified here could be argued as "known"), war exclusion (Lloyd\'s of London has been actively asserting this). Review exclusions against the specific findings from this assessment.' },
 ];
 
 const MA_LABOR_COSTS = {
@@ -86,12 +128,19 @@ const MA_LABOR_COSTS = {
 };
 
 const MA_TOOLING = {
-  I1: { name:'MFA solution (e.g. Entra ID / Duo / Okta)',                perUserYear:[36,96]        },
-  I2: { name:'PAM solution (e.g. CyberArk / BeyondTrust / Delinea)',     perUserYear:[120,360]       },
-  I4: { name:'EDR platform (e.g. CrowdStrike / SentinelOne / Defender)', perEndpointYear:[60,180]    },
-  I7: { name:'Email security gateway (e.g. Defender / Proofpoint)',       perUserYear:[36,96]         },
-  D3: { name:'CSPM tool (e.g. Wiz / Orca / Defender for Cloud)',          fixedYear:[6000,24000]      },
-  H3: { name:'Vulnerability scanner (e.g. Tenable / Qualys)',             fixedYear:[6000,24000]      },
+  I1: { name:'MFA (e.g. Entra ID / Duo / Okta)',                   perUserYear:[36,72],
+        note:'~$3–6/user/mo. Often included in M365 Business Premium. Entra ID P1=$6, Duo Essentials=$3.' },
+  I2: { name:'PAM (e.g. 1Password Business / BeyondTrust)',         perUserYear:[48,120],
+        note:'SMB-tier: 1Password or Keeper ~$4/user/mo. Enterprise PAM (CyberArk, BeyondTrust) is significantly more.',
+        manualAlt:'PAM gaps can be mitigated for SMB targets via operational controls: documented credential policy + business-grade password manager + quarterly access reviews. Toggle off tooling cost if a manual control approach is confirmed and documented in the POAM.' },
+  I4: { name:'EDR (e.g. CrowdStrike / SentinelOne / Defender)',    perEndpointYear:[48,144],
+        note:'CrowdStrike Falcon Go ~$60/endpoint/yr. Microsoft Defender for Endpoint Plan 1 is included with M365 Business Premium.' },
+  I7: { name:'Email security (e.g. Defender / Proofpoint)',         perUserYear:[24,60],
+        note:'Defender for Office 365 Plan 1 ~$2/user/mo. Proofpoint Essentials ~$3–5/user/mo. Often already bundled with M365.' },
+  D3: { name:'CSPM (e.g. Defender for Cloud / Wiz)',                fixedYear:[1500,8000],
+        note:'Defender for Cloud basic tier is free; enhanced ~$0.02/server/hr. Mid-market CSPM starts ~$1,500/yr. Enterprise tools (Wiz, Orca) exceed $10K. Mark N/A if target has no cloud presence.' },
+  H3: { name:'Vulnerability scanner (e.g. Nessus Pro / Tenable)',  fixedYear:[1500,5000],
+        note:'Nessus Professional ~$3,500/yr (unlimited internal assets). Tenable.io starts ~$2,500/yr for 65 assets. OpenVAS covers the gap at near-zero tooling cost for budget-sensitive situations.' },
 };
 
 const MA_HEADCOUNT = {
@@ -105,6 +154,7 @@ const MA_ANS_OPTS = [
   { value:'yes',     label:'Yes',     color:'#15803d', bg:'#f0fdf4', border:'#86efac' },
   { value:'partial', label:'Partial', color:'#b45309', bg:'#fffbeb', border:'#fde68a' },
   { value:'no',      label:'No',      color:'#dc2626', bg:'#fef2f2', border:'#fca5a5' },
+  { value:'na',      label:'N/A',     color:'#7c3aed', bg:'#faf5ff', border:'#ddd6fe' },
   { value:'unknown', label:'Unknown', color:'#6b7280', bg:'#f9fafb', border:'#e5e7eb' },
 ];
 
@@ -116,6 +166,7 @@ const MA_VALUE_BANDS  = ['<$1M','$1M–$10M','$10M–$50M','$50M–$250M','$250M
 
 let maState = {
   view:'list', stepIdx:0, editId:null, list:[], listLoaded:false, saving:false,
+  detailTab:'summary', expandedFindings:{},
   framing:{ target_name:'', deal_type:'', target_industry:'', target_employee_band:'',
             deal_value_band:'', risk_tolerance:'moderate', assessor:'', assessed_at:'',
             data_sources:[], include_ai_screen:false, include_insurance_review:false },
@@ -158,6 +209,7 @@ function maCalcScore(answers, framing) {
     for (const q of cat.questions) {
       if (q.contextOnly) continue;
       if (q.conditional && answers[q.conditional.questionId] !== q.conditional.value) continue;
+      if (answers[q.id] === 'na') continue; // N/A excluded from scoring denominator
       const val = { yes:1, partial:0.5 }[answers[q.id]||'unknown'] || 0;
       cw += q.weight; cs += q.weight * val;
     }
@@ -183,7 +235,7 @@ function maGetDealBreakers(answers, framing) {
       if (!q.dealBreaker) continue;
       if (q.conditional && answers[q.conditional.questionId] !== q.conditional.value) continue;
       const ans = answers[q.id];
-      if (!ans || ans === 'yes') continue;
+      if (!ans || ans === 'yes' || ans === 'na') continue;
       const applies = q.dealBreaker === 'all' ||
         (q.dealBreaker === 'conservative' && tol === 'conservative') ||
         (q.dealBreaker === 'moderate' && tol !== 'aggressive');
@@ -194,36 +246,47 @@ function maGetDealBreakers(answers, framing) {
 }
 
 function maCalcCosts(answers, framing) {
-  const band = framing?.target_employee_band || '50-250';
-  const labor = MA_LABOR_COSTS[band] || MA_LABOR_COSTS['50-250'];
-  const hc    = MA_HEADCOUNT[band]   || MA_HEADCOUNT['50-250'];
-  const result = { preClose:{ low:0, high:0, items:[] }, year1:{ low:0, high:0, items:[] }, strategic:{ low:0, high:0, items:[] } };
+  const band        = framing?.target_employee_band || '50-250';
+  const labor       = MA_LABOR_COSTS[band] || MA_LABOR_COSTS['50-250'];
+  const hc          = MA_HEADCOUNT[band]   || MA_HEADCOUNT['50-250'];
+  const toolExcl    = answers?._tooling_excludes || {};
+  const mkBucket    = () => ({ laborLow:0, laborHigh:0, toolLow:0, toolHigh:0, items:[] });
+  const result      = { preClose:mkBucket(), year1:mkBucket(), strategic:mkBucket() };
   for (const cat of _maAllCats(framing)) {
     for (const q of cat.questions) {
       if (q.contextOnly || !q.costBand || !q.priority) continue;
       if (q.conditional && answers[q.conditional.questionId] !== q.conditional.value) continue;
       const ans = answers[q.id] || 'unknown';
-      if (ans === 'yes') continue;
+      if (ans === 'yes' || ans === 'na') continue;
       const lb = labor[q.costBand] || labor['Low'];
       const tool = MA_TOOLING[q.id];
-      let tLow = 0, tHigh = 0, toolName = null;
+      let tLow = 0, tHigh = 0, toolName = null, toolExcluded = false;
       if (tool) {
-        if (tool.perUserYear)      { tLow = tool.perUserYear[0]*hc.users;         tHigh = tool.perUserYear[1]*hc.users;         }
-        else if (tool.perEndpointYear) { tLow = tool.perEndpointYear[0]*hc.endpoints; tHigh = tool.perEndpointYear[1]*hc.endpoints; }
-        else if (tool.fixedYear)   { tLow = tool.fixedYear[0];                    tHigh = tool.fixedYear[1];                    }
         toolName = tool.name;
+        if (toolExcl[q.id]) {
+          toolExcluded = true;
+        } else {
+          if (tool.perUserYear)          { tLow = tool.perUserYear[0]*hc.users;         tHigh = tool.perUserYear[1]*hc.users;         }
+          else if (tool.perEndpointYear) { tLow = tool.perEndpointYear[0]*hc.endpoints; tHigh = tool.perEndpointYear[1]*hc.endpoints; }
+          else if (tool.fixedYear)       { tLow = tool.fixedYear[0];                    tHigh = tool.fixedYear[1];                    }
+        }
       }
-      const iLow = lb[0]+tLow, iHigh = lb[1]+tHigh;
       const bucket = ans === 'partial' ? 'year1' : (q.priority || 'year1');
       const dest = result[bucket] || result.year1;
-      dest.low += iLow; dest.high += iHigh;
+      dest.laborLow += lb[0]; dest.laborHigh += lb[1];
+      dest.toolLow  += tLow;  dest.toolHigh  += tHigh;
       dest.items.push({ id:q.id, text:q.text, category:cat.label, answer:ans,
-        laborLow:lb[0], laborHigh:lb[1], toolName, toolLow:tLow, toolHigh:tHigh, low:iLow, high:iHigh, priority:bucket });
+        laborLow:lb[0], laborHigh:lb[1], toolName, toolLow:tLow, toolHigh:tHigh,
+        toolExcluded, low:lb[0]+tLow, high:lb[1]+tHigh, priority:bucket });
     }
   }
-  const total = { low: result.preClose.low+result.year1.low+result.strategic.low,
-                  high:result.preClose.high+result.year1.high+result.strategic.high };
-  return { ...result, total };
+  const sumLaborLow  = result.preClose.laborLow  + result.year1.laborLow  + result.strategic.laborLow;
+  const sumLaborHigh = result.preClose.laborHigh + result.year1.laborHigh + result.strategic.laborHigh;
+  const sumToolLow   = result.preClose.toolLow   + result.year1.toolLow   + result.strategic.toolLow;
+  const sumToolHigh  = result.preClose.toolHigh  + result.year1.toolHigh  + result.strategic.toolHigh;
+  const total = { laborLow:sumLaborLow, laborHigh:sumLaborHigh, toolLow:sumToolLow, toolHigh:sumToolHigh,
+                  low:sumLaborLow+sumToolLow, high:sumLaborHigh+sumToolHigh };
+  return { ...result, total, hc };
 }
 
 function maGetFindings(answers, framing) {
@@ -234,8 +297,8 @@ function maGetFindings(answers, framing) {
       if (q.contextOnly) continue;
       if (q.conditional && answers[q.conditional.questionId] !== q.conditional.value) continue;
       const ans = answers[q.id];
-      if (!ans || ans === 'yes') continue;
-      f.push({ id:q.id, text:q.text, category:cat.label, catColor:cat.color, answer:ans, weight:q.weight, priority:q.priority, isDealer:!!q.dealBreaker });
+      if (!ans || ans === 'yes' || ans === 'na') continue;
+      f.push({ id:q.id, text:q.text, note:q.note||'', category:cat.label, catColor:cat.color, answer:ans, weight:q.weight, priority:q.priority, isDealer:!!q.dealBreaker });
     }
   }
   return f.sort((a,b)=> a.isDealer!==b.isDealer ? (a.isDealer?-1:1) : b.weight-a.weight || (pOrd[a.priority]??3)-(pOrd[b.priority]??3));
@@ -448,7 +511,6 @@ function _renderMAQuestion(q, answers) {
   if (q.conditional && answers[q.conditional.questionId] !== q.conditional.value) return '';
   const ans = answers[q.id] || '';
   const indent = q.conditional ? 'margin:6px 0 6px 20px;padding-left:12px;border-left:3px solid #e2e8f0' : 'margin:8px 0';
-  const prioCol = { preclose:'#dc2626', year1:'#b45309', strategic:'#6b7280' }[q.priority] || '';
   return `
   <div style="${indent}">
     <div style="font-size:${q.conditional?'11px':'12px'};font-weight:${q.conditional?'600':'700'};color:${q.conditional?'var(--muted)':'var(--text)'}">
@@ -457,6 +519,7 @@ function _renderMAQuestion(q, answers) {
     </div>
     ${!q.contextOnly && q.priority === 'preclose' ? `<div style="font-size:9px;color:#dc2626;font-weight:700;margin-top:2px">PRE-CLOSE priority</div>` : ''}
     ${q.contextOnly ? '<div style="font-size:10px;color:var(--muted);margin-top:2px">Context only — not scored. Calibrates findings for regulated data environments.</div>' : ''}
+    ${q.note ? `<div style="font-size:10px;color:#5a6a8a;margin-top:4px;line-height:1.5;padding:5px 8px;background:#f8fafc;border-radius:5px;border-left:2px solid #cbd5e1">ℹ ${escH(q.note)}</div>` : ''}
     ${!q.contextOnly ? `
     <div style="display:flex;gap:6px;margin-top:7px;flex-wrap:wrap">
       ${MA_ANS_OPTS.map(opt=>`
@@ -474,22 +537,29 @@ function _renderMAQuestion(q, answers) {
 function _renderMADetail() {
   const a = maState.currentAssessment;
   if (!a) return '<div class="card" style="padding:2rem;color:var(--muted)">Assessment not found.</div>';
-  const fr = a.framing || {};
-  const ans = a.answers || {};
+  const fr   = a.framing || {};
+  const ans  = a.answers || {};
   const { score, catScores, rating, recommendation, ratingColor, allCats } = maCalcScore(ans, fr);
   const dealBreakers = maGetDealBreakers(ans, fr);
-  const costs = maCalcCosts(ans, fr);
-  const findings = maGetFindings(ans, fr);
-  const sCol = score>=75?'#15803d':score>=50?'#b45309':'#dc2626';
-  const tolLabel = { conservative:'Conservative', moderate:'Moderate', aggressive:'Aggressive' }[fr.risk_tolerance] || fr.risk_tolerance || '';
-  const dealMidMap = { '<$1M':500000,'$1M–$10M':5500000,'$10M–$50M':30000000,'$50M–$250M':150000000,'$250M+':300000000 };
-  const dealMid = fr.deal_value_band ? dealMidMap[fr.deal_value_band] : null;
-  const cyberFactor = (dealMid && costs.total.low)
-    ? { lo:((costs.total.low/dealMid)*100).toFixed(1), hi:((costs.total.high/dealMid)*100).toFixed(1) }
-    : null;
+  const costs        = maCalcCosts(ans, fr);
+  const findings     = maGetFindings(ans, fr);
+  const sCol         = score>=75?'#15803d':score>=50?'#b45309':'#dc2626';
+  const tolLabel     = { conservative:'Conservative', moderate:'Moderate', aggressive:'Aggressive' }[fr.risk_tolerance] || fr.risk_tolerance || '';
   const allCostItems = [...costs.preClose.items,...costs.year1.items,...costs.strategic.items];
-  const pOrd = { preclose:'Pre-Close', year1:'Year 1', strategic:'Strategic (Yr 2+)' };
-  const pCol = { preclose:'#dc2626', year1:'#b45309', strategic:'#6b7280' };
+  const tab          = maState.detailTab || 'summary';
+
+  const tabs = [
+    { id:'summary',  label:`Summary` },
+    { id:'findings', label:`Findings (${findings.length})` },
+    { id:'poam',     label:'POAM' },
+    { id:'pricing',  label:'Cost Assumptions' },
+  ];
+
+  let tabBody = '';
+  if (tab === 'summary')  tabBody = _renderMATabSummary(a, fr, ans, score, sCol, catScores, allCats, costs, dealBreakers, tolLabel, ratingColor, rating, recommendation);
+  if (tab === 'findings') tabBody = _renderMATabFindings(findings, a);
+  if (tab === 'poam')     tabBody = _renderMAPoam(a, findings, allCostItems);
+  if (tab === 'pricing')  tabBody = _renderMATabPricing(costs, fr, ans);
 
   return `
   ${renderTierBanner()}
@@ -503,13 +573,12 @@ function _renderMADetail() {
     </div>
   </div>
 
-  <!-- Deal header -->
   <div class="card" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;margin-bottom:1rem">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
       <div>
         <div style="font-size:20px;font-weight:800">${escH(fr.target_name||'Unnamed Target')}</div>
         <div style="font-size:12px;opacity:0.75;margin-top:4px">${[fr.deal_type,fr.target_industry,fr.deal_value_band].filter(Boolean).map(escH).join(' · ')}</div>
-        <div style="font-size:11px;opacity:0.55;margin-top:2px">Assessed by ${escH(fr.assessor||'—')} · ${a.assessed_at||'no date'}</div>
+        <div style="font-size:11px;opacity:0.55;margin-top:2px">Assessed by ${escH(fr.assessor||'—')} · ${a.assessed_at||'no date'} · ${escH(fr.target_employee_band||'?')} employees</div>
       </div>
       <div style="display:flex;gap:14px;align-items:flex-start">
         <div style="text-align:center">
@@ -528,7 +597,7 @@ function _renderMADetail() {
   ${dealBreakers.length ? `
   <div class="card" style="border-left:4px solid #dc2626;background:#fef2f2;margin-bottom:1rem">
     <div style="font-size:13px;font-weight:700;color:#b91c1c;margin-bottom:6px">⚠️ Deal-Breaker Flags (${dealBreakers.length})</div>
-    <div style="font-size:11px;color:#7f1d1d;margin-bottom:10px">Require resolution before deal close regardless of overall score. Review with legal and deal team.</div>
+    <div style="font-size:11px;color:#7f1d1d;margin-bottom:10px">Require resolution before deal close regardless of overall score.</div>
     ${dealBreakers.map(f=>`
       <div style="display:flex;gap:8px;padding:8px 0;border-top:1px solid #fca5a5">
         <span style="color:#dc2626;flex-shrink:0">●</span>
@@ -542,12 +611,27 @@ function _renderMADetail() {
     <div style="font-size:12px;font-weight:700;color:#15803d">✓ No deal-breaker flags triggered at ${tolLabel} tolerance</div>
   </div>` : ''}
 
+  <div class="view-tabs" style="margin-bottom:1rem">
+    ${tabs.map(t=>`<div class="view-tab${tab===t.id?' active':''}" onclick="maSetDetailTab('${t.id}')">${t.label}</div>`).join('')}
+  </div>
+
+  ${tabBody}
+  <div id="maAddEntityContainer"></div>`;
+}
+
+function _renderMATabSummary(a, fr, ans, score, sCol, catScores, allCats, costs, dealBreakers, tolLabel, ratingColor, rating, recommendation) {
+  const dealMidMap = { '<$1M':500000,'$1M–$10M':5500000,'$10M–$50M':30000000,'$50M–$250M':150000000,'$250M+':300000000 };
+  const dealMid    = fr.deal_value_band ? dealMidMap[fr.deal_value_band] : null;
+  const cyberFactor = (dealMid && costs.total.low)
+    ? { lo:((costs.total.low/dealMid)*100).toFixed(1), hi:((costs.total.high/dealMid)*100).toFixed(1) }
+    : null;
+  return `
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
     <div class="card">
       <div class="card-title">Category Scores</div>
       ${allCats.map(cat=>{
         const s = catScores[cat.id];
-        if (s === null) return '';
+        if (s === null || s === undefined) return '';
         const col = s>=75?'#15803d':s>=50?'#b45309':'#dc2626';
         return `<div style="margin-bottom:10px">
           <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-bottom:3px">
@@ -561,93 +645,140 @@ function _renderMADetail() {
     </div>
     <div class="card">
       <div class="card-title">Cost to Remediate</div>
-      <div style="font-size:10px;color:var(--muted);margin-bottom:10px">Labor (one-time) + recommended tooling (Year 1 annualised). Scaled to ${escH(fr.target_employee_band||'selected')} employee band.</div>
-      ${[['Pre-Close',costs.preClose,'#dc2626','#fef2f2'],['Year 1 Post-Close',costs.year1,'#b45309','#fffbeb'],['Strategic (Year 2+)',costs.strategic,'#6b7280','#f9fafb']].map(([lbl,bkt,col,bg])=>
-        bkt.items.length === 0 ? '' : `
-        <div style="padding:8px 10px;background:${bg};border-radius:6px;margin-bottom:6px">
-          <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:${col}">
-            <span>${lbl}</span><span>${_maCostRange(bkt.low,bkt.high)}</span>
-          </div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px">${bkt.items.length} item${bkt.items.length!==1?'s':''}</div>
-        </div>`).join('')}
-      <div style="border-top:2px solid var(--border);margin:10px 0 8px"></div>
-      <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800;color:var(--text)">
-        <span>Total estimate</span><span>${_maCostRange(costs.total.low,costs.total.high)}</span>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:10px">Scaled to ${escH(fr.target_employee_band||'selected')} employee band (${costs.hc?.users||'?'} users / ${costs.hc?.endpoints||'?'} endpoints).</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;font-size:11px">
+        ${[['Pre-Close',costs.preClose,'#dc2626','#fef2f2'],['Year 1',costs.year1,'#b45309','#fffbeb'],['Strategic',costs.strategic,'#6b7280','#f9fafb']].map(([lbl,bkt,col,bg])=>
+          !bkt.items.length ? '' : `
+          <div style="grid-column:1/-1;padding:8px 10px;background:${bg};border-radius:6px;border-left:3px solid ${col}">
+            <div style="font-size:10px;font-weight:700;color:${col};margin-bottom:4px">${lbl} (${bkt.items.length} item${bkt.items.length!==1?'s':''})</div>
+            <div style="display:flex;justify-content:space-between">
+              <div>
+                <div style="font-size:9px;color:var(--muted)">One-time</div>
+                <div style="font-size:11px;font-weight:700;color:${col}">${_maCostRange(bkt.laborLow,bkt.laborHigh)}</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:9px;color:var(--muted)">Annual licensing</div>
+                <div style="font-size:11px;font-weight:700;color:${col}">${bkt.toolLow > 0 ? _maCostRange(bkt.toolLow,bkt.toolHigh)+'/yr' : '—'}</div>
+              </div>
+            </div>
+          </div>`).join('')}
+      </div>
+      <div style="border-top:2px solid var(--border);padding-top:10px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px">
+          <span style="color:var(--muted)">Total one-time implementation</span>
+          <span style="font-weight:700">${_maCostRange(costs.total.laborLow,costs.total.laborHigh)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:8px">
+          <span style="color:var(--muted)">Total annual licensing</span>
+          <span style="font-weight:700">${costs.total.toolLow > 0 ? _maCostRange(costs.total.toolLow,costs.total.toolHigh)+'/yr' : '—'}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800;color:var(--text);padding-top:6px;border-top:1px solid var(--border)">
+          <span>Total (Year 1 all-in)</span>
+          <span>${_maCostRange(costs.total.low,costs.total.high)}</span>
+        </div>
       </div>
       ${cyberFactor ? `
-      <div style="margin-top:8px;padding:8px 10px;background:#e0f2fe;border-radius:6px">
+      <div style="margin-top:10px;padding:8px 10px;background:#e0f2fe;border-radius:6px">
         <div style="font-size:10px;font-weight:700;color:#0369a1">Cyber Discount Factor</div>
-        <div style="font-size:14px;font-weight:800;color:#0369a1">${cyberFactor.lo}% – ${cyberFactor.hi}% of ${escH(fr.deal_value_band)}</div>
-        <div style="font-size:9px;color:#0369a1;opacity:0.7">Remediation cost as % of estimated deal value</div>
+        <div style="font-size:14px;font-weight:800;color:#0369a1">${cyberFactor.lo}% – ${cyberFactor.hi}% of deal value</div>
+        <div style="font-size:9px;color:#0369a1;opacity:0.7">Year-1 all-in remediation as % of ${escH(fr.deal_value_band)}</div>
       </div>` : ''}
     </div>
-  </div>
+  </div>`;
+}
 
-  ${findings.length ? `
-  <div class="card" style="margin-bottom:1rem">
-    <div class="card-title">Findings (${findings.length})</div>
+function _renderMATabFindings(findings, a) {
+  if (!findings.length) return `<div class="card" style="text-align:center;padding:2rem;color:var(--muted)">No findings — all answered questions passed.</div>`;
+  const pOrd = { preclose:'Pre-Close', year1:'Year 1', strategic:'Strategic (Yr 2+)' };
+  const expanded = maState.expandedFindings || {};
+  return `
+  <div class="card" style="padding:0;margin-bottom:1rem">
+    <div style="display:flex;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:700">${findings.length} Findings</div>
+      <button class="btn btn-outline btn-sm" onclick="maFindingsSave('${a.id}')">Save Observations</button>
+    </div>
     ${findings.map(f=>{
       const wLbl = f.weight>=3?'High':f.weight>=2?'Medium':'Low';
       const wCol = f.weight>=3?'#dc2626':f.weight>=2?'#b45309':'#6b7280';
+      const isOpen = !!expanded[f.id];
+      const p = (maState.poamItems||{})[f.id] || {};
       return `
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9">
-        <div style="flex-shrink:0;margin-top:2px">
-          ${f.isDealer?`<span style="font-size:9px;font-weight:800;color:#dc2626;padding:2px 6px;background:#fef2f2;border-radius:4px;border:1px solid #fca5a5">DEAL-BREAKER</span>`:
-            `<span style="font-size:9px;font-weight:700;color:${wCol};padding:2px 6px;background:${wCol}12;border-radius:4px">${wLbl}</span>`}
+      <div style="border-bottom:1px solid #f1f5f9">
+        <div onclick="maToggleFinding('${f.id}')" style="display:flex;align-items:flex-start;gap:10px;padding:10px 16px;cursor:pointer;${isOpen?'background:#f8fafc':''}">
+          <div style="flex-shrink:0;margin-top:2px">
+            ${f.isDealer
+              ? `<span style="font-size:9px;font-weight:800;color:#dc2626;padding:2px 6px;background:#fef2f2;border-radius:4px;border:1px solid #fca5a5">DEAL-BREAKER</span>`
+              : `<span style="font-size:9px;font-weight:700;color:${wCol};padding:2px 6px;background:${wCol}12;border-radius:4px">${wLbl}</span>`}
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:11px;font-weight:700;color:var(--text)">${escH(f.text)}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">${escH(f.category)} · Answer: <strong>${f.answer}</strong> · ${pOrd[f.priority]||'—'}</div>
+          </div>
+          <span style="color:var(--muted);font-size:11px;flex-shrink:0;margin-left:6px">${isOpen?'▲':'▼'}</span>
         </div>
-        <div style="flex:1">
-          <div style="font-size:11px;font-weight:700">${escH(f.text)}</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px">${escH(f.category)} · ${f.answer} · ${pOrd[f.priority]||''}</div>
-        </div>
+        ${isOpen ? `
+        <div style="padding:12px 16px 16px;background:#f8fafc;border-top:1px solid #e2e8f0">
+          ${f.note ? `
+          <div style="margin-bottom:12px;padding:8px 12px;background:#fff;border-radius:6px;border-left:3px solid #94a3b8">
+            <div style="font-size:10px;font-weight:700;color:#475569;margin-bottom:3px">ℹ WHY THIS MATTERS</div>
+            <div style="font-size:11px;color:#334155;line-height:1.6">${escH(f.note)}</div>
+          </div>` : ''}
+          <div style="margin-bottom:10px">
+            <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px">ASSESSOR OBSERVATION</div>
+            <textarea placeholder="What did you find? Note specific evidence, documents reviewed, or gaps confirmed…"
+              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit;resize:vertical;min-height:70px"
+              onchange="maPoamField('${f.id}','observation',this.value)">${escH(p.observation||'')}</textarea>
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px">RECOMMENDED ACTION</div>
+            <textarea placeholder="What should the acquirer or target do to remediate this gap?"
+              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit;resize:vertical;min-height:55px"
+              onchange="maPoamField('${f.id}','recommendation',this.value)">${escH(p.recommendation||'')}</textarea>
+          </div>
+        </div>` : ''}
       </div>`;
     }).join('')}
-  </div>` : ''}
-
-  <!-- POAM -->
-  ${_renderMAPoam(a, findings, allCostItems)}
-
-  <!-- Tooling breakdown -->
-  ${_renderMAToolingBreakdown(allCostItems)}
-
-  <div id="maAddEntityContainer"></div>`;
+  </div>`;
 }
 
 function _renderMAPoam(a, findings, allCostItems) {
   const rows = findings.filter(f => f.priority);
-  if (!rows.length) return '';
+  if (!rows.length) return `<div class="card" style="text-align:center;padding:2rem;color:var(--muted)">No findings to track.</div>`;
   const pOrd = { preclose:'Pre-Close', year1:'Year 1', strategic:'Strategic (Yr 2+)' };
   const pCol = { preclose:'#dc2626', year1:'#b45309', strategic:'#6b7280' };
+  const DECISIONS = ['Remediate','Accept Risk','Transfer (Insurance)','Defer','Exclude'];
   return `
   <div class="card" style="margin-bottom:1rem">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
       <div class="card-title" style="margin:0">Plan of Action &amp; Milestones (POAM)</div>
       <button class="btn btn-outline btn-sm" onclick="maPoamSave('${a.id}')">Save POAM</button>
     </div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:10px">Decisions: <strong>Remediate</strong> = fix it. <strong>Accept Risk</strong> = document and own it. <strong>Transfer</strong> = insure it. <strong>Defer</strong> = post-close Year 2+. <strong>Exclude</strong> = remove from report scope.</div>
     <div style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:11px">
         <thead>
           <tr style="background:#f8fafc">
-            <th style="text-align:left;padding:6px 8px;border-bottom:2px solid var(--border);font-weight:700;min-width:180px">Finding</th>
-            <th style="text-align:left;padding:6px 8px;border-bottom:2px solid var(--border);font-weight:700">Category</th>
+            <th style="text-align:left;padding:6px 8px;border-bottom:2px solid var(--border);font-weight:700;min-width:200px">Finding</th>
             <th style="text-align:left;padding:6px 8px;border-bottom:2px solid var(--border);font-weight:700">Priority</th>
             <th style="text-align:left;padding:6px 8px;border-bottom:2px solid var(--border);font-weight:700;min-width:110px">Assigned To</th>
             <th style="text-align:left;padding:6px 8px;border-bottom:2px solid var(--border);font-weight:700;min-width:100px">Target Date</th>
-            <th style="text-align:left;padding:6px 8px;border-bottom:2px solid var(--border);font-weight:700">Decision</th>
+            <th style="text-align:left;padding:6px 8px;border-bottom:2px solid var(--border);font-weight:700;min-width:150px">Decision</th>
             <th style="text-align:left;padding:6px 8px;border-bottom:2px solid var(--border);font-weight:700">Cost Est.</th>
           </tr>
         </thead>
         <tbody>
           ${rows.map((f,i)=>{
-            const p = (maState.poamItems||{})[f.id] || {};
-            const ci = allCostItems.find(x => x.id === f.id);
+            const p   = (maState.poamItems||{})[f.id] || {};
+            const ci  = allCostItems.find(x => x.id === f.id);
             const col = f.weight>=3?'#dc2626':f.weight>=2?'#b45309':'#6b7280';
+            const decCol = { 'Remediate':'#15803d','Accept Risk':'#b45309','Transfer (Insurance)':'#0369a1','Defer':'#6b7280','Exclude':'#9ca3af' }[p.decision] || '';
             return `
             <tr style="border-bottom:1px solid #f1f5f9;${i%2?'background:#fafafa':''}">
               <td style="padding:6px 8px;vertical-align:top">
                 <div style="font-weight:600;color:${f.isDealer?'#dc2626':col}">${f.isDealer?'⚠ ':''}${escH(f.text)}</div>
                 <div style="color:var(--muted);font-size:10px">${f.id} · ${f.answer}</div>
+                ${p.observation ? `<div style="font-size:10px;color:#334155;margin-top:3px;font-style:italic">"${escH(p.observation.substring(0,120))}${p.observation.length>120?'…':''}"</div>` : ''}
               </td>
-              <td style="padding:6px 8px;vertical-align:top;color:var(--muted)">${escH(f.category)}</td>
               <td style="padding:6px 8px;vertical-align:top">
                 <span style="font-size:10px;font-weight:700;color:${pCol[f.priority]||'#6b7280'};padding:2px 7px;background:${(pCol[f.priority]||'#6b7280')}12;border-radius:4px">${pOrd[f.priority]||''}</span>
               </td>
@@ -662,14 +793,16 @@ function _renderMAPoam(a, findings, allCostItems) {
                   onchange="maPoamField('${f.id}','targetDate',this.value)"/>
               </td>
               <td style="padding:6px 8px;vertical-align:top">
-                <select style="width:100%;padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px"
+                <select style="width:100%;padding:3px 6px;border:1.5px solid ${decCol||'var(--border)'};border-radius:4px;font-size:11px;color:${decCol||'inherit'};font-weight:${decCol?'700':'400'}"
                   onchange="maPoamField('${f.id}','decision',this.value)">
-                  <option value="">—</option>
-                  ${['Remediate','Accept','Transfer','Defer'].map(d=>`<option value="${d}" ${p.decision===d?'selected':''}>${d}</option>`).join('')}
+                  <option value="">— Select —</option>
+                  ${DECISIONS.map(d=>`<option value="${d}" ${p.decision===d?'selected':''}>${d}</option>`).join('')}
                 </select>
               </td>
-              <td style="padding:6px 8px;vertical-align:top;font-weight:700;color:var(--muted)">
-                ${ci ? _maCostRange(ci.low,ci.high) : '—'}
+              <td style="padding:6px 8px;vertical-align:top">
+                ${ci ? `
+                <div style="font-size:10px;font-weight:700">${_maCostRange(ci.laborLow,ci.laborHigh)}</div>
+                ${ci.toolLow > 0 && !ci.toolExcluded ? `<div style="font-size:9px;color:#0369a1">+${_maCostRange(ci.toolLow,ci.toolHigh)}/yr</div>` : ''}` : '—'}
               </td>
             </tr>`;
           }).join('')}
@@ -679,31 +812,123 @@ function _renderMAPoam(a, findings, allCostItems) {
   </div>`;
 }
 
-function _renderMAToolingBreakdown(allCostItems) {
-  const withTool = allCostItems.filter(i => i.toolName && i.toolLow > 0);
-  if (!withTool.length) return '';
+function _renderMATabPricing(costs, fr, ans) {
+  const band     = fr.target_employee_band || '50-250';
+  const hc       = MA_HEADCOUNT[band] || MA_HEADCOUNT['50-250'];
+  const excludes = ans._tooling_excludes || {};
+  const a        = maState.currentAssessment;
+
+  const allItems = [...costs.preClose.items,...costs.year1.items,...costs.strategic.items];
+  const toolRows = Object.entries(MA_TOOLING).map(([qId, tool]) => {
+    const matchItem = allItems.find(i => i.id === qId);
+    const excluded  = !!excludes[qId];
+    let unitModel = '', unitCount = 0, unitAnnual = 0, unitHigh = 0;
+    if (tool.perUserYear)          { unitModel = `$${tool.perUserYear[0]}–${tool.perUserYear[1]}/user/yr`;   unitCount = hc.users;     unitAnnual = tool.perUserYear[0]*hc.users;    unitHigh = tool.perUserYear[1]*hc.users; }
+    else if (tool.perEndpointYear) { unitModel = `$${tool.perEndpointYear[0]}–${tool.perEndpointYear[1]}/endpoint/yr`; unitCount = hc.endpoints; unitAnnual = tool.perEndpointYear[0]*hc.endpoints; unitHigh = tool.perEndpointYear[1]*hc.endpoints; }
+    else if (tool.fixedYear)       { unitModel = `fixed/yr`; unitCount = 1; unitAnnual = tool.fixedYear[0]; unitHigh = tool.fixedYear[1]; }
+    const applicable = !!matchItem;
+    return { qId, tool, excluded, unitModel, unitCount, unitAnnual, unitHigh, applicable };
+  });
+
   return `
   <div class="card" style="margin-bottom:1rem">
-    <div class="card-title">Tooling Cost Breakdown (Year 1 annualised)</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Licensing estimates scaled to target employee band. Labor/implementation shown separately as one-time cost.</div>
-    ${withTool.map(i=>`
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f1f5f9;font-size:11px">
-        <div>
-          <div style="font-weight:700">${escH(i.toolName)}</div>
-          <div style="color:var(--muted);font-size:10px">${i.id} · ${escH(i.category)}</div>
-        </div>
-        <div style="text-align:right;flex-shrink:0;margin-left:12px">
-          <div style="font-weight:700">Tool: ${_maCostRange(i.toolLow,i.toolHigh)}/yr</div>
-          <div style="color:var(--muted)">Labor: ${_maCostRange(i.laborLow,i.laborHigh)}</div>
-        </div>
-      </div>`).join('')}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <div class="card-title" style="margin:0">Cost Assumptions — Tooling</div>
+      <button class="btn btn-outline btn-sm" onclick="maPricingSave('${a?.id||''}')">Save Assumptions</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px">
+      Employee band: <strong>${escH(band)}</strong> · ${hc.users} users · ${hc.endpoints} endpoints.
+      Toggle off tools where manual controls are sufficient or the tool is already in place. Excluded tools remove the licensing cost from the estimate (labor cost remains).
+    </div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead>
+          <tr style="background:#f8fafc">
+            <th style="text-align:left;padding:6px 8px;border-bottom:2px solid var(--border);font-weight:700">Tool</th>
+            <th style="text-align:left;padding:6px 8px;border-bottom:2px solid var(--border);font-weight:700">Pricing model</th>
+            <th style="text-align:right;padding:6px 8px;border-bottom:2px solid var(--border);font-weight:700">Est. annual</th>
+            <th style="text-align:center;padding:6px 8px;border-bottom:2px solid var(--border);font-weight:700">Applies</th>
+            <th style="text-align:center;padding:6px 8px;border-bottom:2px solid var(--border);font-weight:700">Include</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${toolRows.map((r,i)=>`
+          <tr style="border-bottom:1px solid #f1f5f9;${i%2?'background:#fafafa':''}${!r.applicable?' opacity:0.45':''}">
+            <td style="padding:7px 8px;vertical-align:top">
+              <div style="font-weight:700;${r.excluded?'text-decoration:line-through;color:var(--muted)':''}">${escH(r.tool.name)}</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:2px">${escH(r.qId)} · ${r.tool.note ? escH(r.tool.note) : ''}</div>
+              ${r.tool.manualAlt && !r.excluded ? `<div style="font-size:10px;color:#0369a1;margin-top:4px;padding:4px 7px;background:#e0f2fe;border-radius:4px">${escH(r.tool.manualAlt)}</div>` : ''}
+            </td>
+            <td style="padding:7px 8px;vertical-align:top;color:var(--muted)">${r.unitModel}${r.unitCount>1?' × '+r.unitCount:''}</td>
+            <td style="padding:7px 8px;vertical-align:top;text-align:right;font-weight:700;${r.excluded?'color:var(--muted);text-decoration:line-through':''}">
+              ${r.excluded ? _maCostRange(r.unitAnnual,r.unitHigh) : _maCostRange(r.unitAnnual,r.unitHigh)+'/yr'}
+            </td>
+            <td style="padding:7px 8px;vertical-align:top;text-align:center">
+              ${r.applicable
+                ? `<span style="font-size:10px;font-weight:700;color:#15803d;padding:2px 7px;background:#f0fdf4;border-radius:4px;border:1px solid #86efac">Gap found</span>`
+                : `<span style="font-size:10px;color:var(--muted)">Not triggered</span>`}
+            </td>
+            <td style="padding:7px 8px;vertical-align:top;text-align:center">
+              <label style="display:inline-flex;align-items:center;cursor:pointer">
+                <input type="checkbox" ${!r.excluded?'checked':''} onchange="maToggleTooling('${r.qId}',!this.checked)"
+                  style="width:15px;height:15px;cursor:pointer"/>
+              </label>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;padding:10px 12px;background:#fffbeb;border-radius:6px;border:1px solid #fde68a;font-size:11px;color:#92400e">
+      <strong>Note on PAM:</strong> Privileged Access Management gaps can be mitigated for SMB targets through operational controls — documented credential policy, a business-grade password manager (1Password/Keeper, ~$4/user/mo), and quarterly access reviews. If the target agrees to this approach and it is documented in the POAM, toggle off the PAM tooling cost above.
+    </div>
   </div>`;
 }
 
 // --- ACTIONS ---
 
+function maSetDetailTab(tab) {
+  maState.detailTab = tab;
+  document.getElementById('mainContent').innerHTML = renderMACDD();
+}
+
+function maToggleFinding(id) {
+  if (!maState.expandedFindings) maState.expandedFindings = {};
+  maState.expandedFindings[id] = !maState.expandedFindings[id];
+  document.getElementById('mainContent').innerHTML = renderMACDD();
+}
+
+function maToggleTooling(qId, exclude) {
+  const a = maState.currentAssessment;
+  if (!a) return;
+  if (!a.answers) a.answers = {};
+  if (!a.answers._tooling_excludes) a.answers._tooling_excludes = {};
+  if (exclude) a.answers._tooling_excludes[qId] = true;
+  else delete a.answers._tooling_excludes[qId];
+  document.getElementById('mainContent').innerHTML = renderMACDD();
+}
+
+async function maPricingSave(assessmentId) {
+  const a = maState.currentAssessment;
+  if (!a || !assessmentId) return;
+  const recalc = maCalcCosts(a.answers || {}, a.framing || {});
+  try {
+    await sbFetch(`ma_assessments?id=eq.${assessmentId}`, 'PATCH', {
+      answers: a.answers,
+      total_cost_low: recalc.total.low, total_cost_high: recalc.total.high,
+    });
+    const idx = maState.list.findIndex(x => x.id === assessmentId);
+    if (idx >= 0) { maState.list[idx].answers = a.answers; maState.list[idx].total_cost_low = recalc.total.low; maState.list[idx].total_cost_high = recalc.total.high; }
+    toast('Cost assumptions saved ✓', '#15803d');
+  } catch (e) { toast('Save failed', '#dc2626'); }
+}
+
+async function maFindingsSave(assessmentId) {
+  await maPoamSave(assessmentId);
+}
+
 function maNavToList() {
   maState.view = 'list'; maState.currentAssessment = null;
+  maState.detailTab = 'summary'; maState.expandedFindings = {};
   document.getElementById('mainContent').innerHTML = renderMACDD();
 }
 function maNavToStep(idx) { maState.stepIdx = idx; document.getElementById('mainContent').innerHTML = renderMACDD(); }
@@ -944,23 +1169,28 @@ async function maLoadList() {
 }
 
 // --- WINDOW EXPORTS ---
-window.renderMACDD        = renderMACDD;
-window.maNewAssessment    = maNewAssessment;
-window.maEditAssessment   = maEditAssessment;
-window.maViewAssessment   = maViewAssessment;
-window.maDeleteAssessment = maDeleteAssessment;
-window.maNavToList        = maNavToList;
-window.maNavToStep        = maNavToStep;
-window.maNext             = maNext;
-window.maPrev             = maPrev;
-window.maFramingSet       = maFramingSet;
-window.maToggleDataSource = maToggleDataSource;
-window.maToggleAddon      = maToggleAddon;
-window.maSetAnswer        = maSetAnswer;
-window.maSave             = maSave;
-window.maPoamField        = maPoamField;
-window.maPoamSave         = maPoamSave;
-window.maShowAddEntity    = maShowAddEntity;
-window.maConfirmAddEntity = maConfirmAddEntity;
-window.maCopyPrompt       = maCopyPrompt;
-window.maLoadList         = maLoadList;
+window.renderMACDD          = renderMACDD;
+window.maNewAssessment      = maNewAssessment;
+window.maEditAssessment     = maEditAssessment;
+window.maViewAssessment     = maViewAssessment;
+window.maDeleteAssessment   = maDeleteAssessment;
+window.maNavToList          = maNavToList;
+window.maNavToStep          = maNavToStep;
+window.maNext               = maNext;
+window.maPrev               = maPrev;
+window.maFramingSet         = maFramingSet;
+window.maToggleDataSource   = maToggleDataSource;
+window.maToggleAddon        = maToggleAddon;
+window.maSetAnswer          = maSetAnswer;
+window.maSave               = maSave;
+window.maPoamField          = maPoamField;
+window.maPoamSave           = maPoamSave;
+window.maFindingsSave       = maFindingsSave;
+window.maShowAddEntity      = maShowAddEntity;
+window.maConfirmAddEntity   = maConfirmAddEntity;
+window.maCopyPrompt         = maCopyPrompt;
+window.maLoadList           = maLoadList;
+window.maSetDetailTab       = maSetDetailTab;
+window.maToggleFinding      = maToggleFinding;
+window.maToggleTooling      = maToggleTooling;
+window.maPricingSave        = maPricingSave;
