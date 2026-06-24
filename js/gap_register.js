@@ -64,31 +64,43 @@ async function grLoad() {
 
 // ── GAP BUILDER ───────────────────────────────────────────────
 
+// Returns { rows, catalogMode }
+// catalogMode = true when no assessments exist — shows full pricing catalog instead of gaps only
 function grBuildGapList() {
-  // Extract gaps from each module
+  const hasCIS = !!grState.cisRun;
+  const hasIns = !!grState.insRun;
+  const hasTS  = !!(tsState?.answers && Object.keys(tsState.answers).length);
+  const hasAny = hasCIS || hasIns || hasTS;
+
+  const hc = rcGetHeadcount(currentOrg?.id);
+
+  // ── CATALOG MODE: no assessments — show every tool type with pricing ──────
+  if (!hasAny) {
+    const rows = [];
+    PS_ALL_TYPES.forEach(t => {
+      const ps   = (typeof psGetForType === 'function') ? psGetForType(t.value) : null;
+      const cost = (ps && hc.hasProfile) ? rcCalcAnnualCost(ps, hc) : null;
+      rows.push({ toolType:t.value, label:t.label, cisS:null, insS:null, tsS:null, ps, cost, hc, moduleCount:0, catalog:true });
+    });
+    // Sort: priced first, then alphabetical
+    rows.sort((a,b) => (!!b.ps - !!a.ps) || a.label.localeCompare(b.label));
+    return { rows, catalogMode: true };
+  }
+
+  // ── GAP MODE: assessments exist — show tool types flagged by at least one module ──
   const cisAnswers = grState.cisRun
     ? Object.fromEntries(Object.entries(grState.cisRun.answers || {}).filter(([k]) => !k.startsWith('_')))
     : {};
   const cisGoal = grState.cisRun ? (grState.cisRun.answers || {})._goal || null : null;
 
-  const { gaps: cisGaps } = grState.cisRun
-    ? rcExtractCISGaps(cisAnswers, cisGoal, grState.cisPoamItems)
-    : { gaps: [] };
+  const { gaps: cisGaps } = hasCIS ? rcExtractCISGaps(cisAnswers, cisGoal, grState.cisPoamItems) : { gaps: [] };
+  const { gaps: insGaps } = hasIns ? rcExtractInsGaps(grState.insRun.answers || {}) : { gaps: [] };
+  const { gaps: tsGaps  } = rcExtractTSGaps();
 
-  const { gaps: insGaps } = grState.insRun
-    ? rcExtractInsGaps(grState.insRun.answers || {})
-    : { gaps: [] };
-
-  const { gaps: tsGaps } = rcExtractTSGaps();
-
-  // Index by tool type
   const cisMap = Object.fromEntries(cisGaps.map(g => [g.toolType, g.sources]));
   const insMap = Object.fromEntries(insGaps.map(g => [g.toolType, g.sources]));
   const tsMap  = Object.fromEntries(tsGaps.map(g => [g.toolType, g.sources]));
 
-  const hc = rcGetHeadcount(currentOrg?.id);
-
-  // Walk all tool types in the catalog — show if flagged by at least one module
   const rows = [];
   PS_ALL_TYPES.forEach(t => {
     const cisS = cisMap[t.value] || null;
@@ -103,9 +115,8 @@ function grBuildGapList() {
     rows.push({ toolType:t.value, label:t.label, cisS, insS, tsS, ps, cost, hc, moduleCount });
   });
 
-  // Sort: most modules flagging first, then alphabetical
   rows.sort((a,b) => b.moduleCount - a.moduleCount || a.label.localeCompare(b.label));
-  return rows;
+  return { rows, catalogMode: false };
 }
 
 // ── RENDER ────────────────────────────────────────────────────
@@ -121,7 +132,7 @@ function renderGapRegister() {
     </div>`;
   }
 
-  const rows = grBuildGapList();
+  const { rows, catalogMode } = grBuildGapList();
   const hc   = rcGetHeadcount(currentOrg.id);
 
   const hasCIS = !!grState.cisRun;
@@ -144,7 +155,6 @@ function renderGapRegister() {
   }
 
   if (!rows.length) {
-    const noData = !hasCIS && !hasIns && !hasTS;
     return `${renderTierBanner()}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
       <div>
@@ -153,15 +163,9 @@ function renderGapRegister() {
       </div>
     </div>
     <div class="card" style="padding:2.5rem;text-align:center;color:var(--muted)">
-      <div style="font-size:2rem;margin-bottom:.5rem">${noData ? '📋' : '✅'}</div>
-      <div style="font-weight:700;color:var(--text);margin-bottom:.25rem">
-        ${noData ? 'No assessments recorded yet' : 'No gaps identified'}
-      </div>
-      <div style="font-size:12px">
-        ${noData
-          ? 'Run a CIS Controls, Insurance Readiness, or Technology Stack assessment to populate the gap register.'
-          : 'All assessed controls are met across CIS, Insurance, and Technology Stack.'}
-      </div>
+      <div style="font-size:2rem;margin-bottom:.5rem">✅</div>
+      <div style="font-weight:700;color:var(--text);margin-bottom:.25rem">No gaps identified</div>
+      <div style="font-size:12px">All assessed controls are met across CIS, Insurance, and Technology Stack.</div>
     </div>`;
   }
 
@@ -191,11 +195,15 @@ function renderGapRegister() {
     const tsBadge = r.tsS
       ? `<span title="${r.tsS.join(', ')}" style="font-size:9px;font-weight:700;padding:1px 6px;background:#fef3c7;color:#92400e;border-radius:3px;cursor:default">Tech Stack</span>`
       : '';
-    const badges = [cisBadge, insBadge, tsBadge].filter(Boolean).join(' ');
+    const badges = catalogMode
+      ? `<span style="font-size:9px;padding:1px 6px;background:#f1f5f9;color:var(--muted);border-radius:3px">Not assessed</span>`
+      : [cisBadge, insBadge, tsBadge].filter(Boolean).join(' ');
 
     // Source count note
     const totalSrcs = [...(r.cisS||[]), ...(r.insS||[]), ...(r.tsS||[])].length;
-    const srcNote = `${totalSrcs} gap${totalSrcs!==1?'s':''} · ${r.moduleCount} framework${r.moduleCount!==1?'s':''}`;
+    const srcNote = catalogMode
+      ? (r.ps ? 'In pricing schedule' : 'No pricing configured')
+      : `${totalSrcs} gap${totalSrcs!==1?'s':''} · ${r.moduleCount} framework${r.moduleCount!==1?'s':''}`;
 
     // Pricing
     let pricingCell = '';
@@ -234,7 +242,11 @@ function renderGapRegister() {
   <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.85rem;flex-wrap:wrap;gap:8px">
     <div>
       <div style="font-size:17px;font-weight:700">📋 Gap Register</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">${escH(currentOrg.name)} · ${rows.length} tool gap${rows.length!==1?'s':''} identified across frameworks</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">
+        ${escH(currentOrg.name)} · ${catalogMode
+          ? `full tool catalog — ${rows.filter(r=>r.ps).length} of ${rows.length} tools priced · run assessments to identify gaps`
+          : `${rows.length} tool gap${rows.length!==1?'s':''} identified across frameworks`}
+      </div>
       <div style="display:flex;gap:5px;flex-wrap:wrap">${srcChips}</div>
     </div>
     <button class="btn btn-outline btn-sm" onclick="grLoad()">↺ Refresh</button>
@@ -284,7 +296,9 @@ function renderGapRegister() {
           </tr>
           <tr style="background:#f8fafc">
             <td colspan="5" style="padding:4px 10px;font-size:10px;color:var(--muted)">
-              Hover over framework badges to see specific question / control IDs. Annual costs = monthly rate × 12. Headcount from Company Profile${hc.source==='band'?' (estimated from employee band)':''}.
+              ${catalogMode
+                ? `Full tool catalog — pricing from ${currentOrg.name} or inherited from parent MSP. Run CIS, Insurance, or Tech Stack assessments to identify which tools are gaps.`
+                : `Hover over framework badges to see specific question / control IDs. Annual costs = monthly rate × 12. Headcount from Company Profile${hc.source==='band'?' (estimated from employee band)':''}.`}
             </td>
           </tr>
         </tfoot>` : ''}
