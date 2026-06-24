@@ -59,6 +59,9 @@ async function grLoad() {
   grState.loaded  = true;
   if (activeNav === 'gap_register') {
     document.getElementById('mainContent').innerHTML = renderGapRegister();
+  } else if (activeNav === 'home') {
+    const el = document.getElementById('mainContent');
+    if (el) { el.innerHTML = renderHome(); drawHomeCharts(); }
   }
 }
 

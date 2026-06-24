@@ -309,6 +309,11 @@ function renderHome() {
     loadHomePortfolio();
   }
 
+  // Kick off gap data load if stale — grLoad() will re-render home when done
+  if (typeof grLoad === 'function' && (!grState.loaded || grState.orgId !== currentOrg.id)) {
+    grLoad();
+  }
+
   const h        = orgAssessments[currentOrg.id] || {};
   const isChild  = currentOrg.tier === 'child';
   const po       = homePortfolioState;
@@ -536,23 +541,77 @@ function _homeCisRadarChicklet(h) {
 }
 
 function _homeTopToolsChicklet() {
-  const tools = [
-    { rank:1, label:'EDR',                      sub:'Endpoint Detection & Response',  icon:'🛡️', toolType:'edr' },
-    { rank:2, label:'MDR — Identity',           sub:'Identity threat detection',       icon:'👤', toolType:'mdr_identity' },
-    { rank:3, label:'MDR — Endpoint',           sub:'Managed SOC for endpoints',       icon:'🔍', toolType:'mdr_device' },
-    { rank:4, label:'Email Security',           sub:'Gateway + authentication',        icon:'📧', toolType:'email' },
-    { rank:5, label:'Vulnerability Scanning',   sub:'External attack surface',         icon:'📡', toolType:'vuln_external' },
+  // Risk-priority ranked list of all tool types — first 5 missing ones are shown
+  const ALL_PRIORITY = [
+    { label:'EDR',                    sub:'Endpoint Detection & Response',  icon:'🛡️', toolType:'edr' },
+    { label:'MDR — Identity',         sub:'Identity threat detection',       icon:'👤', toolType:'mdr_identity' },
+    { label:'MDR — Endpoint',         sub:'Managed SOC for endpoints',       icon:'🔍', toolType:'mdr_device' },
+    { label:'Email Security',         sub:'Gateway + authentication',        icon:'📧', toolType:'email' },
+    { label:'Vulnerability Scanning', sub:'External attack surface',         icon:'📡', toolType:'vuln_external' },
+    { label:'Backup & Recovery',      sub:'3-2-1 backup strategy',           icon:'💾', toolType:'backup' },
+    { label:'MFA / Identity',         sub:'Multi-factor authentication',     icon:'🔐', toolType:'mfa' },
+    { label:'DNS Security',           sub:'Protective DNS filtering',        icon:'🌐', toolType:'dns' },
+    { label:'SIEM',                   sub:'Security event monitoring',       icon:'📊', toolType:'siem' },
+    { label:'Patch Management',       sub:'Automated patch deployment',      icon:'🔧', toolType:'patch' },
+    { label:'PAM',                    sub:'Privileged access management',    icon:'🛂', toolType:'pam' },
+    { label:'DLP',                    sub:'Data loss prevention',            icon:'🔒', toolType:'dlp' },
   ];
 
   const rankColors = ['#dc2626','#ea580c','#d97706','#2563eb','#7c3aed'];
 
-  const rows = tools.map((t, i) => {
+  // Loading state — grLoad() will re-render home when complete
+  if (grState.loading || !grState.loaded || grState.orgId !== currentOrg?.id) {
+    return `<div class="card" style="padding:0;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .9rem .5rem;border-bottom:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:700">🔧 Missing Tools</div>
+      </div>
+      <div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:12px">
+        <div class="spinner" style="border-color:rgba(21,33,104,0.2);border-top-color:var(--navy);width:20px;height:20px;margin:0 auto .6rem"></div>
+        Loading gap data…
+      </div>
+    </div>`;
+  }
+
+  const { rows: gapRows, catalogMode } = grBuildGapList();
+
+  // No assessments run yet
+  if (catalogMode) {
+    return `<div class="card" style="padding:0;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .9rem .5rem;border-bottom:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:700">🔧 Missing Tools</div>
+        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();setNav('gap_register')">Tool Gap Register →</button>
+      </div>
+      <div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:12px">
+        <div style="font-size:1.5rem;margin-bottom:.4rem">📋</div>
+        Run a CIS, Insurance, or Tech Stack assessment<br>to identify which tools are missing.
+      </div>
+    </div>`;
+  }
+
+  const gapTypes = new Set(gapRows.map(r => r.toolType));
+  const missing = ALL_PRIORITY.filter(t => gapTypes.has(t.toolType)).slice(0, 5);
+
+  // All priority tools are covered — great posture
+  if (!missing.length) {
+    return `<div class="card" style="padding:0;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .9rem .5rem;border-bottom:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:700">🔧 Missing Tools</div>
+        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();setNav('gap_register')">Tool Gap Register →</button>
+      </div>
+      <div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:12px">
+        <div style="font-size:1.5rem;margin-bottom:.4rem">✅</div>
+        No priority tool gaps identified based on current assessments.
+      </div>
+    </div>`;
+  }
+
+  const rows = missing.map((t, i) => {
     const ps = (typeof psGetForType === 'function') ? psGetForType(t.toolType) : null;
     const priceNote = ps
       ? `<span style="font-size:10px;color:#15803d;font-weight:700">${escH(ps.name)}</span>`
       : `<span style="font-size:10px;color:#b45309;cursor:pointer" onclick="event.stopPropagation();setNav('pricing_schedule')">Add to Pricing Schedule →</span>`;
     return `<div style="display:flex;align-items:center;gap:.6rem;padding:.5rem .9rem;border-bottom:1px solid var(--border)">
-      <div style="width:20px;height:20px;border-radius:50%;background:${rankColors[i]};color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${t.rank}</div>
+      <div style="width:20px;height:20px;border-radius:50%;background:${rankColors[i]};color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i + 1}</div>
       <span style="font-size:14px;flex-shrink:0">${t.icon}</span>
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:700">${t.label}</div>
@@ -565,7 +624,7 @@ function _homeTopToolsChicklet() {
   return `<div class="card" style="padding:0;overflow:hidden">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .9rem .5rem;border-bottom:1px solid var(--border)">
       <div>
-        <div style="font-size:13px;font-weight:700">🔧 Top 5 Tools to Buy</div>
+        <div style="font-size:13px;font-weight:700">🔧 Missing Tools</div>
         <div style="font-size:10px;color:var(--muted)">Priority order by risk reduction</div>
       </div>
       <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();setNav('gap_register')">Tool Gap Register →</button>
