@@ -105,11 +105,6 @@ const NAV = [
   { id: 'g_assessments', group: 'Assessments', icon: '📋', items: [
     { id: 'assessments', icon: '📋', label: 'Assessments', live: true, phase: 1 },
   ]},
-  { id: 'g_ai_readiness', group: 'AI Readiness', icon: '🤖', items: [
-    { id: 'ai_readiness', icon: '🤖', label: 'AI Readiness Hub', live: true, phase: 1 },
-    { id: 'ai_unified', icon: '🧩', label: 'AI Governance Assessment', live: true, phase: 1 },
-    { id: 'rapid_pyramid', icon: '🔺', label: 'Rapid Pre-Assessment', live: true, phase: 1 },
-  ]},
   { id: 'g_risk', group: 'Risk & Vendors', icon: '⚠️', items: [
     { id: 'tpra', icon: '🔍', label: 'Vendor Risk (TPRA)', live: true, phase: 1 },
     { id: 'riskregister', icon: '📋', label: 'Risk Register', live: true, phase: 2 },

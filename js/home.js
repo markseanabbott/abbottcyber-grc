@@ -746,6 +746,7 @@ const ASSESSMENT_CATALOG = [
   { id: 'cmmc2',     label: 'CMMC Level 2',        icon: '🏛️', description: '110 NIST SP 800-171 practices across 14 domains. Full SPRS score (0–110). CUI handling assessment.', nav: 'cmmc2' },
   { id: 'ma_cdd',    label: 'M&A Due Diligence',   icon: '🤝', description: 'Cybersecurity due diligence for mergers and acquisitions. Risk scoring across 8 domains.', nav: 'ma_cdd' },
   { id: 'nist',      label: 'NIST CSF 2.0',        icon: '🏛️', description: 'NIST Cybersecurity Framework 2.0 assessment.', nav: 'nist', comingSoon: true },
+  { id: 'ai_unified', label: 'AI Readiness',       icon: '🤖', description: 'NIST AI RMF and ISO 42001 combined AI governance assessment with unified scoring and radar chart.', nav: 'ai_readiness', aiTag: true },
 ];
 
 function renderAssessmentsHub() {
@@ -769,12 +770,16 @@ function renderAssessmentsHub() {
       return g && c ? `<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;background:${c.bg};color:${c.txt}">${g.toUpperCase()}</span>` : '';
     })() : '';
 
+    const aiBadge = a.aiTag
+      ? `<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;background:#ede9fe;color:#6d28d9">AI</span>`
+      : '';
+
     return `<div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column">
       <div style="padding:1rem 1rem .6rem;flex:1">
         <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.4rem">
           <span style="font-size:1.1rem;flex-shrink:0">${a.icon}</span>
           <div style="font-size:13px;font-weight:700;flex:1">${a.label}</div>
-          ${igBadge}
+          ${igBadge}${aiBadge}
         </div>
         <div style="font-size:11px;color:var(--muted);line-height:1.45">${a.description}</div>
       </div>
