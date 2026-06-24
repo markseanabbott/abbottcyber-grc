@@ -100,16 +100,41 @@ function modTogglePageMap(pageKey, moduleId, checked) {
   modState.pageMap[pageKey][moduleId] = checked;
 }
 
-// All nav pages except Settings (always admin-gated at a higher level)
+// All routable pages available for module gating.
+// Settings pages are excluded — always platform-admin-gated at a higher level.
+const PAGE_REGISTRY = [
+  // Home
+  { group: 'Home',          id: 'home',           label: 'Dashboard' },
+  { group: 'Home',          id: 'rapid_pyramid',   label: 'Rapid Pre-Assessment' },
+  // Assessments
+  { group: 'Assessments',   id: 'assessments',     label: 'Assessments Hub' },
+  { group: 'Assessments',   id: 'insurance',       label: 'Insurance Readiness' },
+  { group: 'Assessments',   id: 'cis',             label: 'CIS Controls v8' },
+  { group: 'Assessments',   id: 'techstack',       label: 'Technology Stack Survey' },
+  { group: 'Assessments',   id: 'tpra',            label: 'Vendor Risk Assessment (TPRA)' },
+  { group: 'Assessments',   id: 'cmmc',            label: 'CMMC Assessment' },
+  { group: 'Assessments',   id: 'cmmc2',           label: 'CMMC 2.0 Assessment' },
+  // AI Readiness
+  { group: 'AI Readiness',  id: 'ai_readiness',    label: 'AI Readiness Hub' },
+  { group: 'AI Readiness',  id: 'nist_ai',         label: 'NIST AI RMF v1.0' },
+  { group: 'AI Readiness',  id: 'iso42001',        label: 'ISO/IEC 42001' },
+  { group: 'AI Readiness',  id: 'ai_unified',      label: 'AI Unified Assessment' },
+  // Governance
+  { group: 'Governance',    id: 'governance',      label: 'Governance Hub' },
+  { group: 'Governance',    id: 'riskregister',    label: 'Risk Register' },
+  { group: 'Governance',    id: 'policy_lib',      label: 'Policy Library' },
+  // Exercises
+  { group: 'Exercises',     id: 'exercises',       label: 'Exercises Hub' },
+  { group: 'Exercises',     id: 'tabletop',        label: 'Cybersecurity Tabletop' },
+  { group: 'Exercises',     id: 'tt_ai',           label: 'AI Governance Tabletop' },
+  // Reports
+  { group: 'Reports',       id: 'gap_register',    label: 'Tool Gap Register' },
+  // M&A
+  { group: 'M&A',           id: 'ma_cdd',          label: 'M&A Due Diligence' },
+];
+
 function modGetPages() {
-  const pages = [];
-  (typeof NAV !== 'undefined' ? NAV : []).forEach(g => {
-    if (g.id === 'g_settings') return;
-    g.items.forEach(item => {
-      pages.push({ group: g.group, id: item.id, label: item.label });
-    });
-  });
-  return pages;
+  return PAGE_REGISTRY;
 }
 
 // ── RENDER ───────────────────────────────────────────────────
@@ -247,7 +272,7 @@ function modOpenModal(id) {
       </div>
       <div>
         <label class="form-label">Description</label>
-        <textarea id="modFldDesc" rows="2" style="resize:vertical">${escH(m?.description||'')}</textarea>
+        <textarea id="modFldDesc" rows="4" style="resize:vertical;min-height:80px">${escH(m?.description||'')}</textarea>
       </div>
       <div>
         <label class="form-label">Monthly Cost ($/mo)</label>
