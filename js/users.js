@@ -2,6 +2,7 @@
 // USER MANAGEMENT MODULE
 // ============================================================
 let userMgmtState = { users: [], loading: false, tab: 'users', auditDays: 30, auditLogs: [], auditLoading: false };
+let _euActiveModules = []; // active modules loaded when Edit User modal opens
 
 async function userMgmtLoad() {
   userMgmtState.loading = true;
@@ -302,12 +303,19 @@ async function openEditUserModal(userId) {
     analyst: 'Analyst', viewer: 'View Only',
   };
 
-  // Load existing org access
-  let existingAccess = [];
+  // Load existing org access, active modules, and user module grants in parallel
+  let existingAccess = [], activeModules = [], userModuleGrants = new Set();
   try {
-    const rows = await sb.userOrgAccess.getForUser(userId);
-    existingAccess = (rows || []).map(r => r.org_id);
+    const [orgRows, modRows, grantRows] = await Promise.all([
+      sb.userOrgAccess.getForUser(userId),
+      sbFetch('modules?is_active=eq.true&order=sort_order.asc,name.asc', 'GET'),
+      sbFetch(`user_module_access?user_id=eq.${userId}&select=module_id`, 'GET'),
+    ]);
+    existingAccess    = (orgRows   || []).map(r => r.org_id);
+    activeModules     = modRows    || [];
+    userModuleGrants  = new Set((grantRows || []).map(r => r.module_id));
   } catch {}
+  _euActiveModules = activeModules;
 
   document.getElementById('userModalBox').innerHTML = `
     <div style="padding:1.5rem">
@@ -346,9 +354,9 @@ async function openEditUserModal(userId) {
         </div>
       </div>
       <div style="margin-bottom:12px">
-        <label class="form-label">Module Access</label>
+        <label class="form-label">Section Access</label>
         <div id="euModuleSection" style="border:1px solid var(--border);border-radius:8px;padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:2px">
-          ${[['assessments','📋 Assessments'],['ai','🤖 AI Readiness'],['risk','⚠️ Risk &amp; Vendors'],['exercises','🎯 Exercises'],['reports','📊 Reports'],['ma_cdd','🤝 M&amp;A Due Diligence']].map(([val,lbl]) => {
+          ${[['assessments','📋 Assessments'],['ai','🤖 AI Readiness'],['risk','⚠️ Governance'],['exercises','🎯 Exercises'],['reports','📊 Reports'],['ma_cdd','🤝 M&amp;A Due Diligence']].map(([val,lbl]) => {
             const canConfig = user.role !== 'platform_admin';
             const ma = user.module_access;
             const chk = !ma || ma[val] !== false;
@@ -357,6 +365,21 @@ async function openEditUserModal(userId) {
         </div>
         <div id="euModuleNote" style="font-size:10px;color:var(--muted);margin-top:4px">${user.role !== 'platform_admin' ? 'Uncheck sections to remove from their navigation.' : 'Platform Admin always has full access to all modules.'}</div>
       </div>
+      ${activeModules.length ? `<div style="margin-bottom:12px">
+        <label class="form-label">Add-on Modules</label>
+        <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+          ${activeModules.map((m, i) => `
+            <label style="display:flex;align-items:center;gap:.6rem;padding:8px 10px;cursor:pointer;${i ? 'border-top:1px solid var(--border)' : ''}">
+              <input type="checkbox" class="euModSubCheck" value="${m.id}" ${userModuleGrants.has(m.id) ? 'checked' : ''}>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:12px;font-weight:700">${escH(m.name)}</div>
+                ${m.description ? `<div style="font-size:10px;color:var(--muted)">${escH(m.description)}</div>` : ''}
+              </div>
+              ${m.monthly_cost > 0 ? `<div style="font-size:11px;color:var(--muted);white-space:nowrap">$${parseFloat(m.monthly_cost).toFixed(2)}/mo</div>` : ''}
+            </label>`).join('')}
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">Controls access to add-on features assigned in Module Management.</div>
+      </div>` : ''}
       <div id="euError" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;
         padding:8px 10px;border-radius:6px;font-size:12px;margin-bottom:10px"></div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
@@ -407,6 +430,19 @@ async function submitEditUser(userId) {
       if (checked.length) {
         await sb.userOrgAccess.upsertAll(checked.map(oid => ({ user_id: userId, org_id: oid })));
       }
+    }
+
+    // Sync add-on module grants (user_module_access table)
+    if (_euActiveModules.length) {
+      const checked = new Set([...document.querySelectorAll('.euModSubCheck:checked')].map(cb => cb.value));
+      // Delete all existing grants for this user, then re-insert checked ones
+      await sbFetch(`user_module_access?user_id=eq.${userId}`, 'DELETE');
+      if (checked.size) {
+        const rows = [...checked].map(mid => ({ user_id: userId, module_id: mid }));
+        await sbFetch('user_module_access', 'POST', rows);
+      }
+      // Reload module access state if this is the currently logged-in user
+      if (userId === authState?.profile?.id) await modAccessLoadGrants();
     }
 
     const editedUser = userMgmtState.users.find(u => u.id === userId);

@@ -1,4 +1,4 @@
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.4.0';
 
 // ============================================================
 // MULTIPLAYER — URL routing (detect ?join= or ?display= params)
@@ -99,23 +99,14 @@ const NAV = [
   { id: 'g_home', group: 'Home', icon: '🏠', items: [
     { id: 'home', icon: '🏠', label: 'Dashboard', live: true, phase: 1 },
   ]},
-  { id: 'g_company_profile', group: 'Start Here', icon: '🏢', items: [
-    { id: 'company_profile', icon: '🏢', label: 'Start Here', live: true, phase: 1 },
-  ]},
   { id: 'g_assessments', group: 'Assessments', icon: '📋', items: [
     { id: 'assessments', icon: '📋', label: 'Assessments', live: true, phase: 1 },
   ]},
-  { id: 'g_risk', group: 'Risk & Vendors', icon: '⚠️', items: [
-    { id: 'tpra', icon: '🔍', label: 'Vendor Risk (TPRA)', live: true, phase: 1 },
-    { id: 'riskregister', icon: '📋', label: 'Risk Register', live: true, phase: 2 },
-    { id: 'vulnscan', icon: '📡', label: 'Vulnerability Scan', live: false, phase: 2 },
-    { id: 'pentest', icon: '🐛', label: 'Pen Test Findings', live: false, phase: 3 },
+  { id: 'g_governance', group: 'Governance', icon: '⚖️', items: [
+    { id: 'governance', icon: '⚖️', label: 'Governance', live: true, phase: 1 },
   ]},
   { id: 'g_exercises', group: 'Exercises', icon: '🎯', items: [
     { id: 'exercises', icon: '🎯', label: 'Exercises', live: true, phase: 1 },
-  ]},
-  { id: 'g_policies', group: 'Policies', icon: '📄', items: [
-    { id: 'policy_lib', icon: '📄', label: 'Policy Library', live: true, phase: 1 },
   ]},
   { id: 'g_reporting', group: 'Reports', icon: '📊', items: [
     { id: 'gap_register', icon: '📋', label: 'Tool Gap Register', live: true, phase: 1 },
@@ -125,8 +116,10 @@ const NAV = [
     { id: 'audit', icon: '📜', label: 'Audit Readiness', live: false, phase: 3 },
   ]},
   { id: 'g_settings', group: 'Settings', icon: '⚙️', platformAdminOnly: true, items: [
+    { id: 'company_profile',   icon: '🏢', label: 'Organization Profile',  live: true, phase: 1, adminOnly: true },
     { id: 'orgs',              icon: '🏢', label: 'Organization Manager', live: true, phase: 1, adminOnly: true },
     { id: 'users',             icon: '👥', label: 'User Management',      live: true, phase: 1, adminOnly: true },
+    { id: 'modules',           icon: '📦', label: 'Module Management',    live: true, phase: 1, adminOnly: true },
     { id: 'settings',          icon: '⚙️', label: 'Platform Settings',    live: true, phase: 1, adminOnly: true },
     { id: 'backlog',           icon: '📋', label: 'Feature Backlog',      live: true, phase: 1, adminOnly: true },
     { id: 'pricing_schedule',  icon: '💲', label: 'Pricing Schedule',     live: true, phase: 1, tierOnly: ['grandfather','father'] },

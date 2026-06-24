@@ -300,6 +300,34 @@ function orgsUnderCurrent() {
   return [...directChildren, ...grandchildren];
 }
 
+function _renderGettingStartedBanner() {
+  const profileDone   = !!(orgProfiles[currentOrg?.id]?.employee_count_band);
+  const techStackDone = (orgAssessments[currentOrg?.id]?.techstack || []).length > 0;
+  if (profileDone && techStackDone) return '';
+
+  const doneCount = [profileDone, techStackDone].filter(Boolean).length;
+  const row = (done, text, nav) => done
+    ? `<div style="display:flex;align-items:center;gap:.5rem">
+        <span style="color:#15803d;font-size:13px;flex-shrink:0">✅</span>
+        <span style="font-size:12px;color:var(--muted);text-decoration:line-through">${text}</span>
+       </div>`
+    : `<div style="display:flex;align-items:center;gap:.5rem">
+        <span style="color:#94a3b8;font-size:13px;flex-shrink:0">☐</span>
+        <span style="font-size:12px"><a onclick="setNav('${nav}')" style="color:#dc2626;cursor:pointer;font-weight:600">${text}</a></span>
+       </div>`;
+
+  return `<div style="border-left:3px solid #f59e0b;background:#fffbeb;padding:.65rem 1rem;border-radius:0 8px 8px 0;margin-bottom:1rem;display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap">
+    <div style="flex:1;min-width:180px">
+      <div style="font-size:10px;font-weight:700;color:#92400e;margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em">Getting Started</div>
+      <div style="display:flex;flex-direction:column;gap:.3rem">
+        ${row(profileDone,   'Complete your Organization Profile',        'company_profile')}
+        ${row(techStackDone, 'Complete your Technology Stack assessment', 'techstack')}
+      </div>
+    </div>
+    <div style="font-size:11px;color:#92400e;font-weight:700;white-space:nowrap">${doneCount} of 2 complete</div>
+  </div>`;
+}
+
 function renderHome() {
   if (!currentOrg) return '';
 
@@ -324,14 +352,14 @@ function renderHome() {
   const _can = (gid) => typeof hasModuleAccess === 'function' ? hasModuleAccess(gid) : true;
   const canAssessments = _can('g_assessments');
   const canAI          = _can('g_ai_readiness');
-  const canRisk        = _can('g_risk');
+  const canRisk        = _can('g_governance');
 
   // Quick links
   const quickLinks = [
     { id:'insurance',  icon:'🛡️', label:'Insurance Readiness', group:'g_assessments' },
     { id:'techstack',  icon:'🖥️', label:'Technology Stack',    group:'g_assessments' },
     { id:'cis',        icon:'✅', label:'CIS Controls',         group:'g_assessments' },
-    { id:'tpra',       icon:'🔍', label:'Vendor Risk',          group:'g_risk' },
+    { id:'tpra',       icon:'🔍', label:'Vendor Risk',          group:'g_assessments' },
     { id:'tabletop',   icon:'🎯', label:'Tabletop',             group:'g_exercises' },
     { id:'ai_unified', icon:'🤖', label:'AI Readiness',         group:'g_ai_readiness' },
   ].filter(l => _can(l.group));
@@ -376,6 +404,7 @@ function renderHome() {
 
   return `
   ${renderTierBanner()}
+  ${_renderGettingStartedBanner()}
 
   <!-- 4 stat cards -->
   <div class="welcome-grid">
@@ -747,13 +776,14 @@ const ASSESSMENT_CATALOG = [
   { id: 'ma_cdd',    label: 'M&A Due Diligence',   icon: '🤝', description: 'Cybersecurity due diligence for mergers and acquisitions. Risk scoring across 8 domains.', nav: 'ma_cdd' },
   { id: 'nist',      label: 'NIST CSF 2.0',        icon: '🏛️', description: 'NIST Cybersecurity Framework 2.0 assessment.', nav: 'nist', comingSoon: true },
   { id: 'ai_unified', label: 'AI Readiness',       icon: '🤖', description: 'NIST AI RMF and ISO 42001 combined AI governance assessment with unified scoring and radar chart.', nav: 'ai_readiness', aiTag: true },
+  { id: 'tpra',       label: 'Vendor Risk (TPRA)', icon: '🔍', description: 'Third-party vendor risk assessment wizard. Deep-dive assessments for critical and high-risk vendors.', nav: 'tpra', noScore: true },
 ];
 
 function renderAssessmentsHub() {
   if (!currentOrg) return '';
   const h = orgAssessments[currentOrg.id] || {};
 
-  const chicklets = ASSESSMENT_CATALOG.map(a => {
+  const chicklets = ASSESSMENT_CATALOG.filter(a => hasPageAccess(a.nav)).map(a => {
     const runs = (h[a.id] || []).slice().sort((x, y) => (y.date||'').localeCompare(x.date||''));
     const last = runs[0] || null;
     const canDuplicate = runs.length > 0 && !a.comingSoon;
@@ -783,20 +813,24 @@ function renderAssessmentsHub() {
         </div>
         <div style="font-size:11px;color:var(--muted);line-height:1.45">${a.description}</div>
       </div>
-      <div style="padding:.5rem 1rem .6rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:.5rem">
-        <div>
-          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700">Last run</div>
-          <div style="font-size:11px;font-weight:700;color:var(--text)">
-            ${last ? last.date : '<span style="color:var(--muted);font-weight:400">Never</span>'}
-            ${runs.length > 1 ? `<span style="font-size:9px;color:var(--muted);font-weight:400;margin-left:4px">${runs.length} runs</span>` : ''}
-          </div>
-        </div>
-        ${last ? `<div style="font-size:1.15rem;font-weight:800;color:${scoreColor}">${last.score}%</div>` : ''}
-      </div>
+      ${a.noScore
+        ? `<div style="padding:.5rem 1rem .6rem;border-top:1px solid var(--border)">
+            <div style="font-size:11px;color:var(--muted)">Vendor risk assessments</div>
+          </div>`
+        : `<div style="padding:.5rem 1rem .6rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:.5rem">
+            <div>
+              <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700">Last run</div>
+              <div style="font-size:11px;font-weight:700;color:var(--text)">
+                ${last ? last.date : '<span style="color:var(--muted);font-weight:400">Never</span>'}
+                ${runs.length > 1 ? `<span style="font-size:9px;color:var(--muted);font-weight:400;margin-left:4px">${runs.length} runs</span>` : ''}
+              </div>
+            </div>
+            ${last ? `<div style="font-size:1.15rem;font-weight:800;color:${scoreColor}">${last.score}%</div>` : ''}
+          </div>`}
       <div style="padding:.5rem 1rem .75rem;border-top:1px solid var(--border);display:flex;gap:5px">
         ${a.comingSoon
           ? `<span style="font-size:11px;font-weight:700;color:var(--muted);padding:4px 10px;border-radius:6px;background:var(--bg)">Coming soon</span>`
-          : `<button class="btn btn-cyan btn-sm" onclick="setNav('${a.nav}')" style="flex:1">${last ? 'View / Run' : 'Start'}</button>`}
+          : `<button class="btn btn-cyan btn-sm" onclick="setNav('${a.nav}')" style="flex:1">${a.noScore ? 'View Assessments' : last ? 'View / Run' : 'Start'}</button>`}
         ${canDuplicate ? `<button class="btn btn-outline btn-sm" title="Duplicate last assessment for a quick re-run" onclick="duplicateAssessment('${a.id}')">⧉ Re-up</button>` : ''}
       </div>
     </div>`;
@@ -834,7 +868,7 @@ const EXERCISE_CATALOG = [
 function renderExercisesHub() {
   if (!currentOrg) return '';
 
-  const cards = EXERCISE_CATALOG.map(e => {
+  const cards = EXERCISE_CATALOG.filter(e => hasPageAccess(e.nav)).map(e => {
     return `<div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column">
       <div style="padding:1rem 1rem .6rem;flex:1">
         <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.4rem">
@@ -857,6 +891,54 @@ function renderExercisesHub() {
     <div>
       <div style="font-size:17px;font-weight:700">🎯 Exercises</div>
       <div style="font-size:12px;color:var(--muted)">All available exercises for ${escH(currentOrg.name)}</div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:.75rem">
+    ${cards}
+  </div>`;
+}
+
+// ============================================================
+// GOVERNANCE HUB
+// Vendor Directory is the ongoing management registry.
+// TPRA (in Assessments) is the deep-dive assessment process.
+// Future: a vendor in the directory will link to one or more TPRA assessments
+// via a vendor_directory_id FK on vendor_assessments.
+// ============================================================
+
+const GOVERNANCE_CATALOG = [
+  { id: 'riskregister', label: 'Risk Register',         icon: '📋', description: 'Track and manage risks across your organization.', nav: 'riskregister' },
+  { id: 'policy_lib',   label: 'Policy Library',        icon: '📄', description: 'Manage and maintain your security policy documents.', nav: 'policy_lib' },
+  { id: 'app_inv',      label: 'Application Inventory', icon: '🖥️', description: 'Track all business applications with risk, criticality, BCDR classification, and IR priority.', nav: 'app_inv', comingSoon: true },
+  { id: 'vendor_dir',   label: 'Vendor Directory',      icon: '🏢', description: 'Central registry of all vendors with criticality, risk tier, contract tracking, and BCDR and IR contacts.', nav: 'vendor_dir', comingSoon: true },
+];
+
+function renderGovernanceHub() {
+  if (!currentOrg) return '';
+
+  const cards = GOVERNANCE_CATALOG.filter(g => hasPageAccess(g.nav)).map(g => {
+    return `<div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column">
+      <div style="padding:1rem 1rem .6rem;flex:1">
+        <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.4rem">
+          <span style="font-size:1.1rem;flex-shrink:0">${g.icon}</span>
+          <div style="font-size:13px;font-weight:700;flex:1">${g.label}</div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.45">${g.description}</div>
+      </div>
+      <div style="padding:.5rem 1rem .75rem;border-top:1px solid var(--border);display:flex;gap:5px">
+        ${g.comingSoon
+          ? `<span style="font-size:11px;font-weight:700;color:var(--muted);padding:4px 10px;border-radius:6px;background:var(--bg)">Coming soon</span>`
+          : `<button class="btn btn-cyan btn-sm" onclick="setNav('${g.nav}')" style="flex:1">View</button>`}
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+  ${renderTierBanner()}
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:0.85rem;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:17px;font-weight:700">⚖️ Governance</div>
+      <div style="font-size:12px;color:var(--muted)">Risk, policy, and vendor management for ${escH(currentOrg.name)}</div>
     </div>
   </div>
   <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:.75rem">

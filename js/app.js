@@ -23,7 +23,7 @@ async function bootApp() {
       currentOrg = allOrgs.find(o => o.tier === 'platform') || allOrgs[0];
     }
 
-    await Promise.all([loadAssessments(currentOrg.id), loadOrgProfiles(), loadPlatformSettings()]);
+    await Promise.all([loadAssessments(currentOrg.id), loadOrgProfiles(), loadPlatformSettings(), modAccessLoad()]);
 
     document.getElementById('dbStatus').className = 'db-status db-live';
     document.getElementById('dbStatus').textContent = '● Live';
@@ -235,7 +235,7 @@ function idleStop() {
 // SIDEBAR
 // ============================================================
 function getModuleDot(id) {
-  if (!currentOrg || ['home', 'tabletop', 'tt_ai', 'orgs', 'assessments', 'exercises', 'ma_cdd'].includes(id)) return 'dot-none';
+  if (!currentOrg || ['home', 'tabletop', 'tt_ai', 'orgs', 'assessments', 'exercises', 'governance', 'modules', 'ma_cdd'].includes(id)) return 'dot-none';
   const h = (orgAssessments[currentOrg.id] || {})[id];
   if (!h || !h.length) return 'dot-none';
   const s = h[h.length - 1].score;
@@ -243,10 +243,10 @@ function getModuleDot(id) {
 }
 
 const _GROUP_MODULE = {
-  g_assessments: 'assessments',
-  g_risk: 'risk',
-  g_exercises: 'exercises',
-  g_reporting: 'reports',
+  g_assessments:  'assessments',
+  g_governance:   'governance',
+  g_exercises:    'exercises',
+  g_reporting:    'reports',
 };
 
 function _hasItemAccess(moduleKey) {
@@ -279,13 +279,15 @@ async function viewAsUser(userId) {
     } catch {}
   }
   viewAsState = {
-    name: user.name || user.email,
-    email: user.email,
-    role: user.role,
-    org_id: user.org_id,
+    id:           user.id,
+    name:         user.name || user.email,
+    email:        user.email,
+    role:         user.role,
+    org_id:       user.org_id,
     module_access: user.module_access || null,
     accessOrgs,
   };
+  await modAccessLoadGrants();
   const homeOrg = allOrgs.find(o => o.id === user.org_id);
   if (homeOrg) currentOrg = homeOrg;
   activeNav = 'home';
@@ -298,12 +300,13 @@ async function viewAsUser(userId) {
   toast(`Viewing as ${viewAsState.name}`, '#92400e');
 }
 
-function exitViewAs() {
+async function exitViewAs() {
   viewAsState = null;
   const myOrg = allOrgs.find(o => o.id === authState.profile?.org_id) || allOrgs[0];
   if (myOrg) currentOrg = myOrg;
   activeNav = 'home';
   activeNavSection = null;
+  await modAccessLoadGrants();
   updateOrgUI();
   document.getElementById('userChipContainer').innerHTML = renderUserMenu();
   updateViewAsBanner();
@@ -346,7 +349,8 @@ function buildNav() {
     const visibleItems = g.items.filter(item => {
       if (item.adminOnly && !adminUser) return false;
       if (item.tierOnly && !item.tierOnly.includes(currentOrg?.tier)) return false;
-      return _hasItemAccess(item.moduleKey);
+      if (!_hasItemAccess(item.moduleKey)) return false;
+      return hasPageAccess(item.id);
     });
     if (!visibleItems.length) return '';
     // Single-item groups render as flat items (no accordion wrapper)
@@ -383,7 +387,7 @@ function toggleNavSection(id) {
   buildNav();
 }
 
-const _ADMIN_PAGES = { orgs: 'Organization Manager', users: 'User Management' };
+const _ADMIN_PAGES = { company_profile: 'Organization Profile', orgs: 'Organization Manager', users: 'User Management', modules: 'Module Management' };
 
 function setNav(id, { pushState = true } = {}) {
   activeNav = id;
@@ -454,8 +458,27 @@ function renderMain() {
     el.innerHTML = '<div class="card" style="padding:2rem;text-align:center;color:var(--muted)">No organisation selected.</div>';
     return;
   }
+  // Module access guard — platform admin always passes
+  if (!hasPageAccess(activeNav)) {
+    el.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4rem 2rem;text-align:center">
+      <div style="font-size:3rem;margin-bottom:1rem">🔒</div>
+      <div style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:.5rem">Access not enabled</div>
+      <div style="font-size:13px;color:var(--muted)">Contact your administrator to request access to this module.</div>
+    </div>`;
+    return;
+  }
   const voB = viewOnlyBanner();  // empty string unless role=viewer
   if (activeNav === 'users') { el.innerHTML = renderUserManagement(); return; }
+  if (activeNav === 'modules') {
+    if (!modState.modules.length && !modState.loading) {
+      modState.loading = true;
+      el.innerHTML = renderModulesAdmin();
+      modLoad().then(() => { if (activeNav === 'modules') el.innerHTML = renderModulesAdmin(); });
+    } else {
+      el.innerHTML = renderModulesAdmin();
+    }
+    return;
+  }
   if (activeNav === 'settings') { el.innerHTML = renderSettings(); setTimeout(settingsLoad, 50); return; }
   if (activeNav === 'backlog') {
     if (!blmState.items.length && !blmState.loading) {
@@ -476,8 +499,9 @@ function renderMain() {
     }
     return;
   }
-  if (activeNav === 'assessments') { el.innerHTML = voB + renderAssessmentsHub(); setTimeout(drawAllHubTrends, 80); return; }
-  if (activeNav === 'exercises')   { el.innerHTML = voB + renderExercisesHub(); return; }
+  if (activeNav === 'assessments')  { el.innerHTML = voB + renderAssessmentsHub(); setTimeout(drawAllHubTrends, 80); return; }
+  if (activeNav === 'governance')   { el.innerHTML = voB + renderGovernanceHub(); return; }
+  if (activeNav === 'exercises')    { el.innerHTML = voB + renderExercisesHub(); return; }
   if (activeNav === 'insurance') { el.innerHTML = voB + renderInsurance(); drawTrend(); return; }
   if (activeNav === 'cis') { el.innerHTML = voB + renderCIS(); setTimeout(() => { const c = document.getElementById('cisTrendChart'); if (c) cisTrendDraw(); if (cisState.view === 'report') drawReportCharts(); }, 80); return; }  // trend draw covers both dashboard + form views
   if (activeNav === 'orgs') { el.innerHTML = renderOrgManager(); setTimeout(updateParentOptions, 100); return; }
