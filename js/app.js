@@ -417,7 +417,19 @@ function renderTierBanner() {
   const icon = TIER_ICONS[currentOrg.tier] || '🏢';
   const label = TIER_LABELS[currentOrg.tier] || currentOrg.tier;
   const bannerClass = TIER_BANNER_CLASS[currentOrg.tier] || 'tier-banner-child';
-  const vis = visibleOrgs().length;
+  // Scope count reflects this org's tier, not the logged-in user's full visibility
+  let vis;
+  if (currentOrg.tier === 'platform') {
+    vis = (allOrgs || []).length;
+  } else if (currentOrg.tier === 'grandfather') {
+    const fathers = (allOrgs || []).filter(o => o.parent_id === currentOrg.id);
+    const fIds = new Set(fathers.map(o => o.id));
+    vis = 1 + fathers.length + (allOrgs || []).filter(o => fIds.has(o.parent_id)).length;
+  } else if (currentOrg.tier === 'father') {
+    vis = 1 + (allOrgs || []).filter(o => o.parent_id === currentOrg.id).length;
+  } else {
+    vis = 1;
+  }
   return `<div class="tier-banner ${bannerClass}">
     <span style="font-size:16px">${icon}</span>
     <div style="flex:1"><span style="font-weight:700">${currentOrg.name}</span> <span style="font-weight:400;opacity:0.7">— ${label}</span></div>

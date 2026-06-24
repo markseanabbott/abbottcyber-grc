@@ -350,6 +350,9 @@ async function cpSave() {
     await loadOrgProfiles();
     auditLog('profile_updated', 'org', currentOrg.name, { org_id: currentOrg.id });
     toast('✓ Company profile saved', '#15803d');
+    // Invalidate gap register + pricing caches so headcount reflects immediately on next visit
+    if (typeof grState !== 'undefined') grState.loaded = false;
+    if (typeof psState !== 'undefined') psState.loaded = false;
 
     // Re-render to show/refresh Risk Context card
     const mc = document.getElementById('mainContent');

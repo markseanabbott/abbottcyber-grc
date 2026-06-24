@@ -123,6 +123,18 @@ async function psEnsureData() {
     if (currentOrg.tier === 'father' && currentOrg.parent_id) {
       const par = await sbFetch(`pricing_schedule?org_id=eq.${currentOrg.parent_id}&order=tool_type.asc,name.asc`, 'GET');
       psState.parentRows = (par || []).map(r => ({ ...r, covers: r.covers || [] }));
+    } else if (currentOrg.tier === 'child' && currentOrg.parent_id) {
+      // Two-level inheritance: load father rows + grandfather rows
+      const par = await sbFetch(`pricing_schedule?org_id=eq.${currentOrg.parent_id}&order=tool_type.asc,name.asc`, 'GET');
+      const parRows = (par || []).map(r => ({ ...r, covers: r.covers || [] }));
+      const parentOrg = (allOrgs || []).find(o => o.id === currentOrg.parent_id);
+      let gpRows = [];
+      if (parentOrg?.parent_id) {
+        const gp = await sbFetch(`pricing_schedule?org_id=eq.${parentOrg.parent_id}&order=tool_type.asc,name.asc`, 'GET');
+        gpRows = (gp || []).map(r => ({ ...r, covers: r.covers || [] }));
+      }
+      // Father rows first so they override grandfather via Array.find()
+      psState.parentRows = [...parRows, ...gpRows];
     }
     psState.loaded = true;
     psState._orgId = currentOrg?.id;

@@ -568,7 +568,7 @@ function _homeTopToolsChicklet() {
         <div style="font-size:13px;font-weight:700">🔧 Top 5 Tools to Buy</div>
         <div style="font-size:10px;color:var(--muted)">Priority order by risk reduction</div>
       </div>
-      <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();setNav('gap_register')">Gap Register →</button>
+      <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();setNav('gap_register')">Tool Gap Register →</button>
     </div>
     ${rows}
   </div>`;

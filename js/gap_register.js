@@ -158,7 +158,7 @@ function renderGapRegister() {
     return `${renderTierBanner()}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
       <div>
-        <div style="font-size:17px;font-weight:700">📋 Gap Register</div>
+        <div style="font-size:17px;font-weight:700">📋 Tool Gap Register</div>
         <div style="font-size:12px;color:var(--muted)">${escH(currentOrg.name)} · consolidated cross-module gaps</div>
       </div>
     </div>
@@ -241,7 +241,7 @@ function renderGapRegister() {
   ${renderTierBanner()}
   <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.85rem;flex-wrap:wrap;gap:8px">
     <div>
-      <div style="font-size:17px;font-weight:700">📋 Gap Register</div>
+      <div style="font-size:17px;font-weight:700">📋 Tool Gap Register</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:6px">
         ${escH(currentOrg.name)} · ${catalogMode
           ? `full tool catalog — ${rows.filter(r=>r.ps).length} of ${rows.length} tools priced · run assessments to identify gaps`

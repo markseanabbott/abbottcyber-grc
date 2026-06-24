@@ -135,7 +135,7 @@ const NAV = [
     { id: 'policy_lib', icon: '📄', label: 'Policy Library', live: true, phase: 1 },
   ]},
   { id: 'g_reporting', group: 'Reports', icon: '📊', items: [
-    { id: 'gap_register', icon: '📋', label: 'Gap Register', live: true, phase: 1 },
+    { id: 'gap_register', icon: '📋', label: 'Tool Gap Register', live: true, phase: 1 },
     { id: 'scorecard', icon: '📊', label: 'Report Library', live: false, phase: 2 },
     { id: 'exec_report', icon: '📄', label: 'Executive Reports', live: false, phase: 2 },
     { id: 'portfolio', icon: '🌐', label: 'Portfolio View', live: false, phase: 2 },
