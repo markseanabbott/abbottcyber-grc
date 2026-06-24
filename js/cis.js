@@ -939,6 +939,7 @@ function renderCIS() {
   if (cisState.view === 'report') return renderCISReport();
   if (cisState.view === 'gap') return renderCISGapReport();
   if (cisState.view === 'matrix') return renderCISMatrix();
+  if (cisState.view === 'cost')   return renderCISCostTab();
   return renderCISDashboard();
 }
 
@@ -1120,6 +1121,7 @@ function renderCISDashboard() {
           <button class="btn btn-outline btn-sm" style="margin-right:4px" onclick="cisOpenReport(${origIdx})">📊 Report</button>
           <button class="btn btn-outline btn-sm" style="margin-right:4px" onclick="cisOpenGapReport(${origIdx})">🔍 Gaps</button>
           <button class="btn btn-outline btn-sm" style="margin-right:4px" onclick="cisOpenPoam(${origIdx})">📋 POAM</button>
+          <button class="btn btn-outline btn-sm" style="margin-right:4px;border-color:#15803d;color:#15803d" onclick="cisOpenCost(${origIdx})">💲 Cost</button>
           <button class="btn btn-outline btn-sm" style="margin-right:4px" onclick="cisOpenAssessment(${origIdx})">View / Edit</button>
           <button class="btn btn-outline btn-sm" style="margin-right:4px;border-color:#7c3aed;color:#7c3aed" onclick="cisDuplicateAssessment(${origIdx})" title="Duplicate to today">⊕ Dup</button>
           <button class="btn btn-outline btn-sm" style="margin-right:4px;border-color:#7c3aed;color:#7c3aed" onclick="cisSaveAsTemplate(${origIdx})" title="Save as platform template">📌</button>
@@ -1719,6 +1721,44 @@ async function cisOpenPoam(idx) {
   }
   cisState.view = 'poam';
   renderMain();
+}
+
+async function cisOpenCost(idx) {
+  const runs = (orgAssessments[currentOrg?.id] || {})['cis'] || [];
+  const run  = runs[idx];
+  if (!run) return;
+  cisState.costRun   = run;
+  cisState.poamItems = {};
+  if (run.id) {
+    try {
+      const poamRows = await sb.cisPoam.getForAssessment(run.id);
+      (poamRows || []).forEach(p => { cisState.poamItems[p.safeguard_id] = p; });
+    } catch(e) { console.warn('Cost: POAM load failed', e); }
+  }
+  cisState.view = 'cost';
+  renderMain();
+}
+
+function renderCISCostTab() {
+  const run = cisState.costRun;
+  if (!run) return renderCISDashboard();
+
+  const answers = Object.fromEntries(
+    Object.entries(run.answers || {}).filter(([k]) => !k.startsWith('_'))
+  );
+  const goal = (run.answers || {})._goal || null;
+  const { gaps, accepted, noTool } = rcExtractCISGaps(answers, goal, cisState.poamItems);
+
+  return `
+  ${renderTierBanner()}
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:17px;font-weight:700">💲 Cost to Remediate</div>
+      <div style="font-size:12px;color:var(--muted)">${escH(currentOrg.name)} · CIS Controls v8 · ${run.date || '—'}${goal ? ' · Goal: ' + goal.toUpperCase() : ''}</div>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="cisNavToDashboard()">← Back</button>
+  </div>
+  ${renderRemediationCosts(gaps, currentOrg.id, { accepted, noTool, runDate: run.date })}`;
 }
 
 function cisCollectPoamData() {

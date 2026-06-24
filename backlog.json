@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.3.0",
   "created": "2026-05-14",
-  "updated": "2026-06-24 (session 51e)",
+  "updated": "2026-06-24 (session 51f)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1987,6 +1987,25 @@
         {
           "id": "ps2",
           "text": "Pricing Schedule cross-module use — surface psGetForType() resolved pricing in CIS POAM cost estimates and TPRA remediation cost fields. When a finding maps to a known tool type, show the MSP/org rate alongside the platform default so the assessor sees their actual pricing.",
+          "done": true,
+          "priority": "Low",
+          "notes": "Built as remediation_costs.js shared module. rcExtractCISGaps() + rcExtractTSGaps() map gaps to tool types; renderRemediationCosts() looks up psGetForType() for each and renders cost table. CIS: '💲 Cost' button per assessment row → cisOpenCost() → renderCISCostTab(). Tech Stack: '💲 Cost to Remediate' button on dashboard → tsOpenCost() → renderTechStackCostTab(). Headcount from orgProfiles (approx_user_count / approx_device_count / employee_count_band). Risk-accepted POAM items excluded from CIS cost total. Missing pricing types link to Pricing Schedule."
+        },
+        {
+          "id": "rc1",
+          "text": "Insurance Readiness: Cost to Remediate tab — map insurance survey gaps (questions answered 'no' that affect score) to tool types and surface pricing schedule estimates, same pattern as CIS and Tech Stack cost tabs.",
+          "done": false,
+          "priority": "Medium"
+        },
+        {
+          "id": "rc2",
+          "text": "Remediation cost: 5-year schedule view — extend the Cost to Remediate tab with a 5-year cost projection (Year 1: setup + annual; Years 2–5: recurring only), same format as M&A CDD schedule. One-time setup fees appear only in the period the tool is deployed.",
+          "done": false,
+          "priority": "Low"
+        },
+        {
+          "id": "rc3",
+          "text": "Remediation cost: show 'also covers' on matched rows — when psGetForType() returns a bundle SKU (covers[] array), note which additional gap types it satisfies on the cost row (e.g. 'Also satisfies: Email Backup, Email DLP') so the assessor sees the full value of one purchase.",
           "done": false,
           "priority": "Low"
         }

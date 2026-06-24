@@ -546,6 +546,7 @@ function renderTechStack() {
   if (!tsState) return '<div class="card">Initialising...</div>';
   if (tsState.loading) return `<div style="text-align:center;padding:2rem"><div class="spinner" style="border-color:rgba(21,33,104,0.2);border-top-color:var(--navy);width:24px;height:24px;margin:0 auto 0.75rem"></div><div style="font-size:13px;font-weight:700;color:var(--text)">Loading tech stack responses...</div></div>`;
   if (tsState.view === 'form') return renderTechStackForm();
+  if (tsState.view === 'cost') return renderTechStackCostTab();
   return renderTechStackDashboard();
 }
 
@@ -570,6 +571,7 @@ function renderTechStackDashboard() {
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn btn-outline btn-sm" onclick="tsExportSnapshot()">Export JSON</button>
+      <button class="btn btn-outline btn-sm" style="border-color:#15803d;color:#15803d" onclick="tsOpenCost()">💲 Cost to Remediate</button>
       <button class="btn btn-cyan btn-sm" onclick="tsStartNew()">${runs.length > 0 ? 'Update / Reassess' : '+ Start Assessment'}</button>
     </div>
   </div>
@@ -882,6 +884,32 @@ async function tsExportSnapshot() {
   const a = document.createElement('a');
   a.href=url; a.download=`techstack_${currentOrg?currentOrg.name.replace(/[^a-z0-9]/gi,'_'):'snapshot'}.json`; a.click();
   URL.revokeObjectURL(url);
+}
+
+function tsOpenCost() {
+  if (!tsState) return;
+  tsState.view = 'cost';
+  tsRender();
+}
+
+function renderTechStackCostTab() {
+  const { gaps } = rcExtractTSGaps();
+  const allQs    = TS_CATS.flatMap(c => c.questions);
+  const gapCount = allQs.filter(q => {
+    const a = tsState.answers[q.id];
+    return a && (a.ans === 'no' || a.ans === 'partial');
+  }).length;
+
+  return `
+  ${renderTierBanner()}
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:17px;font-weight:700">💲 Cost to Remediate</div>
+      <div style="font-size:12px;color:var(--muted)">${escH(currentOrg?.name||'')} · Technology Stack · ${gapCount} gap${gapCount!==1?'s':''} across ${gaps.length} tool type${gaps.length!==1?'s':''}</div>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="tsNavToDashboard()">← Back</button>
+  </div>
+  ${renderRemediationCosts(gaps, currentOrg?.id)}`;
 }
 
 // ============================================================
