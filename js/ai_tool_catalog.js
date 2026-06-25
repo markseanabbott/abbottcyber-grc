@@ -765,26 +765,52 @@ function aitcOpenEditCatalogEntry(id) {
 
 async function aitcSaveAddFromCatalog(catalogId) {
   if (aiCatState.saving) return;
-  const status = document.getElementById('aitc-add-status')?.value || 'shadow_it';
-  const notes  = document.getElementById('aitc-add-notes')?.value.trim() || null;
+  const status  = document.getElementById('aitc-add-status')?.value || 'shadow_it';
+  const notes   = document.getElementById('aitc-add-notes')?.value.trim() || null;
+  const addedBy = authState.profile?.name || authState.profile?.email || null;
   aiCatState.saving = true;
   try {
+    // Add the parent tool
     const row = {
       org_id: currentOrg.id,
       tool_catalog_id: catalogId,
       is_custom: false,
       org_status: status,
       notes,
-      added_by: authState.profile?.name || authState.profile?.email || null,
+      added_by: addedBy,
     };
     const result = await sb.aiOrgTools.add(row);
     const added  = Array.isArray(result) ? result[0] : result;
     if (added) aiCatState.orgTools.push(added);
+
+    // Auto-add catalog children (components) with the same status
+    const parentName  = aitcById(catalogId)?.name || '';
+    const childIds    = aitcChildIds(catalogId);
+    let childrenAdded = 0;
+    for (const childId of childIds) {
+      if (aitcIsInOrgTools(childId)) continue; // already in inventory
+      try {
+        const childRow = {
+          org_id: currentOrg.id,
+          tool_catalog_id: childId,
+          is_custom: false,
+          org_status: status,
+          notes: `Auto-added as component of ${parentName}`,
+          added_by: addedBy,
+        };
+        const cr = await sb.aiOrgTools.add(childRow);
+        const addedChild = Array.isArray(cr) ? cr[0] : cr;
+        if (addedChild) { aiCatState.orgTools.push(addedChild); childrenAdded++; }
+      } catch (_) { /* skip — may already exist */ }
+    }
+
     aiCatState.modal = null;
-    // Switch to My Tools tab showing the right sub-tab
     aiCatState.tab = 'mytools';
     aiCatState.myToolsTab = ['approved','conditional'].includes(status) ? 'active' : 'flagged';
-    toast('Tool added to your inventory.');
+    const msg = childrenAdded > 0
+      ? `${parentName} + ${childrenAdded} component${childrenAdded > 1 ? 's' : ''} added to your inventory.`
+      : 'Tool added to your inventory.';
+    toast(msg);
     aitcRefresh();
   } catch (e) {
     const err = document.getElementById('aitc-modal-err');
