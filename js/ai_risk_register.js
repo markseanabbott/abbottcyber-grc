@@ -189,7 +189,10 @@ function _airrRenderList() {
         AI-specific risks tagged with NIST AI RMF and ISO 42001 controls
       </div>
     </div>
-    ${canEdit ? `<button class="btn btn-cyan btn-sm" onclick="airrAdd()">+ Add Risk</button>` : ''}
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <button class="btn btn-outline btn-sm" onclick="rrSyncFromAiPoam()" title="Pull AI Governance POAM gaps into the main Risk Register">↻ AI Gov → Risk Register</button>
+      ${canEdit ? `<button class="btn btn-cyan btn-sm" onclick="airrAdd()">+ Add Risk</button>` : ''}
+    </div>
   </div>
 
   <div style="display:flex;gap:8px;margin-bottom:.5rem;flex-wrap:wrap;align-items:center">

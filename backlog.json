@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.4.0",
   "created": "2026-05-14",
-  "updated": "2026-06-25 (session 68)",
+  "updated": "2026-06-25 (session 69)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1211,7 +1211,8 @@
         {
           "id": "r22",
           "text": "Inline editable rows — edit any field without opening a separate modal",
-          "done": false
+          "done": true,
+          "notes": "rrStartEdit(id)/rrCancelEdit()/rrSaveInline(id)/rrInlineVal(id,field) in risk_register.js. rrRow() checks rrState.editingId — if match, renders inputs in-place (blue tinted row). POAM rows: editable = threat_source, residual, owner, due, treatment notes. Manual rows: all fields. Treatment notes textarea in actions cell. Edit/Edit Notes modal buttons replaced with single 'Edit' inline trigger. Accept modal remains."
         },
         {
           "id": "r23",

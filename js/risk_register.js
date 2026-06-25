@@ -8,11 +8,12 @@
 // ============================================================
 
 let rrState = {
-  rows:    [],
-  loading: false,
-  orgId:   null,
-  filter:  'all',
-  modal:   null,   // { type:'add'|'editNotes'|'editManual'|'accept', row? }
+  rows:      [],
+  loading:   false,
+  orgId:     null,
+  filter:    'all',
+  modal:     null,     // { type:'add'|'accept', row? }
+  editingId: null,     // row id currently in inline-edit mode
 };
 
 // ─── LOAD ────────────────────────────────────────────────────────────────────
@@ -48,7 +49,6 @@ function renderRiskRegister() {
     </div>
     <div style="display:flex;gap:.5rem;flex-wrap:wrap">
       <button class="btn btn-outline btn-sm" onclick="rrSyncFromPoam()" title="Pull latest CIS POAM gaps into the register">↻ CIS POAM</button>
-      <button class="btn btn-outline btn-sm" onclick="rrSyncFromAiPoam()" title="Pull latest AI Governance POAM gaps into the register">↻ AI Gov</button>
       <button class="btn btn-cyan btn-sm" onclick="rrOpenAdd()">+ Add Risk</button>
     </div>
   </div>
@@ -165,9 +165,10 @@ function rrTable(rows) {
 }
 
 function rrRow(r) {
-  const isPoam   = r.source === 'cis_poam';
-  const isAiPoam = r.source === 'ai_poam';
-  const idx      = rrState.rows.findIndex(x => x.id === r.id);
+  const isPoam     = r.source === 'cis_poam';
+  const isAiPoam   = r.source === 'ai_poam';
+  const idx        = rrState.rows.findIndex(x => x.id === r.id);
+  const isEditing  = rrState.editingId === r.id;
 
   const sourceBadge = isPoam
     ? `<span class="badge b-navy" style="font-size:10px;padding:2px 7px">CIS POAM</span>`
@@ -184,27 +185,77 @@ function rrRow(r) {
   const threatChip = r.threat_source
     ? `<span style="font-size:10px;font-weight:600;padding:1px 7px;border-radius:10px;background:${threatBadgeColor[r.threat_source] || '#475569'}18;color:${threatBadgeColor[r.threat_source] || '#475569'};border:1px solid ${threatBadgeColor[r.threat_source] || '#475569'}30;margin-right:4px">${esc(r.threat_source)}</span>`
     : '';
-  const title = `<div style="font-weight:600;color:var(--text);line-height:1.3">${esc(r.risk_title || '—')}</div>
+  const titleDisplay = `<div style="font-weight:600;color:var(--text);line-height:1.3">${esc(r.risk_title || '—')}</div>
     ${r.risk_description ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4;max-width:320px">${esc(r.risk_description)}</div>` : ''}
     ${threatChip ? `<div style="margin-top:4px">${threatChip}</div>` : ''}`;
 
+  if (isEditing) {
+    const iSel = (field, opts, val) => {
+      const options = ['', ...opts].map(o => `<option value="${o}"${o===val?' selected':''}>${o||'— select —'}</option>`).join('');
+      return `<select id="rr_il_${r.id}_${field}" style="width:100%;padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:#fff;box-sizing:border-box">${options}</select>`;
+    };
+    const iText = (field, val, placeholder) =>
+      `<input id="rr_il_${r.id}_${field}" type="text" value="${esc(val)}" placeholder="${placeholder||''}"
+        style="width:100%;padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:12px;box-sizing:border-box">`;
+    const iDate = (field, val) =>
+      `<input id="rr_il_${r.id}_${field}" type="date" value="${esc(val)}"
+        style="width:100%;padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:12px;box-sizing:border-box">`;
+
+    const riskCell = (isPoam || isAiPoam)
+      ? `${titleDisplay}
+         <div style="margin-top:5px">${iSel('threat_source',['Internal','External','Natural','Third-Party'], r.threat_source||'')}</div>`
+      : `<div>${iText('title', r.risk_title||'', 'Risk title')}</div>
+         <div style="margin-top:3px">${iText('desc', r.risk_description||'', 'Description')}</div>
+         <div style="margin-top:3px">${iSel('threat_source',['Internal','External','Natural','Third-Party'], r.threat_source||'')}</div>`;
+
+    const inherentCell = (isPoam || isAiPoam)
+      ? rrRatingBadge(r.inherent_risk_rating)
+      : iSel('inherent',['Critical','High','Medium','Low'], r.inherent_risk_rating||'');
+
+    const statusCell = (isPoam || isAiPoam)
+      ? rrStatusBadge(r.risk_status)
+      : iSel('status',['Open','In Progress','Accepted','Closed','Transferred'], r.risk_status||'Open');
+
+    const actionsCell = `
+      <div style="display:flex;flex-direction:column;gap:.35rem;min-width:155px">
+        <div style="display:flex;gap:.3rem">
+          <button id="rr_inline_save_${r.id}" class="btn btn-cyan btn-sm" onclick="rrSaveInline('${r.id}')">💾 Save</button>
+          <button class="btn btn-outline btn-sm" onclick="rrCancelEdit()">✕</button>
+        </div>
+        <textarea id="rr_il_${r.id}_notes" rows="2" placeholder="Treatment notes"
+          style="width:100%;padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:11.5px;resize:vertical;font-family:inherit;box-sizing:border-box">${esc(r.treatment_notes||'')}</textarea>
+      </div>`;
+
+    return `<tr style="border-bottom:1px solid var(--border);vertical-align:top;background:#f0f6ff">
+      <td style="padding:.5rem .75rem">${sourceBadge}</td>
+      <td style="padding:.5rem .75rem">${ref}</td>
+      <td style="padding:.5rem .75rem;min-width:220px">${riskCell}</td>
+      <td style="padding:.5rem .75rem">${inherentCell}</td>
+      <td style="padding:.5rem .75rem">${iSel('residual',['Critical','High','Medium','Low'], r.residual_risk_rating||'')}</td>
+      <td style="padding:.5rem .75rem">${statusCell}</td>
+      <td style="padding:.5rem .75rem">${iText('owner', r.risk_owner||'', 'Owner')}</td>
+      <td style="padding:.5rem .75rem">${iDate('due', r.due_date||'')}</td>
+      <td style="padding:.5rem .75rem">${actionsCell}</td>
+    </tr>`;
+  }
+
   const actions = (isPoam || isAiPoam)
     ? `<div style="display:flex;gap:.4rem;flex-wrap:nowrap">
-        <button class="btn btn-outline btn-sm" onclick="rrOpenEditNotes(${idx})">Edit Notes</button>
+        <button class="btn btn-outline btn-sm" onclick="rrStartEdit('${r.id}')">Edit</button>
         <button class="btn btn-outline btn-sm" onclick="setNav('${isPoam ? 'cis' : 'ai_unified'}')" title="Manage status in the POAM" style="white-space:nowrap">→ POAM</button>
        </div>`
     : `<div style="display:flex;gap:.4rem;flex-wrap:nowrap">
         ${(r.risk_status !== 'Accepted' && r.risk_status !== 'Closed')
           ? `<button class="btn btn-outline btn-sm" onclick="rrOpenAccept(${idx})">Accept</button>`
           : ''}
-        <button class="btn btn-outline btn-sm" onclick="rrOpenEditManual(${idx})">Edit</button>
+        <button class="btn btn-outline btn-sm" onclick="rrStartEdit('${r.id}')">Edit</button>
         <button class="btn btn-red btn-sm" onclick="rrDeleteManual('${r.id}')">Del</button>
        </div>`;
 
   return `<tr style="border-bottom:1px solid var(--border);vertical-align:middle">
     <td style="padding:.65rem .75rem">${sourceBadge}</td>
     <td style="padding:.65rem .75rem">${ref}</td>
-    <td style="padding:.65rem .75rem;min-width:220px">${title}</td>
+    <td style="padding:.65rem .75rem;min-width:220px">${titleDisplay}</td>
     <td style="padding:.65rem .75rem">${rrRatingBadge(r.inherent_risk_rating)}</td>
     <td style="padding:.65rem .75rem">${rrRatingBadge(r.residual_risk_rating)}</td>
     <td style="padding:.65rem .75rem">${rrStatusBadge(r.risk_status)}</td>
@@ -262,10 +313,8 @@ function rrModalHtml() {
   if (!m) return '';
 
   let body = '';
-  if (m.type === 'add')             body = rrModalAdd();
-  else if (m.type === 'editNotes')  body = rrModalEditNotes(m.row);
-  else if (m.type === 'editManual') body = rrModalEditManual(m.row);
-  else if (m.type === 'accept')     body = rrModalAccept(m.row);
+  if (m.type === 'add')    body = rrModalAdd();
+  else if (m.type === 'accept') body = rrModalAccept(m.row);
 
   return `<div class="modal-backdrop" id="rrModal" onclick="if(event.target===this)rrCloseModal()" style="display:flex">
     <div class="modal-box" style="max-width:520px;width:92%">${body}</div>
@@ -540,6 +589,59 @@ async function rrDeleteManual(id) {
     rrRefresh();
   } catch(e) {
     toast('Delete failed: ' + e.message, '#dc2626');
+  }
+}
+
+// ─── INLINE EDIT ─────────────────────────────────────────────────────────────
+
+function rrStartEdit(id) {
+  rrState.editingId = id;
+  rrRefresh();
+}
+
+function rrCancelEdit() {
+  rrState.editingId = null;
+  rrRefresh();
+}
+
+function rrInlineVal(id, field) {
+  const el = document.getElementById(`rr_il_${id}_${field}`);
+  return el ? el.value.trim() : '';
+}
+
+async function rrSaveInline(id) {
+  const row = rrState.rows.find(r => r.id === id);
+  if (!row) return;
+  const isPoam = row.source === 'cis_poam' || row.source === 'ai_poam';
+  const saveBtn = document.getElementById(`rr_inline_save_${id}`);
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '…'; }
+  try {
+    const patch = {
+      threat_source:        rrInlineVal(id, 'threat_source') || null,
+      residual_risk_rating: rrInlineVal(id, 'residual') || null,
+      risk_owner:           rrInlineVal(id, 'owner') || null,
+      due_date:             rrInlineVal(id, 'due') || null,
+      treatment_notes:      rrInlineVal(id, 'notes') || null,
+    };
+    if (!isPoam) {
+      const title = rrInlineVal(id, 'title');
+      if (!title) { toast('Risk title is required', '#dc2626'); if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 Save'; } return; }
+      Object.assign(patch, {
+        risk_title:           title,
+        risk_description:     rrInlineVal(id, 'desc') || null,
+        inherent_risk_rating: rrInlineVal(id, 'inherent') || null,
+        risk_status:          rrInlineVal(id, 'status') || 'Open',
+      });
+    }
+    await sb.riskRegister.update(id, patch);
+    const idx = rrState.rows.findIndex(r => r.id === id);
+    if (idx >= 0) Object.assign(rrState.rows[idx], patch);
+    rrState.editingId = null;
+    toast('Saved', '#15803d');
+    rrRefresh();
+  } catch(e) {
+    toast('Save failed: ' + e.message, '#dc2626');
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 Save'; }
   }
 }
 
