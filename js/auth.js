@@ -172,7 +172,7 @@ async function authLoadProfile() {
 // ============================================================
 function isViewOnly()    { return (viewAsState?.role || authState.profile?.role) === 'viewer'; }
 function isAdmin()       { return ['platform_admin','org_admin'].includes(viewAsState?.role || authState.profile?.role || ''); }
-function isPlatformAdmin() { return authState.profile?.role === 'platform_admin'; } // always real role — not overridden by view-as
+function isPlatformAdmin() { return (viewAsState?.role || authState.profile?.role) === 'platform_admin'; }
 
 // ============================================================
 // LOGIN SCREEN
