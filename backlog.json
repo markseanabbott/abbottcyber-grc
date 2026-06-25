@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.4.0",
   "created": "2026-05-14",
-  "updated": "2026-06-25 (session 67)",
+  "updated": "2026-06-25 (session 68)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -2234,9 +2234,10 @@
         {
           "id": "aig6",
           "text": "Dashboard AI tool breakdown widget — show approved / conditional / shadow IT tool counts on the home dashboard for orgs that have AI Governance module access. Small stat card or strip similar to the portfolio risk bar.",
-          "done": false,
+          "done": true,
           "priority": "Low",
-          "phase": 2
+          "phase": 2,
+          "notes": "Session 68: js/home.js. Added ai_risk_register (type: 'ai_risk') and ai_tool_catalog (type: 'ai_tools') to WIDGET_CATALOG. _homeAiRiskChicklet() — shows open AI risk count, Critical/High/Medium/Low breakdown chips, top-5 open risk rows sortable by rating. _homeAiToolsChicklet() — shows total tool count, status breakdown chips (Approved/Conditional/Not Approved/Shadow IT), top-4 tools by name. _homeBackgroundLoadAI() — called from renderHome(); fires background load of aiRRState and aiCatState when those widgets are in the layout and data is stale; re-renders home when load completes. Grid upgraded from 3→4 columns (repeat(4,1fr)), clamp updated (Math.min(4,...)), width buttons extended to 1×/2×/3×/4×."
         },
         {
           "id": "aig7",

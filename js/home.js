@@ -337,6 +337,9 @@ function renderHome() {
     loadHomePortfolio();
   }
 
+  // Background-load AI widget data if those widgets are in the layout and data is stale
+  _homeBackgroundLoadAI();
+
   // Kick off gap data load if stale — grLoad() will re-render home when done
   if (typeof grLoad === 'function' && (!grState.loaded || grState.orgId !== currentOrg.id)) {
     grLoad();
@@ -428,16 +431,18 @@ function renderHome() {
 // ============================================================
 
 const WIDGET_CATALOG = [
-  { id: 'cis',           label: 'CIS Controls v8',    icon: '✅', nav: 'cis',          type: 'score', desc: '' },
-  { id: 'insurance',     label: 'Insurance Readiness', icon: '🛡️', nav: 'insurance',    type: 'score', desc: '' },
-  { id: 'techstack',     label: 'Technology Stack',    icon: '🖥️', nav: 'techstack',    type: 'score', desc: '' },
-  { id: 'cmmc',          label: 'CMMC Level 1',        icon: '🛡️', nav: 'cmmc',         type: 'score', desc: '' },
-  { id: 'cmmc2',         label: 'CMMC Level 2',        icon: '🏛️', nav: 'cmmc2',        type: 'score', desc: '' },
-  { id: 'ai_unified',    label: 'AI Readiness',        icon: '🤖', nav: 'ai_readiness', type: 'ai',    desc: '' },
-  { id: 'risk_register', label: 'Risk Register',       icon: '⚠️', nav: 'riskregister', type: 'risk',  desc: '' },
-  { id: 'gap_register',  label: 'Tool Gap Register',   icon: '🔧', nav: 'gap_register', type: 'gap',   desc: '' },
-  { id: 'tpra',          label: 'Vendor Risk (TPRA)',  icon: '🔍', nav: 'tpra',         type: 'link',  desc: 'Deep-dive vendor risk assessments. Tier vendors Critical to Low based on data sensitivity and security posture.' },
-  { id: 'tabletop',      label: 'Tabletop Exercises',  icon: '🎯', nav: 'tabletop',     type: 'link',  desc: 'Cybersecurity tabletop exercises. Operational, AI Governance, and more scenarios available.' },
+  { id: 'cis',             label: 'CIS Controls v8',          icon: '✅', nav: 'cis',             type: 'score',    desc: '' },
+  { id: 'insurance',       label: 'Insurance Readiness',      icon: '🛡️', nav: 'insurance',       type: 'score',    desc: '' },
+  { id: 'techstack',       label: 'Technology Stack',         icon: '🖥️', nav: 'techstack',       type: 'score',    desc: '' },
+  { id: 'cmmc',            label: 'CMMC Level 1',             icon: '🛡️', nav: 'cmmc',            type: 'score',    desc: '' },
+  { id: 'cmmc2',           label: 'CMMC Level 2',             icon: '🏛️', nav: 'cmmc2',           type: 'score',    desc: '' },
+  { id: 'ai_unified',      label: 'AI Readiness',             icon: '🤖', nav: 'ai_readiness',    type: 'ai',       desc: '' },
+  { id: 'risk_register',   label: 'Risk Register',            icon: '⚠️', nav: 'riskregister',    type: 'risk',     desc: '' },
+  { id: 'ai_risk_register',label: 'AI Risk Register',         icon: '🧠', nav: 'ai_risk_register',type: 'ai_risk',  desc: 'Open AI-specific risks tracked with NIST AI RMF and ISO 42001 controls.' },
+  { id: 'ai_tool_catalog', label: 'AI Application Inventory', icon: '📦', nav: 'ai_tool_catalog', type: 'ai_tools', desc: 'Approved, conditional, and shadow IT AI tool counts for this organization.' },
+  { id: 'gap_register',    label: 'Tool Gap Register',        icon: '🔧', nav: 'gap_register',    type: 'gap',      desc: '' },
+  { id: 'tpra',            label: 'Vendor Risk (TPRA)',       icon: '🔍', nav: 'tpra',            type: 'link',     desc: 'Deep-dive vendor risk assessments. Tier vendors Critical to Low based on data sensitivity and security posture.' },
+  { id: 'tabletop',        label: 'Tabletop Exercises',       icon: '🎯', nav: 'tabletop',        type: 'link',     desc: 'Cybersecurity tabletop exercises. Operational, AI Governance, and more scenarios available.' },
 ];
 
 const DEFAULT_WIDGETS = [
@@ -517,12 +522,14 @@ function renderDashWidget(wid, h, rrRows, rrLoaded) {
   if (!def) return '';
   if (typeof hasPageAccess === 'function' && !hasPageAccess(def.nav)) return '';
   switch (def.type) {
-    case 'score': return _widgetScore(def, h);
-    case 'ai':    return _homeAiChicklet(h) || _widgetLink(def);
-    case 'risk':  return _homeRiskChicklet(rrRows, rrLoaded);
-    case 'gap':   return _homeTopToolsChicklet();
-    case 'link':  return _widgetLink(def);
-    default:      return '';
+    case 'score':    return _widgetScore(def, h);
+    case 'ai':       return _homeAiChicklet(h) || _widgetLink(def);
+    case 'risk':     return _homeRiskChicklet(rrRows, rrLoaded);
+    case 'ai_risk':  return _homeAiRiskChicklet();
+    case 'ai_tools': return _homeAiToolsChicklet();
+    case 'gap':      return _homeTopToolsChicklet();
+    case 'link':     return _widgetLink(def);
+    default:         return '';
   }
 }
 
@@ -539,7 +546,7 @@ function _renderWidgetGrid(h, rrRows, rrLoaded) {
   </div>`;
 
   const cells = enabled.map(w => {
-    const span = Math.max(1, Math.min(3, w.width || 1));
+    const span = Math.max(1, Math.min(4, w.width || 1));
     const html = renderDashWidget(w.id, h, rrRows, rrLoaded);
     return html ? `<div style="grid-column:span ${span}">${html}</div>` : '';
   }).filter(Boolean).join('');
@@ -550,7 +557,7 @@ function _renderWidgetGrid(h, rrRows, rrLoaded) {
     <div style="font-size:12px">Your current access level doesn't include the selected widgets.</div>
   </div>`;
 
-  return `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;align-items:start">${cells}</div>`;
+  return `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;align-items:start">${cells}</div>`;
 }
 
 function _renderCustomizePanel() {
@@ -577,7 +584,7 @@ function _renderCustomizePanel() {
           style="width:46px;padding:3px 5px;border:1px solid var(--border);border-radius:5px;font-size:12px;text-align:center;font-family:monospace;outline:none"
           onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border)'">
         <span style="font-size:10px;color:var(--muted);margin-left:.15rem">Width</span>
-        ${[1,2,3].map(n => `<button onclick="dashSetWidth('${w.id}',${n})"
+        ${[1,2,3,4].map(n => `<button onclick="dashSetWidth('${w.id}',${n})"
           style="padding:3px 9px;font-size:11px;font-weight:700;border-radius:5px;cursor:pointer;transition:all .1s;border:1.5px solid ${enabled && width === n ? 'var(--navy)' : 'var(--border)'};background:${enabled && width === n ? 'var(--navy)' : '#fff'};color:${enabled && width === n ? '#fff' : 'var(--muted)'}">${n}×</button>`).join('')}
       </div>
     </div>`;
@@ -725,6 +732,109 @@ function _homeRiskChicklet(rows, loaded) {
     </div>
     ${body}
   </div>`;
+}
+
+function _homeAiRiskChicklet() {
+  const loaded = typeof aiRRState !== 'undefined' && aiRRState.loaded && aiRRState.orgId === currentOrg?.id;
+  const ratingOrder = { Critical: 0, High: 1, Medium: 2, Low: 3 };
+  const ratingStyle = { Critical: '#dc2626', High: '#ea580c', Medium: '#b45309', Low: '#15803d' };
+  const ratingBg    = { Critical: '#fef2f2', High: '#fff7ed', Medium: '#fefce8', Low: '#f0fdf4' };
+
+  let body;
+  if (!loaded) {
+    body = `<div style="padding:1.25rem;text-align:center;color:var(--muted);font-size:12px">
+      <div style="font-size:1.25rem;margin-bottom:.35rem">⏳</div>Loading AI risks…</div>`;
+  } else {
+    const open = (aiRRState.rows || []).filter(r => r.status !== 'Closed')
+      .sort((a, b) => (ratingOrder[a.rating] ?? 4) - (ratingOrder[b.rating] ?? 4));
+    if (!open.length) {
+      body = `<div style="padding:1.25rem;text-align:center;color:var(--muted);font-size:12px">
+        <div style="font-size:1.5rem;margin-bottom:.35rem">✅</div>No open AI risks.</div>`;
+    } else {
+      const counts = { Critical: 0, High: 0, Medium: 0, Low: 0 };
+      open.forEach(r => { if (counts[r.rating] !== undefined) counts[r.rating]++; });
+      const chips = Object.entries(counts).filter(([,n]) => n > 0).map(([k, n]) =>
+        `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:${ratingBg[k]};color:${ratingStyle[k]}">${n} ${k}</span>`
+      ).join('');
+      const rows = open.slice(0, 5).map(r => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:.4rem .9rem;border-bottom:1px solid var(--border);cursor:pointer;gap:.5rem" onclick="setNav('ai_risk_register')" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+          <div style="min-width:0;flex:1;font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH(r.category || '—')}</div>
+          <span style="flex-shrink:0;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:${ratingBg[r.rating]||'#f3f4f6'};color:${ratingStyle[r.rating]||'#374151'}">${escH(r.rating||'')}</span>
+        </div>`).join('');
+      body = `<div style="display:flex;gap:.35rem;flex-wrap:wrap;padding:.5rem .9rem .4rem">${chips}</div>${rows}`;
+    }
+  }
+
+  return `<div class="card" style="padding:0;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .9rem .5rem;border-bottom:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:700">🧠 AI Risk Register</div>
+      <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();setNav('ai_risk_register')">View all →</button>
+    </div>
+    ${body}
+  </div>`;
+}
+
+function _homeAiToolsChicklet() {
+  const loaded = typeof aiCatState !== 'undefined' && aiCatState.orgLoaded && aiCatState.orgId === currentOrg?.id;
+  const statusStyle = { approved: '#15803d', conditional: '#b45309', not_approved: '#dc2626', shadow_it: '#6d28d9' };
+  const statusBg    = { approved: '#f0fdf4', conditional: '#fefce8', not_approved: '#fef2f2', shadow_it: '#f5f3ff' };
+  const statusLabel = { approved: 'Approved', conditional: 'Conditional', not_approved: 'Not Approved', shadow_it: 'Shadow IT' };
+
+  let body;
+  if (!loaded) {
+    body = `<div style="padding:1.25rem;text-align:center;color:var(--muted);font-size:12px">
+      <div style="font-size:1.25rem;margin-bottom:.35rem">⏳</div>Loading AI tools…</div>`;
+  } else {
+    const tools = aiCatState.orgTools || [];
+    if (!tools.length) {
+      body = `<div style="padding:1.25rem;text-align:center;color:var(--muted);font-size:12px">
+        <div style="font-size:1.5rem;margin-bottom:.35rem">📦</div>No tools in inventory yet.<br>
+        <span style="font-size:11px">Add tools via AI Application Inventory.</span></div>`;
+    } else {
+      const counts = { approved: 0, conditional: 0, not_approved: 0, shadow_it: 0 };
+      tools.forEach(t => { if (counts[t.org_status] !== undefined) counts[t.org_status]++; });
+      const chips = Object.entries(counts).filter(([,n]) => n > 0).map(([k, n]) =>
+        `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:${statusBg[k]};color:${statusStyle[k]}">${n} ${statusLabel[k]}</span>`
+      ).join('');
+      const recent = tools.slice(0, 4).map(t => {
+        const name = t.is_custom ? (t.custom_name || 'Custom Tool') : (aiCatState.tools.find(c => c.id === t.tool_catalog_id)?.name || 'Tool');
+        const st = t.org_status || 'shadow_it';
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:.4rem .9rem;border-bottom:1px solid var(--border);cursor:pointer;gap:.5rem" onclick="setNav('ai_tool_catalog')" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+          <div style="min-width:0;flex:1;font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH(name)}</div>
+          <span style="flex-shrink:0;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:${statusBg[st]||'#f3f4f6'};color:${statusStyle[st]||'#374151'}">${statusLabel[st]||st}</span>
+        </div>`;
+      }).join('');
+      body = `<div style="display:flex;gap:.35rem;flex-wrap:wrap;padding:.5rem .9rem .4rem">${chips}</div>${recent}
+        ${tools.length > 4 ? `<div style="padding:.4rem .9rem;font-size:11px;color:var(--muted);text-align:center">+${tools.length - 4} more</div>` : ''}`;
+    }
+  }
+
+  return `<div class="card" style="padding:0;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .9rem .5rem;border-bottom:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:700">📦 AI Application Inventory</div>
+      <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();setNav('ai_tool_catalog')">View all →</button>
+    </div>
+    ${body}
+  </div>`;
+}
+
+function _homeBackgroundLoadAI() {
+  if (!currentOrg) return;
+  const cfg = getDashConfig();
+  const needsRR    = cfg.some(w => w.id === 'ai_risk_register');
+  const needsTools = cfg.some(w => w.id === 'ai_tool_catalog');
+  if (!needsRR && !needsTools) return;
+  const rrStale    = needsRR    && !(typeof aiRRState  !== 'undefined' && aiRRState.loaded    && aiRRState.orgId    === currentOrg.id);
+  const toolsStale = needsTools && !(typeof aiCatState !== 'undefined' && aiCatState.orgLoaded && aiCatState.orgId   === currentOrg.id);
+  if (!rrStale && !toolsStale) return;
+  setTimeout(async () => {
+    if (rrStale    && typeof loadAiRiskRegister === 'function') await loadAiRiskRegister(currentOrg.id);
+    if (toolsStale && typeof loadAiInventory    === 'function') await loadAiInventory(currentOrg.id);
+    if (activeNav === 'home') {
+      const mc = document.getElementById('mainContent');
+      if (mc) { mc.innerHTML = renderHome(); setTimeout(drawHomeCharts, 80); }
+    }
+  }, 0);
 }
 
 function _homeAiChicklet(h) {
