@@ -2240,10 +2240,19 @@
         },
         {
           "id": "aig7",
-          "text": "AI Governance Tabletop ACL — in Module Management, add the AI Governance module to the 'AI Governance Tabletop' (tt_ai) page mapping so it appears in the g_ai nav group for AI Governance-only users. Currently only mapped to Table Top Exercises module.",
+          "text": "AI Governance Tabletop ACL — in Module Management, map 'AI Governance Tabletop' (tt_ai) page to the AI Governance module column so AI Governance-only users can access it via the Exercises hub. Admin action: Settings → Module Management → AI Governance Tabletop row → check AI Governance column → Save.",
           "done": false,
           "priority": "Low",
-          "phase": 2
+          "phase": 2,
+          "notes": "Code is ready — hub page ACL fix (hasPageAccess _HUB_SUBPAGES) was shipped in session 67. Only remaining step is the Module Management UI config by a platform admin."
+        },
+        {
+          "id": "aig8",
+          "text": "AI tool catalog — seeded tools: Copilot Free, Microsoft 365 Copilot, Azure AI Foundry + APIM (component), Ctrl AI (Expedient). PATCH_038 adds these. When adding a parent tool from catalog, all component children are auto-added at the same status.",
+          "done": true,
+          "priority": "Medium",
+          "phase": 2,
+          "notes": "Built session 67. PATCH_038.sql adds 5 tools. aitcSaveAddFromCatalog() auto-adds children via aitcChildIds(). Toast shows 'ParentName + N components added'."
         }
       ]
     },
