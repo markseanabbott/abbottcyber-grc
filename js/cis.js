@@ -4115,65 +4115,59 @@ function cisGenerateReportPrompt() {
       ? `Score of ${score}% meets the ${ADVANCE_THRESHOLD}% advancement threshold. The foundational ${goal.toUpperCase()} programme is solid — recommend scoping next year's assessment at ${nextIg} to expand the security framework.`
       : `Score of ${score}% is below the ${ADVANCE_THRESHOLD}% advancement threshold. Recommend consolidating the current ${goal.toUpperCase()} programme — depth before breadth — before expanding scope to ${nextIg}.`;
 
-  const prompt = `Write a professional cybersecurity executive report commentary for ${currentOrg.name}. Target audience: non-technical CEO or board. Focus on business risk and practical outcomes — avoid jargon.
+  const prompt = `You are a concise cybersecurity reporting assistant. Write a short CIS Controls executive report commentary for ${currentOrg.name}. Audience: non-technical CEO or board.
 
-ORGANISATION: ${currentOrg.name}
-ASSESSMENT DATE: ${run.date || 'Unknown'}
-ASSESSOR: ${run.conductedBy || 'Not specified'}
-FRAMEWORK: CIS Controls v8 — ${goal.toUpperCase()} Implementation Group
-OVERALL SCORE: ${score}% — Risk Band: ${band}
-SAFEGUARDS: ${yesN} Yes, ${partN} Partial, ${noCount} No (of ${yesN + partN + noCount} in scope)
+CRITICAL FORMATTING RULES — any violation makes the output unusable:
+- Plain text ONLY. Zero markdown. No ** no __ no ## no > no backticks. Nothing that is not a letter, number, punctuation, or hyphen bullet.
+- Bullets must use exactly "- " (hyphen space). No other bullet character.
+- Numbered items must use "1." "2." "3." format only.
+- Use the EXACT section markers shown (---CONTROLS--- etc). Do not invent new sections.
+- Be brief. Each instruction is a hard cap, not a suggestion.
+- Do not restate numbers the client can already see on the page. Interpret them instead.
 
-IMPLEMENTATION GROUP PROGRESS:
-${igProg}
+ASSESSMENT DATA:
+Organisation: ${currentOrg.name}
+Date: ${run.date || 'Unknown'} | Assessor: ${run.conductedBy || 'Not specified'}
+Framework: CIS Controls v8 — ${goal.toUpperCase()} | Score: ${score}% (${band})
+Safeguards in scope: ${yesN} Yes / ${partN} Partial / ${noCount} No
+IG breakdown: ${igProg}
+Score trend: ${trendStr} | Change vs prior: ${trendDelta}
+Controls improved: ${improvedAreas}
+Controls regressed: ${regressedAreas}
+Programme direction: ${advancementNote}
 
-SCORE TREND: ${trendStr}
-TREND DELTA (vs previous run): ${trendDelta}
-IMPROVEMENT AREAS (CIS Controls with gains since last run): ${improvedAreas}
-REGRESSION AREAS (CIS Controls with losses since last run): ${regressedAreas}
-
-ADVANCEMENT RECOMMENDATION: ${advancementNote}
-
-TOP PRIORITY GAPS (No answers, IG1 first = highest priority):
+Top priority gaps (No answers, IG1 first):
 ${noGaps || '— None —'}
 
-PARTIALLY ADDRESSED:
+Partially addressed:
 ${partGaps || '— None —'}
 
-OUTPUT RULES — non-negotiable:
-- Plain text only. No markdown, no asterisks, no pound signs, no bold markers.
-- Bullets: use a hyphen and space "- " at the start of each line.
-- Numbered items: use "1." "2." etc. Do NOT write both a number and a separate bullet.
-- Use EXACTLY the section markers shown below — they are parsed by the export engine.
-- Do NOT write a title, score table, domain breakdown, or any section not listed below.
+OUTPUT — write EXACTLY this structure in this order. Nothing before, nothing after, no added headings:
 
-OUTPUT — write EXACTLY in this order:
-
-Write 2–3 paragraphs of executive summary prose. Plain sentences. What does this ${score}% ${band} score mean for the business? What is working? What is the primary risk if gaps are not addressed?
-
-Close the executive summary with 1–2 forward-looking sentences on recommended scope. Use this as context: "${advancementNote}" Speak to programme maturity and the business case — not percentages or thresholds.
+[2–3 sentences only. What does ${score}% mean for the business — not a restatement of the number but what it signals about exposure and readiness. End with 1 sentence on programme direction using the context: "${advancementNote}" — speak to business value, not thresholds.]
 
 KEY FINDINGS
-- [Risk described as business impact — what could go wrong, not a technical gap — one sentence]
-- [3 to 4 findings total]
-- [Focus on consequence for the business]
-- [Optional 4th finding]
+- [Most critical gap framed as business consequence — what could go wrong, not a technical label — 1 sentence max]
+- [Second finding — different risk area — 1 sentence]
+- [Third finding — 1 sentence]
+- [Fourth finding only if genuinely distinct — omit if not]
 
 PRIORITY RECOMMENDATIONS
-1. [Specific action with a one-sentence rationale — why now, not later]
-2. [2 to 3 recommendations total]
-3. [Actionable, not vague]
+1. [Specific action + 1-sentence why-now rationale — no vague advice]
+2. [Second action + rationale]
+3. [Third action only if genuinely needed — omit if not]
 
 ---CONTROLS---
-Write 1–2 sentences about the IG tier progress breakdown. What does the score distribution across ${igScopeLabel} tell leadership about the depth vs. breadth of their security maturity? Is foundational (IG1) coverage solid before tackling advanced controls?
+- [1 sentence: what IG1 coverage signals about foundational security readiness]
+${goalN >= 2 ? `- [1 sentence: what IG2${goalN >= 3 ? '/IG3' : ''} progress signals about programme depth]` : ''}
 
 ---TREND---
-${hasTrend
-  ? `Write 1–2 sentences about the score trajectory: ${trendStr} (${trendDelta}). ${improvedAreas && improvedAreas !== 'None — no gains detected' && improvedAreas !== 'N/A — first assessment' ? `Name the specific control areas that improved (${improvedAreas}) and frame them as capabilities the organisation has strengthened — not just a number going up. ` : ''}${regressedAreas && regressedAreas !== 'None' && regressedAreas !== 'N/A — first assessment' ? `Acknowledge any areas that declined (${regressedAreas}) factually and briefly. ` : ''}What does this trajectory signal about programme momentum?`
-  : `Write 1 sentence establishing this as the first baseline assessment for ${currentOrg.name}. Set the tone: a baseline is the starting point, not a verdict.`}
+- [1 sentence: ${hasTrend ? `what the ${trendDelta} trajectory signals about programme momentum${improvedAreas && improvedAreas !== 'None — no gains detected' && improvedAreas !== 'N/A — first assessment' ? ` — name the improved areas (${improvedAreas}) as capabilities gained` : ''}${regressedAreas && regressedAreas !== 'None' && regressedAreas !== 'N/A — first assessment' ? `, acknowledge any regression (${regressedAreas}) briefly` : ''}` : `establish this as the opening baseline for ${currentOrg.name} — a starting point, not a verdict`}]
 
 ---GAPS---
-Write 1 paragraph about the top priority gaps. What pattern do you see in where gaps cluster? What is the combined business risk, and what is the logical first step to close the most critical exposures?`;
+- [Pattern: where do the top gaps cluster — control domain or type?]
+- [Business risk: what combined exposure do the top gaps create?]
+- [First step: the single most logical action to close the most critical exposure]`;
 
   navigator.clipboard.writeText(prompt)
     .then(() => toast('✓ AI prompt copied — paste into Claude to generate commentary', '#152168'))
