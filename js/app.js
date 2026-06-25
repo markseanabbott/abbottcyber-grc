@@ -560,6 +560,17 @@ function renderMain() {
     }
     return;
   }
+  if (activeNav === 'vendor_dir') {
+    if (!vendorDirState.loaded || vendorDirState.orgId !== currentOrg?.id) {
+      vendorDirState.loading = true;
+      vendorDirState.orgId   = currentOrg?.id;
+      el.innerHTML = renderVendorDirectory();
+      loadVendorDirectory(currentOrg.id).then(() => { if (activeNav === 'vendor_dir') el.innerHTML = renderVendorDirectory(); });
+    } else {
+      el.innerHTML = renderVendorDirectory();
+    }
+    return;
+  }
   if (activeNav === 'ai_tool_catalog') {
     el.innerHTML = renderAiToolCatalog();
     // Always reload org tools when switching orgs; catalog only once

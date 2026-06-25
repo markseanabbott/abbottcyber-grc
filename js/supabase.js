@@ -228,6 +228,14 @@ sb.appInventory = {
   delete: (id)        => sbFetch(`app_inventory?id=eq.${id}`, 'DELETE'),
 };
 
+// Vendor Directory persistence layer (PATCH_042)
+sb.vendorDir = {
+  getForOrg: (orgId) => sbFetch(`vendor_directory?org_id=eq.${orgId}&order=vendor_name.asc`),
+  add:    (row)       => sbFetch('vendor_directory', 'POST', row, { Prefer: 'return=representation' }),
+  update: (id, patch) => sbFetch(`vendor_directory?id=eq.${id}`, 'PATCH', patch, { Prefer: 'return=representation' }),
+  delete: (id)        => sbFetch(`vendor_directory?id=eq.${id}`, 'DELETE'),
+};
+
 // Tabletop persistence layer — wraps Supabase calls for the operational tabletop module.
 sb.tt = {
   // RPC: ask the DB for a fresh 6-char session code (alphabet defined in SUPABASE_SCHEMA.sql)

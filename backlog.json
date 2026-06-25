@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.4.0",
   "created": "2026-05-14",
-  "updated": "2026-06-25 (session 71)",
+  "updated": "2026-06-25 (session 72)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -2280,26 +2280,30 @@
         {
           "id": "gov2",
           "text": "Application risk and criticality — criticality rating per app (Critical/High/Medium/Low) with rationale. Risk level derived from criticality + data classification. Regulatory scope flag. Displayed as sortable/filterable badges on list view.",
-          "done": false,
-          "phase": 2
+          "done": true,
+          "phase": 2,
+          "notes": "PATCH_041: criticality, criticality_rationale, in_regulatory_scope columns on app_inventory. app_inventory.js: _ainvDeriveRisk() derives risk from criticality × data classification, criticality filter chips in list view, Crit./Risk column in table, Risk & Criticality modal tab, regulatory scope badge."
         },
         {
           "id": "gov3",
           "text": "Application BCDR classification — per-app BCDR fields: recovery priority (Tier 1/2/3), RTO, RPO, backup method, dependencies (other apps or vendors), BCDR owner contact. Summary view of Tier 1 apps for exec reporting.",
-          "done": false,
-          "phase": 2
+          "done": true,
+          "phase": 2,
+          "notes": "PATCH_041: bcdr_priority, bcdr_rto, bcdr_rpo, bcdr_backup_method, bcdr_dependencies, bcdr_owner columns on app_inventory. app_inventory.js: BCDR modal tab, _ainvBcdrView() exec summary (Tier 1/2/3 stat cards + Tier 1 app cards), BCDR Summary button in list header. appInvSetView() toggles between list and bcdr views."
         },
         {
           "id": "gov4",
           "text": "Application IR classification — per-app IR fields: in-scope for IR (yes/no), IR priority tier, key technical contact, vendor IR contact, escalation path, last incident date. IR priority auto-suggested from criticality + data classification. Used to pre-populate IR runbooks in tabletop exercises.",
-          "done": false,
-          "phase": 2
+          "done": true,
+          "phase": 2,
+          "notes": "PATCH_041: ir_in_scope, ir_priority_tier, ir_tech_contact, ir_vendor_contact, ir_escalation_path, ir_last_incident_date columns on app_inventory. app_inventory.js: IR modal tab, _ainvSuggestIrTier() auto-suggestion (criticality × data class), appInvIrAutoSuggest() button in modal, IR badge on app name in table."
         },
         {
           "id": "gov5",
           "text": "Vendor Directory scaffold — list view of all vendors. Fields: vendor name, product/service, website, category (Cloud Infrastructure/SaaS/Managed Services/Professional Services/Hardware/Telecom/Other), primary contact name and email, status (Active/Inactive/Under Review), date added, last reviewed.",
-          "done": false,
-          "phase": 2
+          "done": true,
+          "phase": 2,
+          "notes": "PATCH_042: vendor_directory table. js/vendor_directory.js: full CRUD, category colour-coded chips (7 types), status badges, top-category summary line, status filter tabs. sb.vendorDir helpers in supabase.js. vendor_dir added to _HUB_SUBPAGES.governance and PAGE_REGISTRY in modules.js. comingSoon removed from GOVERNANCE_CATALOG in home.js. Render routing in app.js."
         },
         {
           "id": "gov6",

@@ -36,7 +36,7 @@ async function modAccessLoadGrants() {
 // Hub pages are navigation containers — accessible if the user can reach any sub-page inside.
 const _HUB_SUBPAGES = {
   assessments: ['insurance','cis','techstack','tpra','cmmc','cmmc2','ai_readiness','nist_ai','iso42001','ai_unified','rapid_pyramid'],
-  governance:  ['riskregister','ai_risk_register','ai_tool_catalog','policy_lib','app_inv'],
+  governance:  ['riskregister','ai_risk_register','ai_tool_catalog','policy_lib','app_inv','vendor_dir'],
   exercises:   ['tabletop','tt_ai'],
 };
 
@@ -154,6 +154,7 @@ const PAGE_REGISTRY = [
   { group: 'Governance',    id: 'ai_tool_catalog',  label: 'AI Application Inventory' },
   { group: 'Governance',    id: 'policy_lib',       label: 'Policy Library' },
   { group: 'Governance',    id: 'app_inv',          label: 'Application Inventory' },
+  { group: 'Governance',    id: 'vendor_dir',       label: 'Vendor Directory' },
   // Exercises
   { group: 'Exercises',     id: 'exercises',       label: 'Exercises Hub' },
   { group: 'Exercises',     id: 'tabletop',        label: 'Cybersecurity Tabletop' },
