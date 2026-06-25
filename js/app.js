@@ -105,14 +105,16 @@ function buildOrgDropdown() {
   const switchableIds = new Set(switchable.map(o => o.id));
   let h = '';
 
+  const TIER_LABEL = { platform: 'Platform', grandfather: 'Organization', father: 'Company', child: 'Entity' };
   function renderNode(o, depth) {
-    const indent = depth * 14;
-    const prefix = depth > 0
-      ? `<span style="color:rgba(255,255,255,0.25);margin-right:4px;font-size:10px">${'—'.repeat(depth)}</span>`
-      : '';
+    const indent = depth * 16;
+    const label = TIER_LABEL[o.tier] || '';
     h += `<div class="org-option${currentOrg?.id === o.id ? ' selected' : ''}" onclick="selectOrg('${o.id}')" style="padding-left:${8 + indent}px">
       <div class="org-avatar ${tierAvClass(o.tier)}" style="flex-shrink:0">${tierInitials(o.name)}</div>
-      <div style="min-width:0">${prefix}<span class="org-opt-name">${o.name}</span></div>
+      <div style="min-width:0;overflow:hidden">
+        <div class="org-opt-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.name}</div>
+        ${label ? `<div class="org-opt-sub">${label}</div>` : ''}
+      </div>
     </div>`;
     // Render children in name order
     switchable

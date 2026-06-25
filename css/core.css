@@ -49,7 +49,7 @@ body{font-family:'Inter',sans-serif;font-weight:400;background:#fff;color:var(--
 .org-info{flex:1;text-align:left;overflow:hidden}
 .org-name-text{font-size:11px;font-weight:700;color:#fff;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .org-tier-text{font-size:9px;color:rgba(255,255,255,0.45);font-weight:400}
-.org-dropdown{position:absolute;bottom:calc(100% + 6px);left:0;right:0;background:var(--navy2);border:1px solid rgba(255,255,255,0.15);border-radius:9px;overflow:hidden;z-index:100;box-shadow:0 -8px 24px rgba(0,0,0,0.3);max-height:340px;overflow-y:auto}
+.org-dropdown{position:absolute;bottom:calc(100% + 6px);left:0;width:280px;background:var(--navy2);border:1px solid rgba(255,255,255,0.15);border-radius:9px;overflow:hidden;z-index:100;box-shadow:0 -8px 24px rgba(0,0,0,0.3);max-height:340px;overflow-y:auto}
 .org-section-lbl{font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.3);padding:7px 10px 3px;background:var(--navy2)}
 .org-option{display:flex;align-items:center;gap:7px;padding:6px 10px;cursor:pointer;transition:background 0.12s}
 .org-option:hover{background:rgba(255,255,255,0.08)}
