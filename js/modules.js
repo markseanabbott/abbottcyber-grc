@@ -135,7 +135,9 @@ const PAGE_REGISTRY = [
   // Governance
   { group: 'Governance',    id: 'governance',      label: 'Governance Hub' },
   { group: 'Governance',    id: 'riskregister',    label: 'Risk Register' },
-  { group: 'Governance',    id: 'policy_lib',      label: 'Policy Library' },
+  { group: 'Governance',    id: 'ai_risk_register', label: 'AI Risk Register' },
+  { group: 'Governance',    id: 'ai_tool_catalog',  label: 'AI Application Inventory' },
+  { group: 'Governance',    id: 'policy_lib',       label: 'Policy Library' },
   // Exercises
   { group: 'Exercises',     id: 'exercises',       label: 'Exercises Hub' },
   { group: 'Exercises',     id: 'tabletop',        label: 'Cybersecurity Tabletop' },

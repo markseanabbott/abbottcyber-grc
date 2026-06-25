@@ -538,6 +538,24 @@ function renderMain() {
     }
     return;
   }
+  if (activeNav === 'ai_risk_register') {
+    if (!aiRRState.loaded || aiRRState.orgId !== currentOrg?.id) {
+      el.innerHTML = renderAiRiskRegister();
+      loadAiRiskRegister(currentOrg.id).then(() => { if (activeNav === 'ai_risk_register') el.innerHTML = renderAiRiskRegister(); });
+    } else {
+      el.innerHTML = renderAiRiskRegister();
+    }
+    return;
+  }
+  if (activeNav === 'ai_tool_catalog') {
+    if (!aiCatState.loaded) {
+      el.innerHTML = renderAiToolCatalog();
+      loadAiToolCatalog().then(() => { if (activeNav === 'ai_tool_catalog') el.innerHTML = renderAiToolCatalog(); });
+    } else {
+      el.innerHTML = renderAiToolCatalog();
+    }
+    return;
+  }
   if (activeNav === 'ma_cdd') {
     if (!maState.listLoaded) {
       maState.listLoaded = true;

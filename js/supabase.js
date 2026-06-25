@@ -166,6 +166,28 @@ sb.userOrgAccess = {
   deleteForUser: (userId) => sbFetch(`user_org_access?user_id=eq.${userId}`, 'DELETE'),
 };
 
+// AI Tool Catalog persistence layer (PATCH_035)
+sb.aiCatalog = {
+  getAll:          ()              => sbFetch('ai_tool_catalog?order=sort_order.asc,name.asc'),
+  getComponents:   ()              => sbFetch('ai_tool_components?select=*'),
+  upsert:          (row)           => sbFetch('ai_tool_catalog', 'POST', row, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+  delete:          (id)            => sbFetch(`ai_tool_catalog?id=eq.${id}`, 'DELETE'),
+  addComponent:    (parentId, childId) => sbFetch('ai_tool_components', 'POST', { parent_id: parentId, child_id: childId }, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+  removeComponent: (parentId, childId) => sbFetch(`ai_tool_components?parent_id=eq.${parentId}&child_id=eq.${childId}`, 'DELETE'),
+};
+
+// AI Risk Register persistence layer (PATCH_036)
+sb.aiRiskReg = {
+  getForOrg: (orgId)      => sbFetch(`ai_risk_register?org_id=eq.${orgId}&order=risk_seq.asc`),
+  maxSeq:    async (orgId) => {
+    const r = await sbFetch(`ai_risk_register?org_id=eq.${orgId}&select=risk_seq&order=risk_seq.desc&limit=1`);
+    return (r && r[0]) ? r[0].risk_seq : 0;
+  },
+  add:    (row)        => sbFetch('ai_risk_register', 'POST', row, { Prefer: 'return=representation' }),
+  update: (id, patch)  => sbFetch(`ai_risk_register?id=eq.${id}`, 'PATCH', patch, { Prefer: 'return=representation' }),
+  delete: (id)         => sbFetch(`ai_risk_register?id=eq.${id}`, 'DELETE'),
+};
+
 // Risk Register persistence layer (PATCH_015)
 sb.riskRegister = {
   getForOrg: (orgId) => sbFetch(
