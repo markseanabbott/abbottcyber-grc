@@ -506,28 +506,76 @@ function setAuditDays(days) {
   auditTabLoad(days);
 }
 
+function exportAuditCsv() {
+  const rows = userMgmtState.auditLogs;
+  if (!rows || !rows.length) { toast('No audit log entries to export.', '#b45309'); return; }
+
+  const orgMap = {};
+  (typeof allOrgs !== 'undefined' ? allOrgs : []).forEach(o => { orgMap[o.id] = o.name; });
+
+  const EVENT_LABELS = {
+    user_created: 'User Created', user_edited: 'User Edited', user_deleted: 'User Deleted',
+    assessment_saved: 'Assessment Saved', assessment_updated: 'Assessment Updated',
+    assessment_deleted: 'Assessment Deleted', assessment_finalised: 'Assessment Finalised',
+    assessment_reopened: 'Assessment Reopened', poam_saved: 'POAM Saved',
+    tpra_published: 'TPRA Published', tpra_deleted: 'TPRA Deleted',
+    org_created: 'Org Created', org_updated: 'Org Updated', org_deleted: 'Org Deleted',
+  };
+
+  const esc = v => {
+    const s = v == null ? '' : String(v);
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+
+  const headers = ['Date/Time (UTC)', 'Actor', 'Actor Email', 'Event', 'Target', 'Organization', 'Details'];
+  const lines = [headers.map(esc).join(',')];
+  rows.forEach(r => {
+    const ts = new Date(r.created_at).toISOString().replace('T', ' ').slice(0, 19);
+    const label = EVENT_LABELS[r.event_type] || r.event_type;
+    const orgName = r.org_id ? (orgMap[r.org_id] || '') : '';
+    let details = '';
+    if (r.details && Object.keys(r.details).length) {
+      details = Object.entries(r.details).map(([k, v]) => `${k}: ${v}`).join('; ');
+    }
+    lines.push([ts, r.actor_name || '', r.actor_email || '', label, r.target_name || '', orgName, details].map(esc).join(','));
+  });
+
+  const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const today = new Date().toISOString().split('T')[0];
+  a.href = url;
+  a.download = `audit_log_${userMgmtState.auditDays}d_${today}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Audit log exported', '#15803d');
+}
+
 function renderAuditShell(days, rows, loading) {
   const EVENT_LABELS = {
-    user_created:        'User Created',
-    user_edited:         'User Edited',
-    user_deleted:        'User Deleted',
-    assessment_saved:    'Assessment Saved',
-    assessment_updated:  'Assessment Updated',
-    assessment_deleted:  'Assessment Deleted',
-    poam_saved:          'POAM Saved',
-    tpra_published:      'TPRA Published',
-    tpra_deleted:        'TPRA Deleted',
-    org_created:         'Org Created',
-    org_updated:         'Org Updated',
-    org_deleted:         'Org Deleted',
+    user_created:          'User Created',
+    user_edited:           'User Edited',
+    user_deleted:          'User Deleted',
+    assessment_saved:      'Assessment Saved',
+    assessment_updated:    'Assessment Updated',
+    assessment_deleted:    'Assessment Deleted',
+    assessment_finalised:  'Assessment Finalised',
+    assessment_reopened:   'Assessment Reopened',
+    poam_saved:            'POAM Saved',
+    tpra_published:        'TPRA Published',
+    tpra_deleted:          'TPRA Deleted',
+    org_created:           'Org Created',
+    org_updated:           'Org Updated',
+    org_deleted:           'Org Deleted',
   };
   const EVENT_COLORS = {
-    user_created:       '#15803d', assessment_saved:   '#15803d',
-    assessment_updated: '#15803d', tpra_published:     '#0e7490',
-    org_created:        '#15803d', poam_saved:         '#4f46e5',
-    user_edited:        '#4f46e5', org_updated:        '#4f46e5',
-    user_deleted:       '#b91c1c', assessment_deleted: '#b91c1c',
-    tpra_deleted:       '#b91c1c', org_deleted:        '#b91c1c',
+    user_created:          '#15803d', assessment_saved:      '#15803d',
+    assessment_updated:    '#15803d', tpra_published:        '#0e7490',
+    org_created:           '#15803d', poam_saved:            '#4f46e5',
+    user_edited:           '#4f46e5', org_updated:           '#4f46e5',
+    assessment_finalised:  '#15803d', assessment_reopened:   '#b45309',
+    user_deleted:          '#b91c1c', assessment_deleted:    '#b91c1c',
+    tpra_deleted:          '#b91c1c', org_deleted:           '#b91c1c',
   };
 
   const pills = [7, 30, 90].map(d =>
@@ -539,9 +587,12 @@ function renderAuditShell(days, rows, loading) {
   ).join('');
 
   const header = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
       <div style="font-size:13px;color:var(--muted)">Events in the last <strong>${days} days</strong></div>
-      <div style="display:flex;gap:6px">${pills}</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        ${pills}
+        <button class="btn btn-outline btn-sm" onclick="exportAuditCsv()" style="margin-left:4px">↓ Export CSV</button>
+      </div>
     </div>`;
 
   if (loading) return header + `<div style="text-align:center;padding:3rem;color:var(--muted)">

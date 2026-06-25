@@ -483,7 +483,8 @@
         {
           "id": "auth8",
           "text": "Export audit log to CSV — allow platform admins to download the filtered audit log as a spreadsheet.",
-          "done": false
+          "done": true,
+          "notes": "Built. exportAuditCsv() in js/users.js — uses already-fetched userMgmtState.auditLogs, no extra API call. 7-column CSV (Date/Time UTC, Actor, Actor Email, Event, Target, Organization, Details). BOM prefix for clean Excel open. Filename includes day filter and date. '↓ Export CSV' button added to renderAuditShell() header alongside day pills. Also added assessment_finalised and assessment_reopened to EVENT_LABELS and EVENT_COLORS in renderAuditShell()."
         },
         {
           "id": "auth13",
