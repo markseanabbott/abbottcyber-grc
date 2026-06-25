@@ -903,7 +903,7 @@ function cisHydrate() {
   const last = runs[cisLatestIdx(runs)] || null;
   const rawAnswers = last ? Object.assign({}, last.answers || {}) : {};
   const answers = Object.fromEntries(Object.entries(rawAnswers).filter(([k]) => !k.startsWith('_')));
-  cisState = { answers, openPanels: {}, orgId: currentOrg?.id, view: 'dashboard', editId: null, conductedBy: '', editDate: '', notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '', gapRun: null, igFilter: 'all' };
+  cisState = { answers, openPanels: {}, orgId: currentOrg?.id, view: 'dashboard', editId: null, conductedBy: '', editDate: '', notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '', gapRun: null, igFilter: 'all', closed: false };
 }
 
 // ── GOAL ──────────────────────────────────────────────────────────────────────
@@ -1095,6 +1095,7 @@ function renderCISDashboard() {
       const s1 = p1.total - p1.na, s2 = p2.total - p2.na, s3 = p3.total - p3.na;
       const igGoal = (r.answers && r.answers._goal) || '';
       const igGoalN = { ig1: 1, ig2: 2, ig3: 3 }[igGoal] || 3;
+      const runClosed = r.answers && r.answers._closed === true;
       // TOTAL scoped to the assessment's goal — IG3 answers don't dilute an IG2 assessment
       const dTotal = d1 + (igGoalN >= 2 ? d2 : 0) + (igGoalN >= 3 ? d3 : 0);
       const tTotal = s1 + (igGoalN >= 2 ? s2 : 0) + (igGoalN >= 3 ? s3 : 0);
@@ -1110,6 +1111,9 @@ function renderCISDashboard() {
         <td style="padding:8px 10px;font-weight:${isLatest ? '700' : '400'};white-space:nowrap">
           ${r.date || '—'}
           ${isLatest ? '<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:#dbeafe;color:#1d4ed8;margin-left:6px">Latest</span>' : ''}
+          ${runClosed
+            ? '<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:#dcfce7;color:#15803d;margin-left:4px">Complete</span>'
+            : '<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:#fef3c7;color:#92400e;margin-left:4px">In Progress</span>'}
         </td>
         <td style="padding:8px 8px;text-align:center">${pctCell(d1, s1)}</td>
         <td style="padding:8px 8px;text-align:center;${ig2Style}">${s2 > 0 ? pctCell(d2, s2) : '<span style="color:#cbd5e1">—</span>'}</td>
@@ -1122,7 +1126,7 @@ function renderCISDashboard() {
           <button class="btn btn-outline btn-sm" style="margin-right:4px" onclick="cisOpenGapReport(${origIdx})">🔍 Gaps</button>
           <button class="btn btn-outline btn-sm" style="margin-right:4px" onclick="cisOpenPoam(${origIdx})">📋 POAM</button>
           <button class="btn btn-outline btn-sm" style="margin-right:4px;border-color:#15803d;color:#15803d" onclick="cisOpenCost(${origIdx})">💲 Cost</button>
-          <button class="btn btn-outline btn-sm" style="margin-right:4px" onclick="cisOpenAssessment(${origIdx})">View / Edit</button>
+          <button class="btn btn-outline btn-sm" style="margin-right:4px" onclick="cisOpenAssessment(${origIdx})">${runClosed ? '👁 View' : 'View / Edit'}</button>
           <button class="btn btn-outline btn-sm" style="margin-right:4px;border-color:#7c3aed;color:#7c3aed" onclick="cisDuplicateAssessment(${origIdx})" title="Duplicate to today">⊕ Dup</button>
           <button class="btn btn-outline btn-sm" style="margin-right:4px;border-color:#7c3aed;color:#7c3aed" onclick="cisSaveAsTemplate(${origIdx})" title="Save as platform template">📌</button>
           <button class="btn btn-red btn-sm" onclick="cisDeleteAssessment(${origIdx})">Delete</button>
@@ -1247,6 +1251,7 @@ function renderCISForm() {
     : ([...runs].sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0]?.conductedBy || '');
   const goalN = { ig1: 1, ig2: 2, ig3: 3 }[goal] || 0;
   const igColors = { 1: '#15803d', 2: '#1d4ed8', 3: '#6d28d9' };
+  const isClosed = cisState.closed === true;
 
   const band = score >= 75 ? 'Strong' : score >= 60 ? 'Moderate' : score >= 40 ? 'Elevated' : 'High Risk';
   const bandCol = score >= 75 ? '#15803d' : score >= 60 ? '#b45309' : score >= 40 ? '#ea580c' : '#dc2626';
@@ -1290,8 +1295,8 @@ function renderCISForm() {
   ${renderTierBanner()}
   <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:10px">
     <div>
-      <div style="font-size:17px;font-weight:700;margin-bottom:4px">✅ CIS Controls v8 — ${cisState.editId ? 'Edit Assessment' : 'New Assessment'}</div>
-      <div style="font-size:12px;color:var(--muted)">${cisState.editId ? 'Editing an existing record — saving will update it in place' : 'Save at any time — partial assessments are recorded with answers answered so far'}</div>
+      <div style="font-size:17px;font-weight:700;margin-bottom:4px">✅ CIS Controls v8 — ${isClosed ? 'View Assessment (Complete)' : cisState.editId ? 'Edit Assessment' : 'New Assessment'}</div>
+      <div style="font-size:12px;color:var(--muted)">${isClosed ? 'This assessment is finalised — read only. Click Re-open to make changes.' : cisState.editId ? 'Editing an existing record — saving will update it in place' : 'Save at any time — partial assessments are recorded with answers answered so far'}</div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn btn-outline btn-sm" onclick="cisNavToDashboard()">← Back to Dashboard</button>
@@ -1325,20 +1330,36 @@ function renderCISForm() {
       <div style="display:flex;align-items:flex-end;gap:6px;margin-top:4px;flex-wrap:wrap">
           <div>
             <div style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:3px">Assessment date</div>
-            <input type="date" id="cisSaveDate" value="${cisState.editId ? (cisState.editDate || new Date().toISOString().split('T')[0]) : new Date().toISOString().split('T')[0]}"
+            <input type="date" id="cisSaveDate" ${isClosed ? 'disabled ' : ''}value="${cisState.editId ? (cisState.editDate || new Date().toISOString().split('T')[0]) : new Date().toISOString().split('T')[0]}"
               onchange="if(cisState)cisState.editDate=this.value"
               style="padding:5px 8px;border-radius:6px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-family:Inter,sans-serif;font-size:12px;color-scheme:dark">
           </div>
           <div>
             <div style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:3px">Conducted by</div>
-            <input type="text" id="cisConductedBy" placeholder="Assessor name" value="${escH(latestAssessor)}"
+            <input type="text" id="cisConductedBy" ${isClosed ? 'disabled ' : ''}placeholder="Assessor name" value="${escH(latestAssessor)}"
               oninput="if(cisState)cisState.conductedBy=this.value"
               style="padding:5px 8px;border-radius:6px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-family:Inter,sans-serif;font-size:12px;width:150px" autocomplete="off">
           </div>
-          <button class="btn btn-cyan btn-sm" id="cisSaveBtn" onclick="cisSave()">${cisState.editId ? 'Update Assessment' : 'Save to Database'}</button>
+          ${isClosed
+            ? `<button class="btn btn-outline btn-sm" style="border-color:#15803d;color:#15803d" onclick="cisReopenAssessment()">🔓 Re-open</button>`
+            : `<button class="btn btn-cyan btn-sm" id="cisSaveBtn" onclick="cisSave()">${cisState.editId ? 'Update Assessment' : 'Save to Database'}</button>`
+          }
         </div>
     </div>
   </div>`;
+
+  if (isClosed) {
+    html += `<div style="background:#dcfce7;border:1.5px solid #86efac;border-radius:10px;padding:10px 16px;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px">✅</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#14532d">Assessment Finalised</div>
+          <div style="font-size:11px;color:#166534">This assessment is read-only. Use Re-open to make further changes.</div>
+        </div>
+      </div>
+      <button class="btn btn-outline btn-sm" style="border-color:#15803d;color:#15803d" onclick="cisReopenAssessment()">🔓 Re-open Assessment</button>
+    </div>`;
+  }
 
   // ── IG filter bar ─────────────────────────────────────────────────────────
   const igF = cisState.igFilter || 'all';
@@ -1408,13 +1429,13 @@ function renderCISForm() {
             <div class="cis-ans-row">
               ${['yes','partial','no','na','cc'].map(v => {
                 const labels = { yes: '✓ Yes', partial: '~ Partial', no: '✕ No', na: 'N/A', cc: '⟳ Comp. Control' };
-                return `<button class="cis-ans-btn${ans === v ? ' sel-'+v : ''}" onclick="cisAnswer('${s.sf}','${v}')">${labels[v]}</button>`;
+                return `<button class="cis-ans-btn${ans === v ? ' sel-'+v : ''}" ${isClosed ? 'disabled ' : ''}onclick="cisAnswer('${s.sf}','${v}')">${labels[v]}</button>`;
               }).join('')}
               ${ans === 'cc' ? `<div style="font-size:10px;color:#0f766e;background:#f0fdfa;border:1px solid #99f6e4;border-radius:6px;padding:4px 8px;margin-left:6px;max-width:340px;line-height:1.4">Document the provider's AUP and control evidence. You manage compensating controls only.</div>` : ''}
-              <button data-comment-btn="${s.sf}" onclick="cisCommentToggle('${s.sf}')" style="margin-left:auto;font-size:10px;font-weight:600;padding:3px 9px;border-radius:6px;border:1px dashed ${hasNote ? 'var(--navy)' : 'var(--border)'};background:transparent;color:${hasNote ? 'var(--navy)' : 'var(--muted)'};cursor:pointer" title="Assessor comment">💬${hasNote ? ' ✓' : ''} Comment</button>
-              <button onclick="cisEvidencePlaceholder('${s.sf}')" style="font-size:10px;font-weight:600;padding:3px 9px;border-radius:6px;border:1px dashed var(--border);background:transparent;color:var(--muted);cursor:pointer" title="Upload evidence (coming soon)">📎 Evidence</button>
+              <button data-comment-btn="${s.sf}" ${isClosed ? 'disabled ' : ''}onclick="cisCommentToggle('${s.sf}')" style="margin-left:auto;font-size:10px;font-weight:600;padding:3px 9px;border-radius:6px;border:1px dashed ${hasNote ? 'var(--navy)' : 'var(--border)'};background:transparent;color:${hasNote ? 'var(--navy)' : 'var(--muted)'};cursor:${isClosed ? 'default' : 'pointer'}" title="Assessor comment">💬${hasNote ? ' ✓' : ''} Comment</button>
+              <button ${isClosed ? 'disabled ' : ''}onclick="cisEvidencePlaceholder('${s.sf}')" style="font-size:10px;font-weight:600;padding:3px 9px;border-radius:6px;border:1px dashed var(--border);background:transparent;color:var(--muted);cursor:${isClosed ? 'default' : 'pointer'}" title="Upload evidence (coming soon)">📎 Evidence</button>
             </div>
-            ${commentOpen ? `<textarea id="note-${s.sf}" rows="2"
+            ${commentOpen ? `<textarea id="note-${s.sf}" rows="2" ${isClosed ? 'disabled ' : ''}
               onblur="cisNoteBlur('${s.sf}', this.value)"
               placeholder="Assessor note for ${s.sf}…"
               style="width:100%;box-sizing:border-box;margin-top:6px;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);font-family:Inter,sans-serif;font-size:12px;color:var(--text);resize:vertical;background:var(--bg)"
@@ -1429,7 +1450,11 @@ function renderCISForm() {
     <button class="btn btn-outline btn-sm" onclick="cisExpandAll(true)">Expand all</button>
     <button class="btn btn-outline btn-sm" onclick="cisExpandAll(false)">Collapse all</button>
     <button class="btn btn-outline btn-sm" onclick="cisNavToDashboard()">← Back to Dashboard</button>
-    <button class="btn btn-cyan btn-sm" onclick="cisSave()">Save to Database</button>
+    ${isClosed
+      ? `<button class="btn btn-outline btn-sm" style="border-color:#15803d;color:#15803d" onclick="cisReopenAssessment()">🔓 Re-open Assessment</button>`
+      : `<button class="btn btn-cyan btn-sm" onclick="cisSave()">Save to Database</button>
+         <button class="btn btn-sm" style="background:#15803d;color:#fff;border:none" onclick="cisMarkComplete()">✅ Mark as Complete</button>`
+    }
   </div>`;
 
   return html;
@@ -1892,6 +1917,7 @@ function cisStartNewAssessment() {
   cisState.openComments = {};
   cisState.view = 'form';
   cisState.editId = null;
+  cisState.closed = false;
   renderMain();
 }
 
@@ -1953,6 +1979,7 @@ async function cisOpenAssessment(idx) {
   cisState.conductedBy = run.conductedBy || '';
   cisState.editDate = run.date || '';
   cisState.reportCommentary = (run.answers || {})._exec_commentary || '';
+  cisState.closed = rawAnswers._closed === true;
   if (run.id) {
     try {
       const rows = await sb.cisNotes.getForAssessment(run.id);
@@ -2340,7 +2367,7 @@ async function cisSave() {
       await sb.cisNotes.deleteAllForAssessment(assessmentId);
       if (noteRows.length) await sb.cisNotes.upsertAll(noteRows);
     }
-    cisState = { answers: {}, openPanels: {}, orgId: currentOrg.id, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '' };
+    cisState = { answers: {}, openPanels: {}, orgId: currentOrg.id, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '', closed: false };
     auditLog(editId ? 'assessment_updated' : 'assessment_saved', 'assessment', 'CIS Controls v8', { score, goal });
     toast(editId ? `✓ Assessment updated` : `✓ CIS saved — score ${score} vs ${goal.toUpperCase()} goal`, '#15803d');
     buildNav(); renderMain();
@@ -2348,6 +2375,56 @@ async function cisSave() {
   } catch(e) {
     toast('Save failed: ' + e.message, '#dc2626');
     if (btn) { btn.disabled = false; btn.textContent = 'Save to Database'; }
+  }
+}
+
+// ── ASSESSMENT CLOSE / REOPEN ─────────────────────────────────────────────────
+
+async function cisMarkComplete() {
+  if (!cisState.editId) {
+    toast('Save the assessment first before marking it as complete.', '#b45309');
+    return;
+  }
+  const goal = cisGetGoal() || 'ig1';
+  const { score } = cisCalcScore(cisState.answers, goal);
+  const date = document.getElementById('cisSaveDate')?.value || cisState.editDate || new Date().toISOString().split('T')[0];
+  const conductedBy = (document.getElementById('cisConductedBy')?.value || cisState.conductedBy || '').trim();
+  const answersToSave = Object.assign({}, cisState.answers, {
+    _goal: goal,
+    _ig_level: cisDetectLevel(cisState.answers) || goal,
+    _closed: true,
+  });
+  if (cisState.reportCommentary) answersToSave._exec_commentary = cisState.reportCommentary;
+  try {
+    await sb.updateAssessment(cisState.editId, { score, answers: answersToSave, assessed_at: date, conducted_by: conductedBy || null });
+    const runs = (orgAssessments[currentOrg.id] || {})['cis'] || [];
+    const idx = runs.findIndex(r => r.id === cisState.editId);
+    if (idx !== -1) runs[idx] = { ...runs[idx], date, score, answers: answersToSave, conductedBy };
+    auditLog('assessment_finalised', 'assessment', 'CIS Controls v8', { score, goal });
+    toast('✅ Assessment marked as complete', '#15803d');
+    cisState = { answers: {}, openPanels: {}, orgId: currentOrg.id, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '', closed: false };
+    buildNav(); renderMain();
+    setTimeout(() => { const c = document.getElementById('cisTrendChart'); if (c) cisTrendDraw(); }, 80);
+  } catch(e) {
+    toast('Failed to mark complete: ' + e.message, '#dc2626');
+  }
+}
+
+async function cisReopenAssessment() {
+  if (!cisState.editId) return;
+  const runs = (orgAssessments[currentOrg.id] || {})['cis'] || [];
+  const run = runs.find(r => r.id === cisState.editId);
+  if (!run) return;
+  const answersToSave = Object.assign({}, run.answers, { _closed: false });
+  try {
+    await sb.updateAssessment(cisState.editId, { answers: answersToSave });
+    run.answers = answersToSave;
+    cisState.closed = false;
+    auditLog('assessment_reopened', 'assessment', 'CIS Controls v8', {});
+    toast('Assessment re-opened for editing', '#1d4ed8');
+    renderMain();
+  } catch(e) {
+    toast('Re-open failed: ' + e.message, '#dc2626');
   }
 }
 
@@ -2712,7 +2789,7 @@ async function cisImportSave() {
 
     cisImportParsed = null;
     closeCisModal();
-    cisState = { answers: {}, openPanels: {}, orgId: null, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '' };
+    cisState = { answers: {}, openPanels: {}, orgId: null, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '', closed: false };
     toast(`✓ CIS imported — score ${score} vs ${ig.toUpperCase()}, dated ${date}`, '#15803d');
     buildNav(); renderMain();
     setTimeout(() => { const c = document.getElementById('cisTrendChart'); if (c) cisTrendDraw(); }, 80);
@@ -2993,7 +3070,7 @@ async function cisJsonImportSave() {
     orgAssessments[currentOrg.id]['cis'].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
     window._cisJsonParsed = null;
     closeCisModal();
-    cisState = { answers: {}, openPanels: {}, orgId: null, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '' };
+    cisState = { answers: {}, openPanels: {}, orgId: null, view: 'dashboard', editId: null, notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '', closed: false };
     toast(`✓ Assessment saved — ${score}% vs ${goal.toUpperCase()}, dated ${date}`, '#15803d');
     buildNav(); renderMain();
     setTimeout(() => { const c = document.getElementById('cisTrendChart'); if (c) cisTrendDraw(); }, 80);

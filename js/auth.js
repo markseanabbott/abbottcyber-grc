@@ -168,6 +168,62 @@ async function authLoadProfile() {
 }
 
 // ============================================================
+// CHANGE PASSWORD
+// ============================================================
+async function authUpdatePassword(newPassword) {
+  const res = await fetch(`${SB_URL}/auth/v1/user`, {
+    method: 'PUT',
+    headers: {
+      'apikey': SB_KEY,
+      'Authorization': `Bearer ${authState.session.access_token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ password: newPassword }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || data.msg || 'Password update failed');
+  }
+}
+
+function openChangePasswordModal() {
+  closeUserMenu();
+  document.getElementById('changePwdModal').style.display = 'flex';
+  document.getElementById('changePwdNew').value = '';
+  document.getElementById('changePwdConfirm').value = '';
+  document.getElementById('changePwdError').textContent = '';
+  document.getElementById('changePwdNew').focus();
+}
+
+function closeChangePasswordModal() {
+  document.getElementById('changePwdModal').style.display = 'none';
+}
+
+async function submitChangePassword() {
+  const newPwd    = document.getElementById('changePwdNew').value;
+  const confirmPwd = document.getElementById('changePwdConfirm').value;
+  const errEl     = document.getElementById('changePwdError');
+  const btn       = document.getElementById('changePwdBtn');
+
+  errEl.textContent = '';
+  if (newPwd.length < 8) { errEl.textContent = 'Password must be at least 8 characters.'; return; }
+  if (newPwd !== confirmPwd) { errEl.textContent = 'Passwords do not match.'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Updating…';
+  try {
+    await authUpdatePassword(newPwd);
+    closeChangePasswordModal();
+    toast('Password updated successfully.', '#16a34a');
+  } catch (err) {
+    errEl.textContent = err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Update Password';
+  }
+}
+
+// ============================================================
 // ROLE HELPERS
 // ============================================================
 function isViewOnly()    { return (viewAsState?.role || authState.profile?.role) === 'viewer'; }
@@ -302,6 +358,7 @@ function renderUserMenu() {
         <div class="user-menu-name">${displayName}</div>
         <div class="user-menu-role">${roleLbl}</div>
       </div>
+      <button class="user-menu-item" onclick="openChangePasswordModal()">🔑 Change Password</button>
       <button class="user-menu-item danger" onclick="doSignOut()">🚪 Sign Out</button>
     </div>
   </div>`;

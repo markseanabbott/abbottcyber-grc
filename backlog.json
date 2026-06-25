@@ -370,8 +370,9 @@
         {
           "id": "cis_close",
           "text": "CIS assessment close/finalise — explicit 'Mark as Complete' action on a saved assessment. Sets a completed flag so In Progress vs Complete is unambiguous. Closed assessments are read-only (no further edits without re-opening). Works alongside cis_partial_badge — In Progress = unanswered questions OR not yet closed; Complete = explicitly finalised by assessor.",
-          "done": false,
-          "priority": "Medium"
+          "done": true,
+          "priority": "Medium",
+          "notes": "Built. _closed flag stored in answers JSONB (no SQL patch needed). Dashboard shows 'Complete' (green) / 'In Progress' (amber) badge on each history row; 'View / Edit' button becomes '👁 View' when closed. Form shows green 'Assessment Finalised' banner, all answer/comment/evidence buttons and date/assessor inputs are disabled when closed. Footer shows 'Re-open Assessment' instead of Save. New functions: cisMarkComplete() (saves + sets _closed:true, returns to dashboard), cisReopenAssessment() (sets _closed:false, re-renders editable form). Both in js/cis.js near the Export section."
         }
       ]
     },
