@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.4.0",
   "created": "2026-05-14",
-  "updated": "2026-06-25 (session 64)",
+  "updated": "2026-06-25 (session 65)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -105,6 +105,13 @@
           "text": "Dashboard top bar redesign — portfolio-aware 4-card stat bar replacing the static single-org view with live cross-org metrics",
           "done": true,
           "notes": "Session 49: js/home.js fully rewritten. Card 1: Org Identity (unchanged). Card 2: Portfolio Risk Score — child: inline composite avg of CIS/Insurance/TechStack from orgAssessments; father+: async portfolio avg across all scope orgs with expandable breakdown table (homeToggleBreakdown). Card 3: Open Critical Risks — portfolio-wide count from targeted risk_register query (?org_id=in.(ids)&select=inherent_risk_rating). Card 4: Assessment Coverage — child: Last Assessed date; father+: assessed org count / total org count %. homePortfolioState tracks scopeKey, loading, loaded, orgScores, riskCounts, assessedCount, totalCount, breakdownOpen. loadHomePortfolio() loads all scope org assessments in parallel (reuses loadAssessments cache), computes per-org composites, queries risk counts, guards against stale loads via scope key mismatch. _homePortfolioBreakdown() renders expandable score table sorted by composite. _scoreColor(s) helper for green/amber/red. New window exports: homeToggleBreakdown, loadHomePortfolio."
+        },
+        {
+          "id": "d16",
+          "text": "Custom configurable dashboard — users select which modules appear as widgets, set display priority (1 = first), and choose 1×/2×/3× column width on a 3-column CSS grid. Config persisted per org in organisation_profiles.dashboard_config (jsonb).",
+          "done": true,
+          "priority": "High",
+          "notes": "Session 65: js/home.js. WIDGET_CATALOG (10 widgets: cis, insurance, techstack, cmmc, cmmc2, ai_unified, risk_register, gap_register, tpra, tabletop). DEFAULT_WIDGETS (cis 2×, insurance 1×, gap_register 1×, risk_register 2×, techstack 1×). dashCustomize state. getDashConfig() reads orgProfiles[].dashboard_config or falls back to defaults. _widgetScore() — score card with big number, band, delta, sparkline (canvas wd-trend-{id}). _widgetLink() — description card for TPRA and Tabletop. renderDashWidget() dispatcher using hasPageAccess() for ACL. _renderWidgetGrid() — CSS grid repeat(3,1fr) with span N cells. _renderCustomizePanel() — checkbox, priority number input, 1×/2×/3× width buttons per widget. toggleDashCustomize / dashToggleWidget / dashSetWidth / dashSetPriority / cancelDashConfig / saveDashConfig() wired to window. _drawWidgetTrends() draws sparklines for wd-trend-{id} canvases; called from drawHomeCharts(). sql/SUPABASE_PATCH_034.sql adds dashboard_config jsonb to organisation_profiles — needs to be run in Supabase SQL Editor."
         },
         {
           "id": "d13",

@@ -348,11 +348,8 @@ function renderHome() {
   const pLoaded  = po.loaded  && po.scopeKey === _scopeKey;
   const pLoading = po.loading && po.scopeKey === _scopeKey;
 
-  // Module access gates — respect viewAs role
+  // Module access gate
   const _can = (gid) => typeof hasModuleAccess === 'function' ? hasModuleAccess(gid) : true;
-  const canAssessments = _can('g_assessments');
-  const canAI          = _can('g_ai_readiness');
-  const canRisk        = _can('g_governance');
 
   // Quick links
   const quickLinks = [
@@ -364,7 +361,7 @@ function renderHome() {
     { id:'ai_unified', icon:'🤖', label:'AI Readiness',         group:'g_ai_readiness' },
   ].filter(l => _can(l.group));
 
-  // Risk register rows for risk chicklet (existing panel — single org, already loaded)
+  // Risk register rows for risk widget
   const rrLoaded = rrState.orgId === currentOrg.id;
   const rrRows = rrLoaded
     ? [...rrState.rows]
@@ -376,17 +373,7 @@ function renderHome() {
         .slice(0, 8)
     : null;
 
-  // Panel chicklets
-  const panels = [];
-  if (canAssessments) { const p = _homeAssessmentsChicklet(h); if (p) panels.push(p); }
-  if (canRisk)        panels.push(_homeRiskChicklet(rrRows, rrLoaded));
-  if (canRisk)        panels.push(_homeTopToolsChicklet());
-  if (canAI)          { const p = _homeAiChicklet(h); if (p) panels.push(p); }
-  if (canAssessments && (h['cis'] || []).length > 0) panels.push(_homeCisRadarChicklet(h));
-
-  const noPanels = panels.length === 0;
-
-  // Stat card HTML
+  // Stat cards
   const card1 = `<div class="wcard">
     <div class="wcard-icon">${TIER_ICONS[currentOrg.tier]}</div>
     <div class="wcard-label">Tier</div>
@@ -402,39 +389,273 @@ function renderHome() {
     ? _homePortfolioBreakdown()
     : '';
 
+  const mainArea = dashCustomize.open
+    ? _renderCustomizePanel()
+    : _renderWidgetGrid(h, rrRows, rrLoaded);
+
   return `
   ${renderTierBanner()}
   ${_renderGettingStartedBanner()}
 
-  <!-- 4 stat cards -->
   <div class="welcome-grid">
     ${card1}${card2}${card3}${card4}
   </div>
 
   ${breakdownPanel}
 
-  <!-- Quick access links -->
-  ${quickLinks.length ? `<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin:.9rem 0 1.1rem">
-    ${quickLinks.map(l => {
-      const runs = h[l.id] || [];
-      const last = runs.length ? runs[runs.length - 1] : null;
-      const dot  = last ? (last.score >= 70 ? '#15803d' : last.score >= 40 ? '#b45309' : '#dc2626') : '#cbd5e1';
-      return `<button onclick="setNav('${l.id}')" style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid var(--border);border-radius:20px;background:#fff;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--cyan)';this.style.color='var(--cyan)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
-        <span style="width:7px;height:7px;border-radius:50%;background:${dot};flex-shrink:0"></span>
-        ${l.icon} ${l.label}
-      </button>`;
-    }).join('')}
-  </div>` : ''}
+  <div style="display:flex;align-items:center;justify-content:space-between;margin:.75rem 0 ${dashCustomize.open ? '.5rem' : '.85rem'}">
+    ${!dashCustomize.open && quickLinks.length ? `<div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      ${quickLinks.map(l => {
+        const runs = h[l.id] || [];
+        const last = runs.length ? runs[runs.length - 1] : null;
+        const dot  = last ? (last.score >= 70 ? '#15803d' : last.score >= 40 ? '#b45309' : '#dc2626') : '#cbd5e1';
+        return `<button onclick="setNav('${l.id}')" style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid var(--border);border-radius:20px;background:#fff;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--cyan)';this.style.color='var(--cyan)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+          <span style="width:7px;height:7px;border-radius:50%;background:${dot};flex-shrink:0"></span>
+          ${l.icon} ${l.label}
+        </button>`;
+      }).join('')}
+    </div>` : '<div></div>'}
+    <button class="btn btn-outline btn-sm" onclick="toggleDashCustomize()" style="flex-shrink:0;${dashCustomize.open ? 'border-color:var(--navy);font-weight:700;color:var(--navy)' : ''}">
+      ${dashCustomize.open ? '✕ Cancel' : '📐 Customize'}
+    </button>
+  </div>
 
-  <!-- Panel chicklet grid -->
-  ${noPanels
-    ? `<div class="card" style="padding:2.5rem;text-align:center;color:var(--muted)">
-        <div style="font-size:2.5rem;margin-bottom:.5rem">🔒</div>
-        <div style="font-weight:700;color:var(--text);margin-bottom:.25rem">Limited access</div>
-        <div style="font-size:12px">You don't have access to any modules on this dashboard.<br>Contact your administrator to request access.</div>
-      </div>`
-    : `<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start">${panels.join('')}</div>`
-  }`;
+  ${mainArea}`;
+}
+
+// ============================================================
+// WIDGET SYSTEM — Custom Dashboard
+// ============================================================
+
+const WIDGET_CATALOG = [
+  { id: 'cis',           label: 'CIS Controls v8',    icon: '✅', nav: 'cis',          type: 'score', desc: '' },
+  { id: 'insurance',     label: 'Insurance Readiness', icon: '🛡️', nav: 'insurance',    type: 'score', desc: '' },
+  { id: 'techstack',     label: 'Technology Stack',    icon: '🖥️', nav: 'techstack',    type: 'score', desc: '' },
+  { id: 'cmmc',          label: 'CMMC Level 1',        icon: '🛡️', nav: 'cmmc',         type: 'score', desc: '' },
+  { id: 'cmmc2',         label: 'CMMC Level 2',        icon: '🏛️', nav: 'cmmc2',        type: 'score', desc: '' },
+  { id: 'ai_unified',    label: 'AI Readiness',        icon: '🤖', nav: 'ai_readiness', type: 'ai',    desc: '' },
+  { id: 'risk_register', label: 'Risk Register',       icon: '⚠️', nav: 'riskregister', type: 'risk',  desc: '' },
+  { id: 'gap_register',  label: 'Tool Gap Register',   icon: '🔧', nav: 'gap_register', type: 'gap',   desc: '' },
+  { id: 'tpra',          label: 'Vendor Risk (TPRA)',  icon: '🔍', nav: 'tpra',         type: 'link',  desc: 'Deep-dive vendor risk assessments. Tier vendors Critical to Low based on data sensitivity and security posture.' },
+  { id: 'tabletop',      label: 'Tabletop Exercises',  icon: '🎯', nav: 'tabletop',     type: 'link',  desc: 'Cybersecurity tabletop exercises. Operational, AI Governance, and more scenarios available.' },
+];
+
+const DEFAULT_WIDGETS = [
+  { id: 'cis',           width: 2, priority: 1 },
+  { id: 'insurance',     width: 1, priority: 2 },
+  { id: 'gap_register',  width: 1, priority: 3 },
+  { id: 'risk_register', width: 2, priority: 4 },
+  { id: 'techstack',     width: 1, priority: 5 },
+];
+
+let dashCustomize = { open: false, draft: null };
+
+function getDashConfig() {
+  const saved = orgProfiles[currentOrg?.id]?.dashboard_config;
+  if (saved?.widgets?.length) return saved.widgets.map(w => ({ ...w }));
+  return DEFAULT_WIDGETS.map(w => ({ ...w }));
+}
+
+function _widgetScore(def, h) {
+  const runs = [...(h[def.id] || [])].sort((a, b) => (b.date||'').localeCompare(a.date||''));
+  const last = runs[0] || null;
+  if (!last) return `<div class="card" style="padding:0;overflow:hidden;cursor:pointer" onclick="setNav('${def.nav}')" onmouseover="this.style.boxShadow='0 0 0 2px var(--cyan)'" onmouseout="this.style.boxShadow=''">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.65rem .9rem .45rem;border-bottom:1px solid var(--border)">
+      <div style="font-size:12px;font-weight:700">${def.icon} ${def.label}</div>
+      <span style="font-size:11px;color:var(--cyan);font-weight:700">Open →</span>
+    </div>
+    <div style="padding:1.25rem .9rem;text-align:center;color:var(--muted);font-size:12px">
+      <div style="font-size:1.25rem;margin-bottom:.3rem">📋</div>No assessments yet — click to start
+    </div>
+  </div>`;
+
+  const scoreColor = _scoreColor(last.score);
+  const band = last.score >= 75 ? 'Strong' : last.score >= 60 ? 'Moderate' : last.score >= 40 ? 'Elevated' : 'High Risk';
+  const delta = runs.length >= 2
+    ? (() => { const d = last.score - runs[1].score; return `<span style="font-size:10px;font-weight:700;color:${d >= 0 ? '#15803d' : '#dc2626'}">${d >= 0 ? '▲' : '▼'}${Math.abs(d)}%</span>`; })()
+    : '';
+  const igBadge = def.id === 'cis' ? (() => {
+    const g = (last.answers || {})._goal || (orgProfiles[currentOrg?.id] || {}).cis_goal;
+    const cols = { ig1: { bg: '#dcfce7', txt: '#15803d' }, ig2: { bg: '#dbeafe', txt: '#1d4ed8' }, ig3: { bg: '#ede9fe', txt: '#6d28d9' } };
+    const c = cols[g];
+    return c ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:6px;background:${c.bg};color:${c.txt}">${g.toUpperCase()}</span>` : '';
+  })() : '';
+
+  return `<div class="card" style="padding:0;overflow:hidden;cursor:pointer" onclick="setNav('${def.nav}')" onmouseover="this.style.boxShadow='0 0 0 2px var(--cyan)'" onmouseout="this.style.boxShadow=''">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.65rem .9rem .45rem;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:.35rem;font-size:12px;font-weight:700">${def.icon} ${def.label}${igBadge ? '&ensp;' + igBadge : ''}</div>
+      <span style="font-size:11px;color:var(--cyan);font-weight:700;white-space:nowrap;flex-shrink:0">Open →</span>
+    </div>
+    <div style="padding:.7rem .9rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem">
+        <div style="display:flex;align-items:baseline;gap:.35rem">
+          <span style="font-size:1.85rem;font-weight:800;color:${scoreColor};font-family:monospace;line-height:1">${last.score}%</span>
+          <span style="font-size:11px;font-weight:700;color:${scoreColor}">${band}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:.35rem">
+          ${delta}
+          ${runs.length >= 2 ? `<canvas id="wd-trend-${def.id}" width="60" height="24" style="flex-shrink:0"></canvas>` : ''}
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--muted)">${runs.length} run${runs.length !== 1 ? 's' : ''} · Last: ${last.date || '—'}</div>
+    </div>
+  </div>`;
+}
+
+function _widgetLink(def) {
+  return `<div class="card" style="padding:0;overflow:hidden;cursor:pointer" onclick="setNav('${def.nav}')" onmouseover="this.style.boxShadow='0 0 0 2px var(--cyan)'" onmouseout="this.style.boxShadow=''">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.65rem .9rem .45rem;border-bottom:1px solid var(--border)">
+      <div style="font-size:12px;font-weight:700">${def.icon} ${def.label}</div>
+      <span style="font-size:11px;color:var(--cyan);font-weight:700">Open →</span>
+    </div>
+    <div style="padding:.75rem .9rem;font-size:11px;color:var(--muted);line-height:1.55">${def.desc || 'Click to open.'}</div>
+  </div>`;
+}
+
+function renderDashWidget(wid, h, rrRows, rrLoaded) {
+  const def = WIDGET_CATALOG.find(w => w.id === wid);
+  if (!def) return '';
+  if (typeof hasPageAccess === 'function' && !hasPageAccess(def.nav)) return '';
+  switch (def.type) {
+    case 'score': return _widgetScore(def, h);
+    case 'ai':    return _homeAiChicklet(h) || _widgetLink(def);
+    case 'risk':  return _homeRiskChicklet(rrRows, rrLoaded);
+    case 'gap':   return _homeTopToolsChicklet();
+    case 'link':  return _widgetLink(def);
+    default:      return '';
+  }
+}
+
+function _renderWidgetGrid(h, rrRows, rrLoaded) {
+  const config = getDashConfig();
+  const enabled = config
+    .filter(w => WIDGET_CATALOG.some(c => c.id === w.id))
+    .sort((a, b) => ((a.priority ?? 99) - (b.priority ?? 99)) || a.id.localeCompare(b.id));
+
+  if (!enabled.length) return `<div class="card" style="padding:2.5rem;text-align:center;color:var(--muted)">
+    <div style="font-size:2rem;margin-bottom:.5rem">📊</div>
+    <div style="font-weight:700;color:var(--text);margin-bottom:.25rem">No widgets selected</div>
+    <div style="font-size:12px">Click <strong>Customize</strong> to add widgets to your dashboard.</div>
+  </div>`;
+
+  const cells = enabled.map(w => {
+    const span = Math.max(1, Math.min(3, w.width || 1));
+    const html = renderDashWidget(w.id, h, rrRows, rrLoaded);
+    return html ? `<div style="grid-column:span ${span}">${html}</div>` : '';
+  }).filter(Boolean).join('');
+
+  if (!cells) return `<div class="card" style="padding:2.5rem;text-align:center;color:var(--muted)">
+    <div style="font-size:2rem;margin-bottom:.5rem">🔒</div>
+    <div style="font-weight:700;color:var(--text);margin-bottom:.25rem">No accessible widgets</div>
+    <div style="font-size:12px">Your current access level doesn't include the selected widgets.</div>
+  </div>`;
+
+  return `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;align-items:start">${cells}</div>`;
+}
+
+function _renderCustomizePanel() {
+  const draft = dashCustomize.draft || [];
+  const available = WIDGET_CATALOG.filter(w =>
+    typeof hasPageAccess !== 'function' || hasPageAccess(w.nav)
+  );
+
+  const rows = available.map(w => {
+    const cfg = draft.find(x => x.id === w.id);
+    const enabled = !!cfg;
+    const width = cfg?.width || 1;
+    const priority = cfg?.priority ?? '';
+
+    return `<div style="display:flex;align-items:center;gap:.65rem;padding:.5rem .9rem;border-bottom:1px solid var(--border)">
+      <input type="checkbox" id="wt-cb-${w.id}" ${enabled ? 'checked' : ''}
+        onchange="dashToggleWidget('${w.id}',this.checked)"
+        style="width:15px;height:15px;flex-shrink:0;cursor:pointer;accent-color:var(--navy)">
+      <label for="wt-cb-${w.id}" style="flex:1;font-size:12px;font-weight:700;cursor:pointer;user-select:none">${w.icon} ${w.label}</label>
+      <div style="display:flex;align-items:center;gap:.35rem;flex-shrink:0;${enabled ? '' : 'opacity:.3;pointer-events:none'}">
+        <span style="font-size:10px;color:var(--muted)">Priority</span>
+        <input type="number" min="1" max="99" value="${priority}" placeholder="—"
+          onchange="dashSetPriority('${w.id}',this.value)"
+          style="width:46px;padding:3px 5px;border:1px solid var(--border);border-radius:5px;font-size:12px;text-align:center;font-family:monospace;outline:none"
+          onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border)'">
+        <span style="font-size:10px;color:var(--muted);margin-left:.15rem">Width</span>
+        ${[1,2,3].map(n => `<button onclick="dashSetWidth('${w.id}',${n})"
+          style="padding:3px 9px;font-size:11px;font-weight:700;border-radius:5px;cursor:pointer;transition:all .1s;border:1.5px solid ${enabled && width === n ? 'var(--navy)' : 'var(--border)'};background:${enabled && width === n ? 'var(--navy)' : '#fff'};color:${enabled && width === n ? '#fff' : 'var(--muted)'}">${n}×</button>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="card" style="padding:0;overflow:hidden;margin-bottom:.5rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.6rem .9rem;border-bottom:1px solid var(--border);background:var(--bg)">
+      <div>
+        <div style="font-size:13px;font-weight:700">📐 Customize Dashboard</div>
+        <div style="font-size:10px;color:var(--muted)">Toggle widgets · set priority (1 = first) · choose column width</div>
+      </div>
+      <div style="display:flex;gap:.4rem">
+        <button class="btn btn-outline btn-sm" onclick="cancelDashConfig()">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="saveDashConfig()">Save Layout</button>
+      </div>
+    </div>
+    ${rows}
+  </div>`;
+}
+
+function toggleDashCustomize() {
+  dashCustomize.open = !dashCustomize.open;
+  dashCustomize.draft = dashCustomize.open ? getDashConfig() : null;
+  const mc = document.getElementById('mainContent');
+  if (mc) { mc.innerHTML = renderHome(); if (!dashCustomize.open) setTimeout(drawHomeCharts, 80); }
+}
+
+function dashToggleWidget(id, enabled) {
+  if (!dashCustomize.draft) return;
+  const idx = dashCustomize.draft.findIndex(w => w.id === id);
+  if (enabled && idx === -1) {
+    const maxPri = dashCustomize.draft.length
+      ? Math.max(...dashCustomize.draft.map(w => w.priority ?? 0))
+      : 0;
+    dashCustomize.draft.push({ id, width: 1, priority: maxPri + 1 });
+  } else if (!enabled && idx !== -1) {
+    dashCustomize.draft.splice(idx, 1);
+  }
+  const mc = document.getElementById('mainContent');
+  if (mc) mc.innerHTML = renderHome();
+}
+
+function dashSetWidth(id, width) {
+  if (!dashCustomize.draft) return;
+  const w = dashCustomize.draft.find(x => x.id === id);
+  if (w) w.width = width;
+  const mc = document.getElementById('mainContent');
+  if (mc) mc.innerHTML = renderHome();
+}
+
+function dashSetPriority(id, val) {
+  if (!dashCustomize.draft) return;
+  const w = dashCustomize.draft.find(x => x.id === id);
+  if (w) w.priority = parseInt(val) || 99;
+}
+
+function cancelDashConfig() {
+  dashCustomize.open = false;
+  dashCustomize.draft = null;
+  const mc = document.getElementById('mainContent');
+  if (mc) { mc.innerHTML = renderHome(); setTimeout(drawHomeCharts, 80); }
+}
+
+async function saveDashConfig() {
+  const config = { widgets: dashCustomize.draft || getDashConfig() };
+  try {
+    await sb.profiles.upsert({ org_id: currentOrg.id, dashboard_config: config });
+    if (!orgProfiles[currentOrg.id]) orgProfiles[currentOrg.id] = { org_id: currentOrg.id };
+    orgProfiles[currentOrg.id].dashboard_config = config;
+    dashCustomize.open = false;
+    dashCustomize.draft = null;
+    const mc = document.getElementById('mainContent');
+    if (mc) { mc.innerHTML = renderHome(); setTimeout(drawHomeCharts, 80); }
+    toast('✓ Dashboard layout saved', '#15803d');
+  } catch (e) {
+    toast('Error saving layout', '#dc2626');
+    console.error(e);
+  }
 }
 
 // ─── PANEL CHICKLETS ──────────────────────────────────────────────────────────
@@ -690,8 +911,40 @@ function _homeTopToolsChicklet() {
 
 function drawHomeCharts() {
   _drawHomeAssessmentTrends();
+  _drawWidgetTrends();
   _drawHomeAiRadar();
   _drawHomeCisRadar();
+}
+
+function _drawWidgetTrends() {
+  const h = orgAssessments[currentOrg?.id] || {};
+  WIDGET_CATALOG.filter(w => w.type === 'score').forEach(def => {
+    const runs = [...(h[def.id] || [])].sort((a, b) => (a.date||'').localeCompare(b.date||''));
+    if (runs.length < 2) return;
+    const canvas = document.getElementById(`wd-trend-${def.id}`);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = 60, H = 24;
+    canvas.width = W; canvas.height = H;
+    ctx.clearRect(0, 0, W, H);
+    const scores = runs.map(r => r.score);
+    const mn = Math.max(0, Math.min(...scores) - 10);
+    const mx = Math.min(100, Math.max(...scores) + 10);
+    const range = mx - mn || 1;
+    const px = i => Math.round(3 + i * (W - 6) / (scores.length - 1));
+    const py = v => Math.round(H - 3 - (v - mn) / range * (H - 7));
+    ctx.beginPath();
+    scores.forEach((s, i) => i === 0 ? ctx.moveTo(px(i), py(s)) : ctx.lineTo(px(i), py(s)));
+    ctx.lineTo(px(scores.length - 1), H); ctx.lineTo(px(0), H); ctx.closePath();
+    ctx.fillStyle = 'rgba(7,180,217,0.1)'; ctx.fill();
+    ctx.beginPath(); ctx.strokeStyle = '#07B4D9'; ctx.lineWidth = 1.5; ctx.lineJoin = 'round';
+    scores.forEach((s, i) => i === 0 ? ctx.moveTo(px(i), py(s)) : ctx.lineTo(px(i), py(s)));
+    ctx.stroke();
+    scores.forEach((s, i) => {
+      ctx.beginPath(); ctx.arc(px(i), py(s), 2, 0, Math.PI * 2);
+      ctx.fillStyle = s >= 70 ? '#15803d' : s >= 40 ? '#b45309' : '#dc2626'; ctx.fill();
+    });
+  });
 }
 
 function _drawHomeAssessmentTrends() {
@@ -1024,3 +1277,9 @@ window.duplicateAssessment = duplicateAssessment;
 window.homeToggleBreakdown = homeToggleBreakdown;
 window.loadHomePortfolio   = loadHomePortfolio;
 window.orgsUnderCurrent    = orgsUnderCurrent;
+window.toggleDashCustomize = toggleDashCustomize;
+window.dashToggleWidget    = dashToggleWidget;
+window.dashSetWidth        = dashSetWidth;
+window.dashSetPriority     = dashSetPriority;
+window.cancelDashConfig    = cancelDashConfig;
+window.saveDashConfig      = saveDashConfig;
