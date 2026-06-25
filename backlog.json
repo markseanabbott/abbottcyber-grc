@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.4.0",
   "created": "2026-05-14",
-  "updated": "2026-06-25 (session 66)",
+  "updated": "2026-06-25 (session 67)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -2212,9 +2212,10 @@
         {
           "id": "aig3",
           "text": "Per-org AI tool inventory — org users mark which catalog tools they use, set org-specific approval status override, add custom tools not in catalog. Stored in ai_org_tools table (PATCH_037). Feeds a dashboard widget showing approved/conditional/not-approved tool breakdown.",
-          "done": false,
+          "done": true,
           "priority": "Medium",
-          "phase": 2
+          "phase": 2,
+          "notes": "Built in session 67. Two-tab UI: My AI Tools (Active / Shadow IT & Flagged sub-tabs) + Reference Catalog. Add from catalog, add custom tool, edit status/notes, remove. → Risk button pre-fills AI Risk Register form from tool data. PATCH_037 required. loadAiInventory() in ai_tool_catalog.js."
         },
         {
           "id": "aig4",
@@ -2226,6 +2227,20 @@
         {
           "id": "aig5",
           "text": "AI Tool Catalog admin interface — allow platform admins to manage component relationships (ai_tool_components) via the admin modal UI. Currently components are seeded-only; admin UI would allow adding/removing parent→child links.",
+          "done": false,
+          "priority": "Low",
+          "phase": 2
+        },
+        {
+          "id": "aig6",
+          "text": "Dashboard AI tool breakdown widget — show approved / conditional / shadow IT tool counts on the home dashboard for orgs that have AI Governance module access. Small stat card or strip similar to the portfolio risk bar.",
+          "done": false,
+          "priority": "Low",
+          "phase": 2
+        },
+        {
+          "id": "aig7",
+          "text": "AI Governance Tabletop ACL — in Module Management, add the AI Governance module to the 'AI Governance Tabletop' (tt_ai) page mapping so it appears in the g_ai nav group for AI Governance-only users. Currently only mapped to Table Top Exercises module.",
           "done": false,
           "priority": "Low",
           "phase": 2

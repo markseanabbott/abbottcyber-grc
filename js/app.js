@@ -245,6 +245,7 @@ function getModuleDot(id) {
 const _GROUP_MODULE = {
   g_assessments:  'assessments',
   g_governance:   'governance',
+  g_ai:           'ai_governance',
   g_exercises:    'exercises',
   g_reporting:    'reports',
 };
@@ -548,11 +549,12 @@ function renderMain() {
     return;
   }
   if (activeNav === 'ai_tool_catalog') {
-    if (!aiCatState.loaded) {
-      el.innerHTML = renderAiToolCatalog();
-      loadAiToolCatalog().then(() => { if (activeNav === 'ai_tool_catalog') el.innerHTML = renderAiToolCatalog(); });
-    } else {
-      el.innerHTML = renderAiToolCatalog();
+    el.innerHTML = renderAiToolCatalog();
+    // Always reload org tools when switching orgs; catalog only once
+    const needsCatalog = !aiCatState.catalogLoaded;
+    const needsOrgTools = !aiCatState.orgLoaded || aiCatState.orgId !== currentOrg?.id;
+    if (needsCatalog || needsOrgTools) {
+      loadAiInventory(currentOrg.id).then(() => { if (activeNav === 'ai_tool_catalog') el.innerHTML = renderAiToolCatalog(); });
     }
     return;
   }

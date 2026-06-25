@@ -176,6 +176,14 @@ sb.aiCatalog = {
   removeComponent: (parentId, childId) => sbFetch(`ai_tool_components?parent_id=eq.${parentId}&child_id=eq.${childId}`, 'DELETE'),
 };
 
+// AI Org Tools persistence layer (PATCH_037)
+sb.aiOrgTools = {
+  getForOrg: (orgId) => sbFetch(`ai_org_tools?org_id=eq.${orgId}&order=created_at.asc`),
+  add:    (row)        => sbFetch('ai_org_tools', 'POST', row, { Prefer: 'return=representation' }),
+  update: (id, patch)  => sbFetch(`ai_org_tools?id=eq.${id}`, 'PATCH', patch, { Prefer: 'return=representation' }),
+  delete: (id)         => sbFetch(`ai_org_tools?id=eq.${id}`, 'DELETE'),
+};
+
 // AI Risk Register persistence layer (PATCH_036)
 sb.aiRiskReg = {
   getForOrg: (orgId)      => sbFetch(`ai_risk_register?org_id=eq.${orgId}&order=risk_seq.asc`),

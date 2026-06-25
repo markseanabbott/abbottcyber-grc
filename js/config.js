@@ -105,6 +105,12 @@ const NAV = [
   { id: 'g_governance', group: 'Governance', icon: '⚖️', items: [
     { id: 'governance', icon: '⚖️', label: 'Governance', live: true, phase: 1 },
   ]},
+  { id: 'g_ai', group: 'AI Governance', icon: '🤖', items: [
+    { id: 'ai_readiness',    icon: '🤖', label: 'AI Readiness',            live: true, phase: 1 },
+    { id: 'ai_risk_register',icon: '⚠️', label: 'AI Risk Register',        live: true, phase: 1 },
+    { id: 'ai_tool_catalog', icon: '📦', label: 'AI Application Inventory', live: true, phase: 1 },
+    { id: 'tt_ai',           icon: '🎯', label: 'AI Governance Tabletop',  live: true, phase: 1 },
+  ]},
   { id: 'g_exercises', group: 'Exercises', icon: '🎯', items: [
     { id: 'exercises', icon: '🎯', label: 'Exercises', live: true, phase: 1 },
   ]},
