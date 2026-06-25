@@ -245,7 +245,6 @@ function getModuleDot(id) {
 const _GROUP_MODULE = {
   g_assessments:  'assessments',
   g_governance:   'governance',
-  g_ai:           'ai_governance',
   g_exercises:    'exercises',
   g_reporting:    'reports',
 };

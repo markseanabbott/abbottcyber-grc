@@ -33,6 +33,20 @@ async function modAccessLoadGrants() {
   } catch(e) { console.warn('modAccess grants load error', e); }
 }
 
+// Hub pages are navigation containers — accessible if the user can reach any sub-page inside.
+const _HUB_SUBPAGES = {
+  assessments: ['insurance','cis','techstack','tpra','cmmc','cmmc2','ai_readiness','nist_ai','iso42001','ai_unified','rapid_pyramid'],
+  governance:  ['riskregister','ai_risk_register','ai_tool_catalog','policy_lib'],
+  exercises:   ['tabletop','tt_ai'],
+};
+
+function _hasGrantForPage(pageKey) {
+  const ids = modAccess.pageMap[pageKey];
+  if (!ids || !ids.size) return false;
+  for (const mid of ids) { if (modAccess.grants.has(mid)) return true; }
+  return false;
+}
+
 function hasPageAccess(pageKey) {
   // Platform admin always sees everything — but only when NOT in view-as mode,
   // so "View As" accurately reflects what the impersonated user actually sees.
@@ -44,18 +58,19 @@ function hasPageAccess(pageKey) {
   // platformAdminOnly flags only — module system does not apply to them.
   if (!PAGE_REGISTRY.some(p => p.id === pageKey)) return true;
 
-  const moduleIds = modAccess.pageMap[pageKey]; // Set<module_id> or undefined
-
   // User has no module grants → no restrictions apply (unrestricted accounts)
   if (modAccess.grants.size === 0) return true;
 
+  // Hub pages: show if the user can access any sub-page within that section.
+  // This ensures a user with only AI Governance grants still sees the Assessments,
+  // Governance and Exercises hubs (where AI pages live), without needing a separate
+  // AI Governance nav section.
+  const hubSubs = _HUB_SUBPAGES[pageKey];
+  if (hubSubs) return hubSubs.some(_hasGrantForPage);
+
   // User has grants → whitelist mode: they can ONLY access pages in their granted modules.
   // A page with no module assigned is blocked for grant-restricted users.
-  if (!moduleIds || moduleIds.size === 0) return false;
-  for (const mid of moduleIds) {
-    if (modAccess.grants.has(mid)) return true;
-  }
-  return false;
+  return _hasGrantForPage(pageKey);
 }
 
 // ── ADMIN UI STATE (lazy-loaded when navigating to the admin page) ──
