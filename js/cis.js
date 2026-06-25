@@ -1665,9 +1665,11 @@ function renderCISPoam() {
             if (s.ctrl !== lastCtrl) {
               lastCtrl = s.ctrl;
               const rem = CIS_REMEDIATION[s.ctrl] || {};
+              const scope = CIS_CONTROL_SCOPE[s.ctrl] || '';
               groupHeader = `<tr style="background:#f0f4fa;border-top:2px solid var(--navy)">
                 <td colspan="9" style="padding:10px 12px">
-                  <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px">CIS ${s.ctrl}: ${escH(s.ctrlName)}</div>
+                  <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:${scope ? '2px' : '6px'}">CIS ${s.ctrl}: ${escH(s.ctrlName)}</div>
+                  ${scope ? `<div style="font-size:10px;color:var(--muted);font-style:italic;line-height:1.4;margin-bottom:6px">${scope}</div>` : ''}
                   ${rem.action ? `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start">
                     <div style="flex:1;min-width:260px;background:#fff;border:1px solid var(--border);border-radius:6px;padding:7px 10px">
                       <div style="font-size:9px;font-weight:800;color:#1d4ed8;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">💡 Suggested Action</div>
@@ -3230,9 +3232,12 @@ function renderCISGapReport() {
     Object.values(byCtrl).forEach(group => {
       html += `
       <div class="card" style="margin-bottom:.75rem;padding:0;overflow:hidden">
-        <div style="padding:10px 16px;background:linear-gradient(135deg,var(--navy),var(--navy2));display:flex;align-items:center;gap:10px">
-          <span style="font-size:13px;font-weight:700;color:#fff">CIS ${group.ctrl}: ${escH(group.ctrlName)}</span>
-          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.8);margin-left:auto">${group.items.length} gap${group.items.length !== 1 ? 's' : ''}</span>
+        <div style="padding:10px 16px;background:linear-gradient(135deg,var(--navy),var(--navy2));display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#fff">CIS ${group.ctrl}: ${escH(group.ctrlName)}</div>
+            ${CIS_CONTROL_SCOPE[group.ctrl] ? `<div style="font-size:10px;color:rgba(255,255,255,.7);margin-top:2px;font-style:italic;line-height:1.4">${CIS_CONTROL_SCOPE[group.ctrl]}</div>` : ''}
+          </div>
+          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.8);white-space:nowrap;margin-top:2px">${group.items.length} gap${group.items.length !== 1 ? 's' : ''}</span>
         </div>
         <table style="width:100%;border-collapse:collapse;font-size:12px">
           <thead>

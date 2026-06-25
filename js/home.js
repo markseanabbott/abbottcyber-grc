@@ -1274,7 +1274,7 @@ const GOVERNANCE_CATALOG = [
   { id: 'ai_risk_register', label: 'AI Risk Register',       icon: '🤖', description: 'AI-specific risk tracking with NIST AI RMF and ISO 42001 control tags. AI-prefixed risk IDs.', nav: 'ai_risk_register' },
   { id: 'ai_tool_catalog',  label: 'AI Application Inventory', icon: '📦', description: 'Reference catalog of AI tools with compliance posture, approval status, and NIST / ISO 42001 mappings.', nav: 'ai_tool_catalog' },
   { id: 'policy_lib',      label: 'Policy Library',          icon: '📄', description: 'Manage and maintain your security policy documents.', nav: 'policy_lib' },
-  { id: 'app_inv',         label: 'Application Inventory',   icon: '🖥️', description: 'Track all business applications with risk, criticality, BCDR classification, and IR priority.', nav: 'app_inv', comingSoon: true },
+  { id: 'app_inv',         label: 'Application Inventory',   icon: '🖥️', description: 'Track all business applications — hosting type, status, owner, authentication, and data classification.', nav: 'app_inv' },
   { id: 'vendor_dir',      label: 'Vendor Directory',        icon: '🏢', description: 'Central registry of all vendors with criticality, risk tier, contract tracking, and BCDR and IR contacts.', nav: 'vendor_dir', comingSoon: true },
 ];
 

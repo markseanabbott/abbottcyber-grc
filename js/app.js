@@ -549,6 +549,17 @@ function renderMain() {
     }
     return;
   }
+  if (activeNav === 'app_inv') {
+    if (!appInvState.loaded || appInvState.orgId !== currentOrg?.id) {
+      appInvState.loading = true;
+      appInvState.orgId   = currentOrg?.id;
+      el.innerHTML = renderAppInventory();
+      loadAppInventory(currentOrg.id).then(() => { if (activeNav === 'app_inv') el.innerHTML = renderAppInventory(); });
+    } else {
+      el.innerHTML = renderAppInventory();
+    }
+    return;
+  }
   if (activeNav === 'ai_tool_catalog') {
     el.innerHTML = renderAiToolCatalog();
     // Always reload org tools when switching orgs; catalog only once

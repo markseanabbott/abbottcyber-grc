@@ -220,6 +220,14 @@ sb.riskRegister = {
   delete: (id) => sbFetch(`risk_register?id=eq.${id}`, 'DELETE'),
 };
 
+// Application Inventory persistence layer (PATCH_040)
+sb.appInventory = {
+  getForOrg: (orgId) => sbFetch(`app_inventory?org_id=eq.${orgId}&order=app_name.asc`),
+  add:    (row)       => sbFetch('app_inventory', 'POST', row, { Prefer: 'return=representation' }),
+  update: (id, patch) => sbFetch(`app_inventory?id=eq.${id}`, 'PATCH', patch, { Prefer: 'return=representation' }),
+  delete: (id)        => sbFetch(`app_inventory?id=eq.${id}`, 'DELETE'),
+};
+
 // Tabletop persistence layer — wraps Supabase calls for the operational tabletop module.
 sb.tt = {
   // RPC: ask the DB for a fresh 6-char session code (alphabet defined in SUPABASE_SCHEMA.sql)

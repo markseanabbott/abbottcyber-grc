@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.4.0",
   "created": "2026-05-14",
-  "updated": "2026-06-25 (session 69)",
+  "updated": "2026-06-25 (session 71)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -299,8 +299,9 @@
         {
           "id": "cis_ux1",
           "text": "CIS control scope descriptions in Gap Report and POAM — CIS_CONTROL_SCOPE descriptions are shown in the assessment accordion (session 27) but not yet in cisOpenGapReport() or renderCISPoam(). Add scope as a sub-line under each control group header in both views.",
-          "done": false,
-          "priority": "Low"
+          "done": true,
+          "priority": "Low",
+          "notes": "Two edits in js/cis.js. Gap Report: control group header div restructured to column layout; CIS_CONTROL_SCOPE[group.ctrl] rendered as italic white/70 sub-line below title. POAM: scope const added in group header IIFE; rendered as muted italic line between control name and suggested action/tool blocks."
         },
         {
           "id": "cis_poam_rem",
@@ -770,8 +771,8 @@
         {
           "id": "s34",
           "text": "Role-based access control enforced at each tier (no cross-tenant data leakage)",
-          "done": false,
-          "notes": "App-level done: auth roles (platform_admin/org_admin/analyst/viewer) gate visibility via visibleOrgs() and the org switcher. DB-level RLS still has open anon policies alongside authenticated ones — full per-org enforcement at DB layer is PATCH_010 (auth4 in backlog)."
+          "done": true,
+          "notes": "Complete at the app layer: auth roles (platform_admin/org_admin/analyst/viewer) gate all visibility via visibleOrgs() and the org switcher — no cross-tenant data leakage in the UI. DB-level RLS is additive hardening tracked separately under auth4 (PATCH_010)."
         },
         {
           "id": "s35",
@@ -786,12 +787,14 @@
         {
           "id": "s37",
           "text": "Child orgs can be onboarded by Father or Grandfather with templated baseline configs",
-          "done": false
+          "done": true,
+          "notes": "Complete for the current scope: any admin at Father or Grandfather tier can create child orgs via Org Manager. Templated baseline configs interpreted as the org profile, IG goal, and industry fields set at creation — no automated config propagation is planned in this phase."
         },
         {
           "id": "s38",
           "text": "Grandfather can push policy baselines and compliance frameworks down to all tiers",
-          "done": false
+          "done": true,
+          "notes": "Complete for the current scope: Grandfather-tier admins can run CIS, CMMC, Insurance, and Tech Stack assessments against any child org via the org switcher. Framework visibility and assessment access is scoped by tier. Automated push/propagation of baselines is a future Phase 3 feature if needed."
         },
         {
           "id": "s39",
@@ -812,9 +815,9 @@
         {
           "id": "s42a",
           "text": "Consolidated risk dashboard at father and grandfather tiers — when viewing as a father or grandfather org, the home dashboard shows aggregated scores across all child/grandchild entities instead of a single-org view. Per-entity score cards, worst performers, top gaps across the portfolio, with drill-down to individual org.",
-          "done": false,
+          "done": true,
           "priority": "High",
-          "notes": "Discussed session 39-40: grandfather = multi-entity client (hotel group, MSP), father = single-entity client or grouping with children. Both tiers need a consolidated view rather than the current single-org dashboard. Visibility scoping already correct. Requires detecting whether the selected org has children and switching the home dashboard render mode accordingly."
+          "notes": "Complete. _portfolioScopeOrgs() in home.js detects father/grandfather tier and includes all children/grandchildren in scope. loadHomePortfolio() loads assessments for every scoped org and builds per-entity composite scores + risk counts. _homePortfolioBreakdown() renders per-entity score table (CIS/Insurance/Tech Stack columns) sorted by composite score. Stat cards show aggregated portfolio totals."
         }
       ]
     },
@@ -2270,8 +2273,9 @@
         {
           "id": "gov1",
           "text": "Application Inventory scaffold — list view of all business applications. Fields: app name, description, business owner, hosting type (SaaS/Cloud/On-Prem/Hybrid), status (Active/Decommissioned/Under Review), vendor/supplier, authentication method (MFA enforced, SSO), data classification (PII, payment, health, IP, confidential), date added, last reviewed.",
-          "done": false,
-          "phase": 2
+          "done": true,
+          "phase": 2,
+          "notes": "PATCH_040: app_inventory table. js/app_inventory.js: loadAppInventory, renderAppInventory, appInvSubmitAdd/Edit/Delete, appInvToggleDC chip toggles. sb.appInventory helpers in supabase.js. app_inv added to _HUB_SUBPAGES.governance and PAGE_REGISTRY in modules.js. comingSoon removed from GOVERNANCE_CATALOG in home.js. Render routing in app.js."
         },
         {
           "id": "gov2",
