@@ -1107,19 +1107,20 @@
         {
           "id": "r6",
           "text": "Threat Source: internal / external / natural / third-party",
-          "done": false
+          "done": true,
+          "notes": "Built. SUPABASE_PATCH_039.sql adds threat_source text column (CHECK: Internal/External/Natural/Third-Party, nullable) to risk_register. Field added to Add, Edit Manual, and Edit Notes modals in js/risk_register.js via rrSelect(). All three submit handlers (rrSubmitAdd, rrSubmitEditNotes, rrSubmitEditManual) include threat_source in payload. Displayed as colour-coded chip under risk title in rrRow() — amber=Internal, blue=External, green=Natural, purple=Third-Party. No new column in table."
         },
         {
           "id": "r7",
           "text": "Likelihood: scored 1–5 (Rare / Unlikely / Possible / Likely / Almost Certain)",
-          "done": false,
-          "notes": "Replaced by inherent_risk_score (1–4) pre-seeded per CIS control group. No separate likelihood field."
+          "done": true,
+          "notes": "Superseded. Replaced by inherent_risk_score (1–4) pre-seeded per CIS control group. No separate likelihood field required."
         },
         {
           "id": "r8",
           "text": "Impact: scored 1–5 (Negligible / Minor / Moderate / Major / Critical)",
-          "done": false,
-          "notes": "Replaced by inherent_risk_rating (Critical/High/Medium/Low) pre-seeded per CIS control group."
+          "done": true,
+          "notes": "Superseded. Replaced by inherent_risk_rating (Critical/High/Medium/Low) pre-seeded per CIS control group. No separate impact field required."
         },
         {
           "id": "r9",

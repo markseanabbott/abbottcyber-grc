@@ -180,8 +180,13 @@ function rrRow(r) {
     ? `<span style="font-family:monospace;font-size:12px;font-weight:700;color:var(--navy)">${esc(refVal)}</span>`
     : `<span style="color:var(--muted)">—</span>`;
 
+  const threatBadgeColor = { Internal: '#92400e', External: '#1d4ed8', Natural: '#15803d', 'Third-Party': '#6d28d9' };
+  const threatChip = r.threat_source
+    ? `<span style="font-size:10px;font-weight:600;padding:1px 7px;border-radius:10px;background:${threatBadgeColor[r.threat_source] || '#475569'}18;color:${threatBadgeColor[r.threat_source] || '#475569'};border:1px solid ${threatBadgeColor[r.threat_source] || '#475569'}30;margin-right:4px">${esc(r.threat_source)}</span>`
+    : '';
   const title = `<div style="font-weight:600;color:var(--text);line-height:1.3">${esc(r.risk_title || '—')}</div>
-    ${r.risk_description ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4;max-width:320px">${esc(r.risk_description)}</div>` : ''}`;
+    ${r.risk_description ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4;max-width:320px">${esc(r.risk_description)}</div>` : ''}
+    ${threatChip ? `<div style="margin-top:4px">${threatChip}</div>` : ''}`;
 
   const actions = (isPoam || isAiPoam)
     ? `<div style="display:flex;gap:.4rem;flex-wrap:nowrap">
@@ -273,6 +278,7 @@ function rrModalAdd() {
   <div class="modal-body" style="display:grid;gap:.75rem">
     ${rrField('risk_title','Risk Title','text','',true)}
     ${rrField('risk_description','Description','textarea','')}
+    ${rrSelect('threat_source','Threat Source',['Internal','External','Natural','Third-Party'],'')}
     ${rrSelect('inherent_risk_rating','Inherent Risk Rating',['Critical','High','Medium','Low'],'')}
     ${rrSelect('residual_risk_rating','Residual Risk Rating (after controls)',['Critical','High','Medium','Low'],'')}
     ${rrField('risk_owner','Owner / Assigned To','text','')}
@@ -296,6 +302,7 @@ function rrModalEditNotes(r) {
     ${sourceLine}
   </div>
   <div class="modal-body" style="display:grid;gap:.75rem">
+    ${rrSelect('threat_source','Threat Source',['Internal','External','Natural','Third-Party'], r.threat_source || '')}
     ${rrSelect('residual_risk_rating','Residual Risk Rating (your professional judgement)',['Critical','High','Medium','Low'],r.residual_risk_rating || '')}
     ${rrField('risk_owner','Owner / Assigned To','text', r.risk_owner || '')}
     ${rrField('due_date','Due Date','date', r.due_date || '')}
@@ -313,6 +320,7 @@ function rrModalEditManual(r) {
   <div class="modal-body" style="display:grid;gap:.75rem">
     ${rrField('risk_title','Risk Title','text', r.risk_title || '', true)}
     ${rrField('risk_description','Description','textarea', r.risk_description || '')}
+    ${rrSelect('threat_source','Threat Source',['Internal','External','Natural','Third-Party'], r.threat_source || '')}
     ${rrSelect('inherent_risk_rating','Inherent Risk Rating',['Critical','High','Medium','Low'], r.inherent_risk_rating || '')}
     ${rrSelect('residual_risk_rating','Residual Risk Rating',['Critical','High','Medium','Low'], r.residual_risk_rating || '')}
     ${rrSelect('risk_status','Status',['Open','In Progress','Accepted','Closed','Transferred'], r.risk_status || 'Open')}
@@ -425,6 +433,7 @@ async function rrSubmitAdd() {
       source:               'manual',
       risk_title:           title,
       risk_description:     rrVal('risk_description') || null,
+      threat_source:        rrVal('threat_source') || null,
       inherent_risk_rating: rrVal('inherent_risk_rating') || null,
       residual_risk_rating: rrVal('residual_risk_rating') || null,
       risk_owner:           rrVal('risk_owner') || null,
@@ -449,6 +458,7 @@ async function rrSubmitEditNotes(id) {
   if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
   try {
     const patch = {
+      threat_source:        rrVal('threat_source') || null,
       residual_risk_rating: rrVal('residual_risk_rating') || null,
       risk_owner:           rrVal('risk_owner') || null,
       due_date:             rrVal('due_date') || null,
@@ -475,6 +485,7 @@ async function rrSubmitEditManual(id) {
     const patch = {
       risk_title:           title,
       risk_description:     rrVal('risk_description') || null,
+      threat_source:        rrVal('threat_source') || null,
       inherent_risk_rating: rrVal('inherent_risk_rating') || null,
       residual_risk_rating: rrVal('residual_risk_rating') || null,
       risk_status:          rrVal('risk_status') || 'Open',
