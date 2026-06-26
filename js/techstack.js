@@ -814,6 +814,7 @@ function tsSetDetail(qid, detail) {
 async function tsSaveAllResponses() {
   if (!tsState || !currentOrg) { toast('Select an organisation first', '#dc2626'); return; }
   if (tsState.saving) return;
+  const wasEdit = !!tsState.editId;
   tsState.saving = true; tsRender();
   let saved = 0, failed = 0;
   const today = tsState.date || new Date().toISOString().slice(0, 10);
@@ -856,6 +857,10 @@ async function tsSaveAllResponses() {
   await loadAssessments(currentOrg.id);
   tsState.saving = false; tsState.dirty = false;
   toast(failed ? `Saved ${saved}, ${failed} failed` : `${saved} responses saved`, failed ? '#dc2626' : '#15803d');
+  if (saved > 0) {
+    const score = tsCalcScore(allQs);
+    auditLog(wasEdit ? 'assessment_updated' : 'assessment_saved', 'assessment', 'Technology Stack', { score, responses: saved, org_id: currentOrg.id });
+  }
   tsState.view = 'dashboard';
   tsRender();
 }

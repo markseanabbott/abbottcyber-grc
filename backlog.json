@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.4.1",
   "created": "2026-05-14",
-  "updated": "2026-06-26 (session 75)",
+  "updated": "2026-06-26 (session 76)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -480,7 +480,8 @@
         {
           "id": "auth7",
           "text": "Wire auditLog() into Technology Stack save — currently the only module without an audit call.",
-          "done": false
+          "done": true,
+          "notes": "Session 75: tsSaveAllResponses() in js/techstack.js. Added const wasEdit = !!tsState.editId at function top (before editId is cleared mid-save). After toast, if saved > 0: auditLog(wasEdit ? 'assessment_updated' : 'assessment_saved', 'assessment', 'Technology Stack', { score, responses: saved, org_id }). Matches the CIS/Insurance audit pattern."
         },
         {
           "id": "auth8",

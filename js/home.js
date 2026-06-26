@@ -478,12 +478,14 @@ const WIDGET_CATALOG = [
 ];
 
 const DEFAULT_WIDGETS = [
-  { id: 'maturity',      width: 4, priority: 0 },
-  { id: 'cis',           width: 2, priority: 1 },
-  { id: 'insurance',     width: 1, priority: 2 },
-  { id: 'gap_register',  width: 1, priority: 3 },
-  { id: 'risk_register', width: 2, priority: 4 },
-  { id: 'techstack',     width: 1, priority: 5 },
+  { id: 'maturity',         width: 2, priority: 1 },
+  { id: 'gap_register',     width: 1, priority: 2 },
+  { id: 'risk_register',    width: 1, priority: 3 },
+  { id: 'cis',              width: 1, priority: 4 },
+  { id: 'insurance',        width: 1, priority: 4 },
+  { id: 'techstack',        width: 1, priority: 4 },
+  { id: 'ai_risk_register', width: 1, priority: 4 },
+  { id: 'ai_tool_catalog',  width: 1, priority: 6 },
 ];
 
 let dashCustomize = { open: false, draft: null };
