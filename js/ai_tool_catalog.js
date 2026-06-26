@@ -28,6 +28,9 @@ let aiCatState = {
   orgTools:      [],   // ai_org_tools rows for current org
   orgId:         null,
   orgLoaded:     false,
+  // App Inventory rows for link picker (gov12)
+  appList:       [],
+  appListOrgId:  null,
   // UI state
   tab:           'mytools',    // 'mytools' | 'catalog'
   myToolsTab:    'active',     // 'active' | 'flagged'
@@ -112,7 +115,19 @@ async function loadAiInventory(orgId) {
   await Promise.all([
     loadAiToolCatalog(),
     loadAiOrgTools(orgId),
+    aitcLoadAppList(orgId),
   ]);
+}
+
+async function aitcLoadAppList(orgId) {
+  if (aiCatState.appListOrgId === orgId && aiCatState.appList.length) return;
+  try {
+    const rows = await sb.appInventory.getForOrg(orgId);
+    aiCatState.appList      = Array.isArray(rows) ? rows : [];
+    aiCatState.appListOrgId = orgId;
+  } catch (e) {
+    aiCatState.appList = [];
+  }
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────────
@@ -303,12 +318,22 @@ function _aitcMyToolsTable(tools) {
 
     const scopeText = scope.length ? scope.join(', ') : '—';
 
+    const linkedApp    = ot.app_inventory_id ? aiCatState.appList.find(a => a.id === ot.app_inventory_id) : null;
+    const regScopes    = Array.isArray(ot.regulatory_scope) ? ot.regulatory_scope : [];
+    const _REG_COL     = { 'SOX':'background:#fef3c7;color:#92400e', 'PCI-DSS':'background:#dbeafe;color:#1e40af', 'HIPAA':'background:#dcfce7;color:#15803d', 'PIPEDA':'background:#ede9fe;color:#6d28d9' };
+    const regBadges    = regScopes.map(s => `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:5px;${_REG_COL[s]||'background:#f1f5f9;color:#374151'}">${escH(s)}</span>`).join(' ');
+
     return `<tr>
       ${td(`<div style="display:flex;align-items:center;gap:6px">
               <div>
                 <div style="font-weight:700">${escH(name)}</div>
                 <div style="font-size:10px;color:var(--muted)">${escH(vendor)}</div>
-                ${ot.department ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:5px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;margin-top:2px;display:inline-block">${escH(ot.department)}</span>` : ''}
+                <div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:2px">
+                  ${ot.department ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:5px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0">${escH(ot.department)}</span>` : ''}
+                  ${linkedApp ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:5px;background:#dbeafe;color:#1e40af" title="Linked to Application Inventory">🔗 ${escH(linkedApp.app_name)}</span>` : ''}
+                  ${regBadges}
+                  ${ot.regulatory_scope_other ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:5px;background:#f1f5f9;color:#374151" title="${escH(ot.regulatory_scope_other)}">+Other</span>` : ''}
+                </div>
               </div>
               ${ot.is_custom ? `<span style="font-size:9px;background:#e0e7ff;color:#3730a3;padding:1px 6px;border-radius:10px;font-weight:700">custom</span>` : ''}
             </div>`)}
@@ -604,6 +629,29 @@ function _aitcModalAddCustom(m) {
     </div>`);
 }
 
+function _aitcLinkedAppCard(appId) {
+  if (!appId) return '';
+  const app = aiCatState.appList.find(a => a.id === appId);
+  if (!app) return '';
+  const _b = (label, val, bg, col) => val
+    ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:${bg};color:${col}">${escH(val)}</span>`
+    : '';
+  const critB = _b('Crit', app.criticality, app.criticality === 'Critical' ? '#fee2e2' : app.criticality === 'High' ? '#ffedd5' : app.criticality === 'Medium' ? '#fef3c7' : '#dcfce7', app.criticality === 'Critical' ? '#991b1b' : app.criticality === 'High' ? '#9a3412' : app.criticality === 'Medium' ? '#92400e' : '#166534');
+  const bcdrB = _b('BCDR', app.bcdr_priority, '#ede9fe', '#6d28d9');
+  const irB   = app.ir_priority_tier ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#dbeafe;color:#1e40af">IR ${escH(app.ir_priority_tier)}</span>` : '';
+  return `<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:.65rem .9rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+    <span style="font-size:11px;color:var(--muted)">From <strong style="color:var(--text)">${escH(app.app_name)}</strong>:</span>
+    ${critB} ${bcdrB} ${irB}
+    ${!critB && !bcdrB && !irB ? `<span style="font-size:11px;color:var(--muted)">No criticality or BCDR data set yet.</span>` : ''}
+  </div>`;
+}
+
+function aitcRefreshLinkedApp() {
+  const sel = document.getElementById('aitc-e-app-link');
+  const box = document.getElementById('aitc-linked-app-info');
+  if (box) box.innerHTML = _aitcLinkedAppCard(sel?.value || '');
+}
+
 function _aitcModalEditOrgTool(m) {
   const ot = aiCatState.orgTools.find(t => t.id === m.id);
   if (!ot) return '';
@@ -645,10 +693,38 @@ function _aitcModalEditOrgTool(m) {
         <input id="aitc-e-dept" list="aitc-dept-list" class="form-input" value="${escH(ot.department || '')}" placeholder="e.g. Finance, Operations…">
         ${_aitcDeptDatalist()}
       </div>
-      <div style="margin-bottom:1.25rem">
+      <div style="margin-bottom:1rem">
         <label class="form-label">Notes</label>
         <textarea id="aitc-e-notes" class="form-input" rows="2">${escH(ot.notes || '')}</textarea>
       </div>
+
+      <div style="border-top:1px solid var(--border);margin:1.1rem 0 1rem"></div>
+
+      <div style="margin-bottom:1rem">
+        <label class="form-label">Linked Application <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+        <select id="aitc-e-app-link" class="form-input" onchange="aitcRefreshLinkedApp()">
+          <option value="">— Not linked —</option>
+          ${aiCatState.appList.map(a => `<option value="${a.id}" ${ot.app_inventory_id === a.id ? 'selected' : ''}>${escH(a.app_name)}${a.criticality ? ' · ' + a.criticality : ''}</option>`).join('')}
+        </select>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">Link this AI tool to an Application Inventory entry to surface shared BCDR and criticality context.</div>
+        <div id="aitc-linked-app-info" style="margin-top:.6rem">${_aitcLinkedAppCard(ot.app_inventory_id)}</div>
+      </div>
+
+      <div style="margin-bottom:1.25rem">
+        <label class="form-label">Regulatory Scope</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:.5rem">${
+          [['SOX','Sarbanes-Oxley (SOX)'],['PCI-DSS','PCI-DSS'],['HIPAA','HIPAA'],['PIPEDA','PIPEDA / Privacy']].map(([val, lbl]) => {
+            const existingScopes = Array.isArray(ot.regulatory_scope) ? ot.regulatory_scope : [];
+            const checked = existingScopes.includes(val);
+            return `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:5px 8px;border-radius:7px;border:1px solid var(--border);background:var(--bg)">
+              <input id="aitc-e-scope-${val.replace('-','')}" type="checkbox" ${checked ? 'checked' : ''}> ${lbl}
+            </label>`;
+          }).join('')
+        }</div>
+        <input id="aitc-e-scope-other" class="form-input" value="${escH(ot.regulatory_scope_other || '')}"
+          placeholder="Other frameworks (e.g. GDPR, ISO 27001…)" style="font-size:12px">
+      </div>
+
       <div id="aitc-modal-err" style="color:#b91c1c;font-size:12px;margin-bottom:.75rem;display:none"></div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button class="btn btn-outline btn-sm" onclick="aitcCloseModal()">Cancel</button>
@@ -904,10 +980,22 @@ async function aitcSaveAddCustom() {
 
 async function aitcSaveEditOrgTool(id, isCustom) {
   if (aiCatState.saving) return;
-  const status = document.getElementById('aitc-e-status')?.value;
-  const notes  = document.getElementById('aitc-e-notes')?.value.trim() || null;
-  const dept   = document.getElementById('aitc-e-dept')?.value.trim()  || null;
-  const patch  = { org_status: status, notes, department: dept };
+  const status    = document.getElementById('aitc-e-status')?.value;
+  const notes     = document.getElementById('aitc-e-notes')?.value.trim()    || null;
+  const dept      = document.getElementById('aitc-e-dept')?.value.trim()     || null;
+  const appLinkId = document.getElementById('aitc-e-app-link')?.value        || null;
+  const regScopes = ['SOX','PCIDSS','HIPAA','PIPEDA']
+    .filter(s => document.getElementById(`aitc-e-scope-${s}`)?.checked)
+    .map(s => s === 'PCIDSS' ? 'PCI-DSS' : s);
+  const regOther  = document.getElementById('aitc-e-scope-other')?.value.trim() || null;
+  const patch  = {
+    org_status:             status,
+    notes,
+    department:             dept,
+    app_inventory_id:       appLinkId || null,
+    regulatory_scope:       regScopes,
+    regulatory_scope_other: regOther,
+  };
   if (isCustom) {
     patch.custom_name     = document.getElementById('aitc-e-name')?.value.trim()     || null;
     patch.custom_vendor   = document.getElementById('aitc-e-vendor')?.value.trim()   || null;
@@ -1393,6 +1481,8 @@ window.aitcDeleteCatalogEntry     = aitcDeleteCatalogEntry;
 window.aitcById                   = aitcById;
 window.aitcForDropdown            = aitcForDropdown;
 window.aitcCreateRiskFromTool     = aitcCreateRiskFromTool;
+window.aitcLoadAppList            = aitcLoadAppList;
+window.aitcRefreshLinkedApp       = aitcRefreshLinkedApp;
 window.aitcOpenLinks              = aitcOpenLinks;
 window.aitcCloseLinks             = aitcCloseLinks;
 window.aitcLinksTab               = aitcLinksTab;

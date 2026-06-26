@@ -2347,8 +2347,9 @@
         {
           "id": "gov12",
           "text": "AI Tool Inventory → Application Inventory link — AI org tools can optionally reference an Application Inventory entry via app_inventory_id FK. When linked, BCDR priority, IR tier, and criticality are inherited from the linked app entry rather than stored separately. In the AI Tool edit modal, a 'Link to Application' picker lets admin choose from the org's app_inventory entries. BCDR/criticality treatment for AI Tools follows the linked app; unlinked AI tools keep a lighter risk tier (High/Medium/Low). Also add regulatory_scope to ai_org_tools table.",
-          "done": false,
-          "phase": 3
+          "done": true,
+          "phase": 3,
+          "notes": "PATCH_046: app_inventory_id uuid FK + regulatory_scope jsonb + regulatory_scope_other text on ai_org_tools. ai_tool_catalog.js: appList/appListOrgId added to aiCatState; aitcLoadAppList() fetches app_inventory for current org and is called from loadAiInventory(); _aitcLinkedAppCard() renders inherited criticality/BCDR/IR badge strip; aitcRefreshLinkedApp() updates card on select change; edit modal (_aitcModalEditOrgTool) now has Linked Application select picker + live inherited-fields card + SOX/PCI-DSS/HIPAA/PIPEDA checkboxes + Other text field; aitcSaveEditOrgTool() writes app_inventory_id, regulatory_scope, regulatory_scope_other; table row shows 🔗 app name badge + regulatory scope colour-coded badges."
         }
       ]
     }
