@@ -923,6 +923,8 @@ function renderAiUnifiedGapReport() {
     </div>`;
   });
 
+  html += _aiuTemplatesCard(gaps);
+
   html += `<div style="margin-top:.75rem;display:flex;gap:8px">
     <button class="btn btn-outline btn-sm" onclick="aiuNavToDashboard()">← Back</button>
     <button class="btn btn-outline btn-sm" onclick="aiuOpenPoam(-1)">📋 Open POAM</button>
@@ -2310,3 +2312,234 @@ Write for a non-technical founder. Focus on practical, lowest-cost actions that 
     .then(() => toast('✓ Gap prompt copied — paste into Claude', '#152168'))
     .catch(() => toast('Clipboard blocked', '#b45309'));
 }
+
+// ── REMEDIATION TEMPLATES ─────────────────────────────────────────────────────
+// Maps each control group to: Policy Library policies + downloadable Excel template.
+// _aiuTemplatesCard() is called from renderAiUnifiedGapReport() and shows only
+// groups where the current assessment has actual gaps.
+
+const AI_TEMPLATE_MAP = {
+  g1: {
+    policies: [
+      { id: 'pol_aigov', title: 'AI Governance Policy' },
+      { id: 'pol_aiaup', title: 'AI Acceptable Use Policy' },
+      { id: 'pol_aitap', title: 'AI Transparency & Accountability Policy' },
+    ],
+    excel: null,
+  },
+  g2: {
+    policies: [{ id: 'pol_airmp', title: 'AI Risk Management Policy' }],
+    excel: { label: 'AI Risk Register', key: 'risk_register' },
+  },
+  g3: {
+    policies: [{ id: 'pol_aitap', title: 'AI Transparency & Accountability Policy' }],
+    excel: null,
+  },
+  g4: {
+    policies: [{ id: 'pol_aidqp', title: 'AI Data Quality & Bias Management Policy' }],
+    excel: { label: 'AI Data Register', key: 'data_register' },
+  },
+  g5: {
+    policies: [{ id: 'pol_aiinv', title: 'AI Use Case Inventory Policy' }],
+    excel: { label: 'AI System Inventory', key: 'system_inventory' },
+  },
+  g6: {
+    policies: [{ id: 'pol_airmp', title: 'AI Risk Management Policy' }],
+    excel: { label: 'AI Testing Log', key: 'testing_log' },
+  },
+  g7: {
+    policies: [{ id: 'pol_aiirp', title: 'AI Incident Response Policy' }],
+    excel: { label: 'AI Incident Log', key: 'incident_log' },
+  },
+  g8: {
+    policies: [],
+    excel: { label: 'ISO 42001 AIMS Checklist', key: 'aims_checklist' },
+  },
+  g9: {
+    policies: [{ id: 'pol_airmp', title: 'AI Risk Management Policy' }],
+    excel: null,
+  },
+};
+
+function _aiuTemplatesCard(gaps) {
+  if (!gaps || !gaps.length) return '';
+  const gapGroups = [...new Set(gaps.map(g => g.grp))];
+  const relevant = gapGroups.filter(grp => AI_TEMPLATE_MAP[grp]);
+  if (!relevant.length) return '';
+
+  const rows = relevant.map(grp => {
+    const t = AI_TEMPLATE_MAP[grp];
+    const m = AI_GROUP_META[grp];
+    const gapCount = gaps.filter(g => g.grp === grp).length;
+
+    const policyBtns = t.policies.map(p =>
+      `<button class="btn btn-outline btn-sm" onclick="plibOpenFromPoam('${p.id}')"
+        style="font-size:11px;padding:3px 10px;white-space:nowrap">
+        📄 ${escH(p.title)}
+      </button>`
+    ).join('');
+
+    const excelBtn = t.excel
+      ? `<button class="btn btn-sm" onclick="aiuDownloadTemplate('${t.excel.key}')"
+          style="font-size:11px;padding:3px 10px;background:var(--green);color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap">
+          📥 ${escH(t.excel.label)}
+        </button>`
+      : '';
+
+    return `<div style="display:flex;align-items:center;gap:12px;padding:.65rem 1rem;border-bottom:1px solid var(--border);flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:7px;min-width:210px;flex-shrink:0">
+        <span style="font-size:14px">${m.icon}</span>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:${m.color}">${escH(m.label)}</div>
+          <div style="font-size:10px;color:var(--muted)">${gapCount} gap${gapCount!==1?'s':''}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        ${policyBtns}
+        ${excelBtn}
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="card" style="margin-bottom:.75rem;overflow:hidden">
+    <div style="padding:.75rem 1rem;background:linear-gradient(135deg,var(--navy),var(--navy2));display:flex;align-items:center;gap:10px">
+      <span style="font-size:16px">📥</span>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#fff">Remediation Resources</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.6)">Policies and templates matched to your gap areas — click a policy to view it in the Policy Library</div>
+      </div>
+    </div>
+    ${rows}
+  </div>`;
+}
+
+function aiuDownloadTemplate(key) {
+  const org = currentOrg?.name || 'Organisation';
+  const date = new Date().toISOString().slice(0, 10);
+  const fns = {
+    risk_register:    () => _aiuXlsxRiskRegister(org, date),
+    incident_log:     () => _aiuXlsxIncidentLog(org, date),
+    system_inventory: () => _aiuXlsxSystemInventory(org, date),
+    testing_log:      () => _aiuXlsxTestingLog(org, date),
+    data_register:    () => _aiuXlsxDataRegister(org, date),
+    aims_checklist:   () => _aiuXlsxAimsChecklist(org, date),
+  };
+  if (fns[key]) fns[key]();
+}
+
+function _aiuXlsxSave(headers, rows, colWidths, sheetName, filename) {
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  ws['!cols'] = colWidths.map(w => ({ wch: w }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  XLSX.writeFile(wb, filename);
+}
+
+function _aiuXlsxRiskRegister(org, date) {
+  _aiuXlsxSave(
+    ['Risk ID','AI System / Tool','Risk Category','Risk Description','Likelihood (1-5)','Impact (1-5)','Risk Score','Controls in Place','Treatment','Owner','Target Date','Status','Review Date'],
+    [
+      ['AI-RISK-001','','Governance','','','','','','Mitigate','','','Open',''],
+      ['AI-RISK-002','','Data & Privacy','','','','','','Accept','','','Open',''],
+      ['AI-RISK-003','','Third-Party / Vendor','','','','','','Transfer','','','Open',''],
+    ],
+    [14,22,20,40,16,14,12,30,14,18,14,12,14],
+    'AI Risk Register',
+    `AI Risk Register — ${org} — ${date}.xlsx`
+  );
+  toast('📥 AI Risk Register downloaded', '#15803d');
+}
+
+function _aiuXlsxIncidentLog(org, date) {
+  _aiuXlsxSave(
+    ['Incident ID','Date Reported','AI System','Description','Severity (P1-P4)','Detection Method','Root Cause','Response Actions','Lessons Learned','Status','Closed Date','Owner'],
+    [['AI-INC-001','','','','','','','','','Open','','']],
+    [14,14,22,40,14,22,30,40,40,12,14,18],
+    'AI Incident Log',
+    `AI Incident Log — ${org} — ${date}.xlsx`
+  );
+  toast('📥 AI Incident Log downloaded', '#15803d');
+}
+
+function _aiuXlsxSystemInventory(org, date) {
+  _aiuXlsxSave(
+    ['System ID','System Name','Vendor / Provider','Use Case','Department','Data Inputs','Output Type','Criticality','Human Oversight (Y/N)','AI Type','Last Review','Owner'],
+    [
+      ['AI-SYS-001','','','','','','','High','Y','Generative','',''],
+      ['AI-SYS-002','','','','','','','Medium','Y','Predictive','',''],
+    ],
+    [12,22,22,30,18,24,18,14,20,16,14,18],
+    'AI System Inventory',
+    `AI System Inventory — ${org} — ${date}.xlsx`
+  );
+  toast('📥 AI System Inventory downloaded', '#15803d');
+}
+
+function _aiuXlsxTestingLog(org, date) {
+  _aiuXlsxSave(
+    ['Test ID','AI System','Test Date','Test Type','Tester','Description','Results Summary','Pass / Fail','Follow-up Actions','Status'],
+    [
+      ['AI-TEST-001','','','Bias / Fairness','','','','','','Open'],
+      ['AI-TEST-002','','','Performance','','','','','','Open'],
+      ['AI-TEST-003','','','Security / Adversarial','','','','','','Open'],
+      ['AI-TEST-004','','','Output Quality','','','','','','Open'],
+    ],
+    [13,22,12,22,18,36,36,12,36,12],
+    'AI Testing Log',
+    `AI Testing Log — ${org} — ${date}.xlsx`
+  );
+  toast('📥 AI Testing Log downloaded', '#15803d');
+}
+
+function _aiuXlsxDataRegister(org, date) {
+  _aiuXlsxSave(
+    ['Register ID','Dataset Name','AI System','Data Type','Sensitivity','Contains PII (Y/N)','Data Source','Processing Purpose','Retention Period','Jurisdictions','Last Reviewed','Data Owner'],
+    [
+      ['AI-DATA-001','','','Structured','Confidential','Y','','','','Canada','',''],
+      ['AI-DATA-002','','','Unstructured / Text','Internal','N','','','','','',''],
+    ],
+    [14,22,22,18,16,18,22,30,18,16,14,18],
+    'AI Data Register',
+    `AI Data Register — ${org} — ${date}.xlsx`
+  );
+  toast('📥 AI Data Register downloaded', '#15803d');
+}
+
+function _aiuXlsxAimsChecklist(org, date) {
+  _aiuXlsxSave(
+    ['Clause','Requirement','Status','Evidence / Document Reference','Owner','Notes'],
+    [
+      ['4.1','Understanding the organization and its context','Not Started','','',''],
+      ['4.2','Understanding the needs of interested parties','Not Started','','',''],
+      ['4.3','Determining the scope of the AIMS','Not Started','','',''],
+      ['4.4','AI management system','Not Started','','',''],
+      ['5.1','Leadership and commitment','Not Started','','',''],
+      ['5.2','Policy','Not Started','','',''],
+      ['5.3','Roles, responsibilities and authorities','Not Started','','',''],
+      ['6.1','Actions to address risks and opportunities','Not Started','','',''],
+      ['6.2','AI objectives and planning to achieve them','Not Started','','',''],
+      ['7.1','Resources','Not Started','','',''],
+      ['7.2','Competence','Not Started','','',''],
+      ['7.3','Awareness','Not Started','','',''],
+      ['7.4','Communication','Not Started','','',''],
+      ['7.5','Documented information','Not Started','','',''],
+      ['8.1','Operational planning and control','Not Started','','',''],
+      ['8.2','AI risk assessment','Not Started','','',''],
+      ['8.3','AI risk treatment','Not Started','','',''],
+      ['8.4','AI system impact assessment','Not Started','','',''],
+      ['8.5','AI system life cycle','Not Started','','',''],
+      ['8.6','Data for AI systems','Not Started','','',''],
+      ['9.1','Monitoring, measurement, analysis and evaluation','Not Started','','',''],
+      ['9.2','Internal audit','Not Started','','',''],
+      ['9.3','Management review','Not Started','','',''],
+      ['10.1','Continual improvement','Not Started','','',''],
+      ['10.2','Nonconformity and corrective action','Not Started','','',''],
+    ],
+    [8,50,16,40,18,30],
+    'ISO 42001 Checklist',
+    `ISO 42001 AIMS Checklist — ${org} — ${date}.xlsx`
+  );
+  toast('📥 ISO 42001 AIMS Checklist downloaded', '#15803d');
+}
+
+window.aiuDownloadTemplate = aiuDownloadTemplate;

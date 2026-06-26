@@ -2024,8 +2024,9 @@
         {
           "id": "ai13",
           "text": "AI governance control templates — for any AI governance control gap, provide a downloadable template (policy doc, register, tracking spreadsheet) so clients can immediately act on a finding. Could be in-app templates or generated Excel/Word artifacts. Long-term: build these trackers natively into the platform (e.g. AI inventory register, AI incident log, AI risk register).",
-          "done": false,
-          "priority": "High"
+          "done": true,
+          "priority": "High",
+          "notes": "Remediation Resources card added to renderAiUnifiedGapReport() in ai_unified.js. AI_TEMPLATE_MAP maps g1-g9 to Policy Library links (plibOpenFromPoam()) + Excel downloads. Policy links: pol_aigov/pol_aiaup/pol_aitap (g1), pol_airmp (g2/g6/g9), pol_aitap (g3), pol_aidqp (g4), pol_aiinv (g5), pol_aiirp (g7). Excel templates: AI Risk Register (g2), AI Data Register (g4), AI System Inventory (g5), AI Testing Log (g6), AI Incident Log (g7), ISO 42001 AIMS Checklist (g8). _aiuTemplatesCard() renders only groups with actual gaps. _aiuXlsxSave() shared helper; aiuDownloadTemplate() dispatcher. window.aiuDownloadTemplate exported."
         },
         {
           "id": "ai14",
