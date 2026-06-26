@@ -296,6 +296,7 @@ function _aitcMyToolsTable(tools) {
               <div>
                 <div style="font-weight:700">${escH(name)}</div>
                 <div style="font-size:10px;color:var(--muted)">${escH(vendor)}</div>
+                ${ot.department ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:5px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;margin-top:2px;display:inline-block">${escH(ot.department)}</span>` : ''}
               </div>
               ${ot.is_custom ? `<span style="font-size:9px;background:#e0e7ff;color:#3730a3;padding:1px 6px;border-radius:10px;font-weight:700">custom</span>` : ''}
             </div>`)}
@@ -504,6 +505,11 @@ function _statusSelect(id, selected) {
   </select>`;
 }
 
+function _aitcDeptDatalist() {
+  const depts = [...new Set(aiCatState.orgTools.map(t => t.department).filter(Boolean))];
+  return `<datalist id="aitc-dept-list">${depts.map(d => `<option value="${escH(d)}">`).join('')}</datalist>`;
+}
+
 function _aitcModalAddFromCatalog(m) {
   const tool = aitcById(m.catalogId);
   if (!tool) return '';
@@ -522,6 +528,11 @@ function _aitcModalAddFromCatalog(m) {
         <div style="font-size:10px;color:var(--muted);margin-top:4px">
           Shadow IT = discovered / unvetted. Update once reviewed.
         </div>
+      </div>
+      <div style="margin-bottom:1rem">
+        <label class="form-label">Department</label>
+        <input id="aitc-add-dept" list="aitc-dept-list" class="form-input" placeholder="e.g. Finance, Operations…" style="width:100%;box-sizing:border-box">
+        ${_aitcDeptDatalist()}
       </div>
       <div style="margin-bottom:1.25rem">
         <label class="form-label">Notes (optional)</label>
@@ -562,6 +573,11 @@ function _aitcModalAddCustom(m) {
         <div style="grid-column:1/-1">
           <label class="form-label">Data In Scope</label>
           <input id="aitc-c-scope" class="form-input" placeholder="Text, Documents, Email (comma-separated)">
+        </div>
+        <div>
+          <label class="form-label">Department</label>
+          <input id="aitc-c-dept" list="aitc-dept-list" class="form-input" placeholder="e.g. Finance, Operations…">
+          ${_aitcDeptDatalist()}
         </div>
         <div style="grid-column:1/-1">
           <label class="form-label">Notes (optional)</label>
@@ -611,6 +627,11 @@ function _aitcModalEditOrgTool(m) {
       <div style="margin-bottom:1rem">
         <label class="form-label">Approval Status</label>
         ${_statusSelect('aitc-e-status', ot.org_status)}
+      </div>
+      <div style="margin-bottom:1rem">
+        <label class="form-label">Department</label>
+        <input id="aitc-e-dept" list="aitc-dept-list" class="form-input" value="${escH(ot.department || '')}" placeholder="e.g. Finance, Operations…">
+        ${_aitcDeptDatalist()}
       </div>
       <div style="margin-bottom:1.25rem">
         <label class="form-label">Notes</label>
@@ -767,6 +788,7 @@ async function aitcSaveAddFromCatalog(catalogId) {
   if (aiCatState.saving) return;
   const status  = document.getElementById('aitc-add-status')?.value || 'shadow_it';
   const notes   = document.getElementById('aitc-add-notes')?.value.trim() || null;
+  const dept    = document.getElementById('aitc-add-dept')?.value.trim() || null;
   const addedBy = authState.profile?.name || authState.profile?.email || null;
   aiCatState.saving = true;
   try {
@@ -777,6 +799,7 @@ async function aitcSaveAddFromCatalog(catalogId) {
       is_custom: false,
       org_status: status,
       notes,
+      department: dept,
       added_by: addedBy,
     };
     const result = await sb.aiOrgTools.add(row);
@@ -832,6 +855,7 @@ async function aitcSaveAddCustom() {
   const category = document.getElementById('aitc-c-category')?.value.trim() || null;
   const scopeRaw = document.getElementById('aitc-c-scope')?.value           || '';
   const status   = document.getElementById('aitc-c-status')?.value          || 'shadow_it';
+  const dept     = document.getElementById('aitc-c-dept')?.value.trim()     || null;
   const notes    = document.getElementById('aitc-c-notes')?.value.trim()    || null;
   const scope    = scopeRaw.split(',').map(s => s.trim()).filter(Boolean);
 
@@ -846,6 +870,7 @@ async function aitcSaveAddCustom() {
       custom_category: category,
       custom_data_scope: scope.length ? scope : null,
       org_status: status,
+      department: dept,
       notes,
       added_by: authState.profile?.name || authState.profile?.email || null,
     };
@@ -869,7 +894,8 @@ async function aitcSaveEditOrgTool(id, isCustom) {
   if (aiCatState.saving) return;
   const status = document.getElementById('aitc-e-status')?.value;
   const notes  = document.getElementById('aitc-e-notes')?.value.trim() || null;
-  const patch  = { org_status: status, notes };
+  const dept   = document.getElementById('aitc-e-dept')?.value.trim()  || null;
+  const patch  = { org_status: status, notes, department: dept };
   if (isCustom) {
     patch.custom_name     = document.getElementById('aitc-e-name')?.value.trim()     || null;
     patch.custom_vendor   = document.getElementById('aitc-e-vendor')?.value.trim()   || null;

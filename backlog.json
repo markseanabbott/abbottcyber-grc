@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.4.0",
   "created": "2026-05-14",
-  "updated": "2026-06-25 (session 72)",
+  "updated": "2026-06-26 (session 73)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -2322,6 +2322,19 @@
           "text": "Vendor BCDR and IR contacts — per-vendor BCDR: in BCDR plan (yes/no), BCDR dependency tier, alternative vendor or workaround documented. Per-vendor IR: 24/7 IR contact name and phone, incident notification SLA (hours), breach notification clause in contract, last confirmed IR contact date. Used to pre-populate vendor notification checklist in tabletop exercises.",
           "done": false,
           "phase": 2
+        },
+        {
+          "id": "gov9",
+          "text": "Department field on Application Inventory and AI Tool Catalog — free-text department entry per app/tool that auto-populates a per-org department list. When adding or editing, the department field is a text input with autocomplete suggestions drawn from previously entered departments for that org. Departments are stored in a new org_departments table (or derived from existing entries). Displayed as a badge on each row.",
+          "done": true,
+          "phase": 2,
+          "notes": "PATCH_043: department text column on app_inventory and ai_org_tools. app_inventory.js: department field in General modal with native datalist autocomplete, department badge in _ainvRow(), field in _ainvBuildPayload(). ai_tool_catalog.js: _aitcDeptDatalist() helper, department field in AddFromCatalog/AddCustom/EditOrgTool modals, badge in org tools table, field in all three save functions."
+        },
+        {
+          "id": "gov10",
+          "text": "Shareable submission links with timeout for Application Inventory and AI Tool Catalog — platform admin or admin can generate a time-limited link (configurable: 24h / 7d / 30d) for a specific org. Anyone with the link can submit a new app or AI tool on behalf of their department without a login. Submissions land in a 'Pending Review' status. Admin sees a pending queue and can approve (promote to Active) or reject. Link can be revoked early. Stored in a submission_tokens table with org_id, module (app_inventory / ai_tool_catalog), expires_at, and revoked flag.",
+          "done": false,
+          "phase": 3
         }
       ]
     }

@@ -337,7 +337,10 @@ function _ainvRow(r) {
     <td style="padding:.65rem .75rem">
       <div style="font-weight:600;color:var(--text)">${_aiEsc(r.app_name)}</div>
       ${r.description ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;line-height:1.3;max-width:240px">${_aiEsc(r.description)}</div>` : ''}
-      ${r.ir_in_scope ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:6px;background:#dbeafe;color:#1e40af;margin-top:3px;display:inline-block">IR</span>` : ''}
+      <div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:3px">
+        ${r.department ? `<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:6px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0">${_aiEsc(r.department)}</span>` : ''}
+        ${r.ir_in_scope ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:6px;background:#dbeafe;color:#1e40af">IR</span>` : ''}
+      </div>
     </td>
     <td style="padding:.65rem .75rem">
       ${r.hosting_type ? `<span style="font-size:10px;font-weight:700;padding:2px 9px;border-radius:99px;${hostSty}">${_aiEsc(r.hosting_type)}</span>` : none}
@@ -411,12 +414,20 @@ function _ainvModalHtml() {
   const show = (t) => `display:${initTab===t?'grid':'none'};gap:.75rem`;
 
   // ── General panel ────────────────────────────────────────────────────────
+  const deptOptions = [...new Set(appInvState.rows.map(r2 => r2.department).filter(Boolean))];
+  const deptDatalist = `<datalist id="ainv_dept_list">${deptOptions.map(d => `<option value="${_aiEsc(d)}">`).join('')}</datalist>`;
+
   const panelGeneral = `<div id="ainv_panel_general" style="${show('general')}">
     ${fld('ainv_app_name','App Name','text', r.app_name||'', true)}
     ${fld('ainv_description','Description','textarea', r.description||'')}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
       ${fld('ainv_vendor','Vendor / Supplier','text', r.vendor||'')}
       ${fld('ainv_business_owner','Business Owner','text', r.business_owner||'')}
+    </div>
+    <div>
+      <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:3px">Department</label>
+      <input id="ainv_department" list="ainv_dept_list" value="${_aiEsc(r.department||'')}" placeholder="e.g. Finance, Operations…" style="width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:7px;font-size:13px;box-sizing:border-box">
+      ${deptDatalist}
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
       ${sel('ainv_hosting_type','Hosting Type',['SaaS','Cloud','On-Prem','Hybrid'], r.hosting_type||'')}
@@ -617,6 +628,7 @@ function _ainvBuildPayload(base) {
     description:          _appInvVal('ainv_description')            || null,
     vendor:               _appInvVal('ainv_vendor')                 || null,
     business_owner:       _appInvVal('ainv_business_owner')         || null,
+    department:           _appInvVal('ainv_department')             || null,
     hosting_type:         _appInvVal('ainv_hosting_type')           || null,
     status:               _appInvVal('ainv_status')                 || 'Active',
     auth_mfa:             _appInvCheck('ainv_auth_mfa'),
