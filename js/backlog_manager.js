@@ -253,7 +253,6 @@ function blmRenderSection(sectionId, title, phase, items) {
 function blmRenderItem(item, idx) {
   const itemStatus  = _blmStatus(item);
   const cfg         = BLM_STATUS[itemStatus];
-  const priorityBadge = item.priority ? _blmPriorityBadge(item.priority) : '';
   const hasNotes    = !!(item.notes || '').trim();
   const notesOpen   = !!blmState.notesOpen[item.id];
   const depsArr     = Array.isArray(item.dependencies) ? item.dependencies : [];
