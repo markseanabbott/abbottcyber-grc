@@ -15,6 +15,16 @@ let appInvState = {
   modal:      null,      // { type:'add'|'edit', row?, tab? }
 };
 
+let appInvLinksState = {
+  open:       false,
+  tab:        'links',   // 'links' | 'pending'
+  tokens:     [],
+  pending:    [],
+  loading:    false,
+  generating: false,
+  rejectId:   null,
+};
+
 // ─── LOAD ─────────────────────────────────────────────────────────────────────
 
 async function loadAppInventory(orgId) {
@@ -104,8 +114,9 @@ ${renderTierBanner()}
     </div>
     <div style="font-size:12px;color:var(--muted);margin-top:4px">Business applications registered for ${_aiEsc(currentOrg?.name || '')}</div>
   </div>
-  <div style="display:flex;gap:.5rem;align-items:center">
+  <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
     <button class="btn btn-outline btn-sm" onclick="appInvSetView('bcdr')" title="BCDR Tier 1 exec summary">📋 BCDR Summary</button>
+    ${isAdmin() ? `<button class="btn btn-outline btn-sm" onclick="appInvOpenLinks()">🔗 Submission Links</button>` : ''}
     <button class="btn btn-cyan btn-sm" onclick="appInvOpenAdd()">+ Add Application</button>
   </div>
 </div>
@@ -147,7 +158,8 @@ ${renderTierBanner()}
   ${filtered.length === 0 ? _ainvEmpty() : _ainvTable(filtered)}
 </div>
 
-${_ainvModalHtml()}`;
+${_ainvModalHtml()}
+${appInvLinksState.open ? _ainvLinksModal() : ''}`;
 }
 
 // ─── BCDR SUMMARY VIEW (gov3) ─────────────────────────────────────────────────
@@ -288,7 +300,7 @@ function _ainvTable(rows) {
         ${th('Hosting',true)}
         ${th('Status',true)}
         ${th('Crit. / Risk',true)}
-        ${th('BCDR',true)}
+        ${th('BCDR / IR',true)}
         ${th('Owner')}
         ${th('Auth',true)}
         ${th('Data Class.',true)}
@@ -319,16 +331,25 @@ function _ainvRow(r) {
     r.auth_sso ? `<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;background:#dbeafe;color:#1e40af;white-space:nowrap">SSO</span>` : '',
   ].filter(Boolean).join(' ');
 
-  const riskLevel = _ainvDeriveRisk(r.criticality, dc);
+  const riskLevel  = _ainvDeriveRisk(r.criticality, dc);
+  const regScopes  = Array.isArray(r.regulatory_scope) ? r.regulatory_scope : (r.in_regulatory_scope ? ['Reg.'] : []);
+  const _REG_STYLE = { 'SOX':'background:#fef3c7;color:#92400e', 'PCI-DSS':'background:#dbeafe;color:#1e40af', 'HIPAA':'background:#dcfce7;color:#15803d', 'PIPEDA':'background:#ede9fe;color:#6d28d9', 'Reg.':'background:#ede9fe;color:#6d28d9' };
+  const regBadges  = regScopes.map(s => `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:6px;${_REG_STYLE[s]||'background:#f1f5f9;color:#374151'}">${_aiEsc(s)}</span>`).join(' ');
+  const regOther   = r.regulatory_scope_other ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:6px;background:#f1f5f9;color:#374151" title="${_aiEsc(r.regulatory_scope_other)}">+Other</span>` : '';
+
   const critCell  = r.criticality ? `
     <div style="display:flex;flex-direction:column;gap:2px">
       <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;${_ainvCritStyle(r.criticality)}">${_aiEsc(r.criticality)}</span>
       ${riskLevel ? `<span style="font-size:9px;color:var(--muted);font-weight:600;padding-left:2px">Risk: ${_aiEsc(riskLevel)}</span>` : ''}
-      ${r.in_regulatory_scope ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:6px;background:#ede9fe;color:#6d28d9">Reg.</span>` : ''}
+      ${regBadges || regOther ? `<div style="display:flex;gap:2px;flex-wrap:wrap;margin-top:1px">${regBadges}${regOther}</div>` : ''}
     </div>` : `<span style="color:var(--muted);font-size:11px">—</span>`;
 
-  const bcdrCell = r.bcdr_priority
-    ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;${_ainvBcdrStyle(r.bcdr_priority)}">${_aiEsc(r.bcdr_priority)}</span>`
+  const irBadge   = r.ir_priority_tier ? `<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:6px;background:#dbeafe;color:#1e40af;white-space:nowrap">IR ${_aiEsc(r.ir_priority_tier)}</span>` : '';
+  const bcdrCell  = (r.bcdr_priority || r.ir_priority_tier)
+    ? `<div style="display:flex;flex-direction:column;gap:3px">
+        ${r.bcdr_priority ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;${_ainvBcdrStyle(r.bcdr_priority)}">${_aiEsc(r.bcdr_priority)}</span>` : ''}
+        ${irBadge}
+      </div>`
     : `<span style="color:var(--muted);font-size:11px">—</span>`;
 
   const none = '<span style="color:var(--muted);font-size:11px">—</span>';
@@ -465,10 +486,21 @@ function _ainvModalHtml() {
     </div>`}
     <div>
       <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:6px">Regulatory Scope</label>
-      <label style="display:flex;align-items:flex-start;gap:6px;font-size:13px;cursor:pointer">
-        <input id="ainv_in_regulatory_scope" type="checkbox" ${r.in_regulatory_scope?'checked':''} style="margin-top:2px">
-        <span>This application is in scope for regulatory compliance (PCI DSS, HIPAA, SOX, PIPEDA, GDPR, etc.)</span>
-      </label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:.5rem">${
+        [['SOX','Sarbanes-Oxley (SOX)'],['PCI-DSS','PCI-DSS'],['HIPAA','HIPAA'],['PIPEDA','PIPEDA / Privacy']].map(([val,lbl]) => {
+          const existingScopes = Array.isArray(r.regulatory_scope) ? r.regulatory_scope : [];
+          const checked = existingScopes.includes(val);
+          return `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:5px 8px;border-radius:7px;border:1px solid var(--border);background:var(--bg)">
+            <input id="ainv_scope_${val.replace('-','')}" type="checkbox" ${checked?'checked':''}> ${lbl}
+          </label>`;
+        }).join('')
+      }</div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:3px">Other Regulatory Frameworks</label>
+        <input id="ainv_scope_other" type="text" value="${_aiEsc(r.regulatory_scope_other||'')}"
+          placeholder="e.g. GDPR, ISO 27001, NIST CSF…"
+          style="width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:7px;font-size:13px;box-sizing:border-box">
+      </div>
     </div>
   </div>` : '';
 
@@ -611,6 +643,12 @@ function _appInvGetDC() {
     .filter(d => document.getElementById(`ainv_dc_${d}`)?.checked);
 }
 
+function _appInvGetScopes() {
+  return ['SOX','PCIDSS','HIPAA','PIPEDA']
+    .filter(s => document.getElementById(`ainv_scope_${s}`)?.checked)
+    .map(s => s === 'PCIDSS' ? 'PCI-DSS' : s);
+}
+
 function _appInvVal(id) {
   const el = document.getElementById(id);
   return el ? el.value.trim() : '';
@@ -639,7 +677,9 @@ function _ainvBuildPayload(base) {
     notes:                _appInvVal('ainv_notes')                  || null,
     criticality:              _appInvVal('ainv_criticality')            || null,
     criticality_rationale:    _appInvVal('ainv_criticality_rationale')  || null,
-    in_regulatory_scope:      _appInvCheck('ainv_in_regulatory_scope'),
+    regulatory_scope:         _appInvGetScopes(),
+    regulatory_scope_other:   _appInvVal('ainv_scope_other')            || null,
+    in_regulatory_scope:      _appInvGetScopes().length > 0 || !!(_appInvVal('ainv_scope_other')),
     bcdr_priority:            _appInvVal('ainv_bcdr_priority')          || null,
     bcdr_rto:                 _appInvVal('ainv_bcdr_rto')               || null,
     bcdr_rpo:                 _appInvVal('ainv_bcdr_rpo')               || null,
@@ -709,6 +749,294 @@ async function appInvDelete(id) {
   }
 }
 
+// ─── SUBMISSION LINKS (gov10) ─────────────────────────────────────────────────
+
+async function appInvOpenLinks() {
+  appInvLinksState.open    = true;
+  appInvLinksState.loading = true;
+  appInvRefresh();
+  try {
+    const [toks, pending] = await Promise.all([
+      sb.submissionTokens.getForOrg(currentOrg.id, 'app_inventory'),
+      sb.pendingSubmissions.getForOrg(currentOrg.id, 'app_inventory'),
+    ]);
+    appInvLinksState.tokens  = Array.isArray(toks)    ? toks    : [];
+    appInvLinksState.pending = Array.isArray(pending) ? pending : [];
+  } catch (e) {
+    toast('Failed to load submission links: ' + e.message, '#dc2626');
+  }
+  appInvLinksState.loading = false;
+  appInvRefresh();
+}
+
+function appInvCloseLinks() {
+  appInvLinksState.open     = false;
+  appInvLinksState.rejectId = null;
+  appInvRefresh();
+}
+
+function appInvLinksTab(tab) {
+  appInvLinksState.tab = tab;
+  appInvRefresh();
+}
+
+async function appInvGenerateLink() {
+  if (appInvLinksState.generating) return;
+  const label     = document.getElementById('ainv-link-label')?.value.trim() || null;
+  const duration  = document.getElementById('ainv-link-duration')?.value || '7d';
+  const hours     = { '24h': 24, '7d': 168, '30d': 720 }[duration] || 168;
+  const expiresAt = new Date(Date.now() + hours * 3600 * 1000).toISOString();
+  appInvLinksState.generating = true;
+  appInvRefresh();
+  try {
+    const row = {
+      org_id:     currentOrg.id,
+      module:     'app_inventory',
+      label,
+      created_by: authState.profile?.name || authState.profile?.email || null,
+      expires_at: expiresAt,
+    };
+    const result = await sb.submissionTokens.create(row);
+    const newTok = Array.isArray(result) ? result[0] : result;
+    if (newTok) appInvLinksState.tokens.unshift(newTok);
+    auditLog('submission_link_created', 'submission_token', label || 'App Inventory link', { org_id: currentOrg.id });
+    toast('Submission link created', '#15803d');
+  } catch (e) {
+    toast('Failed to create link: ' + e.message, '#dc2626');
+  }
+  appInvLinksState.generating = false;
+  appInvRefresh();
+}
+
+async function appInvRevokeToken(id) {
+  if (!confirm('Revoke this link? Anyone with the URL will no longer be able to submit.')) return;
+  try {
+    await sb.submissionTokens.revoke(id);
+    const tok = appInvLinksState.tokens.find(t => t.id === id);
+    if (tok) tok.revoked = true;
+    auditLog('submission_link_revoked', 'submission_token', id, { org_id: currentOrg.id });
+    toast('Link revoked', '#b45309');
+    appInvRefresh();
+  } catch (e) {
+    toast('Revoke failed: ' + e.message, '#dc2626');
+  }
+}
+
+async function appInvDeleteToken(id) {
+  if (!confirm('Delete this link? All pending submissions through it will also be deleted.')) return;
+  try {
+    await sb.submissionTokens.delete(id);
+    appInvLinksState.tokens  = appInvLinksState.tokens.filter(t => t.id !== id);
+    appInvLinksState.pending = appInvLinksState.pending.filter(p => p.token_id !== id);
+    toast('Link deleted', '#5a6a8a');
+    appInvRefresh();
+  } catch (e) {
+    toast('Delete failed: ' + e.message, '#dc2626');
+  }
+}
+
+function appInvCopyLink(id) {
+  const inp = document.getElementById(`ainv-tok-url-${id}`);
+  if (!inp) return;
+  const copy = () => { inp.select(); document.execCommand('copy'); toast('Link copied!', '#15803d'); };
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(inp.value).then(() => toast('Link copied!', '#15803d')).catch(copy);
+  } else { copy(); }
+}
+
+async function appInvApproveSubmission(id) {
+  const sub = appInvLinksState.pending.find(p => p.id === id);
+  if (!sub) return;
+  try {
+    const payload = sub.payload || {};
+    const appRow = {
+      org_id:              sub.org_id,
+      app_name:            payload.app_name || 'Unnamed Application',
+      description:         payload.purpose  || null,
+      department:          payload.department || null,
+      data_classification: Array.isArray(payload.data_classification) ? payload.data_classification : [],
+      status:              'Under Review',
+      notes:               [`Submitted by ${sub.submitter_name || 'Unknown'}${sub.submitter_email ? ' (' + sub.submitter_email + ')' : ''}`, payload.website ? 'URL: ' + payload.website : ''].filter(Boolean).join('. '),
+    };
+    await sb.appInventory.add(appRow);
+    const patch = { status: 'approved', reviewed_by: authState.profile?.name || authState.profile?.email || null, reviewed_at: new Date().toISOString() };
+    await sb.pendingSubmissions.updateStatus(id, patch);
+    Object.assign(sub, patch);
+    if (appInvState.orgId === sub.org_id) {
+      const rows = await sb.appInventory.getForOrg(sub.org_id);
+      if (Array.isArray(rows)) appInvState.rows = rows;
+    }
+    auditLog('submission_approved', 'app_inventory', payload.app_name, { org_id: sub.org_id });
+    toast('Approved — application added as Under Review', '#15803d');
+    appInvRefresh();
+  } catch (e) {
+    toast('Approval failed: ' + e.message, '#dc2626');
+  }
+}
+
+function appInvStartReject(id) {
+  appInvLinksState.rejectId = id;
+  appInvRefresh();
+}
+
+function appInvCancelReject() {
+  appInvLinksState.rejectId = null;
+  appInvRefresh();
+}
+
+async function appInvConfirmReject(id) {
+  const sub = appInvLinksState.pending.find(p => p.id === id);
+  if (!sub) return;
+  const note = document.getElementById('ainv-reject-note')?.value.trim() || null;
+  try {
+    const patch = {
+      status:       'rejected',
+      reviewed_by:  authState.profile?.name || authState.profile?.email || null,
+      reviewed_at:  new Date().toISOString(),
+      review_notes: note,
+    };
+    await sb.pendingSubmissions.updateStatus(id, patch);
+    Object.assign(sub, patch);
+    appInvLinksState.rejectId = null;
+    auditLog('submission_rejected', 'app_inventory', sub.payload?.app_name || '', { org_id: sub.org_id });
+    toast('Submission rejected', '#b45309');
+    appInvRefresh();
+  } catch (e) {
+    toast('Reject failed: ' + e.message, '#dc2626');
+  }
+}
+
+function _ainvLinksModal() {
+  const { tab, tokens, pending, loading, generating, rejectId } = appInvLinksState;
+  const now          = new Date();
+  const pendingCount = pending.filter(p => p.status === 'pending').length;
+  const _tokUrl  = (tok) => window.location.href.split('?')[0] + '?submit=' + tok.token;
+  const _tokSt   = (tok) => {
+    if (tok.revoked)                    return { label:'Revoked', col:'#b91c1c', bg:'#fee2e2' };
+    if (new Date(tok.expires_at) < now) return { label:'Expired', col:'#6b7280', bg:'#f3f4f6' };
+    return { label:'Active', col:'#15803d', bg:'#dcfce7' };
+  };
+  const _fmtD = (iso) => iso ? new Date(iso).toLocaleDateString('en-CA', { month:'short', day:'numeric', year:'numeric' }) : '—';
+
+  let body = '';
+  if (loading) {
+    body = `<div style="text-align:center;padding:2rem;color:var(--muted)">
+      <div class="spinner" style="border-color:rgba(21,33,104,.2);border-top-color:var(--navy);width:20px;height:20px;margin:0 auto .75rem"></div>
+      <div style="font-size:12px">Loading…</div></div>`;
+
+  } else if (tab === 'links') {
+    const tokenRows = tokens.length === 0
+      ? `<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:12px">No links yet.</div>`
+      : tokens.map(tok => {
+          const st     = _tokSt(tok);
+          const isLive = !tok.revoked && new Date(tok.expires_at) >= now;
+          return `<div style="border:1px solid var(--border);border-radius:9px;padding:.85rem 1rem;margin-bottom:.6rem">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:.5rem">
+              <span style="font-size:13px;font-weight:700;color:var(--text)">${_aiEsc(tok.label || '(no label)')}</span>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="font-size:10px;font-weight:700;padding:1px 8px;border-radius:20px;background:${st.bg};color:${st.col}">${st.label}</span>
+                <span style="font-size:11px;color:var(--muted)">Expires ${_fmtD(tok.expires_at)}</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input readonly value="${_aiEsc(_tokUrl(tok))}" id="ainv-tok-url-${tok.id}"
+                style="flex:1;font-size:11px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;color:var(--muted);background:var(--bg);font-family:monospace;min-width:0;box-sizing:border-box"
+                onclick="this.select()">
+              <button class="btn btn-outline btn-sm" onclick="appInvCopyLink('${tok.id}')" style="flex-shrink:0">📋 Copy</button>
+              ${isLive  ? `<button class="btn btn-outline btn-sm" style="color:#b91c1c;border-color:#b91c1c;flex-shrink:0" onclick="appInvRevokeToken('${tok.id}')">Revoke</button>` : ''}
+              ${!isLive ? `<button class="btn btn-outline btn-sm" style="color:var(--muted);flex-shrink:0" onclick="appInvDeleteToken('${tok.id}')">Delete</button>` : ''}
+            </div>
+            ${tok.created_by ? `<div style="font-size:10px;color:var(--muted);margin-top:.3rem">Created by ${_aiEsc(tok.created_by)}</div>` : ''}
+          </div>`;
+        }).join('');
+
+    body = `
+      <div style="background:var(--bg);border-radius:9px;padding:1rem;margin-bottom:1rem">
+        <div style="display:grid;grid-template-columns:1fr 140px auto;gap:8px;align-items:end;margin-bottom:.6rem">
+          <div>
+            <label style="display:block;font-size:10px;font-weight:700;color:var(--text);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Label (optional)</label>
+            <input id="ainv-link-label" placeholder="e.g. IT Audit Q3 2026"
+              style="width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:7px;font-size:13px;box-sizing:border-box;font-family:inherit">
+          </div>
+          <div>
+            <label style="display:block;font-size:10px;font-weight:700;color:var(--text);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Expires In</label>
+            <select id="ainv-link-duration" style="width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:7px;font-size:13px;box-sizing:border-box;font-family:inherit">
+              <option value="24h">24 hours</option>
+              <option value="7d" selected>7 days</option>
+              <option value="30d">30 days</option>
+            </select>
+          </div>
+          <button class="btn btn-cyan btn-sm" onclick="appInvGenerateLink()" ${generating ? 'disabled' : ''} style="align-self:end">
+            ${generating ? 'Generating…' : 'Generate Link'}
+          </button>
+        </div>
+        <div style="font-size:11px;color:var(--muted)">Anyone with the URL can submit an application for your review without logging in.</div>
+      </div>
+      ${tokenRows}`;
+
+  } else {
+    const pendingRows = pending.length === 0
+      ? `<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:12px">No submissions yet.</div>`
+      : pending.map(sub => {
+          const p  = sub.payload || {};
+          const dc = Array.isArray(p.data_classification) ? p.data_classification : [];
+          const sCol = { pending:'#b45309', approved:'#15803d', rejected:'#b91c1c' }[sub.status] || '#374151';
+          const sBg  = { pending:'#fef3c7', approved:'#dcfce7', rejected:'#fee2e2' }[sub.status] || '#f3f4f6';
+          const actions = sub.status === 'pending'
+            ? `<div style="display:flex;gap:6px;margin-top:.6rem">
+                <button class="btn btn-sm" style="background:#15803d;color:#fff;border:none;flex:1" onclick="appInvApproveSubmission('${sub.id}')">✓ Approve</button>
+                <button class="btn btn-outline btn-sm" style="color:#b91c1c;border-color:#b91c1c;flex:1" onclick="appInvStartReject('${sub.id}')">✕ Reject</button>
+              </div>` : '';
+          const rejectForm = rejectId === sub.id
+            ? `<div style="margin-top:.6rem;padding:.7rem;background:#fff5f5;border:1px solid #fecaca;border-radius:7px">
+                <label style="display:block;font-size:11px;font-weight:700;color:#b91c1c;margin-bottom:4px">Rejection reason (optional)</label>
+                <textarea id="ainv-reject-note" rows="2" style="width:100%;padding:6px 8px;border:1px solid #fecaca;border-radius:6px;font-size:12px;box-sizing:border-box;resize:vertical;font-family:inherit"></textarea>
+                <div style="display:flex;gap:6px;margin-top:.4rem">
+                  <button class="btn btn-sm" style="background:#b91c1c;color:#fff;border:none;flex:1" onclick="appInvConfirmReject('${sub.id}')">Confirm Reject</button>
+                  <button class="btn btn-outline btn-sm" style="flex:1" onclick="appInvCancelReject()">Cancel</button>
+                </div>
+              </div>` : '';
+
+          return `<div style="border:1px solid var(--border);border-radius:9px;padding:.85rem 1rem;margin-bottom:.6rem">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:.4rem">
+              <div>
+                <span style="font-size:13px;font-weight:700;color:var(--text)">${_aiEsc(p.app_name || '—')}</span>
+                ${p.department ? `<span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:9px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;margin-left:6px">${_aiEsc(p.department)}</span>` : ''}
+              </div>
+              <span style="font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;background:${sBg};color:${sCol}">${sub.status.charAt(0).toUpperCase()+sub.status.slice(1)}</span>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:.35rem">
+              <strong>${_aiEsc(sub.submitter_name || 'Unknown')}</strong>${sub.submitter_email ? ` · ${_aiEsc(sub.submitter_email)}` : ''} · ${_fmtD(sub.created_at)}
+            </div>
+            ${p.purpose ? `<div style="font-size:12px;color:var(--text);line-height:1.5;margin-bottom:.35rem">${_aiEsc(p.purpose)}</div>` : ''}
+            ${dc.length > 0 ? `<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:.3rem">${dc.map(d => `<span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:9px;background:#ede9fe;color:#6d28d9;border:1px solid #ddd6fe">${_aiEsc(d)}</span>`).join('')}</div>` : ''}
+            ${p.website ? `<div style="font-size:11px;color:var(--muted)">URL: ${_aiEsc(p.website)}</div>` : ''}
+            ${sub.status === 'rejected' && sub.review_notes ? `<div style="font-size:11px;color:#b91c1c;margin-top:.3rem;font-style:italic">Rejected: ${_aiEsc(sub.review_notes)}</div>` : ''}
+            ${actions}
+            ${rejectForm}
+          </div>`;
+        }).join('');
+
+    body = pendingRows;
+  }
+
+  return `<div class="modal-backdrop" onclick="if(event.target===this)appInvCloseLinks()" style="display:flex">
+    <div class="modal-box" style="max-width:660px;width:94%;max-height:88vh;overflow-y:auto">
+      <div class="modal-header">
+        <span>🔗 Submission Links — Application Inventory</span>
+        <button class="modal-close" onclick="appInvCloseLinks()">✕</button>
+      </div>
+      <div class="view-tabs" style="margin:0;padding:0 1.25rem;border-bottom:1px solid var(--border)">
+        <button class="view-tab${tab === 'links'   ? ' active' : ''}" onclick="appInvLinksTab('links')">Active Links</button>
+        <button class="view-tab${tab === 'pending' ? ' active' : ''}" onclick="appInvLinksTab('pending')">
+          Pending Review${pendingCount > 0 ? ` <span style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;background:#ef4444;color:#fff;border-radius:50%;font-size:10px;font-weight:700;padding:0 3px">${pendingCount}</span>` : ''}
+        </button>
+      </div>
+      <div class="modal-body" style="padding-top:1rem">${body}</div>
+    </div>
+  </div>`;
+}
+
 // ─── UTILITY ──────────────────────────────────────────────────────────────────
 
 function _aiEsc(s) {
@@ -736,4 +1064,15 @@ window.appInvRefresh       = appInvRefresh;
 window.appInvToggleDC      = appInvToggleDC;
 window.appInvSubmitAdd     = appInvSubmitAdd;
 window.appInvSubmitEdit    = appInvSubmitEdit;
-window.appInvDelete        = appInvDelete;
+window.appInvDelete            = appInvDelete;
+window.appInvOpenLinks         = appInvOpenLinks;
+window.appInvCloseLinks        = appInvCloseLinks;
+window.appInvLinksTab          = appInvLinksTab;
+window.appInvGenerateLink      = appInvGenerateLink;
+window.appInvRevokeToken       = appInvRevokeToken;
+window.appInvDeleteToken       = appInvDeleteToken;
+window.appInvCopyLink          = appInvCopyLink;
+window.appInvApproveSubmission = appInvApproveSubmission;
+window.appInvStartReject       = appInvStartReject;
+window.appInvCancelReject      = appInvCancelReject;
+window.appInvConfirmReject     = appInvConfirmReject;

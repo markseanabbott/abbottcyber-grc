@@ -76,7 +76,9 @@ AbbottCyber GRC/
     └── FILE_SPLIT_PLAN.md         ← Plan used to split original index.html into js/ modules
 ```
 
-All patches have been run except PATCH_005 (vendor_assessments table is missing — needs re-run).
+Patches through PATCH_044 have been run (except PATCH_005 — vendor_assessments table is missing, re-run needed).
+
+**PATCH_045 — pending (run manually):** Adds `regulatory_scope jsonb DEFAULT '[]'` and `regulatory_scope_other text` to `app_inventory`.
 
 ---
 

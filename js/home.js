@@ -1269,33 +1269,59 @@ function renderExercisesHub() {
 // via a vendor_directory_id FK on vendor_assessments.
 // ============================================================
 
-const GOVERNANCE_CATALOG = [
-  { id: 'riskregister',    label: 'Risk Register',           icon: '📋', description: 'Track and manage risks across your organization.', nav: 'riskregister' },
-  { id: 'ai_risk_register', label: 'AI Risk Register',       icon: '🤖', description: 'AI-specific risk tracking with NIST AI RMF and ISO 42001 control tags. AI-prefixed risk IDs.', nav: 'ai_risk_register' },
-  { id: 'ai_tool_catalog',  label: 'AI Application Inventory', icon: '📦', description: 'Reference catalog of AI tools with compliance posture, approval status, and NIST / ISO 42001 mappings.', nav: 'ai_tool_catalog' },
-  { id: 'policy_lib',      label: 'Policy Library',          icon: '📄', description: 'Manage and maintain your security policy documents.', nav: 'policy_lib' },
-  { id: 'app_inv',         label: 'Application Inventory',   icon: '🖥️', description: 'Track all business applications — hosting type, status, owner, authentication, and data classification.', nav: 'app_inv' },
-  { id: 'vendor_dir',      label: 'Vendor Directory',        icon: '🏢', description: 'Central registry of all vendors — category, primary contact, status, and review dates.', nav: 'vendor_dir' },
+const GOVERNANCE_GROUPS = [
+  {
+    label: 'Inventories',
+    items: [
+      { id: 'app_inv',         label: 'Application Inventory', icon: '🖥️', description: 'Track all business applications — hosting, status, criticality, BCDR, IR scope, and data classification.', nav: 'app_inv' },
+      { id: 'ai_tool_catalog', label: 'AI Tool Inventory',     icon: '🤖', description: 'AI tools in use across the org — approved, conditional, shadow IT, and NIST / ISO 42001 mappings.', nav: 'ai_tool_catalog' },
+      { id: 'vendor_dir',      label: 'Vendor Directory',      icon: '🏢', description: 'Central registry of all vendors — category, primary contact, status, and review dates.', nav: 'vendor_dir' },
+    ],
+  },
+  {
+    label: 'Risk Registers',
+    items: [
+      { id: 'riskregister',     label: 'Risk Register',    icon: '📋', description: 'Track and manage operational and cybersecurity risks across your organization.', nav: 'riskregister' },
+      { id: 'ai_risk_register', label: 'AI Risk Register', icon: '🧠', description: 'AI-specific risk tracking with NIST AI RMF and ISO 42001 control tags. AI-prefixed risk IDs.', nav: 'ai_risk_register' },
+    ],
+  },
+  {
+    label: 'Other',
+    items: [
+      { id: 'policy_lib', label: 'Policy Library', icon: '📄', description: 'Manage and maintain your security policy documents.', nav: 'policy_lib' },
+    ],
+  },
 ];
+
+function _govCard(g) {
+  return `<div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column">
+    <div style="padding:1rem 1rem .6rem;flex:1">
+      <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.4rem">
+        <span style="font-size:1.1rem;flex-shrink:0">${g.icon}</span>
+        <div style="font-size:13px;font-weight:700;flex:1">${g.label}</div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);line-height:1.45">${g.description}</div>
+    </div>
+    <div style="padding:.5rem 1rem .75rem;border-top:1px solid var(--border);display:flex;gap:5px">
+      ${g.comingSoon
+        ? `<span style="font-size:11px;font-weight:700;color:var(--muted);padding:4px 10px;border-radius:6px;background:var(--bg)">Coming soon</span>`
+        : `<button class="btn btn-cyan btn-sm" onclick="setNav('${g.nav}')" style="flex:1">View</button>`}
+    </div>
+  </div>`;
+}
 
 function renderGovernanceHub() {
   if (!currentOrg) return '';
 
-  const cards = GOVERNANCE_CATALOG.filter(g => hasPageAccess(g.nav)).map(g => {
-    return `<div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column">
-      <div style="padding:1rem 1rem .6rem;flex:1">
-        <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.4rem">
-          <span style="font-size:1.1rem;flex-shrink:0">${g.icon}</span>
-          <div style="font-size:13px;font-weight:700;flex:1">${g.label}</div>
-        </div>
-        <div style="font-size:11px;color:var(--muted);line-height:1.45">${g.description}</div>
-      </div>
-      <div style="padding:.5rem 1rem .75rem;border-top:1px solid var(--border);display:flex;gap:5px">
-        ${g.comingSoon
-          ? `<span style="font-size:11px;font-weight:700;color:var(--muted);padding:4px 10px;border-radius:6px;background:var(--bg)">Coming soon</span>`
-          : `<button class="btn btn-cyan btn-sm" onclick="setNav('${g.nav}')" style="flex:1">View</button>`}
-      </div>
-    </div>`;
+  const groupHtml = GOVERNANCE_GROUPS.map(group => {
+    const visible = group.items.filter(g => hasPageAccess(g.nav));
+    if (!visible.length) return '';
+    const cols = Math.min(visible.length, 3);
+    return `
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:1.25rem;margin-bottom:.5rem;padding-bottom:.3rem;border-bottom:1px solid var(--border)">${group.label}</div>
+      <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:.75rem">
+        ${visible.map(_govCard).join('')}
+      </div>`;
   }).join('');
 
   return `
@@ -1303,12 +1329,10 @@ function renderGovernanceHub() {
   <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:0.85rem;flex-wrap:wrap;gap:8px">
     <div>
       <div style="font-size:17px;font-weight:700">⚖️ Governance</div>
-      <div style="font-size:12px;color:var(--muted)">Risk, policy, and vendor management for ${escH(currentOrg.name)}</div>
+      <div style="font-size:12px;color:var(--muted)">Inventories, risk registers, and policies for ${escH(currentOrg.name)}</div>
     </div>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:.75rem">
-    ${cards}
-  </div>`;
+  ${groupHtml}`;
 }
 
 function drawAllHubTrends() {

@@ -49,6 +49,7 @@ async function bootApp() {
 
 // startApp — entry point. Checks auth, shows login screen or boots app.
 async function startApp() {
+  if (_SUBMIT_TOKEN) { bootSubmissionPortal(_SUBMIT_TOKEN); return; }
   document.getElementById('appShell').style.display = 'none';
   const authed = await authBootstrap();
   if (!authed) {

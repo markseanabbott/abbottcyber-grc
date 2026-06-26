@@ -1,6 +1,6 @@
 {
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "created": "2026-05-14",
   "updated": "2026-06-26 (session 73)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
@@ -2333,6 +2333,20 @@
         {
           "id": "gov10",
           "text": "Shareable submission links with timeout for Application Inventory and AI Tool Catalog — platform admin or admin can generate a time-limited link (configurable: 24h / 7d / 30d) for a specific org. Anyone with the link can submit a new app or AI tool on behalf of their department without a login. Submissions land in a 'Pending Review' status. Admin sees a pending queue and can approve (promote to Active) or reject. Link can be revoked early. Stored in a submission_tokens table with org_id, module (app_inventory / ai_tool_catalog), expires_at, and revoked flag.",
+          "done": true,
+          "phase": 3,
+          "notes": "PATCH_044: submission_tokens + pending_submissions tables. js/submission_portal.js: public form (bootSubmissionPortal, spSubmit, spToggleDc, spSetAiMode). Admin links modal in app_inventory.js (appInvOpenLinks, appInvGenerateLink, appInvRevokeToken, appInvApproveSubmission, appInvStartReject, appInvConfirmReject, _ainvLinksModal) and ai_tool_catalog.js (aitcOpenLinks, aitcGenerateLink, aitcRevokeToken, aitcApproveSubmission, aitcStartReject, aitcConfirmReject, _aitcLinksModal). sb.submissionTokens + sb.pendingSubmissions in supabase.js. _SUBMIT_TOKEN in config.js, portal intercept in startApp(). Submission form: submitter name/email, catalog-pick or custom tool name, website, department, data classification chips, purpose. No governance fields exposed to submitters."
+        },
+        {
+          "id": "gov11",
+          "text": "Regulatory scope tagging for Application Inventory and AI Tool Inventory — select which compliance frameworks apply (SOX, PCI-DSS, HIPAA, PIPEDA/Privacy) plus a freetext 'Other' field. Show framework abbreviation badges in the table row. Governance hub reorganized into logical sub-groups: Inventories / Risk Registers / Other. IR Priority Tier (P1–P4) now visible alongside BCDR tier in the table.",
+          "done": true,
+          "phase": 3,
+          "notes": "PATCH_045: regulatory_scope jsonb + regulatory_scope_other text columns on app_inventory. home.js: GOVERNANCE_GROUPS replaces GOVERNANCE_CATALOG, renderGovernanceHub() renders sub-groups (Inventories/Risk Registers/Other) with _govCard() helper. app_inventory.js: Risk tab now has 4-checkbox framework grid (SOX/PCI-DSS/HIPAA/PIPEDA) + Other text input; table Crit./Risk cell shows actual framework abbreviation badges; table BCDR column renamed BCDR/IR and shows both BCDR priority + IR P-tier stacked. _appInvGetScopes() helper reads checkboxes. in_regulatory_scope derived from scope array length."
+        },
+        {
+          "id": "gov12",
+          "text": "AI Tool Inventory → Application Inventory link — AI org tools can optionally reference an Application Inventory entry via app_inventory_id FK. When linked, BCDR priority, IR tier, and criticality are inherited from the linked app entry rather than stored separately. In the AI Tool edit modal, a 'Link to Application' picker lets admin choose from the org's app_inventory entries. BCDR/criticality treatment for AI Tools follows the linked app; unlinked AI tools keep a lighter risk tier (High/Medium/Low). Also add regulatory_scope to ai_org_tools table.",
           "done": false,
           "phase": 3
         }

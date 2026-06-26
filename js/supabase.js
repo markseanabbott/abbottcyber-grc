@@ -236,6 +236,22 @@ sb.vendorDir = {
   delete: (id)        => sbFetch(`vendor_directory?id=eq.${id}`, 'DELETE'),
 };
 
+// Submission Tokens persistence layer (PATCH_044)
+sb.submissionTokens = {
+  getForOrg: (orgId, module) => sbFetch(`submission_tokens?org_id=eq.${orgId}&module=eq.${module}&order=created_at.desc`),
+  create:    (row)           => sbFetch('submission_tokens', 'POST', row, { Prefer: 'return=representation' }),
+  revoke:    (id)            => sbFetch(`submission_tokens?id=eq.${id}`, 'PATCH', { revoked: true }, { Prefer: 'return=representation' }),
+  delete:    (id)            => sbFetch(`submission_tokens?id=eq.${id}`, 'DELETE'),
+};
+
+// Pending Submissions persistence layer (PATCH_044)
+sb.pendingSubmissions = {
+  getForOrg:    (orgId, module) => sbFetch(`pending_submissions?org_id=eq.${orgId}&module=eq.${module}&order=created_at.desc`),
+  submit:       (row)           => sbFetch('pending_submissions', 'POST', row),
+  updateStatus: (id, patch)     => sbFetch(`pending_submissions?id=eq.${id}`, 'PATCH', patch, { Prefer: 'return=representation' }),
+  delete:       (id)            => sbFetch(`pending_submissions?id=eq.${id}`, 'DELETE'),
+};
+
 // Tabletop persistence layer — wraps Supabase calls for the operational tabletop module.
 sb.tt = {
   // RPC: ask the DB for a fresh 6-char session code (alphabet defined in SUPABASE_SCHEMA.sql)

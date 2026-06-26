@@ -1,4 +1,4 @@
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.4.1';
 
 // ============================================================
 // MULTIPLAYER — URL routing (detect ?join= or ?display= params)
@@ -6,6 +6,7 @@ const APP_VERSION = '1.4.0';
 const _MP_PARAMS = new URLSearchParams(window.location.search);
 const _MP_JOIN  = (_MP_PARAMS.get('join')    || '').toUpperCase().trim();
 const _MP_DISP  = (_MP_PARAMS.get('display') || '').toUpperCase().trim();
+const _SUBMIT_TOKEN = _MP_PARAMS.get('submit') || '';
 
 // Polling timers
 let mpPollTimer   = null;
