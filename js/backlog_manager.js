@@ -246,11 +246,11 @@ function blmRenderSection(sectionId, title, phase, items) {
       ${phaseLabel}
       <span style="display:flex;gap:.4rem;align-items:center">${statusSummary}</span>
     </div>
-    ${collapsed ? '' : `<div style="padding:.25rem 0">${items.map(item => blmRenderItem(item)).join('')}</div>`}
+    ${collapsed ? '' : `<div style="padding:.25rem 0">${items.map((item, i) => blmRenderItem(item, i + 1)).join('')}</div>`}
   </div>`;
 }
 
-function blmRenderItem(item) {
+function blmRenderItem(item, idx) {
   const itemStatus  = _blmStatus(item);
   const cfg         = BLM_STATUS[itemStatus];
   const priorityBadge = item.priority ? _blmPriorityBadge(item.priority) : '';
@@ -272,7 +272,24 @@ function blmRenderItem(item) {
     <option value="cancelled" ${itemStatus==='cancelled' ?'selected':''}>⚫ Cancelled</option>
   </select>`;
 
+  const pMap = { Critical:'#dc2626', High:'#d97706', Medium:'#2563eb', Low:'#6b7280' };
+  const pVal = item.priority || '';
+  const pColor = pMap[pVal] || '#9ca3af';
+  const prioritySelect = `<select onchange="blmSetPriority('${item.id}',this.value)"
+    style="border:1.5px solid ${pVal ? pColor+'55' : 'var(--border)'};background:${pVal ? pColor+'12' : '#fff'};color:${pVal ? pColor : 'var(--muted)'};
+      border-radius:6px;padding:3px 24px 3px 6px;font-size:11px;font-weight:700;cursor:pointer;outline:none;
+      appearance:none;-webkit-appearance:none;
+      background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='${encodeURIComponent(pVal ? pColor : '#9ca3af')}'/%3E%3C/svg%3E\");
+      background-repeat:no-repeat;background-position:right 6px center;background-size:7px 4px;min-width:80px">
+    <option value="" ${!pVal?'selected':''}>— Priority</option>
+    <option value="Critical" ${pVal==='Critical'?'selected':''}>Critical</option>
+    <option value="High"     ${pVal==='High'    ?'selected':''}>High</option>
+    <option value="Medium"   ${pVal==='Medium'  ?'selected':''}>Medium</option>
+    <option value="Low"      ${pVal==='Low'     ?'selected':''}>Low</option>
+  </select>`;
+
   return `<div style="display:flex;align-items:flex-start;gap:.75rem;padding:.65rem 1rem;border-bottom:1px solid var(--border);${isDimmed?'opacity:.55':''}">
+    ${idx ? `<div style="font-size:10px;color:#c4cad8;font-weight:700;min-width:20px;text-align:right;flex-shrink:0;padding-top:6px;user-select:none">${idx}</div>` : ''}
     <div style="flex-shrink:0;padding-top:1px">${statusSelect}</div>
     <div style="flex:1;min-width:0">
       <div style="font-size:13px;line-height:1.5;${textStyle}">${escH(item.text)}</div>
@@ -280,7 +297,7 @@ function blmRenderItem(item) {
       ${deps.length ? `<div style="font-size:11px;color:var(--muted);margin-top:.35rem">Depends on: ${deps.map(d=>{const ds=_blmStatus(d);const dc=BLM_STATUS[ds];return`<span style="background:${dc.bg};color:${dc.color};border-radius:4px;padding:1px 6px;font-size:10px;font-weight:600">${escH(d.id)}</span>`;}).join(' ')}</div>` : ''}
     </div>
     <div style="display:flex;gap:.35rem;align-items:center;flex-shrink:0">
-      ${priorityBadge}
+      ${prioritySelect}
       ${hasNotes ? `<button class="btn btn-outline btn-sm" onclick="blmToggleNotes('${item.id}')" style="font-size:10px;padding:2px 7px" title="Toggle notes">${notesOpen?'▲':'📝'}</button>` : ''}
       <button class="btn btn-sm" onclick="blmCopyPrompt('${item.id}')"
         style="font-size:10px;padding:3px 8px;background:var(--navy);color:#fff;border:none;border-radius:5px;cursor:pointer" title="Copy AI build prompt">📋 AI Prompt</button>
@@ -288,10 +305,20 @@ function blmRenderItem(item) {
   </div>`;
 }
 
-function _blmPriorityBadge(p) {
-  const map = { Critical:'#dc2626', High:'#d97706', Medium:'#2563eb', Low:'#6b7280' };
-  const col = map[p] || '#6b7280';
-  return `<span style="font-size:10px;background:${col}18;color:${col};border-radius:4px;padding:2px 6px;font-weight:700;white-space:nowrap">${escH(p)}</span>`;
+async function blmSetPriority(id, priority) {
+  try {
+    await sbFetch(`backlog_items?id=eq.${id}`, 'PATCH',
+      { priority: priority || null },
+      { Prefer: 'return=minimal' }
+    );
+    const item = blmState.items.find(i => i.id === id);
+    if (item) item.priority = priority || null;
+    const el = document.getElementById('blmList');
+    if (el) el.innerHTML = blmRenderList();
+    toast(`Priority → ${priority || 'unset'}`, '#152168');
+  } catch(e) {
+    toast('Failed to update: ' + e.message, '#dc2626');
+  }
 }
 
 // ============================================================
@@ -533,3 +560,4 @@ window.blmOpenSeed          = blmOpenSeed;
 window.blmCancelSeed        = blmCancelSeed;
 window.blmConfirmSeed       = blmConfirmSeed;
 window.blmCopyPrompt        = blmCopyPrompt;
+window.blmSetPriority       = blmSetPriority;
