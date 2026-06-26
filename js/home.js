@@ -2,6 +2,33 @@
 // HOME DASHBOARD — js/home.js
 // ============================================================
 
+// ============================================================
+// SECURITY MATURITY — levels, sources, helpers
+// ============================================================
+
+const MATURITY_LEVELS = [
+  { n: 1, label: 'Initial',    desc: 'Ad hoc and reactive. No consistent security practices.',          minScore: 0,  color: '#dc2626', bg: '#fef2f2', trackBg: '#fca5a5' },
+  { n: 2, label: 'Developing', desc: 'Basic awareness in place, but applied inconsistently.',           minScore: 25, color: '#ea580c', bg: '#fff7ed', trackBg: '#fdba74' },
+  { n: 3, label: 'Defined',    desc: 'Documented policies and controls applied across most areas.',     minScore: 50, color: '#b45309', bg: '#fefce8', trackBg: '#fde68a' },
+  { n: 4, label: 'Managed',    desc: 'Measured, controlled, and driven by data and risk.',             minScore: 70, color: '#15803d', bg: '#dcfce7', trackBg: '#86efac' },
+  { n: 5, label: 'Optimizing', desc: 'Continuously improving. Proactive, adaptive security culture.', minScore: 85, color: '#166534', bg: '#bbf7d0', trackBg: '#4ade80' },
+];
+
+const MATURITY_SOURCES = [
+  { id: 'cis',        label: 'CIS Controls v8',    icon: '✅', nav: 'cis'          },
+  { id: 'insurance',  label: 'Insurance Readiness', icon: '🛡️', nav: 'insurance'    },
+  { id: 'techstack',  label: 'Technology Stack',    icon: '🖥️', nav: 'techstack'    },
+  { id: 'ai_unified', label: 'AI Readiness',        icon: '🤖', nav: 'ai_readiness' },
+  { id: 'cmmc',       label: 'CMMC Level 1',        icon: '🏛️', nav: 'cmmc'         },
+  { id: 'cmmc2',      label: 'CMMC Level 2',        icon: '🔵', nav: 'cmmc2'        },
+];
+
+function _maturityLevel(score) {
+  if (score === null || score === undefined) return null;
+  return [...MATURITY_LEVELS].reverse().find(l => score >= l.minScore) || MATURITY_LEVELS[0];
+}
+
+// ============================================================
 // Portfolio state for the 4 stat cards.
 // loadHomePortfolio() fills this async; renderHome() reads it.
 let homePortfolioState = {
@@ -49,7 +76,7 @@ async function loadHomePortfolio() {
     await Promise.all(scopeOrgs.map(o => loadAssessments(o.id)));
 
     // Per-org composite scores (avg of last run per module, only modules with data)
-    const MODS = ['cis', 'insurance', 'techstack'];
+    const MODS = MATURITY_SOURCES.map(s => s.id);
     const orgScores = [];
     for (const org of scopeOrgs) {
       const h    = orgAssessments[org.id] || {};
@@ -167,14 +194,18 @@ function _homePortfolioBreakdown() {
 function _homeCard2(isChild, h, pLoaded, pLoading, po) {
   if (isChild) {
     // Child: compute own composite inline from already-loaded orgAssessments
-    const mods = ['cis','insurance','techstack'].map(m => {
-      const runs = h[m] || [];
-      return runs.length ? { id: m, label: {cis:'CIS',insurance:'Insurance',techstack:'Tech Stack'}[m], score: runs[runs.length-1].score } : null;
+    const mods = MATURITY_SOURCES.map(s => {
+      const runs = h[s.id] || [];
+      return runs.length ? { id: s.id, label: s.label, score: runs[runs.length-1].score } : null;
     }).filter(Boolean);
     const composite = mods.length
-      ? Math.round(mods.reduce((s, m) => s + m.score, 0) / mods.length)
+      ? Math.round(mods.reduce((sum, m) => sum + m.score, 0) / mods.length)
       : null;
-    const subLabel = mods.length ? mods.map(m => m.label).join(' · ') : 'No assessments yet';
+    const subLabel = mods.length === 0
+      ? 'No assessments yet'
+      : mods.length === 1
+      ? mods[0].label
+      : `${mods.length} of ${MATURITY_SOURCES.length} assessments`;
     return `<div class="wcard">
       <div class="wcard-icon">🎯</div>
       <div class="wcard-label">Risk Score</div>
@@ -431,6 +462,7 @@ function renderHome() {
 // ============================================================
 
 const WIDGET_CATALOG = [
+  { id: 'maturity',        label: 'Security Maturity',        icon: '📊', nav: 'home',            type: 'maturity', desc: 'Unified maturity level across all assessment dimensions — Initial through Optimizing.' },
   { id: 'cis',             label: 'CIS Controls v8',          icon: '✅', nav: 'cis',             type: 'score',    desc: '' },
   { id: 'insurance',       label: 'Insurance Readiness',      icon: '🛡️', nav: 'insurance',       type: 'score',    desc: '' },
   { id: 'techstack',       label: 'Technology Stack',         icon: '🖥️', nav: 'techstack',       type: 'score',    desc: '' },
@@ -446,6 +478,7 @@ const WIDGET_CATALOG = [
 ];
 
 const DEFAULT_WIDGETS = [
+  { id: 'maturity',      width: 4, priority: 0 },
   { id: 'cis',           width: 2, priority: 1 },
   { id: 'insurance',     width: 1, priority: 2 },
   { id: 'gap_register',  width: 1, priority: 3 },
@@ -522,6 +555,7 @@ function renderDashWidget(wid, h, rrRows, rrLoaded) {
   if (!def) return '';
   if (typeof hasPageAccess === 'function' && !hasPageAccess(def.nav)) return '';
   switch (def.type) {
+    case 'maturity': return _widgetMaturity(h);
     case 'score':    return _widgetScore(def, h);
     case 'ai':       return _homeAiChicklet(h) || _widgetLink(def);
     case 'risk':     return _homeRiskChicklet(rrRows, rrLoaded);
@@ -1014,6 +1048,151 @@ function _homeTopToolsChicklet() {
       <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();setNav('gap_register')">Tool Gap Register →</button>
     </div>
     ${rows}
+  </div>`;
+}
+
+// ─── SECURITY MATURITY WIDGET ─────────────────────────────────────────────────
+
+function _widgetMaturity(h) {
+  const sources = MATURITY_SOURCES.map(s => {
+    const runs = [...(h[s.id] || [])].sort((a, b) => (b.date||'').localeCompare(a.date||''));
+    const last = runs[0] || null;
+    return { ...s, score: last?.score ?? null, date: last?.date ?? null, runCount: runs.length };
+  });
+
+  const assessed      = sources.filter(s => s.score !== null);
+  const composite     = assessed.length
+    ? Math.round(assessed.reduce((sum, s) => sum + s.score, 0) / assessed.length)
+    : null;
+  const overallLevel  = composite !== null ? _maturityLevel(composite) : null;
+  const nextLevel     = overallLevel && overallLevel.n < 5 ? MATURITY_LEVELS[overallLevel.n] : null;
+
+  // === HEADER BADGE ===
+  const headerBadge = overallLevel
+    ? `<div style="display:flex;align-items:center;gap:.6rem;flex-shrink:0">
+        <div style="text-align:right">
+          <div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${overallLevel.color}">Level ${overallLevel.n}</div>
+          <div style="font-size:17px;font-weight:800;color:${overallLevel.color};line-height:1.1">${overallLevel.label}</div>
+        </div>
+        <div style="font-size:1.5rem;font-weight:800;padding:.3rem .85rem;border-radius:10px;background:${overallLevel.bg};color:${overallLevel.color};border:1.5px solid ${overallLevel.trackBg};line-height:1;font-family:monospace">${composite}%</div>
+      </div>`
+    : `<span style="font-size:12px;color:var(--muted);font-style:italic">Run an assessment to establish your maturity baseline</span>`;
+
+  // === MATURITY TRACK ===
+  // Zone widths are proportional to their score ranges
+  const zoneSegments = MATURITY_LEVELS.map((l, i) => {
+    const next = MATURITY_LEVELS[i + 1];
+    const w = next ? next.minScore - l.minScore : 100 - l.minScore;
+    return `<div style="width:${w}%;background:${l.trackBg}" title="Level ${l.n}: ${l.label} (${l.minScore}–${next ? next.minScore : 100}%)"></div>`;
+  }).join('');
+
+  const zoneLabels = MATURITY_LEVELS.map((l, i) => {
+    const next = MATURITY_LEVELS[i + 1];
+    const w = next ? next.minScore - l.minScore : 100 - l.minScore;
+    return `<div style="width:${w}%;text-align:center;font-size:9px;font-weight:700;color:${l.color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-top:3px">${l.label}</div>`;
+  }).join('');
+
+  const tickNums = [0, 25, 50, 70, 85, 100].map(v => {
+    const anchor = v === 0 ? 'left:0' : v === 100 ? 'right:0' : `left:${v}%;transform:translateX(-50%)`;
+    return `<div style="position:absolute;${anchor};font-size:9px;color:var(--muted)">${v}</div>`;
+  }).join('');
+
+  const trackHtml = `<div style="padding:.9rem 1rem 1.6rem">
+    <div style="position:relative">
+      <div style="display:flex;height:18px;border-radius:9px;overflow:hidden;box-shadow:inset 0 1px 4px rgba(0,0,0,.08)">${zoneSegments}</div>
+      ${composite !== null ? `
+        <div style="position:absolute;inset:0;border-radius:9px;overflow:hidden;pointer-events:none">
+          <div style="height:100%;width:${composite}%;background:${overallLevel.color};opacity:.45"></div>
+        </div>
+        ${[25,50,70,85].map(v => `<div style="position:absolute;top:0;left:${v}%;width:1px;height:100%;background:rgba(255,255,255,.7)"></div>`).join('')}
+        <div style="position:absolute;top:-22px;left:${composite}%;transform:translateX(-50%);font-size:11px;font-weight:800;color:${overallLevel.color};white-space:nowrap;background:#fff;padding:0 3px;border-radius:3px;line-height:1.3">${composite}%</div>
+        <div style="position:absolute;top:50%;left:${composite}%;transform:translate(-50%,-50%);width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid ${overallLevel.color};box-shadow:0 2px 8px rgba(0,0,0,.22);z-index:2"></div>
+      ` : ''}
+    </div>
+    <div style="display:flex;margin-top:2px">${zoneLabels}</div>
+    <div style="position:relative;height:14px;margin-top:1px">${tickNums}</div>
+  </div>`;
+
+  // === PER-SOURCE ROWS ===
+  function _miniBar(score, lvl) {
+    const zones = MATURITY_LEVELS.map((l, i) => {
+      const next = MATURITY_LEVELS[i + 1];
+      const w = next ? next.minScore - l.minScore : 100 - l.minScore;
+      return `<div style="position:absolute;top:0;left:${l.minScore}%;width:${w}%;height:100%;background:${l.trackBg}"></div>`;
+    }).join('');
+    const fill = score !== null
+      ? `<div style="position:absolute;inset:0;width:${score}%;background:${lvl.color};opacity:.75;border-radius:3px;z-index:1"></div>`
+      : '';
+    const ticks = [25,50,70,85].map(v => `<div style="position:absolute;top:0;left:${v}%;width:1px;height:100%;background:rgba(255,255,255,.65);z-index:2"></div>`).join('');
+    return `<div style="flex:1;min-width:80px;max-width:150px;height:8px;border-radius:3px;overflow:hidden;position:relative;background:#e5e7eb">${zones}${fill}${ticks}</div>`;
+  }
+
+  const colHeader = `<div style="display:flex;align-items:center;gap:.65rem;padding:.3rem .9rem;background:var(--bg);border-bottom:1px solid var(--border)">
+    <div style="width:20px;flex-shrink:0"></div>
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;flex:1">Assessment</div>
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;flex:1;min-width:80px;max-width:150px">Progress vs. Maximum</div>
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;min-width:38px;text-align:right">Score</div>
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;min-width:78px;text-align:center">Maturity</div>
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;min-width:66px;text-align:right">Last Run</div>
+  </div>`;
+
+  const sourceRows = sources.map(s => {
+    const lvl = s.score !== null ? _maturityLevel(s.score) : null;
+    if (s.score !== null) {
+      return `<div style="display:flex;align-items:center;gap:.65rem;padding:.52rem .9rem;border-bottom:1px solid var(--border);cursor:pointer"
+          onclick="setNav('${s.nav}')" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+        <span style="font-size:13px;width:20px;text-align:center;flex-shrink:0">${s.icon}</span>
+        <span style="font-size:12px;font-weight:600;color:var(--text);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.label}</span>
+        ${_miniBar(s.score, lvl)}
+        <span style="font-size:13px;font-weight:800;color:${lvl.color};flex-shrink:0;min-width:38px;text-align:right">${s.score}%</span>
+        <span style="font-size:10px;font-weight:700;padding:2px 9px;border-radius:99px;background:${lvl.bg};color:${lvl.color};border:1px solid ${lvl.trackBg};flex-shrink:0;min-width:78px;text-align:center;white-space:nowrap">${lvl.label}</span>
+        <span style="font-size:11px;color:var(--muted);flex-shrink:0;min-width:66px;text-align:right;font-family:monospace">${s.date ? s.date.slice(0,10) : '—'}</span>
+      </div>`;
+    }
+    return `<div style="display:flex;align-items:center;gap:.65rem;padding:.52rem .9rem;border-bottom:1px solid var(--border)">
+      <span style="font-size:13px;width:20px;text-align:center;flex-shrink:0;opacity:.35">${s.icon}</span>
+      <span style="font-size:12px;font-weight:600;color:var(--muted);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.label}</span>
+      <div style="flex:1;min-width:80px;max-width:150px;height:8px;border-radius:3px;background:#f0f0f0;border:1px dashed #d1d5db;position:relative">
+        <div style="position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:8px;color:#d1d5db;font-weight:700;white-space:nowrap">100% possible</div>
+      </div>
+      <span style="font-size:13px;color:#d1d5db;flex-shrink:0;min-width:38px;text-align:right">—</span>
+      <span style="font-size:10px;color:#d1d5db;flex-shrink:0;min-width:78px;text-align:center">Not started</span>
+      <div style="flex-shrink:0;min-width:66px;text-align:right">
+        <button onclick="event.stopPropagation();setNav('${s.nav}')" class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 8px">Start →</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  // === FOOTER ===
+  const fp = [];
+  if (assessed.length === 0) {
+    fp.push(`<span>Complete an assessment to establish your maturity baseline</span>`);
+  } else {
+    fp.push(`<span>${assessed.length} of ${sources.length} dimension${sources.length !== 1 ? 's' : ''} assessed</span>`);
+    if (nextLevel && composite !== null) {
+      const pts = nextLevel.minScore - composite;
+      if (pts > 0) fp.push(`<span style="color:${nextLevel.color};font-weight:700">${pts} pt${pts !== 1 ? 's' : ''} to Level ${nextLevel.n}: ${nextLevel.label}</span>`);
+    }
+    if (overallLevel) fp.push(`<span style="font-style:italic">${overallLevel.desc}</span>`);
+  }
+
+  const footer = `<div style="padding:.55rem 1rem;background:var(--bg);border-top:1px solid var(--border);font-size:11px;color:var(--muted);display:flex;gap:.4rem 1rem;flex-wrap:wrap;align-items:center">
+    ${fp.map((p, i) => `${i > 0 ? '<span style="opacity:.4">·</span>' : ''}${p}`).join('')}
+  </div>`;
+
+  return `<div class="card" style="padding:0;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem .6rem;border-bottom:1px solid var(--border);gap:1rem;flex-wrap:wrap">
+      <div>
+        <div style="font-size:13px;font-weight:700">📊 Security Maturity</div>
+        <div style="font-size:10px;color:var(--muted)">Composite across all completed assessments · potential maximum shown per dimension</div>
+      </div>
+      ${headerBadge}
+    </div>
+    ${trackHtml}
+    <div style="overflow-x:auto">
+      <div style="min-width:520px">${colHeader}${sourceRows}</div>
+    </div>
+    ${footer}
   </div>`;
 }
 

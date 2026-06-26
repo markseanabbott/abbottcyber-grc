@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.4.1",
   "created": "2026-05-14",
-  "updated": "2026-06-26 (session 74)",
+  "updated": "2026-06-26 (session 75)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -35,7 +35,8 @@
         {
           "id": "s5",
           "text": "Unified score across all data sources",
-          "done": false
+          "done": true,
+          "notes": "Session 75: Security Maturity widget in js/home.js. MATURITY_LEVELS (5 tiers: Initial/Developing/Defined/Managed/Optimizing at 0/25/50/70/85) and MATURITY_SOURCES (6 assessments: CIS, Insurance, TechStack, AI Readiness, CMMC L1, CMMC L2) declared as module-level consts. _maturityLevel(score) helper. _widgetMaturity(h) renders full card: header with Level badge + score, 5-zone colored maturity track bar with position marker and score callout, per-dimension rows with mini zone-segmented progress bars showing current vs 100% potential, unassessed rows with 'Start →' links and '100% possible' label, footer with assessed count and points-to-next-level. WIDGET_CATALOG gets 'maturity' type; DEFAULT_WIDGETS gets maturity at priority 0 width 4 (full-width, first widget). renderDashWidget() handles 'maturity' case. loadHomePortfolio() updated to use all 6 MATURITY_SOURCES. _homeCard2 child composite updated to use all 6 sources."
         }
       ]
     },
