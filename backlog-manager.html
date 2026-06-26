@@ -197,9 +197,21 @@
 
   .item-controls { display: flex; gap: 8px; align-items: center; flex-shrink: 0; margin-top: 1px; }
 
+  /* INDEX NUMBER */
+  .item-num {
+    font-size: 11px;
+    color: #c4cad8;
+    font-weight: 700;
+    min-width: 24px;
+    text-align: right;
+    flex-shrink: 0;
+    padding-top: 3px;
+    user-select: none;
+  }
+
   /* PRIORITY BADGE */
   .priority-select {
-    padding: 5px 10px;
+    padding: 5px 22px 5px 10px;
     border-radius: 12px;
     font-family: 'Kanit', sans-serif;
     font-size: 12px;
@@ -209,13 +221,19 @@
     background: #fff;
     color: var(--muted);
     transition: all .12s;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235a6a8a'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 7px center;
+    background-size: 8px 5px;
   }
   .priority-select:focus { outline: none; }
-  .priority-select.p-critical { background: #fef2f2; border-color: var(--red); color: var(--red); }
-  .priority-select.p-high { background: #fff7ed; border-color: #ea580c; color: #ea580c; }
-  .priority-select.p-medium { background: #fffbeb; border-color: var(--amber); color: var(--amber); }
-  .priority-select.p-low { background: #f0fdf4; border-color: var(--green); color: var(--green); }
-  .priority-select.p-none { background: #fff; border-color: var(--border); color: var(--muted); }
+  .priority-select.p-critical { background-color: #fef2f2; border-color: var(--red); color: var(--red); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23dc2626'/%3E%3C/svg%3E"); }
+  .priority-select.p-high { background-color: #fff7ed; border-color: #ea580c; color: #ea580c; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23ea580c'/%3E%3C/svg%3E"); }
+  .priority-select.p-medium { background-color: #fffbeb; border-color: var(--amber); color: var(--amber); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23d97706'/%3E%3C/svg%3E"); }
+  .priority-select.p-low { background-color: #f0fdf4; border-color: var(--green); color: var(--green); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2316a34a'/%3E%3C/svg%3E"); }
+  .priority-select.p-none { background-color: #fff; border-color: var(--border); color: var(--muted); }
 
   /* EDIT INLINE */
   .item-text-edit {
@@ -695,14 +713,14 @@ function renderSection(sec, items) {
         </div>` : ''}
     </div>
     <div class="items-container">`;
-  for (const item of items) {
-    html += renderItem(item, sec);
+  for (let i = 0; i < items.length; i++) {
+    html += renderItem(items[i], sec, i + 1);
   }
   html += `</div>`;
   return html;
 }
 
-function renderItem(item, sec) {
+function renderItem(item, sec, idx) {
   const pClass = item.priority ? PRIORITY_CLASS[item.priority] || 'p-none' : 'p-none';
   const doneClass = item.done ? 'done-row' : '';
   const selClass = selectedItemIds.has(item.id) ? 'sel-row' : '';
@@ -734,6 +752,7 @@ function renderItem(item, sec) {
         onchange="toggleSelectItem('${item.id}', this.checked)" title="Select item">
       <input type="checkbox" class="item-check" ${item.done ? 'checked' : ''}
         onchange="toggleDone('${item.id}', this.checked)" title="Mark done">
+      ${idx ? `<div class="item-num">${idx}</div>` : ''}
       <div class="item-body">
         <div class="item-id">${item.id}</div>
         ${textHtml}
@@ -776,8 +795,8 @@ function renderPriorityView(f) {
         <span class="pg-count">${entries.length} item${entries.length !== 1 ? 's' : ''}</span>
       </div>
       <div class="items-container">`;
-    for (const { item, sec } of entries) {
-      html += renderItem(item, sec);
+    for (let i = 0; i < entries.length; i++) {
+      html += renderItem(entries[i].item, entries[i].sec, i + 1);
     }
     html += `</div></div>`;
   }
