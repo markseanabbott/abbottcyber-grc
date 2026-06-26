@@ -1294,18 +1294,27 @@ const GOVERNANCE_GROUPS = [
 ];
 
 function _govCard(g) {
-  return `<div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column">
-    <div style="padding:1rem 1rem .6rem;flex:1">
-      <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.4rem">
-        <span style="font-size:1.1rem;flex-shrink:0">${g.icon}</span>
-        <div style="font-size:13px;font-weight:700;flex:1">${g.label}</div>
+  return `<div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .9rem;border-radius:9px;border:1px solid var(--border);background:var(--bg);gap:1rem">
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.2rem">
+        <span style="font-size:1rem;flex-shrink:0">${g.icon}</span>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">${g.label}</div>
       </div>
-      <div style="font-size:11px;color:var(--muted);line-height:1.45">${g.description}</div>
+      <div style="font-size:11px;color:var(--muted);line-height:1.4">${g.description}</div>
     </div>
-    <div style="padding:.5rem 1rem .75rem;border-top:1px solid var(--border);display:flex;gap:5px">
+    <div style="flex-shrink:0">
       ${g.comingSoon
-        ? `<span style="font-size:11px;font-weight:700;color:var(--muted);padding:4px 10px;border-radius:6px;background:var(--bg)">Coming soon</span>`
-        : `<button class="btn btn-cyan btn-sm" onclick="setNav('${g.nav}')" style="flex:1">View</button>`}
+        ? `<span style="font-size:11px;font-weight:700;color:var(--muted);padding:4px 10px;border-radius:6px;background:#e5e7eb">Soon</span>`
+        : `<button class="btn btn-cyan btn-sm" onclick="setNav('${g.nav}')">View →</button>`}
+    </div>
+  </div>`;
+}
+
+function _govBucket(group, visible) {
+  return `<div style="background:#fff;border-radius:13px;box-shadow:0 2px 16px rgba(21,33,104,0.09);border:1px solid var(--border);padding:1.1rem 1.25rem 1.25rem">
+    <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--navy);opacity:.55;margin-bottom:.75rem">${group.label}</div>
+    <div style="display:flex;flex-direction:column;gap:.55rem">
+      ${visible.map(_govCard).join('')}
     </div>
   </div>`;
 }
@@ -1313,26 +1322,30 @@ function _govCard(g) {
 function renderGovernanceHub() {
   if (!currentOrg) return '';
 
-  const groupHtml = GOVERNANCE_GROUPS.map(group => {
-    const visible = group.items.filter(g => hasPageAccess(g.nav));
-    if (!visible.length) return '';
-    const cols = Math.min(visible.length, 3);
-    return `
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:1.25rem;margin-bottom:.5rem;padding-bottom:.3rem;border-bottom:1px solid var(--border)">${group.label}</div>
-      <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:.75rem">
-        ${visible.map(_govCard).join('')}
-      </div>`;
-  }).join('');
+  const [invGroup, rrGroup, otherGroup] = GOVERNANCE_GROUPS.map(g => ({
+    ...g,
+    visible: g.items.filter(i => hasPageAccess(i.nav)),
+  }));
+
+  const invHtml   = invGroup.visible.length   ? _govBucket(invGroup, invGroup.visible)     : '';
+  const rrHtml    = rrGroup.visible.length    ? _govBucket(rrGroup, rrGroup.visible)       : '';
+  const otherHtml = otherGroup.visible.length ? _govBucket(otherGroup, otherGroup.visible) : '';
 
   return `
   ${renderTierBanner()}
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:0.85rem;flex-wrap:wrap;gap:8px">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
     <div>
       <div style="font-size:17px;font-weight:700">⚖️ Governance</div>
       <div style="font-size:12px;color:var(--muted)">Inventories, risk registers, and policies for ${escH(currentOrg.name)}</div>
     </div>
   </div>
-  ${groupHtml}`;
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start">
+    ${invHtml}
+    <div style="display:flex;flex-direction:column;gap:1rem">
+      ${rrHtml}
+      ${otherHtml}
+    </div>
+  </div>`;
 }
 
 function drawAllHubTrends() {
