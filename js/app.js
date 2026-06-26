@@ -493,6 +493,16 @@ function renderMain() {
     }
     return;
   }
+  if (activeNav === 'audit_log') {
+    if (!alState.items.length && !alState.loading) {
+      alState.loading = true;
+      el.innerHTML = renderAuditLog();
+      alLoad().then(() => { if (activeNav === 'audit_log') { /* alLoad() updates in-place */ } });
+    } else {
+      el.innerHTML = renderAuditLog();
+    }
+    return;
+  }
   if (activeNav === 'company_profile') { el.innerHTML = renderCompanyProfile(); return; }
   if (activeNav === 'home') {
     el.innerHTML = renderHome();

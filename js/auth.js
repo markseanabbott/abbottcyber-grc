@@ -296,6 +296,7 @@ async function loginSubmit(e) {
     authSaveSession(session, data.user);
     await authLoadProfile();
     authStartRefreshTimer();
+    auditLog('login', 'auth', data.user.email, { role: authState.profile?.role || null });
 
     document.getElementById('loginScreen')?.remove();
     document.getElementById('appShell').style.display = '';

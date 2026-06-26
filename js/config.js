@@ -124,8 +124,9 @@ const NAV = [
     { id: 'pricing_schedule',  icon: '💲', label: 'Pricing Schedule',     live: true, phase: 1, tierOnly: ['grandfather','father'] },
   ]},
   { id: 'g_platform', group: 'Platform Admin', icon: '🔧', platformAdminOnly: true, items: [
-    { id: 'modules',  icon: '📦', label: 'Module Management', live: true, phase: 1 },
-    { id: 'backlog',  icon: '📋', label: 'Feature Backlog',   live: true, phase: 1 },
+    { id: 'modules',   icon: '📦', label: 'Module Management', live: true, phase: 1 },
+    { id: 'backlog',   icon: '📋', label: 'Feature Backlog',   live: true, phase: 1 },
+    { id: 'audit_log', icon: '🔍', label: 'Audit Log',         live: true, phase: 1 },
   ]},
 ];
 

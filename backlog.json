@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.4.1",
   "created": "2026-05-14",
-  "updated": "2026-06-26 (session 73)",
+  "updated": "2026-06-26 (session 74)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -529,6 +529,19 @@
           "text": "Dynamic Backlog Manager (platform admin only) — Supabase-backed feature backlog in the Settings nav. Seed from backlog.json paste. Filter by phase/status/section/search. Toggle done/pending inline. Per-item 'AI Prompt' button generates a complete Claude Code build prompt (feature text, build context, section file references, done/pending sibling items, project conventions). PATCH_022 required.",
           "done": true,
           "notes": "js/backlog_manager.js — blmState, blmLoad(), renderBacklogManager(), blmRenderList(), blmRenderSection(), blmRenderItem(), blmToggleDone(), blmToggleSection(), blmExpandAll(), blmCollapseAll(), blmToggleNotes(), blmSetFilter(), blmResetFilters(), blmOpenSeed(), blmCancelSeed(), blmConfirmSeed(), blmCopyPrompt(), _blmBuildPrompt(). _BLM_SECTION_FILES maps all 30 section_ids to relevant JS files for prompt context. Seed: paste backlog.json into textarea, upserts in batches of 50 (merge-duplicates). AI prompt includes: item text + notes, section file map, done/pending siblings, full project architecture conventions, numbered build instructions. Nav item 'backlog' added to g_settings in config.js. Render route in app.js loads blmLoad() on first visit. Script tag before app.js in index.html. sql/SUPABASE_PATCH_022.sql creates backlog_items table with platform_admin-only RLS. Session 47. BUG FIX (session 48): all showToast() calls replaced with toast(msg, col) — this app uses toast() not showToast(); ReferenceError was silently aborting all button actions. Also added Map-based dedup of rows by id before batch upsert to handle duplicate ids in backlog.json (ai1/ai2/ai7 appear in multiple sections)."
+        },
+        {
+          "id": "auth16",
+          "text": "Self-service password reset — allow users to reset their own password from the login screen (Supabase Auth email reset flow) or from their profile in-app. Reduces admin burden for password management.",
+          "done": false,
+          "priority": "High"
+        },
+        {
+          "id": "auth17",
+          "text": "Dedicated Audit Log Viewer (Platform Admin) — standalone page in Platform Admin nav showing platform-wide activity from audit_log table. Login events captured at auth time. Filterable by event type, date range, and actor email. Color-coded event badges, day-grouped rows, click-to-expand details JSON. Stats strip: total events, logins, unique actors, deletes.",
+          "done": true,
+          "priority": "High",
+          "notes": "Session 74: js/audit_log.js — alState, alLoad() (sb.auditLog.getRecent()), renderAuditLog(), alRenderStats(), alRenderTable(), alSetFilter(), alResetFilters(), alRefresh(), alToggleExpand(). AL_EVENT_STYLES map for color-coded badges. _alOrgName() resolves org IDs from global orgList. auth.js: auditLog('login','auth', email, {role}) wired after authStartRefreshTimer() in loginSubmit(). config.js: audit_log nav item added to g_platform group. app.js: audit_log route added. index.html: script tag added. Audit log page is platform-admin gated."
         },
         {
           "id": "blm2",
@@ -2351,6 +2364,12 @@
           "done": true,
           "phase": 3,
           "notes": "PATCH_046: app_inventory_id uuid FK + regulatory_scope jsonb + regulatory_scope_other text on ai_org_tools. ai_tool_catalog.js: appList/appListOrgId added to aiCatState; aitcLoadAppList() fetches app_inventory for current org and is called from loadAiInventory(); _aitcLinkedAppCard() renders inherited criticality/BCDR/IR badge strip; aitcRefreshLinkedApp() updates card on select change; edit modal (_aitcModalEditOrgTool) now has Linked Application select picker + live inherited-fields card + SOX/PCI-DSS/HIPAA/PIPEDA checkboxes + Other text field; aitcSaveEditOrgTool() writes app_inventory_id, regulatory_scope, regulatory_scope_other; table row shows 🔗 app name badge + regulatory scope colour-coded badges."
+        },
+        {
+          "id": "gov13",
+          "text": "Email submission link — when a shareable link is sent to a client/contact via the submission portal (gov10), also send an email with the link. Reduces friction for clients who need to respond to a survey or form. Requires Supabase Edge Function or email provider integration.",
+          "done": false,
+          "priority": "High"
         }
       ]
     }
