@@ -146,6 +146,7 @@ function rrTable(rows) {
   <table style="width:100%;border-collapse:collapse;font-size:12.5px">
     <thead>
       <tr style="border-bottom:2px solid var(--border);text-align:left">
+        <th style="padding:.6rem .75rem;color:var(--muted);font-weight:700;font-size:11px;white-space:nowrap">ID</th>
         <th style="padding:.6rem .75rem;color:var(--muted);font-weight:700;font-size:11px;white-space:nowrap">Source</th>
         <th style="padding:.6rem .75rem;color:var(--muted);font-weight:700;font-size:11px;white-space:nowrap">Ref</th>
         <th style="padding:.6rem .75rem;color:var(--muted);font-weight:700;font-size:11px">Risk</th>
@@ -227,6 +228,7 @@ function rrRow(r) {
       </div>`;
 
     return `<tr style="border-bottom:1px solid var(--border);vertical-align:top;background:#f0f6ff">
+      <td style="padding:.5rem .75rem;white-space:nowrap"><span style="font-family:monospace;font-size:11px;font-weight:700;color:var(--muted)">${esc(r.risk_id || '—')}</span></td>
       <td style="padding:.5rem .75rem">${sourceBadge}</td>
       <td style="padding:.5rem .75rem">${ref}</td>
       <td style="padding:.5rem .75rem;min-width:220px">${riskCell}</td>
@@ -253,6 +255,7 @@ function rrRow(r) {
        </div>`;
 
   return `<tr style="border-bottom:1px solid var(--border);vertical-align:middle">
+    <td style="padding:.65rem .75rem;white-space:nowrap"><span style="font-family:monospace;font-size:11px;font-weight:700;color:var(--muted)">${esc(r.risk_id || '—')}</span></td>
     <td style="padding:.65rem .75rem">${sourceBadge}</td>
     <td style="padding:.65rem .75rem">${ref}</td>
     <td style="padding:.65rem .75rem;min-width:220px">${titleDisplay}</td>

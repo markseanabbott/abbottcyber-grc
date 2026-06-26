@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.4.1",
   "created": "2026-05-14",
-  "updated": "2026-06-26 (session 76)",
+  "updated": "2026-06-26 (session 77)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1095,8 +1095,8 @@
         {
           "id": "r1",
           "text": "Risk ID: auto-generated unique identifier per risk entry (e.g. RSK-0042)",
-          "done": false,
-          "notes": "N/A in CIS-auto architecture — UUID pk is used. May revisit for manual risk entries in a future phase."
+          "done": true,
+          "notes": "PATCH_047: sequence risk_register_seq, column risk_id text UNIQUE, BEFORE INSERT trigger tg_risk_register_risk_id() sets RSK-NNNN (zero-padded to 4 digits). Backfill block assigns IDs to existing rows in created_at order. Trigger fires for both manual inserts and SECURITY DEFINER sync functions. js/risk_register.js: added 'ID' column header + monospace RSK-NNNN cell to both normal and inline-edit row renderers. getForOrg() returns * so no supabase.js change needed."
         },
         {
           "id": "r2",
