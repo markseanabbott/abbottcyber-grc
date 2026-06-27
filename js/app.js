@@ -130,7 +130,7 @@ function buildOrgDropdown() {
     .sort((a, b) => TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier) || a.name.localeCompare(b.name))
     .forEach(o => renderNode(o, 0));
 
-  dd.innerHTML = h || '<div style="padding:10px;font-size:11px;color:rgba(255,255,255,0.4)">No organisations</div>';
+  dd.innerHTML = h || '<div style="padding:10px;font-size:11px;color:rgba(255,255,255,0.4)">No organizations</div>';
 }
 
 async function selectOrg(id) {
@@ -459,7 +459,7 @@ function renderMain() {
   const el = document.getElementById('mainContent');
   if (!el) return;
   if (!currentOrg && !['users','settings'].includes(activeNav)) {
-    el.innerHTML = '<div class="card" style="padding:2rem;text-align:center;color:var(--muted)">No organisation selected.</div>';
+    el.innerHTML = '<div class="card" style="padding:2rem;text-align:center;color:var(--muted)">No organization selected.</div>';
     return;
   }
   // Module access guard — platform admin always passes

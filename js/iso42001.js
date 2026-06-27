@@ -975,7 +975,7 @@ OUTPUT RULES — non-negotiable:
 
 OUTPUT — write EXACTLY these sections in this order:
 
-Write 2–3 paragraphs of executive summary prose. What does this ${score}% ${band} score mean for AI management system maturity and certification readiness? What has the organisation done well, and where is the primary risk if nonconformities are left unaddressed? ${hasTrend ? `Weave in 1–2 sentences on trend: the overall change was ${trendDelta}. ${improvedAreas && improvedAreas !== 'None — no gains detected' && improvedAreas !== 'N/A — first assessment' ? `Name the ISO 42001 clauses that showed progress (${improvedAreas}) — frame these as concrete steps toward conformance. ` : ''}${regressedAreas && regressedAreas !== 'None' && regressedAreas !== 'N/A — first assessment' ? `Acknowledge regressions (${regressedAreas}) factually. ` : ''}` : `Note that this is the first ISO 42001 baseline for ${currentOrg?.name} — frame it as the starting point for a structured conformance journey. `}Close with 1–2 forward-looking sentences on the recommended next step toward certification readiness.
+Write 2–3 paragraphs of executive summary prose. What does this ${score}% ${band} score mean for AI management system maturity and certification readiness? What has the organization done well, and where is the primary risk if nonconformities are left unaddressed? ${hasTrend ? `Weave in 1–2 sentences on trend: the overall change was ${trendDelta}. ${improvedAreas && improvedAreas !== 'None — no gains detected' && improvedAreas !== 'N/A — first assessment' ? `Name the ISO 42001 clauses that showed progress (${improvedAreas}) — frame these as concrete steps toward conformance. ` : ''}${regressedAreas && regressedAreas !== 'None' && regressedAreas !== 'N/A — first assessment' ? `Acknowledge regressions (${regressedAreas}) factually. ` : ''}` : `Note that this is the first ISO 42001 baseline for ${currentOrg?.name} — frame it as the starting point for a structured conformance journey. `}Close with 1–2 forward-looking sentences on the recommended next step toward certification readiness.
 
 KEY FINDINGS
 - [The most significant nonconformity written as a business or audit risk — what is the real-world exposure]
@@ -1001,9 +1001,9 @@ function iso42001CopyGapPrompt() {
   const { score } = iso42001CalcScore(answers);
   const gapList = gaps.map(c => `- [${answers[c.id].toUpperCase()}] ${c.id} (${ISO42001_CLAUSE_META[c.clause]?.label}): ${c.title}`).join('\n');
 
-  const prompt = `I need a prioritised ISO 42001 remediation roadmap for an organisation assessed against ISO/IEC 42001:2023.
+  const prompt = `I need a prioritized ISO 42001 remediation roadmap for an organization assessed against ISO/IEC 42001:2023.
 
-ORGANISATION: ${currentOrg?.name}
+ORGANIZATION: ${currentOrg?.name}
 ASSESSMENT DATE: ${run.date || 'Unknown'}
 OVERALL SCORE: ${score}%
 
@@ -1011,7 +1011,7 @@ NONCONFORMITIES AND PARTIAL CONFORMITIES (${gaps.length} total):
 ${gapList || '— No gaps —'}
 
 Please produce:
-1. A prioritised remediation roadmap grouping gaps by clause, ranked by business impact and certification criticality.
+1. A prioritized remediation roadmap grouping gaps by clause, ranked by business impact and certification criticality.
 2. For each gap, a 1–2 sentence plain-language explanation of the business risk or audit finding if left unaddressed.
 3. Quick wins (actions achievable within 30 days) vs. strategic initiatives (3–12 months) toward certification readiness.
 

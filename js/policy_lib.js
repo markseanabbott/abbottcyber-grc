@@ -23,7 +23,7 @@ const POLICY_TEMPLATES = [
     frameworkLabel: 'NIST CSF 2.0',
     domain: 'Govern',
     controls: ['GV.OC', 'GV.PO'],
-    description: 'Establishes the organisation\'s commitment to protecting information assets, defines security scope, roles, and responsibilities across all systems and data.',
+    description: 'Establishes the organization\'s commitment to protecting information assets, defines security scope, roles, and responsibilities across all systems and data.',
     cisGroups: [4, 8, 9, 10, 12, 13, 16],
     insurance: true,
     url: null,
@@ -183,7 +183,7 @@ const POLICY_TEMPLATES = [
     frameworkLabel: 'NIST AI RMF',
     domain: 'GOVERN',
     controls: ['GV-1.1', 'GV-1.2', 'GV-2.1'],
-    description: 'Establishes accountability structures, roles, and decision rights for the development, procurement, and deployment of AI systems across the organisation.',
+    description: 'Establishes accountability structures, roles, and decision rights for the development, procurement, and deployment of AI systems across the organization.',
     cisGroups: [],
     url: null,
     downloads: [

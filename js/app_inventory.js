@@ -333,7 +333,7 @@ function _ainvRow(r) {
 
   const riskLevel  = _ainvDeriveRisk(r.criticality, dc);
   const regScopes  = Array.isArray(r.regulatory_scope) ? r.regulatory_scope : (r.in_regulatory_scope ? ['Reg.'] : []);
-  const _REG_STYLE = { 'SOX':'background:#fef3c7;color:#92400e', 'PCI-DSS':'background:#dbeafe;color:#1e40af', 'HIPAA':'background:#dcfce7;color:#15803d', 'PIPEDA':'background:#ede9fe;color:#6d28d9', 'Reg.':'background:#ede9fe;color:#6d28d9' };
+  const _REG_STYLE = { 'SOX':'background:#fef3c7;color:#92400e', 'PCI-DSS':'background:#dbeafe;color:#1e40af', 'HIPAA':'background:#dcfce7;color:#15803d', 'CCPA':'background:#ede9fe;color:#6d28d9', 'Reg.':'background:#ede9fe;color:#6d28d9' };
   const regBadges  = regScopes.map(s => `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:6px;${_REG_STYLE[s]||'background:#f1f5f9;color:#374151'}">${_aiEsc(s)}</span>`).join(' ');
   const regOther   = r.regulatory_scope_other ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:6px;background:#f1f5f9;color:#374151" title="${_aiEsc(r.regulatory_scope_other)}">+Other</span>` : '';
 
@@ -487,7 +487,7 @@ function _ainvModalHtml() {
     <div>
       <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:6px">Regulatory Scope</label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:.5rem">${
-        [['SOX','Sarbanes-Oxley (SOX)'],['PCI-DSS','PCI-DSS'],['HIPAA','HIPAA'],['PIPEDA','PIPEDA / Privacy']].map(([val,lbl]) => {
+        [['SOX','Sarbanes-Oxley (SOX)'],['PCI-DSS','PCI-DSS'],['HIPAA','HIPAA'],['CCPA','CCPA / Privacy']].map(([val,lbl]) => {
           const existingScopes = Array.isArray(r.regulatory_scope) ? r.regulatory_scope : [];
           const checked = existingScopes.includes(val);
           return `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:5px 8px;border-radius:7px;border:1px solid var(--border);background:var(--bg)">
@@ -644,7 +644,7 @@ function _appInvGetDC() {
 }
 
 function _appInvGetScopes() {
-  return ['SOX','PCIDSS','HIPAA','PIPEDA']
+  return ['SOX','PCIDSS','HIPAA','CCPA']
     .filter(s => document.getElementById(`ainv_scope_${s}`)?.checked)
     .map(s => s === 'PCIDSS' ? 'PCI-DSS' : s);
 }

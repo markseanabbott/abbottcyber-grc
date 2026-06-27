@@ -72,14 +72,14 @@ const TT_SCENARIOS = {
           ic: 'Frame the ransom decision input for the ES — do not negotiate yourself. Validate the exfil claim with TL.',
           tl: 'Egress log review. Did any large outbound transfers actually happen, and where to? Pull firewall + proxy logs for the last 72 hours.',
           cl: 'Draft guest notification template now — do not send. Get legal sign-off lined up.',
-          lc: 'PIPEDA breach-of-security-safeguards assessment is now live. Real risk of significant harm? Engage cyber counsel formally.',
+          lc: 'US breach notification assessment is now live. Is there a risk of harm to affected individuals? Engage cyber counsel formally.',
           es: 'Convene the exec call. Ransom decision is yours. Insurance carrier on the line.',
         },
       },
       {
         ingest: 'SOC alert',
         title: 'Exfiltration confirmed — 78GB to mega.nz',
-        body: 'Firewall logs confirm 78GB outbound to mega.nz endpoints over a 6-hour window yesterday between 02:00–08:00. PMS DB export of similar size matches. Guest PII and tokenised cards within scope. This is a breach.',
+        body: 'Firewall logs confirm 78GB outbound to mega.nz endpoints over a 6-hour window yesterday between 02:00–08:00. PMS DB export of similar size matches. Guest PII and tokenized cards within scope. This is a breach.',
         phaseIdx: 1,
         correctCriticality: 'Critical',
         mitre: { tactic: 'TA0010 Exfiltration', technique: 'T1041 Exfiltration Over C2 Channel' },
@@ -88,7 +88,7 @@ const TT_SCENARIOS = {
           ic: 'Trigger the breach declaration gate. Coordinate co-sign with ES below. Once declared, the notification clock starts.',
           tl: 'Scope the exfiltrated dataset: exact records, fields, time range. Forensic image of affected hosts.',
           cl: 'Activate the guest notification plan. Prepare a media holding statement.',
-          lc: 'Notification clocks: federal PIPEDA + BC OIPC. 72h to carrier per policy. Engage breach coach.',
+          lc: 'Notification clocks: FTC and applicable state law. 72h to carrier per policy. Engage breach coach.',
           es: 'Co-sign breach declaration with IC. Brief GM and ownership. Authorise carrier engagement.',
         },
       },
@@ -102,7 +102,7 @@ const TT_SCENARIOS = {
         rolePrompts: {
           ic: 'Restore vs rebuild decision. Trade off uptime vs residual risk. Recommend to ES.',
           tl: 'Backup integrity verification, restoration sequence, AD password reset campaign, EDR re-baseline.',
-          cl: 'Guest-facing script for tonight. Social media holding pattern. Loyalty programme members?',
+          cl: 'Guest-facing script for tonight. Social media holding pattern. Loyalty program members?',
           lc: 'Documentation pack for the insurance claim. Preserve forensic image regardless of restore choice.',
           es: 'Approve recovery path. Confirm financial sign-off. Brief carrier on restore plan.',
         },
@@ -136,7 +136,7 @@ const TT_SCENARIOS = {
           ic: 'Scope assessment: just the CEO account, or wider compromise? Decide on global session revocation + MFA reset campaign.',
           tl: 'M365 audit: every login location for all execs in the last 30 days. Revoke tokens. Remove inbox rules. Check OAuth app grants.',
           cl: 'Internal-only at this stage. Brief the leadership team via a secure channel — not email.',
-          lc: 'Bank fraud reporting clock (24–48h for any wire recall hope). RCMP cyber crime report. Cyber insurance carrier notification (crime + funds-transfer-fraud rider). SEC implications if material.',
+          lc: 'Bank fraud reporting clock (24–48h for any wire recall hope). FBI IC3 cyber crime report. Cyber insurance carrier notification (crime + funds-transfer-fraud rider). SEC implications if material.',
           es: 'Call the bank now — invoke wire recall. Notify the board chair. Confirm coverage with carrier.',
         },
       },
@@ -238,7 +238,7 @@ const TT_SCENARIOS = {
       {
         ingest: 'SOC alert',
         title: 'PMS database queried — 6,200 guest records accessed',
-        body: 'PMS query logs show the pms_svc account ran a bulk SELECT on guest_profiles and folio_transactions between 04:03 and 04:41, returning 6,200 rows. Fields include: full name, email, phone, nationality, passport number, loyalty ID, and tokenised card references. Logs also show a compressed archive (guests_export.7z) created on the PMS server at 04:44.',
+        body: 'PMS query logs show the pms_svc account ran a bulk SELECT on guest_profiles and folio_transactions between 04:03 and 04:41, returning 6,200 rows. Fields include: full name, email, phone, nationality, passport number, loyalty ID, and tokenized card references. Logs also show a compressed archive (guests_export.7z) created on the PMS server at 04:44.',
         phaseIdx: 2,
         correctCriticality: 'Critical',
         mitre: { tactic: 'TA0010 Exfiltration', technique: 'T1005 Data from Local System' },
@@ -247,7 +247,7 @@ const TT_SCENARIOS = {
           ic: 'This is a breach. Trigger the breach declaration gate — co-sign with ES. The notification clock starts from the moment you confirm this. Coordinate the timeline.',
           tl: 'Was guests_export.7z exfiltrated? Pull firewall egress logs for the pms_svc account between 04:44 and now. Determine if the file left the building.',
           cl: 'Guest notification is now a matter of when, not if. Begin drafting the notification template. Do not send without legal sign-off.',
-          lc: 'PIPEDA real risk of significant harm: passport numbers and tokenised cards for 6,200 guests. RROSH is near-certain. 72-hour OPC clock is starting. Engage cyber counsel now.',
+          lc: 'US breach notification: passport numbers and tokenized cards for 6,200 guests. Risk of harm is near-certain. 72-hour FTC/state clock is starting. Engage cyber counsel now.',
           es: 'Co-sign the breach declaration with IC. Brief the GM and ownership. Confirm the cyber insurance carrier has been notified — crime and privacy coverage.',
         },
       },
@@ -263,7 +263,7 @@ const TT_SCENARIOS = {
           tl: 'Technical hardening list: what controls would have caught or blocked this? Caller ID verification policy, AnyDesk block list, PMS DB activity monitoring. Prioritise top 3 for the AAR.',
           cl: 'The staff member is likely distressed. How do you communicate internally that this was not her fault, while still documenting the process failure?',
           lc: 'Insurance claim documentation. Staff training records. Vendor impersonation is a growing attack vector — does your incident policy cover social engineering losses?',
-          es: 'What is the hotel\'s liability to the 6,200 affected guests? Loyalty programme impact? Review third-party breach notification obligations with counsel.',
+          es: 'What is the hotel\'s liability to the 6,200 affected guests? Loyalty program impact? Review third-party breach notification obligations with counsel.',
         },
       },
     ],
@@ -310,7 +310,7 @@ const TT_SCENARIOS = {
           ic: 'Trigger the breach declaration. 2,400+ cards is a PCI reportable incident. Coordinate co-sign with ES and begin the formal notification sequence.',
           tl: '11 days of compromise means the breach window predates our last PCI scan. How did the malware get installed? Check for any external-facing management interfaces on the POS network segment.',
           cl: 'The acquiring bank is waiting. Media will follow if 2,400 cardholders start reporting fraud. Draft a holding statement and brief the communications chain for possible public disclosure.',
-          lc: 'PCI DSS Level 1 incident: acquirer notified within 24h, card brands within 24–72h. Engage a forensic QSA via carrier. PIPEDA may also apply if guest data links. Brief the board on liability exposure.',
+          lc: 'PCI DSS Level 1 incident: acquirer notified within 24h, card brands within 24–72h. Engage a forensic QSA via carrier. State breach notification law may apply if guest data links. Brief the board on liability exposure.',
           es: 'Authorise the QSA engagement. Confirm cyber insurance covers PCI — crime and fines rider. Estimated card replacement cost for 2,400 cards is significant. Get a number.',
         },
       },
@@ -352,7 +352,7 @@ const TT_SCENARIOS = {
     industry: 'MSP',
     duration: '~60 min',
     difficulty: 'Hard',
-    summary: 'The MSP\'s RMM agent is backdoored via a compromised vendor update. The attacker has silent admin access to 14 client endpoints across 6 organisations. The MSP must triage blast radius, notify all clients simultaneously, and manage reputational risk.',
+    summary: 'The MSP\'s RMM agent is backdoored via a compromised vendor update. The attacker has silent admin access to 14 client endpoints across 6 organizations. The MSP must triage blast radius, notify all clients simultaneously, and manage reputational risk.',
     declaration: {
       ingest: 'PSA ticket',
       source: 'Abbott Cyber MSP — SOC Analyst',
@@ -364,7 +364,7 @@ const TT_SCENARIOS = {
       {
         ingest: 'SOC alert',
         title: 'Backdoored RMM update confirmed — 14 endpoints, 6 client orgs',
-        body: 'ConnectWise confirms a plugin update pushed 18 hours ago contained a backdoored component. The malicious update installed a Cobalt Strike beacon on every endpoint that auto-applied the update. Scope: 14 client endpoints across 6 organisations — hospitality, professional services, and one healthcare-adjacent client. The beacon has been active up to 18 hours with full system privileges via the RMM agent.',
+        body: 'ConnectWise confirms a plugin update pushed 18 hours ago contained a backdoored component. The malicious update installed a Cobalt Strike beacon on every endpoint that auto-applied the update. Scope: 14 client endpoints across 6 organizations — hospitality, professional services, and one healthcare-adjacent client. The beacon has been active up to 18 hours with full system privileges via the RMM agent.',
         phaseIdx: 1,
         correctCriticality: 'Critical',
         mitre: { tactic: 'TA0001 Initial Access', technique: 'T1195.002 Compromise Software Supply Chain' },
@@ -450,7 +450,7 @@ const TT_SCENARIOS = {
           ic: 'Confirmed PII on a dark web marketplace — this is a breach. Stand up the IR team, engage the insurer, brief the GM. Declare and start the clock. Who needs to know in the next 30 minutes?',
           tl: 'We do not know the vector yet. Priority: PMS access logs for the last 60 days, API gateway logs, and any third-party integrations with read access to guest profiles. Start building the access map.',
           cl: '40,000 affected guests will need to be notified. You cannot notify until scope is confirmed and legal has signed off. Draft the notification template now so you are ready to move.',
-          lc: 'Passport numbers are high-sensitivity PII under PIPEDA. 31% international guests means GDPR may apply. Two regulatory regimes with different clocks. What is your immediate priority action?',
+          lc: 'Passport numbers are high-sensitivity PII under US federal and state law. 31% international guests means GDPR may apply. Two regulatory regimes with different clocks. What is your immediate priority action?',
           es: 'The GM must be briefed before any public disclosure. 40,000 affected loyalty members. Call the GM now. Confirm insurance. Brief ownership.',
         },
       },
@@ -480,9 +480,9 @@ const TT_SCENARIOS = {
         rolePrompts: {
           ic: 'FastBook\'s request for confidentiality conflicts with your regulatory obligations. You cannot honour it. Trigger the formal breach declaration. Coordinate co-sign with ES.',
           tl: 'FastBook was breached 27 days ago. 340 hotel clients may have been hit. This is a global hospitality supply chain incident. Does our IR firm have visibility into the wider scope?',
-          cl: 'FastBook wants silence. PIPEDA requires disclosure. Draft the regulatory notification and the guest notification — legal must clear both. Guest notification should not reference FastBook by name initially.',
-          lc: 'FastBook\'s confidentiality request has no legal force once you have a regulatory obligation to disclose. Notify OPC and BC OIPC. GDPR supervisory authority if EU guests confirmed. Preserve all communications with FastBook.',
-          es: 'FastBook has no insurance and 8 employees. Recovery from them is unlikely. What is the hotel\'s standalone exposure — fines, guest remediation, loyalty programme goodwill spend? Brief ownership.',
+          cl: 'FastBook wants silence. US breach notification law requires disclosure. Draft the regulatory notification and the guest notification — legal must clear both. Guest notification should not reference FastBook by name initially.',
+          lc: 'FastBook\'s confidentiality request has no legal force once you have a regulatory obligation to disclose. Notify the FTC and applicable state AG. GDPR supervisory authority if EU guests confirmed. Preserve all communications with FastBook.',
+          es: 'FastBook has no insurance and 8 employees. Recovery from them is unlikely. What is the hotel\'s standalone exposure — fines, guest remediation, loyalty program goodwill spend? Brief ownership.',
         },
       },
       {
@@ -496,8 +496,8 @@ const TT_SCENARIOS = {
           ic: 'Legal review is taking too long — guests are self-discovering on social media. Do you push legal to approve an expedited notice, or issue a public holding statement first? Decide now.',
           tl: 'The loyalty account brute-force attempts confirm attackers are using the leaked data for credential stuffing. Force a password reset for all 40,000 loyalty accounts. Confirm 2FA is available.',
           cl: 'TripAdvisor posts are live. Your holding statement needs to be published today: acknowledge the incident, take responsibility, commit to notification, provide a direct contact number. No finger-pointing at FastBook.',
-          lc: 'The delay in guest notification may itself become a regulatory finding. Document the legal review timeline. Once notification goes out, file formally with OPC. Class action risk is real — preserve all evidence.',
-          es: 'Offer 12 months of credit monitoring to all 40,000 affected guests. Confirm the budget. The loyalty programme needs a goodwill gesture — points top-up or waived annual fees. This is the brand recovery investment.',
+          lc: 'The delay in guest notification may itself become a regulatory finding. Document the legal review timeline. Once notification goes out, file formally with the FTC. Class action risk is real — preserve all evidence.',
+          es: 'Offer 12 months of credit monitoring to all 40,000 affected guests. Confirm the budget. The loyalty program needs a goodwill gesture — points top-up or waived annual fees. This is the brand recovery investment.',
         },
       },
     ],
@@ -559,7 +559,7 @@ const TT_SCENARIOS = {
           ic: 'This changes the threat classification. The DDoS may be a distraction for a network intrusion. Trigger the breach declaration gate if TL confirms the data is authentic. What do you need from TL in the next 15 minutes?',
           tl: 'Verify the proof data: are these real reservation records in the PMS? Is the revenue dashboard screenshot current and from inside the network? If authentic, you have a breach alongside the DDoS. Full forensics now.',
           cl: 'Remove any "we have no evidence of a data breach" language from your public holding statement immediately — pending TL\'s verification. Update your media position to "we are investigating a security matter."',
-          lc: 'If the proof data is authentic, you have a PIPEDA breach event running concurrently with the extortion. Two separate regulatory obligations with different timelines. Begin the breach assessment in parallel.',
+          lc: 'If the proof data is authentic, you have a US breach notification event running concurrently with the extortion. Two separate regulatory obligations with different timelines. Begin the breach assessment in parallel.',
           es: 'The $50k demand is secondary — if they are inside the network, the data exposure is the primary risk. Confirm you are not paying. Engage the carrier\'s incident response team now.',
         },
       },
@@ -572,7 +572,7 @@ const TT_SCENARIOS = {
         mitre: { tactic: 'N/A — Post-Incident', technique: 'NIST SP 800-61 Post-Incident Activity' },
         rolePrompts: {
           ic: 'Attack is over. Did they actually breach the network, or was the proof assembled from a cached browser session and LinkedIn? TL\'s forensic answer determines your regulatory obligations. You have 72 hours to conclude.',
-          tl: 'Full forensic sweep: any signs of persistent access, malware, or exfiltration beyond what the cached session could explain? Document the forensic conclusion — it determines the PIPEDA notification obligation.',
+          tl: 'Full forensic sweep: any signs of persistent access, malware, or exfiltration beyond what the cached session could explain? Document the forensic conclusion — it determines the breach notification obligation.',
           cl: 'Systems are back online. Issue a positive update: "Our systems are fully restored. We apologise for the disruption and are grateful for your patience." Do not mention the extortion or data proof.',
           lc: 'If the proof came from a browser-cached session rather than a network intrusion, the breach analysis changes significantly. Document the forensic conclusion carefully.',
           es: '$34,000 in lost revenue plus IR costs. Confirm DDoS extortion is covered under your policy — crime and business interruption. Board AAR question: what hardening investment prevents or shortens this next time?',
@@ -587,11 +587,11 @@ const TT_NOTIF_ITEMS = [
   { id: 'carrier',  label: 'Cyber insurance carrier — primary notification', detail: 'Most policies require notice within 24-48h. Triggers panel firm.', clockHr: 24 },
   { id: 'counsel',  label: 'Outside cyber counsel engaged',                  detail: 'Privilege wrapper for the rest of the response.',                clockHr: 4  },
   { id: 'irfirm',   label: 'Forensic IR firm activated',                     detail: 'Via carrier panel if available, else direct retainer.',          clockHr: 4  },
-  { id: 'le',       label: 'Law enforcement — RCMP cyber crimes',            detail: 'Reportable but does not pause private response.',                clockHr: 24 },
-  { id: 'opc',      label: 'Office of the Privacy Commissioner (Canada)',    detail: 'PIPEDA — notify as soon as feasible after determining RROSH.',  clockHr: 72 },
-  { id: 'oipc',     label: 'BC Office of the Information & Privacy Commissioner', detail: 'For BC residents\' PI under PIPA BC.',                     clockHr: 72 },
+  { id: 'le',       label: 'Law enforcement — FBI Cyber Division / IC3',     detail: 'Reportable but does not pause private response.',                clockHr: 24 },
+  { id: 'opc',      label: 'Federal Trade Commission (FTC)',                  detail: 'FTC / applicable federal law — notify as soon as feasible after determining risk of harm.',  clockHr: 72 },
+  { id: 'oipc',     label: 'State Attorney General — privacy notification',   detail: 'For residents under applicable state privacy law.',               clockHr: 72 },
   { id: 'pci',      label: 'Card networks — PCI DSS incident reporting',     detail: 'If cardholder data in scope. Acquirer first.',                   clockHr: 24 },
-  { id: 'affected', label: 'Affected individuals — notification plan',       detail: 'Direct notice required under PIPEDA where RROSH determined.',    clockHr: 72 },
+  { id: 'affected', label: 'Affected individuals — notification plan',       detail: 'Direct notice required under applicable federal/state law where risk of harm is determined.',    clockHr: 72 },
 ];
 
 // In-memory state mirror — Supabase rows are the source of truth on reload.
@@ -762,7 +762,7 @@ function ttSetMode(m) { ttSnapshot(); ttState.mode = m; ttRender(); }
 
 async function ttLaunchSession() {
   ttSnapshot();
-  if (!currentOrg) { toast('Select an organisation first', '#dc2626'); return; }
+  if (!currentOrg) { toast('Select an organization first', '#dc2626'); return; }
   if (!ttState.scenarioId) { toast('Pick a scenario', '#dc2626'); return; }
   if (!ttState.facilitatorName.trim()) { toast('Enter facilitator name', '#dc2626'); return; }
   // Load scenario through engine (DB first, then built-in fallback)

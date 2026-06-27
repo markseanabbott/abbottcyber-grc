@@ -40,7 +40,7 @@ const TS_CATS = [
         mappings: {
           cis: [{ id: '3.6', title: 'Encrypt data on end-user devices', ig: '1' }],
           nist: [{ id: 'PR.DS-01', title: 'The confidentiality, integrity, and availability of data-at-rest are protected' }],
-          insurance: { impact: 'mid', note: 'Required wherever portable devices carry PII or cardholder data. A single lost-laptop incident without FDE can be a notifiable breach under PIPA BC.' },
+          insurance: { impact: 'mid', note: 'Required wherever portable devices carry PII or cardholder data. A single lost-laptop incident without FDE can be a notifiable breach under applicable state law.' },
         }
       },
       { id: 'app_allowlist', tool_category: 'App_Allowlisting', question_type: 'feature', derive_strategy: 'standard',
@@ -128,12 +128,12 @@ const TS_CATS = [
         }
       },
       { id: 'phishsim', tool_category: 'Phishing_Simulation', question_type: 'process', derive_strategy: 'standard',
-        text: 'Is a phishing simulation programme running at least quarterly, with assigned remediation training?',
+        text: 'Is a phishing simulation program running at least quarterly, with assigned remediation training?',
         suggestion: 'KnowBe4, Hoxhunt, Proofpoint Security Awareness, Cofense. Click-through-rate trending matters more than absolute number.',
         mappings: {
-          cis: [{ id: '14.1', title: 'Establish and maintain a security awareness programme', ig: '1' }, { id: '14.2', title: 'Train workforce on social engineering attacks', ig: '1' }],
-          nist: [{ id: 'PR.AT-01', title: 'Personnel are provided with awareness and training' }, { id: 'PR.AT-02', title: 'Individuals in specialised roles are provided with awareness and training' }],
-          insurance: { impact: 'mid', note: 'Asked on most applications. Some carriers offer premium credits for documented programmes with measured outcomes.' },
+          cis: [{ id: '14.1', title: 'Establish and maintain a security awareness program', ig: '1' }, { id: '14.2', title: 'Train workforce on social engineering attacks', ig: '1' }],
+          nist: [{ id: 'PR.AT-01', title: 'Personnel are provided with awareness and training' }, { id: 'PR.AT-02', title: 'Individuals in specialized roles are provided with awareness and training' }],
+          insurance: { impact: 'mid', note: 'Asked on most applications. Some carriers offer premium credits for documented programs with measured outcomes.' },
         }
       },
       { id: 'banner', tool_category: 'External_Sender_Banner', question_type: 'feature', derive_strategy: 'standard',
@@ -234,7 +234,7 @@ const TS_CATS = [
         suggestion: 'Actual restore of a non-trivial dataset to a clean environment, signed off, time-to-restore captured. Most backup tools have orchestration to automate this.',
         mappings: {
           cis: [{ id: '11.5', title: 'Test data recovery', ig: '2' }],
-          nist: [{ id: 'PR.DS-11', title: 'Backups of data are created, protected, maintained, and tested' }, { id: 'RC.RP-02', title: 'Recovery actions are selected, scoped, prioritised, and performed' }],
+          nist: [{ id: 'PR.DS-11', title: 'Backups of data are created, protected, maintained, and tested' }, { id: 'RC.RP-02', title: 'Recovery actions are selected, scoped, prioritized, and performed' }],
           insurance: { impact: 'mid', note: 'Asked on most applications. "Last successful restore test" date is a common follow-up question.' },
         }
       },
@@ -318,7 +318,7 @@ const TS_CATS = [
         suggestion: 'Tracked in your ticketing tool (Jira, ServiceNow, Halo PSA) or vuln tool. "We patch when we can" is not an SLA.',
         mappings: {
           cis: [{ id: '7.7', title: 'Remediate detected vulnerabilities', ig: '1' }],
-          nist: [{ id: 'ID.RA-06', title: 'Risk responses are chosen, prioritised, planned, tracked, and communicated' }],
+          nist: [{ id: 'ID.RA-06', title: 'Risk responses are chosen, prioritized, planned, tracked, and communicated' }],
           insurance: { impact: 'mid', note: 'Asked on most renewals. Open critical CVEs older than 30 days = strong negative signal.' },
         }
       },
@@ -417,7 +417,7 @@ const TS_CATS = [
         suggestion: 'Intune / Jamf / Kandji / Workspace ONE (endpoints) + runZero / Lansweeper / Device42 (network discovery). Reconciliation against AD/Entra is the key bit.',
         mappings: {
           cis: [{ id: '1.1', title: 'Establish and maintain detailed enterprise asset inventory', ig: '1' }, { id: '1.2', title: 'Address unauthorised assets', ig: '1' }],
-          nist: [{ id: 'ID.AM-01', title: 'Inventories of hardware managed by the organisation are maintained' }],
+          nist: [{ id: 'ID.AM-01', title: 'Inventories of hardware managed by the organization are maintained' }],
           insurance: { impact: 'low', note: 'Foundational. Lack of inventory predicts every other tooling gap, but not directly rated.' },
         }
       },
@@ -426,7 +426,7 @@ const TS_CATS = [
         suggestion: 'Intune / Jamf, RMM tools (NinjaOne, Datto RMM, Kaseya), or dedicated (Lansweeper, ManageEngine AssetExplorer).',
         mappings: {
           cis: [{ id: '2.1', title: 'Establish and maintain a software inventory', ig: '1' }, { id: '2.3', title: 'Address unauthorised software', ig: '1' }],
-          nist: [{ id: 'ID.AM-02', title: 'Inventories of software, services, and systems managed by the organisation are maintained' }],
+          nist: [{ id: 'ID.AM-02', title: 'Inventories of software, services, and systems managed by the organization are maintained' }],
           insurance: { impact: 'low', note: 'Foundational. Often a gap that surfaces other tooling weaknesses; not directly rated.' },
         }
       },
@@ -523,7 +523,7 @@ const TS_CATS = [
         mappings: {
           cis: [{ id: '18.2', title: 'Perform periodic external penetration tests', ig: '2' }, { id: '16.7', title: 'Use standard hardening configuration templates for application infrastructure', ig: '2' }],
           nist: [{ id: 'ID.RA-01', title: 'Vulnerabilities in assets are identified, validated, and recorded' }, { id: 'ID.IM-02', title: 'Improvements are identified from security tests and exercises' }],
-          insurance: { impact: 'mid', note: 'Web app pen test / DAST cadence is a standard question for organisations with externally-facing applications. Last test date and remediation status often requested.' },
+          insurance: { impact: 'mid', note: 'Web app pen test / DAST cadence is a standard question for organizations with externally-facing applications. Last test date and remediation status often requested.' },
         }
       },
       { id: 'waf', tool_category: 'WAF', question_type: 'presence', derive_strategy: 'standard',
@@ -835,7 +835,7 @@ function renderTechStackForm() {
     <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">📌 Scope</span>
     ${_scopeBtn('scopeCloud',  'Cloud / SaaS', '☁️')}
     ${_scopeBtn('scopeAppSec', 'Custom App / Dev', '🔧')}
-    <span style="font-size:11px;color:var(--muted);margin-left:auto">Enable optional categories that apply to this organisation</span>
+    <span style="font-size:11px;color:var(--muted);margin-left:auto">Enable optional categories that apply to this organization</span>
   </div>
 
   ${visCats.map(cat => {
@@ -961,7 +961,7 @@ function tsSetDetail(qid, detail) {
 }
 
 async function tsSaveAllResponses() {
-  if (!tsState || !currentOrg) { toast('Select an organisation first', '#dc2626'); return; }
+  if (!tsState || !currentOrg) { toast('Select an organization first', '#dc2626'); return; }
   if (tsState.saving) return;
   const wasEdit = !!tsState.editId;
   tsState.saving = true; tsRender();

@@ -9,7 +9,7 @@ let exHubState = {
 };
 
 function renderExHub() {
-  if (!currentOrg) return `<div class="card" style="padding:2rem;text-align:center;color:var(--muted)">Select an organisation to view exercises.</div>`;
+  if (!currentOrg) return `<div class="card" style="padding:2rem;text-align:center;color:var(--muted)">Select an organization to view exercises.</div>`;
   exHubEnsureOp();
   return exHubRender();
 }

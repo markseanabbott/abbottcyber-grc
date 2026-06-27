@@ -7,7 +7,7 @@ const TPRA_DATA_CATEGORIES = [
   { id: 'payment',     label: 'Payment / Cardholder Data',            sensitivity: 'Critical', reg: 'PCI-DSS' },
   { id: 'phi',         label: 'Health / PHI',                          sensitivity: 'Critical', reg: 'HIPAA' },
   { id: 'auth',        label: 'Auth Secrets / API Keys / Credentials', sensitivity: 'Critical', reg: '—' },
-  { id: 'pii',         label: 'Customer / Guest PII (at scale)',        sensitivity: 'High',     reg: 'PIPEDA / CCPA' },
+  { id: 'pii',         label: 'Customer / Guest PII (at scale)',        sensitivity: 'High',     reg: 'CCPA / US Federal' },
   { id: 'hr',          label: 'Employee / HR Data',                     sensitivity: 'High',     reg: 'Employment law' },
   { id: 'financial',   label: 'Financial / Banking Records',            sensitivity: 'High',     reg: 'GLBA / FINTRAC' },
   { id: 'confidential',label: 'Confidential / IP / Contracts',          sensitivity: 'Moderate', reg: 'Contractual' },

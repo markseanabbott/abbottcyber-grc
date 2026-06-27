@@ -1141,9 +1141,9 @@ function nistAiCopyGapPrompt() {
 
   const gapList = gaps.map(c => `- [${answers[c.id].toUpperCase()}] ${c.id} (${NIST_FN_META[c.fn]?.label}): ${c.title}`).join('\n');
 
-  const prompt = `I need a prioritised AI risk remediation roadmap for an organisation assessed against the NIST AI RMF v1.0.
+  const prompt = `I need a prioritized AI risk remediation roadmap for an organization assessed against the NIST AI RMF v1.0.
 
-ORGANISATION: ${currentOrg?.name}
+ORGANIZATION: ${currentOrg?.name}
 ASSESSMENT DATE: ${run.date || 'Unknown'}
 OVERALL SCORE: ${score}%
 
@@ -1151,7 +1151,7 @@ IDENTIFIED GAPS (${gaps.length} total):
 ${gapList || '— No gaps —'}
 
 Please produce:
-1. A prioritised remediation roadmap grouping gaps by function (GOVERN/MAP/MEASURE/MANAGE), ranked by business impact.
+1. A prioritized remediation roadmap grouping gaps by function (GOVERN/MAP/MEASURE/MANAGE), ranked by business impact.
 2. For each gap, a 1–2 sentence plain-language explanation of the business risk if left unaddressed.
 3. Quick wins (actions achievable within 30 days) vs. strategic initiatives (3–12 months).
 

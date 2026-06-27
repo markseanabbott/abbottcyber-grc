@@ -108,7 +108,7 @@ function renderOrgManager() {
 
   const addFormHtml = showAddForm ? `
   <div class="card">
-    <div class="card-title">Add new organisation</div>
+    <div class="card-title">Add new organization</div>
     <div class="add-org-form">
       <div class="form-row">
         <div><div class="field-lbl">Name</div><input type="text" id="newOrgName" placeholder="e.g. Maple Leaf Hotels"/></div>
@@ -133,7 +133,7 @@ function renderOrgManager() {
 
   const subtitle = isPlatformAdmin
     ? `${allOrgs.length} organizations · Four-tier hierarchy`
-    : `${scopedOrgs.length} organisation${scopedOrgs.length !== 1 ? 's' : ''} in your scope`;
+    : `${scopedOrgs.length} organization${scopedOrgs.length !== 1 ? 's' : ''} in your scope`;
 
   return `
   ${renderTierBanner()}
@@ -142,7 +142,7 @@ function renderOrgManager() {
     <div style="font-size:12px;color:var(--muted)">${subtitle}</div></div>
   </div>
   <div class="card">
-    <div class="card-title">${isPlatformAdmin ? 'Full hierarchy' : 'Your organisations'}</div>
+    <div class="card-title">${isPlatformAdmin ? 'Full hierarchy' : 'Your organizations'}</div>
     ${hierarchyHtml}
   </div>
   ${orphanHtml}
@@ -316,7 +316,7 @@ function renderOrgEditModal(org) {
     <div class="profile-section">
       <div class="profile-section-title">ACL — Management Assignment</div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:8px">
-        Controls which organisation can manage this record. Currently admin-only (Phase 1).
+        Controls which organization can manage this record. Currently admin-only (Phase 1).
         When user authentication is added, this will drive which org manager can edit sub-orgs.
       </div>
       <div class="form-row" style="margin-bottom:0">
@@ -472,7 +472,7 @@ function renderOrgEditModal(org) {
 
     <div class="profile-section">
       <div class="profile-section-title">Notes</div>
-      <textarea id="pEditNotes" rows="3" placeholder="Any additional context about this organisation's risk posture, known issues, or upcoming changes…">${p.notes || ''}</textarea>
+      <textarea id="pEditNotes" rows="3" placeholder="Any additional context about this organization's risk posture, known issues, or upcoming changes…">${p.notes || ''}</textarea>
     </div>
   `}
   </div>
@@ -600,7 +600,7 @@ function confirmDeleteOrg(orgId) {
         <div style="font-size:12px;color:var(--text);line-height:1.6">
           This action is permanent and cannot be undone.
           ${totalCascade > 0 ? `<br><br><strong>Cascade warning:</strong> This will also delete
-          <strong>${totalCascade} child organisation${totalCascade !== 1 ? 's' : ''}</strong>
+          <strong>${totalCascade} child organization${totalCascade !== 1 ? 's' : ''}</strong>
           (${children.length} direct${grandchildren.length > 0 ? ` + ${grandchildren.length} nested` : ''}),
           plus all their assessments, tabletop sessions, and risk profiles.` : ''}
         </div>

@@ -337,7 +337,7 @@ async function submitCreateUser() {
   const errEl = document.getElementById('uError');
 
   if (!email || !password || !orgId) {
-    errEl.textContent = 'Email, password, and organisation are required.';
+    errEl.textContent = 'Email, password, and organization are required.';
     errEl.style.display = '';
     return;
   }

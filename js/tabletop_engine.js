@@ -175,7 +175,7 @@ const TTE_DEFAULT_RUBRIC = [
   { id: 'decision',   label: 'Decision Authority & Escalation',  desc: 'Were the right decisions made by the right roles?' },
   { id: 'comms',      label: 'Communications & Messaging',       desc: 'Were internal and external comms timely and appropriate?' },
   { id: 'legal',      label: 'Legal & Regulatory Awareness',     desc: 'Did the team demonstrate awareness of breach clocks and obligations?' },
-  { id: 'recovery',   label: 'Recovery & Continuity',            desc: 'Were containment and recovery actions realistic and prioritised?' },
+  { id: 'recovery',   label: 'Recovery & Continuity',            desc: 'Were containment and recovery actions realistic and prioritized?' },
 ];
 
 let _tteRubric = {};  // { [dimensionId]: { score: 1–5, notes: string } }

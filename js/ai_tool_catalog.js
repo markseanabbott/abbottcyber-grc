@@ -320,7 +320,7 @@ function _aitcMyToolsTable(tools) {
 
     const linkedApp    = ot.app_inventory_id ? aiCatState.appList.find(a => a.id === ot.app_inventory_id) : null;
     const regScopes    = Array.isArray(ot.regulatory_scope) ? ot.regulatory_scope : [];
-    const _REG_COL     = { 'SOX':'background:#fef3c7;color:#92400e', 'PCI-DSS':'background:#dbeafe;color:#1e40af', 'HIPAA':'background:#dcfce7;color:#15803d', 'PIPEDA':'background:#ede9fe;color:#6d28d9' };
+    const _REG_COL     = { 'SOX':'background:#fef3c7;color:#92400e', 'PCI-DSS':'background:#dbeafe;color:#1e40af', 'HIPAA':'background:#dcfce7;color:#15803d', 'CCPA':'background:#ede9fe;color:#6d28d9' };
     const regBadges    = regScopes.map(s => `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:5px;${_REG_COL[s]||'background:#f1f5f9;color:#374151'}">${escH(s)}</span>`).join(' ');
 
     return `<tr>
@@ -713,7 +713,7 @@ function _aitcModalEditOrgTool(m) {
       <div style="margin-bottom:1.25rem">
         <label class="form-label">Regulatory Scope</label>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:.5rem">${
-          [['SOX','Sarbanes-Oxley (SOX)'],['PCI-DSS','PCI-DSS'],['HIPAA','HIPAA'],['PIPEDA','PIPEDA / Privacy']].map(([val, lbl]) => {
+          [['SOX','Sarbanes-Oxley (SOX)'],['PCI-DSS','PCI-DSS'],['HIPAA','HIPAA'],['CCPA','CCPA / Privacy']].map(([val, lbl]) => {
             const existingScopes = Array.isArray(ot.regulatory_scope) ? ot.regulatory_scope : [];
             const checked = existingScopes.includes(val);
             return `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:5px 8px;border-radius:7px;border:1px solid var(--border);background:var(--bg)">
@@ -984,7 +984,7 @@ async function aitcSaveEditOrgTool(id, isCustom) {
   const notes     = document.getElementById('aitc-e-notes')?.value.trim()    || null;
   const dept      = document.getElementById('aitc-e-dept')?.value.trim()     || null;
   const appLinkId = document.getElementById('aitc-e-app-link')?.value        || null;
-  const regScopes = ['SOX','PCIDSS','HIPAA','PIPEDA']
+  const regScopes = ['SOX','PCIDSS','HIPAA','CCPA']
     .filter(s => document.getElementById(`aitc-e-scope-${s}`)?.checked)
     .map(s => s === 'PCIDSS' ? 'PCI-DSS' : s);
   const regOther  = document.getElementById('aitc-e-scope-other')?.value.trim() || null;

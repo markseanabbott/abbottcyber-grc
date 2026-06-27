@@ -8,7 +8,7 @@
 // ============================================================
 
 function renderCompanyProfile() {
-  if (!currentOrg) return '<div class="card" style="padding:2rem;text-align:center;color:var(--muted)">No organisation selected.</div>';
+  if (!currentOrg) return '<div class="card" style="padding:2rem;text-align:center;color:var(--muted)">No organization selected.</div>';
 
   const p   = orgProfiles[currentOrg.id] || {};
   const org = currentOrg;
@@ -390,7 +390,7 @@ function _cpRiskContext(p) {
       tier: 'CIS IG2 Recommended',
       icon: '🔴',
       color: '#dc2626',
-      summary: `Based on your data profile${sensitivity ? ' (<strong>' + sensitivity + '</strong> sensitivity)' : ''} and compliance requirements, this organisation warrants <strong>CIS Implementation Group 2</strong> controls — 74 safeguards covering asset management, access control, data protection, logging, and incident response. Run a CIS Controls assessment to establish your baseline and build a POAM for the gaps.`,
+      summary: `Based on your data profile${sensitivity ? ' (<strong>' + sensitivity + '</strong> sensitivity)' : ''} and compliance requirements, this organization warrants <strong>CIS Implementation Group 2</strong> controls — 74 safeguards covering asset management, access control, data protection, logging, and incident response. Run a CIS Controls assessment to establish your baseline and build a POAM for the gaps.`,
       flags,
     };
   }

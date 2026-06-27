@@ -950,7 +950,7 @@ function renderAiUnifiedPoam() {
   <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:8px">
     <div>
       <div style="font-size:17px;font-weight:700">📋 AI Governance — Plan of Action & Milestones</div>
-      <div style="font-size:12px;color:var(--muted)">${escH(currentOrg?.name||'')} · ${run.date||'—'} · ${gaps.length} gap${gaps.length!==1?'s':''} prioritised by maturity weight</div>
+      <div style="font-size:12px;color:var(--muted)">${escH(currentOrg?.name||'')} · ${run.date||'—'} · ${gaps.length} gap${gaps.length!==1?'s':''} prioritized by maturity weight</div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn btn-outline btn-sm" onclick="aiuNavToDashboard()">← Back</button>
@@ -1657,8 +1657,8 @@ OUTPUT — write EXACTLY these sections in this order:
 Write 2–3 paragraphs of executive summary prose. What does this ${score}% ${band} score mean for AI governance maturity and business readiness? What is working? Where is the primary risk exposure? Reference the framework context (${fwLabel}) without being technical.
 
 ${hasTrend
-  ? `Weave in 1–2 sentences on trend and momentum: the score moved ${trendDelta}. ${improvedAreas && improvedAreas !== 'None — no gains detected' && improvedAreas !== 'N/A — first assessment' ? `Name the AI governance domains that strengthened (${improvedAreas}) and frame them as concrete progress. ` : ''}${regressedAreas && regressedAreas !== 'None' && regressedAreas !== 'N/A — first assessment' ? `Acknowledge any areas that declined (${regressedAreas}) factually and briefly. ` : ''}What does this trajectory signal about programme momentum?`
-  : `Note that this is the first AI governance baseline for ${currentOrg?.name}. Frame it as the starting point for a structured programme — not a verdict.`}
+  ? `Weave in 1–2 sentences on trend and momentum: the score moved ${trendDelta}. ${improvedAreas && improvedAreas !== 'None — no gains detected' && improvedAreas !== 'N/A — first assessment' ? `Name the AI governance domains that strengthened (${improvedAreas}) and frame them as concrete progress. ` : ''}${regressedAreas && regressedAreas !== 'None' && regressedAreas !== 'N/A — first assessment' ? `Acknowledge any areas that declined (${regressedAreas}) factually and briefly. ` : ''}What does this trajectory signal about program momentum?`
+  : `Note that this is the first AI governance baseline for ${currentOrg?.name}. Frame it as the starting point for a structured program — not a verdict.`}
 
 Close the executive summary with 1–2 sentences on the recommended next step — close gaps, expand scope, or prepare for certification. Frame it as forward-looking business strategy.
 
@@ -2291,9 +2291,9 @@ function aiuCopyGapPrompt() {
   const scores = aiuCalcScore(answers, fw);
   const gapList = gaps.map(g=>`- [${g.answer.toUpperCase()}] ${g.id} (${AI_WEIGHT_LABELS[g.weight]}, priority: ${g.priorityScore.toFixed(1)}): ${g.title}\n  Maps to: ${[...(g.nist||[]),...(g.iso||[])].join(', ')}`).join('\n');
 
-  const prompt = `I need a prioritised AI governance remediation roadmap.
+  const prompt = `I need a prioritized AI governance remediation roadmap.
 
-ORGANISATION: ${currentOrg?.name}
+ORGANIZATION: ${currentOrg?.name}
 ASSESSMENT DATE: ${run.date||'Unknown'}
 FRAMEWORKS: ${fw.nist!==false?'NIST AI RMF v1.0':''}${fw.nist!==false&&fw.iso!==false?' + ':''}${fw.iso!==false?'ISO/IEC 42001:2023':''}
 OVERALL SCORE: ${scores.overall??'—'}%
@@ -2304,7 +2304,7 @@ ${gapList||'— No gaps —'}
 Please produce:
 1. A 90-day roadmap grouping gaps into: Quick Wins (< 2 weeks), Sprint 1 (30 days), Sprint 2 (90 days).
 2. For each gap, a plain-language explanation of the business risk if left unaddressed.
-3. For the top 5, specific first actions the organisation can take this week.
+3. For the top 5, specific first actions the organization can take this week.
 
 Write for a non-technical founder. Focus on practical, lowest-cost actions that close the most ground fastest.`;
 

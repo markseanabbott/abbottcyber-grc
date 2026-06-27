@@ -17,10 +17,10 @@ const MA_CATS = [
         note:'Request the current certificate or attestation letter. Check the scope — a SOC 2 covering a single product line may not include the systems being acquired. Type II (audit over time) is more rigorous than Type I (point-in-time).' },
       { id:'G3', text:'Dedicated security function or named security owner in role (CISO, Security Manager, or equivalent)', weight:2, costBand:'Low', priority:'year1',
         note:'Security should be someone\'s primary job, not an add-on to a generalist IT role. For small targets, a part-time CISO or vCISO arrangement is acceptable. Red flag: "the IT guy handles security" with no formal mandate.' },
-      { id:'G4', text:'Target is subject to breach notification regulations (PIPEDA, GDPR, HIPAA, CCPA, or US state breach laws)', weight:1, costBand:null, priority:null, contextOnly:true,
+      { id:'G4', text:'Target is subject to breach notification regulations (CCPA, GDPR, HIPAA, or applicable US state breach laws)', weight:1, costBand:null, priority:null, contextOnly:true,
         note:'Context only — determines whether a past or future breach triggers mandatory regulatory notifications and reporting timelines. Affects deal risk and post-close insurance obligations.' },
       { id:'G5', text:'No current or pending regulatory investigations, fines, or enforcement actions relating to data security or privacy', weight:3, costBand:'High', priority:'preclose', dealBreaker:'all',
-        note:'Require a legal declaration and search publicly available regulatory databases (OPC Canada, SEC, FTC, ICO). Any active matter must be fully disclosed in the data room. Undisclosed regulatory action is a deal-breaker — it creates liability that transfers with the acquisition.' },
+        note:'Require a legal declaration and search publicly available regulatory databases (FTC, SEC, ICO). Any active matter must be fully disclosed in the data room. Undisclosed regulatory action is a deal-breaker — it creates liability that transfers with the acquisition.' },
       { id:'G6', text:'Independent third-party security audit or penetration test completed within the last 24 months', weight:2, costBand:'Medium', priority:'year1',
         note:'Request the most recent report. Scope matters — a web application pen test alone may leave internal networks and cloud environments untested. Also look for a remediation log showing critical findings were closed, not just noted.' },
     ],
@@ -35,7 +35,7 @@ const MA_CATS = [
       { id:'I3', text:'Formal user lifecycle process (joiner / mover / leaver) with periodic access reviews documented', weight:2, costBand:'Low', priority:'year1',
         note:'Ask for a sample offboarding checklist. Check that departing employees are disabled in Active Directory/Entra within 24–48 hours. Access reviews should be documented — quarterly for privileged accounts, annual for standard users is the baseline.' },
       { id:'I4', text:'All endpoints protected by an Endpoint Detection & Response (EDR) solution with central management console', weight:2, costBand:'Medium', priority:'year1',
-        note:'Antivirus is not EDR. EDR tools (CrowdStrike, SentinelOne, Microsoft Defender for Endpoint) have behavioural detection, threat hunting, and incident response capabilities. Request a screenshot of the EDR console showing endpoint coverage percentage.' },
+        note:'Antivirus is not EDR. EDR tools (CrowdStrike, SentinelOne, Microsoft Defender for Endpoint) have behavioral detection, threat hunting, and incident response capabilities. Request a screenshot of the EDR console showing endpoint coverage percentage.' },
       { id:'I5', text:'Documented patching policy with critical/high severity patches applied within defined SLA (≤30 days for critical)', weight:2, costBand:'Low', priority:'year1',
         note:'Request patching reports for the last 3 months. Focus on servers and internet-facing systems first. Unpatched critical CVEs on internet-facing systems are a pre-close red flag regardless of overall score.' },
       { id:'I6', text:'Remote access secured via VPN or Zero Trust — no direct RDP or SMB exposure to the public internet', weight:3, costBand:'Low', priority:'preclose', dealBreaker:'conservative',
@@ -71,7 +71,7 @@ const MA_CATS = [
       { id:'H1', text:'No material data breach, ransomware attack, or significant security incident in the last 3 years', weight:3, costBand:'High', priority:'preclose',
         note:'Three years is the standard lookback. A disclosed, remediated breach that demonstrably improved the target\'s security posture is NOT a deal-breaker — it requires the sub-questions below. The real concern is undisclosed incidents or ongoing threat actor presence (H2).' },
       { id:'H1a', text:'(If breach) Incident was disclosed to affected parties and regulators as legally required', weight:2, costBand:null, priority:'preclose', dealBreaker:'all', conditional:{ questionId:'H1', value:'no' },
-        note:'Mandatory under PIPEDA (Canada), GDPR (EU), most US state laws, and HIPAA. Failure to notify is itself a separate regulatory violation — potentially creating ongoing legal liability that transfers with the deal.' },
+        note:'Mandatory under CCPA (California), GDPR (EU), most US state laws, and HIPAA. Failure to notify is itself a separate regulatory violation — potentially creating ongoing legal liability that transfers with the deal.' },
       { id:'H1b', text:'(If breach) Root cause has been fully remediated and independently verified', weight:2, costBand:'Medium', priority:'preclose', dealBreaker:'moderate', conditional:{ questionId:'H1', value:'no' },
         note:'Root cause fix should be independently verified — via a follow-up penetration test, a remediation validation from the original tester, or an updated security audit. Self-attestation by management alone is not sufficient evidence.' },
       { id:'H1c', text:'(If breach) Security posture has materially improved since the incident (controls, process, staffing)', weight:2, costBand:'Medium', priority:'year1', conditional:{ questionId:'H1', value:'no' },
@@ -1265,14 +1265,14 @@ function maShowAddEntity() {
   container.innerHTML = `
   <div class="card" style="border-top:3px solid var(--cyan)">
     <div class="card-title">✚ Add as Entity</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:1rem">Creates a new child entity under the selected organisation and links this M&A assessment as its founding security baseline.</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:1rem">Creates a new child entity under the selected organization and links this M&A assessment as its founding security baseline.</div>
     <div class="form-row">
       <div>
         <div class="field-lbl">Entity name</div>
         <input type="text" id="maEntityName" value="${escH(a.framing?.target_name||'')}" placeholder="Entity name in the platform"/>
       </div>
       <div>
-        <div class="field-lbl">Parent organisation</div>
+        <div class="field-lbl">Parent organization</div>
         <select id="maEntityParent">
           ${parentOrgs.map(o=>`<option value="${o.id}" ${currentOrg?.id===o.id?'selected':''}>${escH(o.name)}</option>`).join('')}
         </select>

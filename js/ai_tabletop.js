@@ -538,7 +538,7 @@ function aittPickScenario(id) { aittSnapshot(); aittState.scenarioId = id; aittR
 
 function aittLaunch() {
   aittSnapshot();
-  if (!currentOrg)                        { toast('Select an organisation first', '#dc2626'); return; }
+  if (!currentOrg)                        { toast('Select an organization first', '#dc2626'); return; }
   if (!aittState.scenarioId)              { toast('Select a scenario', '#dc2626'); return; }
   if (!aittState.facilitatorName.trim())  { toast('Enter your facilitator name', '#dc2626'); return; }
   aittState.startTime     = new Date().toISOString();

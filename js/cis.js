@@ -477,7 +477,7 @@ const CIS_SAFEGUARDS = [
     sub: 'Conduct post-incident reviews. Post-incident reviews help prevent incident recurrence through identifying lessons learned and follow-up action.' },
   { ctrl: 17, ctrlName: 'Incident Response Management', sf: '17.9', ig: 3,
     title: 'Establish & Maintain Security Incident Thresholds',
-    sub: 'Establish and maintain security incident thresholds, including, at a minimum: differing thresholds for different types of incidents, factors in determining whether an incident meets the threshold, and factors for notifying external organisations such as regulators, law enforcement, etc.' },
+    sub: 'Establish and maintain security incident thresholds, including, at a minimum: differing thresholds for different types of incidents, factors in determining whether an incident meets the threshold, and factors for notifying external organizations such as regulators, law enforcement, etc.' },
 
   // ──── Control 18: Penetration Testing ────
   { ctrl: 18, ctrlName: 'Penetration Testing', sf: '18.1', ig: 3,
@@ -3296,7 +3296,7 @@ function cisGapCopyPrompt() {
     .filter(s => { const a = answers[s.sf]; return !a || a === 'no' || a === 'partial'; })
     .map(s => { const ans = answers[s.sf] || 'unanswered'; return { ...s, ans, priority: cisGapPriority(s.ig, ans) }; })
     .sort((a, b) => a.priority.order - b.priority.order || a.ctrl - b.ctrl || parseFloat(a.sf) - parseFloat(b.sf));
-  const prompt = cisGapGeneratePrompt(gaps, run, currentOrg?.name || 'the organisation', goal);
+  const prompt = cisGapGeneratePrompt(gaps, run, currentOrg?.name || 'the organization', goal);
   navigator.clipboard.writeText(prompt).then(
     () => toast('✓ Remediation roadmap prompt copied', '#15803d'),
     () => toast('Clipboard failed — try a different browser', '#dc2626')
@@ -4191,11 +4191,11 @@ function cisGenerateReportPrompt() {
   const nextIg = goalN === 1 ? 'IG2' : goalN === 2 ? 'IG3' : null;
   const advancementNote = goalN === 3
     ? score >= ADVANCE_THRESHOLD
-      ? `This is a full IG3 assessment. At ${score}%, the programme is performing strongly — recommend scheduling the next re-assessment in 12 months to track continued maturity and close remaining gaps.`
+      ? `This is a full IG3 assessment. At ${score}%, the program is performing strongly — recommend scheduling the next re-assessment in 12 months to track continued maturity and close remaining gaps.`
       : `This is a full IG3 assessment. At ${score}%, there are still meaningful gaps to close — recommend continuing to focus on IG3 consolidation before the next re-assessment.`
     : score >= ADVANCE_THRESHOLD
-      ? `Score of ${score}% meets the ${ADVANCE_THRESHOLD}% advancement threshold. The foundational ${goal.toUpperCase()} programme is solid — recommend scoping next year's assessment at ${nextIg} to expand the security framework.`
-      : `Score of ${score}% is below the ${ADVANCE_THRESHOLD}% advancement threshold. Recommend consolidating the current ${goal.toUpperCase()} programme — depth before breadth — before expanding scope to ${nextIg}.`;
+      ? `Score of ${score}% meets the ${ADVANCE_THRESHOLD}% advancement threshold. The foundational ${goal.toUpperCase()} program is solid — recommend scoping next year's assessment at ${nextIg} to expand the security framework.`
+      : `Score of ${score}% is below the ${ADVANCE_THRESHOLD}% advancement threshold. Recommend consolidating the current ${goal.toUpperCase()} program — depth before breadth — before expanding scope to ${nextIg}.`;
 
   const prompt = `You are a concise cybersecurity reporting assistant. Write a short CIS Controls executive report commentary for ${currentOrg.name}. Audience: non-technical CEO or board.
 
@@ -4226,7 +4226,7 @@ ${partGaps || '— None —'}
 
 OUTPUT — write EXACTLY this structure in this order. Nothing before, nothing after, no added headings:
 
-[2–3 sentences only. What does ${score}% mean for the business — not a restatement of the number but what it signals about exposure and readiness. End with 1 sentence on programme direction using the context: "${advancementNote}" — speak to business value, not thresholds.]
+[2–3 sentences only. What does ${score}% mean for the business — not a restatement of the number but what it signals about exposure and readiness. End with 1 sentence on program direction using the context: "${advancementNote}" — speak to business value, not thresholds.]
 
 KEY FINDINGS
 - [Most critical gap framed as business consequence — what could go wrong, not a technical label — 1 sentence max]
@@ -4241,10 +4241,10 @@ PRIORITY RECOMMENDATIONS
 
 ---CONTROLS---
 - [1 sentence: what IG1 coverage signals about foundational security readiness]
-${goalN >= 2 ? `- [1 sentence: what IG2${goalN >= 3 ? '/IG3' : ''} progress signals about programme depth]` : ''}
+${goalN >= 2 ? `- [1 sentence: what IG2${goalN >= 3 ? '/IG3' : ''} progress signals about program depth]` : ''}
 
 ---TREND---
-- [1 sentence: ${hasTrend ? `what the ${trendDelta} trajectory signals about programme momentum${improvedAreas && improvedAreas !== 'None — no gains detected' && improvedAreas !== 'N/A — first assessment' ? ` — name the improved areas (${improvedAreas}) as capabilities gained` : ''}${regressedAreas && regressedAreas !== 'None' && regressedAreas !== 'N/A — first assessment' ? `, acknowledge any regression (${regressedAreas}) briefly` : ''}` : `establish this as the opening baseline for ${currentOrg.name} — a starting point, not a verdict`}]
+- [1 sentence: ${hasTrend ? `what the ${trendDelta} trajectory signals about program momentum${improvedAreas && improvedAreas !== 'None — no gains detected' && improvedAreas !== 'N/A — first assessment' ? ` — name the improved areas (${improvedAreas}) as capabilities gained` : ''}${regressedAreas && regressedAreas !== 'None' && regressedAreas !== 'N/A — first assessment' ? `, acknowledge any regression (${regressedAreas}) briefly` : ''}` : `establish this as the opening baseline for ${currentOrg.name} — a starting point, not a verdict`}]
 
 ---GAPS---
 - [Pattern: where do the top gaps cluster — control domain or type?]

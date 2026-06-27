@@ -10,6 +10,16 @@
 
 ---
 
+## Language & Locale
+
+**US English only — always.**
+- US spelling throughout: `organization` not `organisation`, `behavior` not `behaviour`, `program` not `programme`, `prioritized` not `prioritised`, `specialized` not `specialised`, `tokenized` not `tokenised`, `recognized` not `recognised`, `authorized` not `authorised`
+- US legal and regulatory references only: `FTC`, `FBI Cyber Division / IC3`, `CCPA`, `HIPAA`, `SEC`, `State Attorney General` — never PIPEDA, RCMP, OPC, OIPC, PIPA BC, or any Canadian agency/legislation
+- Do not use `RROSH` (PIPEDA term) — use `risk of harm` instead
+- Supabase table/column names (`organisations`, `organisation_profiles`) are database identifiers — do NOT rename them
+
+---
+
 ## Who Mark Is
 
 Mark Abbott is the founder of **Abbott Cyber Consulting** — a virtual CISO / CIO consulting firm in Surrey, BC, Canada. He is not a developer. Claude builds; Mark reviews, approves, and directs. Build for a non-technical founder who will use this tool live with real clients.

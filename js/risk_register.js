@@ -394,7 +394,7 @@ function rrModalAccept(r) {
   <div class="modal-header"><span>Accept Risk</span><button class="modal-close" onclick="rrCloseModal()">✕</button></div>
   <div style="padding:.5rem 1.5rem .25rem">
     <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:.75rem 1rem;font-size:12.5px;color:#5b21b6;line-height:1.5">
-      <strong>Accepted</strong> means the organisation has formally decided to live with this risk — not that it has been fixed.
+      <strong>Accepted</strong> means the organization has formally decided to live with this risk — not that it has been fixed.
       Use <strong>Closed</strong> (via Edit) once the risk has been remediated.
     </div>
   </div>

@@ -28,7 +28,7 @@ let _mpSelCard = null; // selected card index for option-card UI
 // ============================================================
 const TIER_ORDER = ['platform', 'grandfather', 'father', 'child'];
 const TIER_LABELS = {
-  platform: 'Platform Owner — All organisations',
+  platform: 'Platform Owner — All organizations',
   grandfather: 'Group — Own portfolio',
   father: 'Company — Own clients',
   child: 'Entity — Self only',
