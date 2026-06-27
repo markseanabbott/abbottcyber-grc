@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.4.1",
   "created": "2026-05-14",
-  "updated": "2026-06-26 (session 81)",
+  "updated": "2026-06-26 (session 82)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -678,7 +678,7 @@
           "text": "Exercises hub section grid — add bordered bucket layout above the stats strip, matching Governance hub design. Two buckets side by side: Cybersecurity Exercises (→ Cybersecurity Tabletop) and AI Governance Exercises (→ AI Governance Tabletop). History table gains a section label header. Empty history no longer shows a redundant empty-state card (sections always visible).",
           "done": true,
           "phase": 1,
-          "notes": "js/ex_hub.js: rewrote exHubRender() to call _govBucket()/_govCard() globals from home.js directly (no inline helpers). EX_SECTIONS data array with icon/label/description/nav per item. Header matches governance: title + subtitle 'Tabletop exercises and scenario simulations for {org}'. Grid: grid-template-columns:1fr 1fr;align-items:start. ACL-filtered via hasPageAccess per card. Stats strip and history table below grid unchanged."
+          "notes": "js/home.js: rewrote renderExercisesHub() (nav: exercises) — not ex_hub.js which handles the ex_hub sub-page. EX_GROUPS data array: Cybersecurity Exercises (Tabletop + 3 coming-soon items) and AI Governance Exercises (AI Tabletop). Calls _govBucket()/_govCard() globals. Grid: grid-template-columns:1fr 1fr;align-items:start. Title+subtitle header matches governance hub. EXERCISE_CATALOG retained for reference."
         },
         {
           "id": "ux9",
