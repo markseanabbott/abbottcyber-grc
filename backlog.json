@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.4.1",
   "created": "2026-05-14",
-  "updated": "2026-06-26 (session 78)",
+  "updated": "2026-06-26 (session 79)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -2047,8 +2047,15 @@
         {
           "id": "ai14",
           "text": "AI phishing and attack simulation — module or integration to run AI-specific attack scenarios: prompt injection tests, model manipulation attempts, AI-generated phishing campaigns targeting staff. Assesses practical AI security posture beyond governance controls.",
+          "done": true,
+          "priority": null,
+          "notes": "Added 3 Attack Simulation Track scenarios to AITT_SCENARIOS in js/ai_tabletop.js: AI-11 (The Indirect Injection — hidden prompt injection in supplier doc exfiltrates pricing data via AI procurement assistant), AI-12 (Operation Spearpoint — AI-generated personalized phishing campaign, 40 staff targeted, MFA relay bypass), AI-13 (The Extraction — $600 API model extraction attack, replica listed for sale on private forum). Each has track:'attack' flag. Setup screen reorganised into Governance Track / Attack Simulation Track sections with orange visual distinction. vCISO commentary updated to describe both tracks. No SQL needed."
+        },
+        {
+          "id": "ai22",
+          "text": "AI Simulation Tracker — lightweight module to record AI attack simulation campaigns (prompt injection tests, deepfake phishing, AI data exfiltration drills). Fields: scenario type, date run, facilitator, staff count tested, pass rate, outcome notes, remediation actions. Dashboard shows coverage map and history. Provides audit/insurance evidence that the org actively tests its AI defences.",
           "done": false,
-          "priority": null
+          "priority": "Medium"
         },
         {
           "id": "ai15",

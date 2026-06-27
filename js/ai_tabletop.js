@@ -265,6 +265,75 @@ const AITT_SCENARIOS = [
     nist: ['GV-1.1', 'GV-1.7', 'MP-2.3', 'MS-2.6', 'MG-2.2'],
     iso: ['7.4', '8.2.4', '8.5.5', '9.1'],
   },
+
+  // ── AI ATTACK SIMULATION TRACK ───────────────────────────────
+  {
+    id: 'AI-11', name: 'The Indirect Injection', tag: 'Technology / Professional Services',
+    track: 'attack',
+    duration: '~50 min', difficulty: 'Hard', injectCount: 5,
+    summary: 'A supplier document contains a hidden prompt injection. Your AI procurement assistant executes the embedded instructions and emails 847 rows of internal pricing data to an external address at 3:47 AM — two days before your team reads the document.',
+    setup: 'Your organization uses an AI assistant integrated with your procurement workflow. Suppliers submit proposal documents through a vendor portal and the assistant pre-reads each one to extract key terms, pricing, and risk flags before your team reviews. An attacker posing as a legitimate supplier submits a proposal containing a hidden prompt injection — instructions embedded in white text on a white background — directing the AI to forward your internal vendor pricing database to an external email address.',
+    injects: [
+      'The AI assistant executed the injected instructions successfully. 847 rows of internal vendor pricing data were emailed to an external Gmail address at 3:47 AM — two days before your procurement team opened the document.',
+      'The sending account is a legitimate internal service account used for automated AI outputs. IT has no alerting on unusual outbound emails from service accounts at that hour.',
+      'The prompt injection technique used was documented in a publicly available security research paper six months ago — it is a known attack vector for your AI assistant\'s underlying model architecture.',
+      'The supplier identity is entirely fabricated. The company name, registration number, and contact details are synthetic. There is no prior business relationship and no way to trace the submission.',
+      'Your cyber insurance carrier asks whether your AI systems are covered under your existing policy and whether prompt injection is a named attack vector in your coverage terms.',
+    ],
+    discussion: [
+      'Who is responsible for reviewing AI-processed external inputs for injection risk — the model vendor, your IT team, or the business owner of the procurement workflow?',
+      'What is your containment priority: the pricing data now in attacker hands, or closing the injection vulnerability before the next supplier submission arrives?',
+      'Your AI vendor acknowledges prompt injection is a known model limitation and recommends human review of all AI-processed external inputs. What does that mean for the economics of the workflow you built?',
+      'What does this incident reveal about your AI-specific data access controls and the principle of least privilege applied to AI service accounts?',
+      'Does this trigger breach notification obligations and how do you evaluate the sensitivity of the exposed pricing data under applicable state law?',
+    ],
+    nist: ['MP-3.5', 'GV-1.5', 'GV-1.1', 'MS-2.6', 'MG-2.2'],
+    iso: ['8.2.4', '8.3', '8.5.5', '8.6'],
+  },
+  {
+    id: 'AI-12', name: 'Operation Spearpoint', tag: 'All Industries',
+    track: 'attack',
+    duration: '~55 min', difficulty: 'Hard', injectCount: 5,
+    summary: 'Forty staff receive AI-generated phishing emails referencing real project names, managers, and company events. Twelve click. Three enter credentials. MFA is partially bypassed via real-time relay. The same template is simultaneously hitting three other organizations in your sector.',
+    setup: 'Your security team detects a wave of phishing emails targeting staff across multiple departments. Unlike typical phishing, each email is individually crafted — referencing real project names, the recipient\'s direct manager, recent company events visible on LinkedIn, and accurate job titles. The emails impersonate your HR department and direct staff to a cloned internal portal to update payroll banking information. Later analysis confirms the content was AI-generated using publicly available data scraped from LinkedIn, the company website, and recent press releases.',
+    injects: [
+      'Forty staff received the emails. Twelve clicked the link. Three entered their credentials into the cloned portal before your security team took the fake site offline.',
+      'All three affected employees work in Finance, HR, and the CEO\'s office respectively. One has administrative access to the payroll system. One has full admin rights to your HR platform.',
+      'Forensic review of the cloned portal confirms it captured usernames, passwords, and — in two cases — multi-factor authentication codes via a real-time relay attack that proxied sessions live.',
+      'A threat intelligence vendor identifies the same AI-generated email template targeting three other organizations in your industry within the same 48-hour window. This is a coordinated campaign, not a targeted attack on you specifically.',
+      'An employee who received the email but did not click has posted about it on LinkedIn, tagging your company account and describing it as a "sophisticated AI phishing attack." The post is gaining traction and two journalists have reached out for comment.',
+    ],
+    discussion: [
+      'With three credential sets compromised — including payroll and HR platform access — what is your containment sequence in the first 60 minutes and who makes the call to force a password reset across the organization?',
+      'Your MFA was partially bypassed via real-time relay. Does this change your incident severity assessment and what does it mean for your MFA strategy going forward?',
+      'The attacker used only publicly available information. What does that tell you about your organization\'s data exposure posture and what, realistically, can you control?',
+      'How do you communicate to the 12 staff who clicked — and the broader workforce — without creating panic or eroding trust in legitimate internal communications?',
+      'Does the coordinated, industry-wide nature of the campaign affect your regulatory notification obligations, your insurer\'s response posture, or your duty to share threat intelligence with sector peers?',
+    ],
+    nist: ['GV-4.1', 'MP-3.5', 'MG-1.3', 'MG-2.2', 'MS-2.6'],
+    iso: ['7.4', '8.2.4', '8.3', '8.5.5'],
+  },
+  {
+    id: 'AI-13', name: 'The Extraction', tag: 'Technology / SaaS',
+    track: 'attack',
+    duration: '~45 min', difficulty: 'Medium', injectCount: 4,
+    summary: 'An attacker spends $600 in API calls to reconstruct a functional replica of your proprietary fine-tuned AI model. The replica is now listed for sale on a private forum. One of the purchasing inquiries appears to originate from a direct competitor.',
+    setup: 'Your organization operates a proprietary AI model fine-tuned on 18 months of operational data to power client recommendations. It is exposed via a public-facing API used by your client portal. Your AI infrastructure vendor contacts you to report anomalous query patterns consistent with model extraction — a technique where an attacker systematically queries a model to reconstruct its underlying capabilities and training data signals. The vendor estimates the attacker spent approximately $600 in API costs. A functional replica of your model is now being advertised for sale on a private forum under the name "CloneOps-v2."',
+    injects: [
+      'The extraction queries began 11 weeks ago. All queries passed standard authentication and rate limiting. No security alert fired at any point during the extraction period.',
+      'A security researcher who spotted the forum listing contacts you to warn you. The listing includes a sample output from the extracted model that accurately reproduces responses your system generates — including one that reveals characteristics of your client recommendation logic.',
+      'Your client contracts do not specifically address AI model IP or include provisions restricting clients from systematically querying outputs in ways consistent with extraction. Legal is reviewing whether you have grounds to act.',
+      'One of the purchasing inquiries on the forum appears to originate from an IP block associated with a direct competitor\'s known infrastructure.',
+    ],
+    discussion: [
+      'What immediate controls do you apply to your API — rate limiting, output perturbation, query pattern monitoring — and how do you weigh each option against the client experience impact?',
+      'Does the potential extraction of training data signals from your proprietary model create a data breach scenario under applicable US state law, particularly if client data was part of your training set?',
+      'What are your options against the forum listing and the potential competitor purchasing inquiry, and what does pursuing them expose you to legally and reputationally?',
+      'How does this incident change your approach to AI asset protection, model IP, and API usage terms in client contracts going forward?',
+    ],
+    nist: ['GV-6.1', 'MP-3.5', 'MS-2.6', 'MG-4.1', 'GV-1.5'],
+    iso: ['8.2.4', '8.4', '8.6', '9.1'],
+  },
 ];
 
 // ============================================================
@@ -358,7 +427,7 @@ function aittRenderSetup() {
   <div class="commentary-card">
     <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--cyan2);margin-bottom:6px">vCISO facilitator console</div>
     <div style="font-size:14px;color:#fff;font-weight:700;margin-bottom:0.4rem">AI Governance — Discussion Track</div>
-    <div style="font-size:12px;color:rgba(255,255,255,0.7);line-height:1.6">Ten AI-specific tabletop scenarios covering shadow AI, deepfakes, vendor AI risk, prompt injection, and regulatory response. US data privacy law focus (CCPA, FTC Act, state breach notification). Designed for cross-functional teams — no role assignment required. The facilitator guides the group through sequential information injects followed by structured discussion questions.</div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.7);line-height:1.6">Thirteen AI-specific tabletop scenarios across two tracks: <strong style="color:var(--cyan2)">Governance</strong> (ten scenarios covering shadow AI, deepfakes, vendor AI risk, hallucinations, and regulatory response) and <strong style="color:#f97316">Attack Simulation</strong> (three scenarios covering prompt injection, AI-generated phishing, and model extraction). US data privacy law focus. No role assignment required — the facilitator guides the group through sequential injects and structured discussion.</div>
   </div>
   <div class="card">
     <div class="card-title">New exercise</div>
@@ -373,22 +442,30 @@ function aittRenderSetup() {
       </div>
     </div>
     <div class="field-lbl" style="margin-bottom:6px">Select scenario</div>
-    ${AITT_SCENARIOS.map(s => `
-      <div class="mini-opt${aittState.scenarioId === s.id ? ' sel' : ''}" onclick="aittPickScenario('${s.id}')" style="align-items:flex-start;padding:10px 12px">
-        <div style="flex:1">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
-            <span style="font-size:10px;font-weight:700;color:var(--cyan);letter-spacing:0.05em">${s.id}</span>
-            <span style="font-size:13px;font-weight:700;color:var(--text)">${escH(s.name)}</span>
+    ${(() => {
+      const govScens    = AITT_SCENARIOS.filter(s => s.track !== 'attack');
+      const attackScens = AITT_SCENARIOS.filter(s => s.track === 'attack');
+      const renderCard  = s => `
+        <div class="mini-opt${aittState.scenarioId === s.id ? ' sel' : ''}" onclick="aittPickScenario('${s.id}')" style="align-items:flex-start;padding:10px 12px">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+              <span style="font-size:10px;font-weight:700;color:${s.track === 'attack' ? '#f97316' : 'var(--cyan)'};letter-spacing:0.05em">${s.id}</span>
+              <span style="font-size:13px;font-weight:700;color:var(--text)">${escH(s.name)}</span>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4">${escH(s.summary)}</div>
+            <div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap">
+              <span class="badge b-gray">${escH(s.tag)}</span>
+              <span class="badge b-cyan">${s.duration}</span>
+              <span class="badge ${s.difficulty === 'Hard' ? 'b-red' : 'b-amber'}">${s.difficulty}</span>
+              <span class="badge b-purple">${s.injectCount} injects</span>
+            </div>
           </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4">${escH(s.summary)}</div>
-          <div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap">
-            <span class="badge b-gray">${escH(s.tag)}</span>
-            <span class="badge b-cyan">${s.duration}</span>
-            <span class="badge ${s.difficulty === 'Hard' ? 'b-red' : 'b-amber'}">${s.difficulty}</span>
-            <span class="badge b-purple">${s.injectCount} injects</span>
-          </div>
-        </div>
-      </div>`).join('')}
+        </div>`;
+      return `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:5px;padding:4px 0;border-bottom:1px solid var(--border)">Governance Track</div>
+        ${govScens.map(renderCard).join('')}
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#f97316;margin:12px 0 5px;padding:4px 0;border-bottom:1px solid var(--border)">🎯 Attack Simulation Track</div>
+        ${attackScens.map(renderCard).join('')}`;
+    })()}
     <div style="margin-top:14px;display:flex;justify-content:flex-end">
       <button class="btn btn-primary" onclick="aittLaunch()">Begin exercise →</button>
     </div>
