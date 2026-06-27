@@ -57,7 +57,7 @@ let blmState = {
   loading:   false,
   seedMode:  false,
   notesOpen: {},
-  filter:    { phase: 'all', status: 'all', section: 'all', priority: 'all', q: '' },
+  filter:    { phase: 'all', status: 'add', section: 'all', priority: 'all', q: '' },
   collapsed: {},
 };
 
@@ -92,7 +92,7 @@ function renderBacklogManager() {
   }
 
   // Status counts across all items
-  const counts = { add: 0, edit: 0, completed: 0, cancelled: 0 };
+  const counts = { add: 0, completed: 0, cancelled: 0 };
   blmState.items.forEach(i => { const s = _blmStatus(i); if (counts[s] !== undefined) counts[s]++; });
   const total = blmState.items.length;
 
@@ -122,7 +122,6 @@ function renderBacklogManager() {
           <h2 style="margin:0;font-size:20px;font-weight:800;color:var(--navy)">📋 Feature Backlog</h2>
           <div style="font-size:12px;color:var(--muted);margin-top:2px">
             ${counts.add} to add &nbsp;·&nbsp;
-            ${counts.edit} in edit &nbsp;·&nbsp;
             ${counts.completed} completed &nbsp;·&nbsp;
             ${counts.cancelled} cancelled &nbsp;·&nbsp;
             ${total} total
@@ -141,7 +140,6 @@ function renderBacklogManager() {
       <div style="display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:.75rem">
         ${_blmTab('all', 'All', total, f.status)}
         ${_blmTab('add', 'Add', counts.add, f.status)}
-        ${_blmTab('edit', 'Edit', counts.edit, f.status)}
         ${_blmTab('completed', 'Completed', counts.completed, f.status)}
         ${_blmTab('cancelled', 'Cancelled', counts.cancelled, f.status)}
       </div>
@@ -157,17 +155,16 @@ function renderBacklogManager() {
           <option value="all">All sections</option>
           ${sections.map(s=>`<option value="${s.id}" ${f.section===s.id?'selected':''}>${s.title}</option>`).join('')}
         </select>
-        <select onchange="blmSetFilter('priority',this.value)" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:#fff;color:var(--text)">
-          <option value="all"      ${f.priority==='all'     ?'selected':''}>All priorities</option>
-          <option value="Critical" ${f.priority==='Critical'?'selected':''}>🔴 Critical</option>
-          <option value="High"     ${f.priority==='High'    ?'selected':''}>🟠 High</option>
-          <option value="Medium"   ${f.priority==='Medium'  ?'selected':''}>🔵 Medium</option>
-          <option value="Low"      ${f.priority==='Low'     ?'selected':''}>⚪ Low</option>
-          <option value="none"     ${f.priority==='none'    ?'selected':''}>— Not set</option>
-        </select>
+        <div style="display:flex;gap:.3rem;flex-wrap:wrap">
+          ${[['all','All','#5a6a8a','#f0f4fa','#dde3ef'],['Critical','🔴','#dc2626','#fef2f2','#fecaca'],['High','🟠','#ea580c','#fff7ed','#fed7aa'],['Medium','🔵','#2563eb','#eff6ff','#bfdbfe'],['Low','⚪','#6b7280','#f9fafb','#e5e7eb'],['none','—','#9ca3af','#f9fafb','#e5e7eb']].map(([val,lbl,col,bg,bdr])=>{
+            const on = f.priority === val;
+            return `<button onclick="blmSetFilter('priority','${val}')"
+              style="padding:4px 11px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:2px solid ${on?bdr:'var(--border)'};background:${on?bg:'#fff'};color:${on?col:'var(--muted)'};transition:all .1s">${lbl}</button>`;
+          }).join('')}
+        </div>
         <input type="text" placeholder="Search…" value="${f.q}" oninput="blmSetFilter('q',this.value)"
           style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;flex:1;min-width:120px;color:var(--text)"/>
-        ${(f.phase!=='all'||f.status!=='all'||f.section!=='all'||f.priority!=='all'||f.q)?`<button class="btn btn-outline btn-sm" onclick="blmResetFilters()">✕ Reset</button>`:''}
+        ${(f.phase!=='all'||f.status!=='add'||f.section!=='all'||f.priority!=='all'||f.q)?`<button class="btn btn-outline btn-sm" onclick="blmResetFilters()">✕ Reset</button>`:''}
       </div>
 
       <!-- LIST -->
@@ -350,7 +347,7 @@ function blmSetFilter(type, val) {
 }
 
 function blmResetFilters() {
-  blmState.filter = { phase: 'all', status: 'all', section: 'all', priority: 'all', q: '' };
+  blmState.filter = { phase: 'all', status: 'add', section: 'all', priority: 'all', q: '' };
   const mc = document.getElementById('mainContent');
   if (mc && activeNav === 'backlog') mc.innerHTML = renderBacklogManager();
 }
