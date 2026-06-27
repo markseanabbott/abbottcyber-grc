@@ -1839,6 +1839,65 @@
       ]
     },
     {
+      "id": "tt_autonomous",
+      "title": "Tabletop — Autonomous Mode (Jackbox-style, no facilitator)",
+      "phase": 3,
+      "priority": "critical",
+      "description": "A fully self-running tabletop exercise mode. No facilitator required. Participants join via session code, the system delivers injects automatically, collects responses, advances the game when all roles have submitted (or on timer), uses AI to generate facilitator commentary and scoring, and produces a full AAR at exercise end. Front to back autonomous — like Jackbox.",
+      "items": [
+        {
+          "id": "tt_auto_1",
+          "text": "Session creation: vCISO creates an autonomous session (mode = 'autonomous'), selects scenario and optional timer settings, shares the 6-character code — no facilitator role required",
+          "done": false
+        },
+        {
+          "id": "tt_auto_2",
+          "text": "Auto-lobby: waiting room shows connected participants and role fill status; game auto-launches after all critical roles filled OR a countdown timer expires (configurable: 5/10/15 min)",
+          "done": false
+        },
+        {
+          "id": "tt_auto_3",
+          "text": "Auto inject delivery: each inject is released immediately at game start (or on prior inject completion); the system waits for all active roles to submit, then auto-advances to the next inject",
+          "done": false
+        },
+        {
+          "id": "tt_auto_4",
+          "text": "Response timer per inject: optional per-inject countdown (e.g. 10 min); when timer expires the system advances regardless of pending responses — unanswered roles flagged in AAR",
+          "done": false
+        },
+        {
+          "id": "tt_auto_5",
+          "text": "AI facilitator commentary: after each inject closes, the system calls the AI API to generate role-specific feedback and the correct course of action — displayed to all participants before the next inject",
+          "done": false
+        },
+        {
+          "id": "tt_auto_6",
+          "text": "Autonomous breach gate: system evaluates TL responses against the scenario breach trigger criteria and auto-presents the breach declaration vote to IC and ES when threshold is met",
+          "done": false
+        },
+        {
+          "id": "tt_auto_7",
+          "text": "AI rubric scoring: at exercise end, AI evaluates all submitted responses across the 5 rubric dimensions and generates scores + written justification — no facilitator scoring needed",
+          "done": false
+        },
+        {
+          "id": "tt_auto_8",
+          "text": "Auto-generated AAR: full After Action Report built automatically from responses, breach record, notification checklist, AI scores, and AI narrative — available immediately at exercise end",
+          "done": false
+        },
+        {
+          "id": "tt_auto_9",
+          "text": "Shareable AAR link: read-only AAR URL sent to all participants at exercise end; accessible without login for 30 days",
+          "done": false
+        },
+        {
+          "id": "tt_auto_10",
+          "text": "Participant progress display: during the exercise each participant sees a live inject counter, role status indicators (who has responded), and a running exercise clock",
+          "done": false
+        }
+      ]
+    },
+    {
       "id": "ai_tools",
       "title": "AI Tools",
       "phase": null,
