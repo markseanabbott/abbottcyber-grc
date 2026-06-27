@@ -441,6 +441,111 @@ const TS_CATS = [
       },
     ]
   },
+  // ── OPTIONAL CATEGORIES ── shown only when the matching scope toggle is active ──
+  {
+    id: 'cloud_security', icon: '☁️', title: 'Cloud Security Posture',
+    desc: 'CSPM, cloud IAM, storage controls, logging, and benchmark hygiene.',
+    optional: true, scope: 'cloud',
+    questions: [
+      { id: 'cspm', tool_category: 'CSPM', question_type: 'presence', derive_strategy: 'standard',
+        text: 'Is a Cloud Security Posture Management (CSPM) tool continuously monitoring cloud environments for misconfigurations?',
+        suggestion: 'Wiz, Prisma Cloud (Palo Alto), Microsoft Defender for Cloud, Lacework, Orca Security, Tenable Cloud Security. Native cloud console alerts alone are not sufficient.',
+        mappings: {
+          cis: [{ id: '4.1', title: 'Establish and maintain a secure configuration process', ig: '1' }, { id: '12.2', title: 'Establish and maintain a secure network architecture', ig: '2' }],
+          nist: [{ id: 'PR.PS-01', title: 'Configuration management practices are established and applied' }, { id: 'DE.CM-09', title: 'Computing hardware and software, runtime environments, and their data are monitored' }],
+          insurance: { impact: 'high', note: 'Cloud misconfiguration is a leading cause of cloud data breaches. CSPM presence signals mature cloud governance and is increasingly asked on renewals.' },
+        }
+      },
+      { id: 'cloud_iam', tool_category: 'Cloud_IAM', question_type: 'feature', derive_strategy: 'standard',
+        text: 'Is cloud IAM enforcing least-privilege, with just-in-time (JIT) or PIM for privileged cloud access?',
+        suggestion: 'AWS IAM Access Analyzer + Permission Boundaries, Azure Entra PIM for Azure roles, GCP IAM Recommender. No standing admin access to production cloud accounts.',
+        mappings: {
+          cis: [{ id: '5.4', title: 'Restrict administrator privileges to dedicated administrator accounts', ig: '1' }, { id: '6.8', title: 'Define and maintain role-based access control', ig: '3' }],
+          nist: [{ id: 'PR.AA-05', title: 'Access permissions, entitlements, and authorisations are defined and managed' }, { id: 'PR.AA-03', title: 'Users, services, and hardware are authenticated' }],
+          insurance: { impact: 'high', note: 'Overprivileged cloud roles are a near-universal finding in cloud breach investigations. Carriers increasingly ask about cloud-specific IAM controls.' },
+        }
+      },
+      { id: 'storage_public', tool_category: 'Cloud_Storage_Controls', question_type: 'feature', derive_strategy: 'standard',
+        text: 'Is public access to cloud storage (S3, Blob, GCS) blocked by policy at the account/org level?',
+        suggestion: 'AWS S3 Block Public Access enabled at org level, Azure Storage account public blob access disabled by policy, GCP uniform bucket-level access. Policy must be enforced — per-bucket settings alone are insufficient.',
+        mappings: {
+          cis: [{ id: '3.3', title: 'Configure data access control lists', ig: '1' }, { id: '3.11', title: 'Encrypt sensitive data at rest', ig: '2' }],
+          nist: [{ id: 'PR.DS-01', title: 'The confidentiality, integrity, and availability of data-at-rest are protected' }],
+          insurance: { impact: 'high', note: 'Publicly exposed S3 buckets and storage blobs have caused numerous headline breaches. A single misconfigured bucket can expose millions of records.' },
+        }
+      },
+      { id: 'cloud_logging', tool_category: 'Cloud_Logging', question_type: 'feature', derive_strategy: 'standard',
+        text: 'Is cloud control-plane logging (CloudTrail, Azure Activity Log, GCP Audit Log) enabled and ingested into your SIEM?',
+        suggestion: 'AWS CloudTrail to S3 + SIEM ingest, Azure Diagnostic Settings to Log Analytics, GCP Cloud Audit Logs. Logging without alerting on suspicious API calls is half a solution.',
+        mappings: {
+          cis: [{ id: '8.2', title: 'Collect audit logs', ig: '1' }, { id: '8.9', title: 'Centralise audit logs', ig: '2' }],
+          nist: [{ id: 'DE.AE-03', title: 'Information is correlated from multiple sources' }, { id: 'DE.CM-09', title: 'Computing hardware and software, runtime environments, and their data are monitored' }],
+          insurance: { impact: 'mid', note: 'Cloud API logs are the primary forensic source in cloud incidents. Absence of CloudTrail/Activity Log is a consistent finding in cloud breach investigations.' },
+        }
+      },
+      { id: 'cloud_benchmarks', tool_category: 'Cloud_Benchmarks', question_type: 'process', derive_strategy: 'standard',
+        text: 'Is the cloud environment assessed against a recognised benchmark (CIS AWS/Azure/GCP Foundations), with findings tracked?',
+        suggestion: 'CIS Benchmark assessments via AWS Security Hub, Microsoft Defender for Cloud regulatory compliance, GCP Security Command Center. Annual assessment minimum; continuous via CSPM preferred.',
+        mappings: {
+          cis: [{ id: '4.1', title: 'Establish and maintain a secure configuration process', ig: '1' }],
+          nist: [{ id: 'ID.RA-01', title: 'Vulnerabilities in assets are identified, validated, and recorded' }, { id: 'PR.PS-01', title: 'Configuration management practices are established and applied' }],
+          insurance: { impact: 'mid', note: 'Benchmark compliance demonstrates due diligence in cloud governance. Carriers with cloud-specific underwriting increasingly request evidence.' },
+        }
+      },
+    ]
+  },
+  {
+    id: 'app_security', icon: '🔧', title: 'Application Security',
+    desc: 'Secure SDLC, static/dynamic analysis, dependency scanning, WAF.',
+    optional: true, scope: 'appsec',
+    questions: [
+      { id: 'sast', tool_category: 'SAST', question_type: 'presence', derive_strategy: 'standard',
+        text: 'Is SAST (Static Application Security Testing) integrated into the CI/CD pipeline, blocking builds on critical findings?',
+        suggestion: 'Checkmarx, Semgrep, Veracode, SonarQube with security rules, GitHub Advanced Security, Snyk Code. Must be gated — scanning without blocking high/critical findings is not sufficient.',
+        mappings: {
+          cis: [{ id: '16.1', title: 'Establish and maintain a secure application development process', ig: '2' }, { id: '16.12', title: 'Implement code-level security checks', ig: '3' }],
+          nist: [{ id: 'PR.PS-02', title: 'Software is maintained, replaced, and removed commensurate with risk' }, { id: 'ID.RA-01', title: 'Vulnerabilities in assets are identified, validated, and recorded' }],
+          insurance: { impact: 'mid', note: 'Application-layer attacks are a growing share of claims. Carriers covering SaaS or digital-product companies increasingly ask about secure SDLC practices.' },
+        }
+      },
+      { id: 'sca', tool_category: 'SCA', question_type: 'presence', derive_strategy: 'standard',
+        text: 'Is SCA (Software Composition Analysis) scanning open-source and third-party dependencies for known CVEs?',
+        suggestion: 'Snyk Open Source, OWASP Dependency-Check, GitHub Dependabot, Mend (WhiteSource), FOSSA. Must cover all dependency manifests (npm, pip, Maven, NuGet, etc.).',
+        mappings: {
+          cis: [{ id: '2.1', title: 'Establish and maintain a software inventory', ig: '1' }, { id: '16.3', title: 'Perform root cause analysis on security vulnerabilities', ig: '2' }],
+          nist: [{ id: 'ID.RA-01', title: 'Vulnerabilities in assets are identified, validated, and recorded' }, { id: 'PR.PS-02', title: 'Software is maintained, replaced, and removed commensurate with risk' }],
+          insurance: { impact: 'mid', note: 'Log4Shell and similar supply-chain CVEs have made dependency scanning an underwriting topic. SCA coverage is expected for software vendors.' },
+        }
+      },
+      { id: 'dast', tool_category: 'DAST', question_type: 'process', derive_strategy: 'standard',
+        text: 'Is DAST (Dynamic Application Security Testing) or web app scanning performed against all externally-facing applications at least annually?',
+        suggestion: 'Invicti (Netsparker), Burp Suite Enterprise, OWASP ZAP, Rapid7 AppSpider, HCL AppScan. Automated baseline monthly, professional DAST or pen test annually.',
+        mappings: {
+          cis: [{ id: '18.2', title: 'Perform periodic external penetration tests', ig: '2' }, { id: '16.7', title: 'Use standard hardening configuration templates for application infrastructure', ig: '2' }],
+          nist: [{ id: 'ID.RA-01', title: 'Vulnerabilities in assets are identified, validated, and recorded' }, { id: 'ID.IM-02', title: 'Improvements are identified from security tests and exercises' }],
+          insurance: { impact: 'mid', note: 'Web app pen test / DAST cadence is a standard question for organisations with externally-facing applications. Last test date and remediation status often requested.' },
+        }
+      },
+      { id: 'waf', tool_category: 'WAF', question_type: 'presence', derive_strategy: 'standard',
+        text: 'Is a WAF (Web Application Firewall) in front of all externally-accessible web applications?',
+        suggestion: 'Cloudflare WAF, AWS WAF, Azure Front Door WAF, F5 Advanced WAF, Imperva. Must be in blocking mode — detection-only mode is not a mitigating control.',
+        mappings: {
+          cis: [{ id: '13.10', title: 'Perform application layer filtering', ig: '3' }, { id: '16.7', title: 'Use standard hardening configuration templates for application infrastructure', ig: '2' }],
+          nist: [{ id: 'PR.IR-01', title: 'Networks and environments are protected from unauthorised logical access' }, { id: 'DE.CM-01', title: 'Networks and network services are monitored' }],
+          insurance: { impact: 'high', note: 'WAF presence is near-universal for eCommerce and SaaS. Many policies require it for PCI DSS compliance and it significantly reduces web-layer breach risk.' },
+        }
+      },
+      { id: 'secrets_scan', tool_category: 'Secrets_Scanning', question_type: 'feature', derive_strategy: 'standard',
+        text: 'Is secrets scanning preventing credentials, API keys and tokens from being committed to source control?',
+        suggestion: 'GitHub Advanced Security Secret Scanning, GitGuardian, Semgrep secrets rules, gitleaks as a pre-commit hook. Must be enforced — advisory-only warnings without blocking are insufficient.',
+        mappings: {
+          cis: [{ id: '3.11', title: 'Encrypt sensitive data at rest', ig: '2' }, { id: '16.1', title: 'Establish and maintain a secure application development process', ig: '2' }],
+          nist: [{ id: 'PR.DS-01', title: 'The confidentiality, integrity, and availability of data-at-rest are protected' }, { id: 'PR.PS-02', title: 'Software is maintained, replaced, and removed commensurate with risk' }],
+          insurance: { impact: 'mid', note: 'Hardcoded credentials in public or semi-public repos are a consistent breach root cause. Secrets scanning is a low-cost, high-value control.' },
+        }
+      },
+    ]
+  },
 ];
 
 // ---- TECH STACK — state, render, handlers ----
@@ -457,6 +562,8 @@ function tsInit() {
     conductedBy: '',
     date: new Date().toISOString().slice(0, 10),
     editId: null,       // assessment id being edited, null = new snapshot
+    scopeCloud: false,  // show Cloud Security Posture category
+    scopeAppSec: false, // show Application Security category
   };
 }
 
@@ -468,6 +575,11 @@ async function tsLoadResponses() {
     (rows || []).forEach(r => {
       tsState.answers[r.question_id] = { ans: r.answer, detail: r.partial_detail || '' };
     });
+    // Auto-enable optional scope toggles if the org already has answers for those questions
+    const _cloudIds  = TS_CATS.find(c => c.scope === 'cloud' )?.questions.map(q => q.id) || [];
+    const _appsecIds = TS_CATS.find(c => c.scope === 'appsec')?.questions.map(q => q.id) || [];
+    if (_cloudIds.some(id => tsState.answers[id]?.ans))  tsState.scopeCloud  = true;
+    if (_appsecIds.some(id => tsState.answers[id]?.ans)) tsState.scopeAppSec = true;
     tsState.loading = false;
     tsState.dirty = false;
   } catch (e) {
@@ -496,6 +608,15 @@ function tsCalcScore(questions) {
   });
   if (scored === 0) return null;
   return Math.round((total / scored) * 100);
+}
+
+function tsVisibleCats() {
+  return TS_CATS.filter(c => {
+    if (!c.optional) return true;
+    if (c.scope === 'cloud'  && tsState?.scopeCloud)  return true;
+    if (c.scope === 'appsec' && tsState?.scopeAppSec) return true;
+    return false;
+  });
 }
 
 function tsRender() {
@@ -553,10 +674,11 @@ function renderTechStack() {
 function renderTechStackDashboard() {
   const runs = ((orgAssessments[currentOrg?.id] || {})['techstack'] || [])
     .slice().sort((a, b) => new Date(b.date) - new Date(a.date));
-  const allQs = TS_CATS.flatMap(c => c.questions);
+  const visCats = tsVisibleCats();
+  const allQs = visCats.flatMap(c => c.questions);
   const liveScore = tsCalcScore(allQs);
   const latest = runs[0] || null;
-  const catScores = TS_CATS.map(cat => ({
+  const catScores = visCats.map(cat => ({
     id: cat.id, title: cat.title, icon: cat.icon,
     score: tsCalcScore(cat.questions),
   }));
@@ -584,7 +706,7 @@ function renderTechStackDashboard() {
       ${runs.length >= 2 ? `<canvas id="tsTrendChart" height="56" style="margin-top:12px;width:100%;max-width:300px;display:block"></canvas>` : ''}
     </div>
     <div style="flex-shrink:0;display:grid;grid-template-columns:1fr 1fr;gap:5px;max-width:270px">
-      ${catScores.slice(0, 8).map(cs => `
+      ${catScores.map(cs => `
         <div style="background:rgba(255,255,255,.08);border-radius:7px;padding:6px 9px">
           <div style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cs.icon} ${cs.title}</div>
           <div style="font-size:14px;font-weight:700;color:#fff">${cs.score !== null ? cs.score + '%' : '—'}</div>
@@ -651,16 +773,30 @@ function renderTechStackDashboard() {
 }
 
 function renderTechStackForm() {
-  const allQs = TS_CATS.flatMap(c => c.questions);
+  const visCats = tsVisibleCats();
+  const allQs = visCats.flatMap(c => c.questions);
   const answered = allQs.filter(q => tsState.answers[q.id]?.ans).length;
   const overall = tsCalcScore(allQs);
   const pct = allQs.length > 0 ? Math.round(answered / allQs.length * 100) : 0;
+  const catCount = visCats.length;
+
+  const _scopeBtn = (flag, label, icon) => {
+    const on = !!tsState[flag];
+    return `<button onclick="tsToggleScope('${flag}')"
+      style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;transition:all .12s;
+        border:2px solid ${on ? 'var(--cyan)' : 'var(--border)'};
+        background:${on ? 'var(--cyan)' : '#fff'};
+        color:${on ? '#fff' : 'var(--muted)'}">
+      <span>${icon}</span>${label}
+      <span style="font-size:10px;opacity:.7">${on ? 'ON' : 'OFF'}</span>
+    </button>`;
+  };
 
   return `${renderTierBanner()}
   <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.85rem;flex-wrap:wrap;gap:8px">
     <div>
       <div style="font-size:17px;font-weight:700;margin-bottom:4px">🖥️ Technology Stack Survey</div>
-      <div style="font-size:12px;color:var(--muted)">${tsState.editId ? 'Editing snapshot — update responses, date, or conducted by, then save' : 'Answer questions across all 10 categories, then save to record your maturity snapshot'}</div>
+      <div style="font-size:12px;color:var(--muted)">${tsState.editId ? 'Editing snapshot — update responses, date, or conducted by, then save' : `Answer questions across ${catCount} categories, then save to record your maturity snapshot`}</div>
     </div>
     <div style="display:flex;gap:6px">
       <button class="btn btn-outline btn-sm" onclick="tsNavToDashboard()">← Back to Dashboard</button>
@@ -695,7 +831,14 @@ function renderTechStackForm() {
     </div>
   </div>
 
-  ${TS_CATS.map(cat => {
+  <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:.75rem;padding:.6rem 1rem;background:var(--card);border:1px solid var(--border);border-radius:10px">
+    <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">📌 Scope</span>
+    ${_scopeBtn('scopeCloud',  'Cloud / SaaS', '☁️')}
+    ${_scopeBtn('scopeAppSec', 'Custom App / Dev', '🔧')}
+    <span style="font-size:11px;color:var(--muted);margin-left:auto">Enable optional categories that apply to this organisation</span>
+  </div>
+
+  ${visCats.map(cat => {
     const isOpen = !!(tsState.openCats && tsState.openCats[cat.id]);
     const catScore = tsCalcScore(cat.questions);
     const answeredHere = cat.questions.filter(q => tsState.answers[q.id]?.ans).length;
@@ -793,6 +936,12 @@ function tsToggleCat(catId) {
   if (!tsState) return;
   tsState.openCats = tsState.openCats || {};
   tsState.openCats[catId] = !tsState.openCats[catId];
+  tsRender();
+}
+
+function tsToggleScope(flag) {
+  if (!tsState) return;
+  tsState[flag] = !tsState[flag];
   tsRender();
 }
 

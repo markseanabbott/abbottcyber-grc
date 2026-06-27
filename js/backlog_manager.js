@@ -57,7 +57,7 @@ let blmState = {
   loading:   false,
   seedMode:  false,
   notesOpen: {},
-  filter:    { phase: 'all', status: 'all', section: 'all', q: '' },
+  filter:    { phase: 'all', status: 'all', section: 'all', priority: 'all', q: '' },
   collapsed: {},
 };
 
@@ -157,9 +157,17 @@ function renderBacklogManager() {
           <option value="all">All sections</option>
           ${sections.map(s=>`<option value="${s.id}" ${f.section===s.id?'selected':''}>${s.title}</option>`).join('')}
         </select>
+        <select onchange="blmSetFilter('priority',this.value)" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:#fff;color:var(--text)">
+          <option value="all"      ${f.priority==='all'     ?'selected':''}>All priorities</option>
+          <option value="Critical" ${f.priority==='Critical'?'selected':''}>🔴 Critical</option>
+          <option value="High"     ${f.priority==='High'    ?'selected':''}>🟠 High</option>
+          <option value="Medium"   ${f.priority==='Medium'  ?'selected':''}>🔵 Medium</option>
+          <option value="Low"      ${f.priority==='Low'     ?'selected':''}>⚪ Low</option>
+          <option value="none"     ${f.priority==='none'    ?'selected':''}>— Not set</option>
+        </select>
         <input type="text" placeholder="Search…" value="${f.q}" oninput="blmSetFilter('q',this.value)"
           style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;flex:1;min-width:120px;color:var(--text)"/>
-        ${(f.phase!=='all'||f.status!=='all'||f.section!=='all'||f.q)?`<button class="btn btn-outline btn-sm" onclick="blmResetFilters()">✕ Reset</button>`:''}
+        ${(f.phase!=='all'||f.status!=='all'||f.section!=='all'||f.priority!=='all'||f.q)?`<button class="btn btn-outline btn-sm" onclick="blmResetFilters()">✕ Reset</button>`:''}
       </div>
 
       <!-- LIST -->
@@ -203,6 +211,8 @@ function blmRenderList() {
     if (f.phase === 'null' && item.section_phase != null) return false;
     if (f.phase !== 'all' && f.phase !== 'null' && item.section_phase != parseInt(f.phase)) return false;
     if (f.section !== 'all' && item.section_id !== f.section) return false;
+    if (f.priority === 'none' && item.priority) return false;
+    if (f.priority !== 'all' && f.priority !== 'none' && item.priority !== f.priority) return false;
     if (f.q && !item.text.toLowerCase().includes(f.q.toLowerCase()) &&
                !(item.notes||'').toLowerCase().includes(f.q.toLowerCase())) return false;
     return true;
@@ -225,9 +235,18 @@ function blmRenderList() {
   ).join('');
 }
 
+const _BLM_PRIORITY_ORDER = { Critical: 0, High: 1, Medium: 2, Low: 3 };
+
 function blmRenderSection(sectionId, title, phase, items) {
   const collapsed  = !!blmState.collapsed[sectionId];
   const phaseLabel = phase != null ? `<span style="font-size:10px;background:#e0e7ff;color:#4338ca;border-radius:4px;padding:2px 6px;font-weight:600">Ph ${phase}</span>` : '';
+
+  // Sort by priority: Critical → High → Medium → Low → unset at bottom
+  items = [...items].sort((a, b) => {
+    const pa = a.priority != null ? (_BLM_PRIORITY_ORDER[a.priority] ?? 4) : 4;
+    const pb = b.priority != null ? (_BLM_PRIORITY_ORDER[b.priority] ?? 4) : 4;
+    return pa - pb;
+  });
 
   // Status mini-counts for section header
   const sc = { add: 0, edit: 0, completed: 0, cancelled: 0 };
@@ -331,7 +350,7 @@ function blmSetFilter(type, val) {
 }
 
 function blmResetFilters() {
-  blmState.filter = { phase: 'all', status: 'all', section: 'all', q: '' };
+  blmState.filter = { phase: 'all', status: 'all', section: 'all', priority: 'all', q: '' };
   const mc = document.getElementById('mainContent');
   if (mc && activeNav === 'backlog') mc.innerHTML = renderBacklogManager();
 }

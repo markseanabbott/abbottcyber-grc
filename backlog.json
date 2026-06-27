@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.4.1",
   "created": "2026-05-14",
-  "updated": "2026-06-26 (session 77)",
+  "updated": "2026-06-26 (session 78)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -248,7 +248,8 @@
         {
           "id": "ts6",
           "text": "Optional category toggles (Cloud Security Posture, Application Security) — show only when client has cloud / SaaS scope",
-          "done": false
+          "done": true,
+          "notes": "Two new TS_CATS entries with optional:true + scope field: cloud_security (☁️, 5 questions: CSPM, Cloud IAM/JIT, storage public-access block, control-plane logging, CIS cloud benchmarks) and app_security (🔧, 5 questions: SAST in CI, SCA/dependency scanning, DAST, WAF, secrets scanning). tsState gains scopeCloud/scopeAppSec booleans. tsVisibleCats() filters TS_CATS by optional+scope flags — used in form render, dashboard, and score calc. Scope toggle bar renders in survey form between score hero and categories. tsLoadResponses() auto-enables toggles if org already has answers for those questions. tsToggleScope(flag) toggles and re-renders. No SQL needed."
         },
         {
           "id": "ts7",
