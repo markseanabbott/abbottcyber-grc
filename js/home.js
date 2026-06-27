@@ -371,6 +371,9 @@ function renderHome() {
   // Background-load AI widget data if those widgets are in the layout and data is stale
   _homeBackgroundLoadAI();
 
+  // Kick off exercise op session load for the tabletop widget
+  if (typeof exHubEnsureOp === 'function') exHubEnsureOp();
+
   // Kick off gap data load if stale — grLoad() will re-render home when done
   if (typeof grLoad === 'function' && (!grState.loaded || grState.orgId !== currentOrg.id)) {
     grLoad();
@@ -474,7 +477,7 @@ const WIDGET_CATALOG = [
   { id: 'ai_tool_catalog', label: 'AI Application Inventory', icon: '📦', nav: 'ai_tool_catalog', type: 'ai_tools', desc: 'Approved, conditional, and shadow IT AI tool counts for this organization.',  group: 'g_governance' },
   { id: 'gap_register',    label: 'Tool Gap Register',        icon: '🔧', nav: 'gap_register',    type: 'gap',      desc: '',        group: 'g_reporting'   },
   { id: 'tpra',            label: 'Vendor Risk (TPRA)',       icon: '🔍', nav: 'tpra',            type: 'link',     desc: 'Deep-dive vendor risk assessments. Tier vendors Critical to Low based on data sensitivity and security posture.', group: 'g_assessments' },
-  { id: 'tabletop',        label: 'Tabletop Exercises',       icon: '🎯', nav: 'tabletop',        type: 'link',     desc: 'Cybersecurity tabletop exercises. Operational, AI Governance, and more scenarios available.', group: 'g_exercises' },
+  { id: 'tabletop',        label: 'Tabletop Exercises',       icon: '🎯', nav: 'exercises',       type: 'tabletop', desc: 'Cybersecurity tabletop exercises. Operational, AI Governance, and more scenarios available.', group: 'g_exercises' },
 ];
 
 const DEFAULT_WIDGETS = [
@@ -552,6 +555,67 @@ function _widgetLink(def) {
   </div>`;
 }
 
+function _widgetTabletop(h) {
+  const aiRuns     = h['ai_tabletop'] || [];
+  const opSessions = exHubState?.opSessions ?? null;
+  const loading    = opSessions === null;
+
+  const rows = [];
+  aiRuns.forEach(r => {
+    const a = r.answers || {};
+    const row = { type: 'ai', date: r.date || r.assessed_at || '', injectCount: Object.keys(a.injectNotes || {}).length, discussionCount: Object.keys(a.discussionNotes || {}).length, notifCount: Object.values(a.notifChecks || {}).filter(Boolean).length, breach: null, severity: null };
+    rows.push({ ...row, score: exCalcScore(row) });
+  });
+  if (opSessions) {
+    opSessions.forEach(s => {
+      const log = Array.isArray(s.exercise_log) ? s.exercise_log : [];
+      const row = { type: 'op', date: s.created_at ? s.created_at.substring(0, 10) : '', injectCount: log.length, discussionCount: null, notifCount: null, breach: s.breach_declared, severity: s.tl_severity || '—' };
+      rows.push({ ...row, score: exCalcScore(row) });
+    });
+  }
+  rows.sort((a, b) => a.date.localeCompare(b.date)); // oldest→newest for sparkline
+
+  if (rows.length === 0) {
+    return `<div class="card" style="padding:0;overflow:hidden;cursor:pointer" onclick="setNav('exercises')" onmouseover="this.style.boxShadow='0 0 0 2px var(--cyan)'" onmouseout="this.style.boxShadow=''">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.65rem .9rem .45rem;border-bottom:1px solid var(--border)">
+        <div style="font-size:12px;font-weight:700">🎯 Tabletop Exercises</div>
+        <span style="font-size:11px;color:var(--cyan);font-weight:700">Open →</span>
+      </div>
+      <div style="padding:1.25rem .9rem;text-align:center;color:var(--muted);font-size:12px">
+        ${loading ? `<div class="spinner" style="border-color:rgba(21,33,104,.2);border-top-color:var(--navy);width:14px;height:14px;margin:0 auto .4rem"></div>Loading…` : '<div style="font-size:1.25rem;margin-bottom:.3rem">🎯</div>No exercises yet — click to start'}
+      </div>
+    </div>`;
+  }
+
+  const latestRow   = rows[rows.length - 1];
+  const latestGrade = exGrade(latestRow.score);
+  const avgScore    = Math.round(rows.reduce((s, r) => s + r.score, 0) / rows.length);
+  const chronoScores = rows.map(r => r.score);
+  const delta = rows.length >= 2
+    ? (() => { const d = rows[rows.length-1].score - rows[rows.length-2].score; return `<span style="font-size:10px;font-weight:700;color:${d >= 0 ? '#15803d' : '#dc2626'}">${d >= 0 ? '▲' : '▼'}${Math.abs(d)}</span>`; })()
+    : '';
+
+  return `<div class="card" style="padding:0;overflow:hidden;cursor:pointer" onclick="setNav('exercises')" onmouseover="this.style.boxShadow='0 0 0 2px var(--cyan)'" onmouseout="this.style.boxShadow=''">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.65rem .9rem .45rem;border-bottom:1px solid var(--border)">
+      <div style="font-size:12px;font-weight:700">🎯 Tabletop Exercises</div>
+      <span style="font-size:11px;color:var(--cyan);font-weight:700">Open →</span>
+    </div>
+    <div style="padding:.7rem .9rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem">
+        <div style="display:flex;align-items:baseline;gap:.35rem">
+          <span style="font-size:1.85rem;font-weight:800;color:${latestGrade.color};font-family:monospace;line-height:1">${latestGrade.letter}</span>
+          <span style="font-size:11px;font-weight:700;color:${latestGrade.color}">${latestRow.score}%</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:.35rem">
+          ${delta}
+          ${rows.length >= 2 ? `<canvas id="wd-trend-tabletop" width="60" height="24" data-scores='${JSON.stringify(chronoScores)}' style="flex-shrink:0"></canvas>` : ''}
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--muted)">${rows.length} exercise${rows.length !== 1 ? 's' : ''} · Avg: ${avgScore}%</div>
+    </div>
+  </div>`;
+}
+
 function renderDashWidget(wid, h, rrRows, rrLoaded) {
   const def = WIDGET_CATALOG.find(w => w.id === wid);
   if (!def) return '';
@@ -566,6 +630,7 @@ function renderDashWidget(wid, h, rrRows, rrLoaded) {
     case 'ai_risk':  return _homeAiRiskChicklet();
     case 'ai_tools': return _homeAiToolsChicklet();
     case 'gap':      return _homeTopToolsChicklet();
+    case 'tabletop': return _widgetTabletop(h);
     case 'link':     return _widgetLink(def);
     default:         return '';
   }
@@ -1208,6 +1273,42 @@ function drawHomeCharts() {
   _drawWidgetTrends();
   _drawHomeAiRadar();
   _drawHomeCisRadar();
+  drawExSparkline('wd-trend-tabletop');
+}
+
+function drawExPageCharts() {
+  drawExSparkline('ex-trend-chart');
+}
+
+function drawExSparkline(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const scores = JSON.parse(canvas.dataset.scores || '[]');
+  if (scores.length < 2) return;
+  const W = canvas.offsetWidth || parseInt(canvas.getAttribute('width')) || 200;
+  const H = canvas.offsetHeight || parseInt(canvas.getAttribute('height')) || 40;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+  const mn = Math.max(0, Math.min(...scores) - 10);
+  const mx = Math.min(100, Math.max(...scores) + 10);
+  const range = mx - mn || 1;
+  const px = i => Math.round(4 + i * (W - 8) / (scores.length - 1));
+  const py = v => Math.round(H - 3 - (v - mn) / range * (H - 6));
+  // Fill area
+  ctx.beginPath();
+  scores.forEach((s, i) => i === 0 ? ctx.moveTo(px(i), py(s)) : ctx.lineTo(px(i), py(s)));
+  ctx.lineTo(px(scores.length - 1), H); ctx.lineTo(px(0), H); ctx.closePath();
+  ctx.fillStyle = 'rgba(7,180,217,0.08)'; ctx.fill();
+  // Line
+  ctx.beginPath(); ctx.strokeStyle = '#07B4D9'; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+  scores.forEach((s, i) => i === 0 ? ctx.moveTo(px(i), py(s)) : ctx.lineTo(px(i), py(s)));
+  ctx.stroke();
+  // Grade-coloured dots
+  scores.forEach((s, i) => {
+    ctx.beginPath(); ctx.arc(px(i), py(s), 3, 0, Math.PI * 2);
+    ctx.fillStyle = exGrade(s).color; ctx.fill();
+  });
 }
 
 function _drawWidgetTrends() {
@@ -1403,6 +1504,32 @@ function renderAssessmentsHub() {
 // EXERCISES HUB
 // ============================================================
 
+// ── Exercise scoring ──────────────────────────────────────────────────────────
+// Operational: 34 pts severity declared + 33 pts breach decision + 33 pts log activity
+// AI tabletop: proportional inject engagement (40) + discussion (30) + notif protocol (30)
+function exCalcScore(row) {
+  if (row.type === 'op') {
+    let s = 0;
+    if (['P1','P2','P3','P4'].includes(row.severity))           s += 34;
+    if (row.breach !== null && row.breach !== undefined)        s += 33;
+    if ((row.injectCount || 0) >= 3)                           s += 33;
+    return s;
+  }
+  let s = 0;
+  s += Math.min(40, Math.round(Math.min((row.injectCount     || 0), 5) / 5 * 40));
+  s += Math.min(30, Math.round(Math.min((row.discussionCount || 0), 5) / 5 * 30));
+  s += Math.min(30, Math.round(Math.min((row.notifCount      || 0), 8) / 8 * 30));
+  return Math.round(Math.min(100, s));
+}
+
+function exGrade(score) {
+  if (score >= 90) return { letter: 'A', color: '#15803d', bg: '#dcfce7' };
+  if (score >= 75) return { letter: 'B', color: '#1d4ed8', bg: '#dbeafe' };
+  if (score >= 60) return { letter: 'C', color: '#d97706', bg: '#fef3c7' };
+  if (score >= 45) return { letter: 'D', color: '#ea580c', bg: '#ffedd5' };
+  return { letter: 'F', color: '#dc2626', bg: '#fee2e2' };
+}
+
 const EXERCISE_CATALOG = [
   { id: 'tabletop',  label: 'Tabletop — Operational',   icon: '🎯', description: 'Ransomware, BEC, and operational incident response scenarios for your whole team.', nav: 'tabletop' },
   { id: 'tt_ai',     label: 'Tabletop — AI Governance', icon: '🤖', description: 'AI risk and governance scenarios aligned to NIST AI RMF and ISO 42001.', nav: 'tt_ai' },
@@ -1418,7 +1545,7 @@ function renderExercisesHub() {
   if (typeof exHubEnsureOp === 'function') exHubEnsureOp();
 
   // ── Build exercise history rows ──
-  const aiRuns    = ((orgAssessments[currentOrg?.id] || {})['ai_tabletop'] || []);
+  const aiRuns     = ((orgAssessments[currentOrg?.id] || {})['ai_tabletop'] || []);
   const opSessions = exHubState?.opSessions ?? null;
   const rows = [];
 
@@ -1432,13 +1559,46 @@ function renderExercisesHub() {
       rows.push({ type: 'op', date: s.created_at ? s.created_at.substring(0, 10) : '', scenario: s.scenario_title || s.scenario_id || '—', facilitator: s.facilitator_name || '—', breach: s.breach_declared, severity: s.tl_severity || '—', injectCount: log.length, discussionCount: null, notifCount: null, id: s.id });
     });
   }
-  rows.sort((a, b) => b.date.localeCompare(a.date));
+  rows.sort((a, b) => b.date.localeCompare(a.date)); // newest first for display
 
-  const total       = rows.length;
-  const breachCount = rows.filter(r => r.breach === true).length;
-  const aiCount     = rows.filter(r => r.type === 'ai').length;
-  const opCount     = rows.filter(r => r.type === 'op').length;
-  const loading     = opSessions === null;
+  // ── Scoring ──
+  const scoredRows    = rows.map(r => ({ ...r, score: exCalcScore(r) }));
+  const total         = scoredRows.length;
+  const breachCount   = scoredRows.filter(r => r.breach === true).length;
+  const aiCount       = scoredRows.filter(r => r.type === 'ai').length;
+  const opCount       = scoredRows.filter(r => r.type === 'op').length;
+  const loading       = opSessions === null;
+  const avgScore      = total > 0 ? Math.round(scoredRows.reduce((s, r) => s + r.score, 0) / total) : 0;
+  const latestScore   = total > 0 ? scoredRows[0].score : 0;
+  const latestGrade   = exGrade(latestScore);
+  const chronoScores  = [...scoredRows].reverse().map(r => r.score); // oldest→newest for sparkline
+
+  // ── Performance trend card ──
+  const trendCard = total > 0 ? `
+  <div style="background:#fff;border:1px solid var(--border);border-radius:13px;box-shadow:0 2px 16px rgba(21,33,104,0.07);padding:.9rem 1.25rem;margin-bottom:1.25rem;display:flex;gap:1.5rem;align-items:center">
+    <div style="text-align:center;min-width:56px">
+      <div style="font-size:2.5rem;font-weight:800;color:${latestGrade.color};line-height:1">${latestGrade.letter}</div>
+      <div style="font-size:10px;font-weight:700;color:${latestGrade.color};margin-top:2px">${latestScore}%</div>
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
+        <div style="font-size:12px;font-weight:700;color:var(--text)">Exercise Performance</div>
+        <div style="font-size:11px;color:var(--muted)">${total} run${total !== 1 ? 's' : ''} · ${avgScore}% avg</div>
+      </div>
+      <canvas id="ex-trend-chart" height="40" data-scores='${JSON.stringify(chronoScores)}' style="width:100%;display:block"></canvas>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px">
+        <span>${scoredRows[scoredRows.length - 1]?.date || ''}</span>
+        <span>${scoredRows[0]?.date || ''}</span>
+      </div>
+    </div>
+    <div style="font-size:10px;line-height:2.1;color:var(--muted);text-align:right;flex-shrink:0">
+      <div><strong style="color:#15803d">A</strong> ≥90%</div>
+      <div><strong style="color:#1d4ed8">B</strong> ≥75%</div>
+      <div><strong style="color:#d97706">C</strong> ≥60%</div>
+      <div><strong style="color:#ea580c">D</strong> ≥45%</div>
+      <div><strong style="color:#dc2626">F</strong> &lt;45%</div>
+    </div>
+  </div>` : '';
 
   // ── Section buckets ──
   const EX_GROUPS = [
@@ -1466,7 +1626,7 @@ function renderExercisesHub() {
         <div class="spinner" style="border-color:rgba(21,33,104,.2);border-top-color:var(--navy);width:16px;height:16px;margin:0 auto .5rem"></div>
         <div style="font-size:12px">Loading sessions…</div>
       </div>`
-    : rows.length === 0 ? ''
+    : scoredRows.length === 0 ? ''
     : `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:.5rem">Exercise History</div>
       <div class="card" style="padding:0">
         <table style="width:100%;border-collapse:collapse">
@@ -1476,10 +1636,12 @@ function renderExercisesHub() {
             <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Scenario</th>
             <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Facilitator</th>
             <th style="text-align:center;padding:10px 14px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Outcome</th>
+            <th style="text-align:center;padding:10px 14px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Grade</th>
             <th style="padding:10px 14px"></th>
           </tr></thead>
-          <tbody>${rows.map((r, i) => {
+          <tbody>${scoredRows.map((r, i) => {
             const isAi = r.type === 'ai';
+            const g = exGrade(r.score);
             const trackBadge = isAi
               ? `<span class="badge" style="background:#ede9fe;color:#6d28d9">AI Governance</span>`
               : `<span class="badge" style="background:#dbeafe;color:#1d4ed8">Cybersecurity</span>`;
@@ -1503,9 +1665,13 @@ function renderExercisesHub() {
             return `<tr style="border-bottom:1px solid var(--border);${i % 2 === 1 ? 'background:#fafbff' : ''}">
               <td style="padding:10px 14px;font-size:13px;font-weight:600;white-space:nowrap">${r.date}</td>
               <td style="padding:10px 14px">${trackBadge}</td>
-              <td style="padding:10px 14px;font-size:13px;max-width:220px">${r.scenario}</td>
+              <td style="padding:10px 14px;font-size:13px;max-width:200px">${r.scenario}</td>
               <td style="padding:10px 14px;font-size:12px;color:var(--muted)">${r.facilitator}</td>
               <td style="padding:10px 14px;text-align:center">${outcome}</td>
+              <td style="padding:10px 14px;text-align:center">
+                <span style="font-size:1.1rem;font-weight:800;color:${g.color}">${g.letter}</span>
+                <div style="font-size:10px;color:var(--muted)">${r.score}%</div>
+              </td>
               <td style="padding:10px 14px;text-align:right">${aarBtn}</td>
             </tr>`;
           }).join('')}</tbody>
@@ -1520,6 +1686,8 @@ function renderExercisesHub() {
       <div style="font-size:12px;color:var(--muted)">Tabletop exercises and scenario simulations for ${escH(currentOrg.name)}</div>
     </div>
   </div>
+
+  ${trendCard}
 
   <div class="summary-metrics" style="margin-bottom:1.25rem">
     <div class="sm-card"><div class="sm-val">${total}</div><div class="sm-lbl">Total exercises</div></div>
@@ -1696,6 +1864,7 @@ function duplicateAssessment(moduleId) {
 window.renderHome          = renderHome;
 window.renderAssessmentsHub = renderAssessmentsHub;
 window.drawHomeCharts      = drawHomeCharts;
+window.drawExPageCharts    = drawExPageCharts;
 window.drawAllHubTrends    = drawAllHubTrends;
 window.duplicateAssessment = duplicateAssessment;
 window.homeToggleBreakdown = homeToggleBreakdown;

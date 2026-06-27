@@ -515,7 +515,7 @@ function renderMain() {
   }
   if (activeNav === 'assessments')  { el.innerHTML = voB + renderAssessmentsHub(); setTimeout(drawAllHubTrends, 80); return; }
   if (activeNav === 'governance')   { el.innerHTML = voB + renderGovernanceHub(); return; }
-  if (activeNav === 'exercises')    { el.innerHTML = voB + renderExercisesHub(); return; }
+  if (activeNav === 'exercises')    { el.innerHTML = voB + renderExercisesHub(); setTimeout(drawExPageCharts, 80); return; }
   if (activeNav === 'insurance') { el.innerHTML = voB + renderInsurance(); drawTrend(); return; }
   if (activeNav === 'cis') { el.innerHTML = voB + renderCIS(); setTimeout(() => { const c = document.getElementById('cisTrendChart'); if (c) cisTrendDraw(); if (cisState.view === 'report') drawReportCharts(); }, 80); return; }  // trend draw covers both dashboard + form views
   if (activeNav === 'orgs') { el.innerHTML = renderOrgManager(); setTimeout(updateParentOptions, 100); return; }
