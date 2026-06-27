@@ -1282,10 +1282,14 @@ async function ttSaveRubric() {
     }
   });
   if (!tteRubricComplete()) { toast('Score all 5 dimensions first', '#dc2626'); return; }
-  const rubric = tteGetRubric();
-  const grade  = tteRubricGrade();
+  const rubric    = tteGetRubric();
+  const grade     = tteRubricGrade();
+  const sessionId = ttState.sessionId || (ttState.historicalSession && ttState.historicalSession.id);
+  if (!sessionId) { toast('No session to save to', '#dc2626'); return; }
   try {
-    await sb.tt.updateSession(ttState.sessionId, { rubric_scores: rubric, updated_at: new Date().toISOString() });
+    await sb.tt.updateSession(sessionId, { rubric_scores: rubric, updated_at: new Date().toISOString() });
+    // Keep historical session object in sync so re-render shows the saved scores
+    if (ttState.historicalSession) ttState.historicalSession.rubric_scores = rubric;
     await ttLog('rubric_scored', { grade: grade.letter, pct: grade.pct });
     toast('Rubric saved — Grade: ' + grade.letter, '#15803d');
     ttState._rubricEditing = false;
@@ -1491,6 +1495,14 @@ function ttViewHistoricalAAR(sessionId) {
   if (!session) return;
   ttState.historicalSession = session;
   ttState.view = 'history_aar';
+  ttState._rubricEditing = false;
+  // Preload any saved rubric scores into engine state so the card renders correctly
+  tteClearRubric();
+  if (session.rubric_scores && typeof session.rubric_scores === 'object') {
+    Object.entries(session.rubric_scores).forEach(([dimId, data]) => {
+      if (data && data.score) tteSetRubricScore(dimId, data.score, data.notes || '');
+    });
+  }
   ttRender();
 }
 
@@ -1574,34 +1586,7 @@ function ttRenderHistoryAAR() {
       </div>`).join('')}
   </div>` : ''}
 
-  ${(() => {
-    const rs = s.rubric_scores;
-    if (!rs || !Object.keys(rs).length) return '';
-    const dims = TTE_DEFAULT_RUBRIC;
-    const scores = Object.values(rs).map(r => r.score || 0).filter(Boolean);
-    if (!scores.length) return '';
-    const avg = scores.reduce((a,b) => a+b,0) / scores.length;
-    const pct = Math.round((avg/5)*100);
-    const g = pct>=90?{l:'A',c:'#15803d',bg:'#dcfce7'}:pct>=75?{l:'B',c:'#1d4ed8',bg:'#dbeafe'}:pct>=60?{l:'C',c:'#d97706',bg:'#fef3c7'}:pct>=45?{l:'D',c:'#ea580c',bg:'#ffedd5'}:{l:'F',c:'#dc2626',bg:'#fee2e2'};
-    return `<div class="card" style="margin-bottom:0.75rem">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div class="card-title" style="margin-bottom:0">&#x1F3AF; Performance Rubric</div>
-        <div style="display:flex;align-items:center;gap:10px">
-          <div style="width:40px;height:40px;border-radius:50%;background:${g.bg};display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:${g.c}">${g.l}</div>
-          <div style="font-size:14px;font-weight:700;color:${g.c}">Grade ${g.l} &mdash; ${pct}%</div>
-        </div>
-      </div>
-      <div style="display:grid;gap:4px">
-        ${dims.map(d => { const r = rs[d.id]||{}; return r.score ? `<div style="display:flex;align-items:center;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border)">
-          <span style="color:var(--text);font-weight:600">${d.label}</span>
-          <div style="display:flex;align-items:center;gap:6px">
-            <div style="display:flex;gap:2px">${[1,2,3,4,5].map(n=>`<span style="width:14px;height:14px;border-radius:50%;background:${n<=(r.score||0)?g.c:'#e5e7eb'};display:inline-block"></span>`).join('')}</div>
-            <span style="font-weight:700;color:${g.c}">${r.score}/5</span>
-          </div>
-        </div>${r.notes?`<div style="font-size:11px;color:var(--muted);padding:2px 0 4px 0">${r.notes}</div>`:''}` : ''; }).join('')}
-      </div>
-    </div>`;
-  })()}
+  ${ttRenderRubricCard()}
 
   <div class="card">
     <div class="card-title">Exercise timeline</div>
