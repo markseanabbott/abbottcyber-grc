@@ -163,6 +163,8 @@ const PAGE_REGISTRY = [
   { group: 'Reports',       id: 'gap_register',    label: 'Tool Gap Register' },
   // M&A
   { group: 'M&A',           id: 'ma_cdd',          label: 'M&A Due Diligence' },
+  // Settings (pricing is tier-restricted, not platform-admin-only, so must be module-gatable)
+  { group: 'Settings',      id: 'pricing_schedule', label: 'Pricing Schedule' },
 ];
 
 function modGetPages() {

@@ -121,7 +121,7 @@ const NAV = [
     { id: 'orgs',              icon: '🏢', label: 'Organization Manager', live: true, phase: 1, adminOnly: true },
     { id: 'users',             icon: '👥', label: 'User Management',      live: true, phase: 1, adminOnly: true },
     { id: 'settings',          icon: '⚙️', label: 'Platform Settings',    live: true, phase: 1, adminOnly: true },
-    { id: 'pricing_schedule',  icon: '💲', label: 'Pricing Schedule',     live: true, phase: 1, tierOnly: ['grandfather','father'] },
+    { id: 'pricing_schedule',  icon: '💲', label: 'Pricing Schedule',     live: true, phase: 1, tierOnly: ['grandfather','father'], adminOnly: true },
   ]},
   { id: 'g_platform', group: 'Platform Admin', icon: '🔧', platformAdminOnly: true, items: [
     { id: 'modules',   icon: '📦', label: 'Module Management', live: true, phase: 1 },

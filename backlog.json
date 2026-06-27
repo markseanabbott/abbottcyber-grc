@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.4.1",
   "created": "2026-05-14",
-  "updated": "2026-06-26 (session 79)",
+  "updated": "2026-06-26 (session 80)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -665,6 +665,20 @@
           "text": "hasPageAccess() — use PAGE_REGISTRY as module gate boundary. Pages not in PAGE_REGISTRY (Settings, admin tools) bypass module gating entirely and are controlled by adminOnly/platformAdminOnly flags only. Removed org_admin role bypass — org admins at client orgs are now module-restricted like all other users. Only platform_admin is fully exempt.",
           "done": true,
           "notes": "modules.js: hasPageAccess() checks PAGE_REGISTRY.some(p => p.id === pageKey) before applying whitelist logic. Pages outside the registry (orgs, users, company_profile, settings, pricing_schedule) return true immediately. Fixes org admins at client orgs seeing all features regardless of purchased modules."
+        },
+        {
+          "id": "mod13",
+          "text": "ACL hardening — fix 'default on' ACL holes: (1) _GROUP_MODULE key mismatch where g_governance used key 'governance' but JSONB stores it as 'risk' (unchecking Risk & Vendors never blocked Governance nav group); (2) pricing_schedule had no adminOnly flag and was not in PAGE_REGISTRY or _GROUP_MODULE, so it showed to any grandfather/father tier user regardless of module access; (3) Added Pricing Schedule checkbox (unchecked by default) to Create User modal.",
+          "done": true,
+          "phase": 1,
+          "notes": "app.js: _GROUP_MODULE['g_governance'] fixed from 'governance' to 'risk'; added g_settings:'pricing_schedule'. config.js: adminOnly:true added to pricing_schedule nav item. modules.js: pricing_schedule added to PAGE_REGISTRY under Settings group. users.js: Pricing Schedule checkbox added to Create User modal (unchecked by default); pricing_schedule key added to moduleAccess JSONB in submitCreateUser()."
+        },
+        {
+          "id": "ux8",
+          "text": "Exercises hub section grid — add bordered bucket layout above the stats strip, matching Governance hub design. Two buckets side by side: Cybersecurity Exercises (→ Cybersecurity Tabletop) and AI Governance Exercises (→ AI Governance Tabletop). History table gains a section label header. Empty history no longer shows a redundant empty-state card (sections always visible).",
+          "done": true,
+          "phase": 1,
+          "notes": "js/ex_hub.js: _exCard() and _exBucket() inline helpers (mirror _govCard/_govBucket from home.js). sectionGrid injected above summary-metrics in exHubRender(). Track badge label updated: 'Operational' → 'Cybersecurity'. Summary metric label updated: 'Operational' → 'Cybersecurity'. Empty state removed when rows=0 (sections remain visible)."
         }
       ]
     },

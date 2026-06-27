@@ -247,9 +247,10 @@ function getModuleDot(id) {
 
 const _GROUP_MODULE = {
   g_assessments:  'assessments',
-  g_governance:   'governance',
+  g_governance:   'risk',          // JSONB key is 'risk' (matches "Risk & Vendors" checkbox)
   g_exercises:    'exercises',
   g_reporting:    'reports',
+  g_settings:     'pricing_schedule', // gates the Settings group (pricing_schedule is the only non-platform-admin item)
 };
 
 function _hasItemAccess(moduleKey) {

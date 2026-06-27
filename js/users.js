@@ -123,6 +123,113 @@ function renderUserMgmtInner() {
 }
 
 // ============================================================
+// ORG PICKER WIDGET — shared by Create + Edit modals
+// Mimics the topbar org dropdown: avatar, name, tier label, tree indentation
+// ============================================================
+const _U_TIER_LABEL = { platform: 'Platform', grandfather: 'Organization', father: 'Company', child: 'Entity' };
+
+function _uOrgDDWidget(inputId, toggleFn, pickFn, selectedId) {
+  const orgs = visibleOrgs();
+  const sel  = orgs.find(o => o.id === selectedId) || orgs[0];
+
+  // Build flattened tree in same order as topbar
+  const ids = new Set(orgs.map(o => o.id));
+  const roots = orgs.filter(o => !o.parent_id || !ids.has(o.parent_id))
+    .sort((a, b) => TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier) || a.name.localeCompare(b.name));
+  const flat = [];
+  function walk(o, depth) {
+    flat.push({ o, depth });
+    orgs.filter(c => c.parent_id === o.id).sort((a, b) => a.name.localeCompare(b.name)).forEach(c => walk(c, depth + 1));
+  }
+  roots.forEach(o => walk(o, 0));
+
+  const trigger = `<button type="button" onclick="${toggleFn}()" id="${inputId}Btn"
+    style="width:100%;text-align:left;display:flex;align-items:center;gap:8px;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;box-sizing:border-box;font-family:inherit;transition:border-color .15s"
+    onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='var(--border)'">
+    <div class="org-avatar ${sel ? tierAvClass(sel.tier) : ''}" style="width:22px;height:22px;font-size:9px;flex-shrink:0" id="${inputId}Av">${sel ? tierInitials(sel.name) : ''}</div>
+    <div style="flex:1;min-width:0;overflow:hidden">
+      <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;color:var(--text);font-weight:500" id="${inputId}Name">${sel ? escH(sel.name) : 'Select…'}</div>
+      <div style="font-size:10px;color:var(--muted)" id="${inputId}Sub">${sel ? (_U_TIER_LABEL[sel.tier] || '') : ''}</div>
+    </div>
+    <span style="font-size:10px;color:var(--muted)" id="${inputId}Chev">▾</span>
+  </button>`;
+
+  const items = flat.map(({ o, depth }) => {
+    const active = o.id === sel?.id;
+    return `<div data-org-id="${o.id}" onclick="${pickFn}('${o.id}')"
+      style="display:flex;align-items:center;gap:8px;padding:7px 10px 7px ${8 + depth * 18}px;cursor:pointer;border-left:3px solid ${active ? 'var(--cyan)' : 'transparent'};background:${active ? '#f0fbff' : 'transparent'}"
+      onmouseover="this.style.background='#f8fafc'"
+      onmouseout="this.style.background=document.getElementById('${inputId}')?.value==='${o.id}'?'#f0fbff':'transparent'">
+      <div class="org-avatar ${tierAvClass(o.tier)}" style="width:22px;height:22px;font-size:9px;flex-shrink:0">${tierInitials(o.name)}</div>
+      <div style="min-width:0;overflow:hidden">
+        <div style="font-size:12px;font-weight:${active ? '700' : '500'};color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH(o.name)}</div>
+        <div style="font-size:10px;color:var(--muted)">${_U_TIER_LABEL[o.tier] || ''}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div style="position:relative" id="${inputId}Wrap">
+    ${trigger}
+    <div id="${inputId}DD" style="display:none;position:absolute;top:calc(100% + 3px);left:0;right:0;background:#fff;border:1.5px solid var(--border);border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,0.12);z-index:300;max-height:260px;overflow-y:auto">
+      ${items}
+    </div>
+    <input type="hidden" id="${inputId}" value="${sel?.id || ''}">
+  </div>`;
+}
+
+function _uOrgDDToggle(inputId) {
+  const dd   = document.getElementById(inputId + 'DD');
+  const chev = document.getElementById(inputId + 'Chev');
+  if (!dd) return;
+  const opening = dd.style.display === 'none';
+  dd.style.display = opening ? 'block' : 'none';
+  if (chev) chev.textContent = opening ? '▴' : '▾';
+  if (opening) {
+    setTimeout(() => {
+      const close = e => {
+        if (!document.getElementById(inputId + 'Wrap')?.contains(e.target)) {
+          dd.style.display = 'none';
+          if (chev) chev.textContent = '▾';
+          document.removeEventListener('click', close);
+        }
+      };
+      document.addEventListener('click', close);
+    }, 0);
+  }
+}
+
+function _uOrgDDPick(inputId, orgId) {
+  const org = visibleOrgs().find(o => o.id === orgId);
+  if (!org) return;
+  const inp  = document.getElementById(inputId);
+  const av   = document.getElementById(inputId + 'Av');
+  const name = document.getElementById(inputId + 'Name');
+  const sub  = document.getElementById(inputId + 'Sub');
+  const dd   = document.getElementById(inputId + 'DD');
+  const chev = document.getElementById(inputId + 'Chev');
+  if (inp)  inp.value = orgId;
+  if (av)   { av.className = 'org-avatar ' + tierAvClass(org.tier); av.textContent = tierInitials(org.name); }
+  if (name) name.textContent = org.name;
+  if (sub)  sub.textContent = _U_TIER_LABEL[org.tier] || '';
+  if (dd)   dd.style.display = 'none';
+  if (chev) chev.textContent = '▾';
+  // Refresh selected highlight in the dropdown items
+  const wrap = document.getElementById(inputId + 'Wrap');
+  if (wrap) wrap.querySelectorAll('[data-org-id]').forEach(el => {
+    const active = el.dataset.orgId === orgId;
+    el.style.borderLeft = `3px solid ${active ? 'var(--cyan)' : 'transparent'}`;
+    el.style.background = active ? '#f0fbff' : 'transparent';
+    el.querySelector('div > div:first-child') && (el.querySelector('div > div:first-child').style.fontWeight = active ? '700' : '500');
+  });
+}
+
+// Bound wrappers exposed to onclick= in HTML
+function uOrgToggle()    { _uOrgDDToggle('uOrgId'); }
+function uOrgPick(id)    { _uOrgDDPick('uOrgId', id); }
+function euOrgToggle()   { _uOrgDDToggle('euOrgId'); }
+function euOrgPick(id)   { _uOrgDDPick('euOrgId', id); }
+
+// ============================================================
 // CREATE USER MODAL
 // ============================================================
 function openCreateUserModal() {
@@ -168,9 +275,7 @@ function openCreateUserModal() {
         </div>
         <div>
           <label class="form-label">Primary Organization</label>
-          <select id="uOrgId" class="form-input">
-            ${visOrgs.map(o => `<option value="${o.id}">${o.name}</option>`).join('')}
-          </select>
+          ${_uOrgDDWidget('uOrgId', 'uOrgToggle', 'uOrgPick', currentOrg?.id || visOrgs[0]?.id)}
         </div>
       </div>
       <div id="uOrgAccessSection" style="display:none;margin-bottom:12px">
@@ -191,6 +296,7 @@ function openCreateUserModal() {
           <label style="display:flex;align-items:center;gap:6px;padding:5px 6px;cursor:pointer;border-radius:4px;font-size:12px"><input type="checkbox" class="uModuleCheck" value="exercises" checked> 🎯 Exercises</label>
           <label style="display:flex;align-items:center;gap:6px;padding:5px 6px;cursor:pointer;border-radius:4px;font-size:12px"><input type="checkbox" class="uModuleCheck" value="reports" checked> 📊 Reports</label>
           <label style="display:flex;align-items:center;gap:6px;padding:5px 6px;cursor:pointer;border-radius:4px;font-size:12px"><input type="checkbox" class="uModuleCheck" value="ma_cdd"> 🤝 M&amp;A Due Diligence</label>
+          <label style="display:flex;align-items:center;gap:6px;padding:5px 6px;cursor:pointer;border-radius:4px;font-size:12px"><input type="checkbox" class="uModuleCheck" value="pricing_schedule"> 💲 Pricing Schedule</label>
         </div>
         <div id="uModuleNote" style="font-size:10px;color:var(--muted);margin-top:4px"></div>
       </div>
@@ -254,7 +360,7 @@ async function submitCreateUser() {
     let moduleAccess = null;
     if (isRestricted) {
       const checked = [...document.querySelectorAll('.uModuleCheck:checked')].map(cb => cb.value);
-      moduleAccess = { assessments: checked.includes('assessments'), ai: checked.includes('ai'), risk: checked.includes('risk'), exercises: checked.includes('exercises'), reports: checked.includes('reports'), ma_cdd: checked.includes('ma_cdd') };
+      moduleAccess = { assessments: checked.includes('assessments'), ai: checked.includes('ai'), risk: checked.includes('risk'), exercises: checked.includes('exercises'), reports: checked.includes('reports'), ma_cdd: checked.includes('ma_cdd'), pricing_schedule: checked.includes('pricing_schedule') };
     }
     const newUser = await sb.users.create({
       name: name || null,
@@ -339,9 +445,7 @@ async function openEditUserModal(userId) {
         </div>
         <div>
           <label class="form-label">Primary Organization</label>
-          <select id="euOrgId" class="form-input">
-            ${visOrgs.map(o => `<option value="${o.id}" ${o.id===user.org_id?'selected':''}>${escH(o.name)}</option>`).join('')}
-          </select>
+          ${_uOrgDDWidget('euOrgId', 'euOrgToggle', 'euOrgPick', user.org_id)}
         </div>
       </div>
       <div id="euOrgAccessSection" style="${['analyst','viewer'].includes(user.role) ? '' : 'display:none'};margin-bottom:12px">

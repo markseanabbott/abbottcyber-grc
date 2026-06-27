@@ -78,27 +78,55 @@ function exHubRender() {
   const opCount = rows.filter(r => r.type === 'op').length;
   const loading = opSessions === null;
 
+  // Section card helpers (mirrors governance hub style)
+  const _exCard = (icon, label, desc, nav) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .9rem;border-radius:9px;border:1px solid var(--border);background:var(--bg);gap:1rem">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.2rem">
+          <span style="font-size:1rem;flex-shrink:0">${icon}</span>
+          <div style="font-size:13px;font-weight:700;color:var(--text)">${label}</div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.4">${desc}</div>
+      </div>
+      <div style="flex-shrink:0"><button class="btn btn-cyan btn-sm" onclick="setNav('${nav}')">View →</button></div>
+    </div>`;
+
+  const _exBucket = (label, cards) => `
+    <div style="background:#fff;border-radius:13px;box-shadow:0 2px 16px rgba(21,33,104,0.09);border:1px solid var(--border);padding:1.1rem 1.25rem 1.25rem">
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--navy);opacity:.55;margin-bottom:.75rem">${label}</div>
+      <div style="display:flex;flex-direction:column;gap:.55rem">${cards}</div>
+    </div>`;
+
+  const sectionGrid = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem">
+      ${_exBucket('Cybersecurity Exercises', _exCard('🛡️', 'Cybersecurity Tabletop',
+        'Run incident response exercises for ransomware, BEC, and other threat scenarios. Multi-role, inject-driven, breach-declaration gate.',
+        'tabletop'))}
+      ${_exBucket('AI Governance Exercises', _exCard('🤖', 'AI Governance Tabletop',
+        'AI-specific exercises across Governance (policy, model risk, bias, NIST AI RMF) and Attack Simulation (prompt injection, phishing, model extraction) tracks.',
+        'tt_ai'))}
+    </div>`;
+
   return `${renderTierBanner()}
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:1rem">
-    <div style="font-size:17px;font-weight:700">&#x1F4CB; Exercise Hub</div>
+    <div style="font-size:17px;font-weight:700">🎯 Exercises Hub</div>
     <div style="font-size:12px;color:var(--muted)">${currentOrg.name}</div>
   </div>
 
+  ${sectionGrid}
+
   <div class="summary-metrics" style="margin-bottom:1.25rem">
     <div class="sm-card"><div class="sm-val">${total}</div><div class="sm-lbl">Total exercises</div></div>
-    <div class="sm-card"><div class="sm-val">${opCount}</div><div class="sm-lbl">Operational</div></div>
+    <div class="sm-card"><div class="sm-val">${opCount}</div><div class="sm-lbl">Cybersecurity</div></div>
     <div class="sm-card"><div class="sm-val">${aiCount}</div><div class="sm-lbl">AI Governance</div></div>
     <div class="sm-card"><div class="sm-val" style="color:${breachCount > 0 ? '#dc2626' : '#15803d'}">${breachCount}</div><div class="sm-lbl">Breach events</div></div>
   </div>
 
   ${loading ? `<div class="card" style="text-align:center;padding:2rem;color:var(--muted)">
     <div class="spinner" style="border-color:rgba(21,33,104,.2);border-top-color:var(--navy);width:18px;height:18px;margin:0 auto 0.75rem"></div>
-    <div style="font-size:12px">Loading operational sessions…</div>
-  </div>` : rows.length === 0 ? `<div class="card" style="text-align:center;padding:2.5rem;color:var(--muted)">
-    <div style="font-size:2rem;margin-bottom:0.5rem">&#x1F4CB;</div>
-    <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px">No exercises recorded yet</div>
-    <div style="font-size:12px">Complete a Tabletop exercise to see results here.</div>
-  </div>` : `
+    <div style="font-size:12px">Loading sessions…</div>
+  </div>` : rows.length === 0 ? '' : `
+  <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:.5rem">Exercise History</div>
   <div class="card" style="padding:0">
     <table style="width:100%;border-collapse:collapse">
       <thead>
@@ -117,7 +145,7 @@ function exHubRender() {
           const isAi = r.type === 'ai';
           const trackBadge = isAi
             ? `<span class="badge" style="background:#ede9fe;color:#6d28d9">AI Governance</span>`
-            : `<span class="badge" style="background:#dbeafe;color:#1d4ed8">Operational</span>`;
+            : `<span class="badge" style="background:#dbeafe;color:#1d4ed8">Cybersecurity</span>`;
 
           let outcomeCells = '';
           if (isAi) {
