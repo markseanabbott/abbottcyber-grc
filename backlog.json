@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5.0",
   "created": "2026-05-14",
-  "updated": "2026-06-27 (session 86)",
+  "updated": "2026-06-27 (session 87)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1430,9 +1430,10 @@
         },
         {
           "id": "tt_engine_rubric_ui",
-          "text": "AAR rubric scoring modal: post-exercise facilitator scores 5 dimensions × 1–5, notes per dimension, saves to rubric_scores on tabletop_sessions, generates A–F grade that feeds the exercise trend line",
-          "done": false,
-          "priority": "High"
+          "text": "AAR rubric scoring: post-exercise facilitator scores 5 dimensions × 1–5, notes per dimension, saves to rubric_scores on tabletop_sessions, generates A–F grade that feeds the exercise trend line",
+          "done": true,
+          "priority": "High",
+          "notes": "Session 87: ttRenderRubricCard() in tabletop.js renders scoring form (5 dims × 1–5 buttons + notes + live grade preview) at top of AAR. ttSetRubricDim(), ttSaveRubric(), ttEditRubric() manage state and Supabase save. History AAR shows saved rubric read-only. exCalcScore() in home.js updated to use rubric_scores first (overrides proxy completion score) — trend line and grade automatically reflect facilitator judgement once scored. Both op session row-building locations updated to pass rubric_scores."
         },
         {
           "id": "t3",

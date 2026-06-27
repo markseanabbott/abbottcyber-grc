@@ -569,7 +569,7 @@ function _widgetTabletop(h) {
   if (opSessions) {
     opSessions.forEach(s => {
       const log = Array.isArray(s.exercise_log) ? s.exercise_log : [];
-      const row = { type: 'op', date: s.created_at ? s.created_at.substring(0, 10) : '', injectCount: log.length, discussionCount: null, notifCount: null, breach: s.breach_declared, severity: s.tl_severity || '—' };
+      const row = { type: 'op', date: s.created_at ? s.created_at.substring(0, 10) : '', injectCount: log.length, discussionCount: null, notifCount: null, breach: s.breach_declared, severity: s.tl_severity || '—', rubric_scores: s.rubric_scores || null };
       rows.push({ ...row, score: exCalcScore(row) });
     });
   }
@@ -1505,9 +1505,14 @@ function renderAssessmentsHub() {
 // ============================================================
 
 // ── Exercise scoring ──────────────────────────────────────────────────────────
-// Operational: 34 pts severity declared + 33 pts breach decision + 33 pts log activity
-// AI tabletop: proportional inject engagement (40) + discussion (30) + notif protocol (30)
+// If facilitator rubric_scores are present, they take precedence (avg/5 × 100).
+// Operational fallback: 34 pts severity + 33 pts breach decision + 33 pts log activity.
+// AI tabletop fallback: proportional inject (40) + discussion (30) + notif (30).
 function exCalcScore(row) {
+  if (row.rubric_scores && typeof row.rubric_scores === 'object') {
+    const scores = Object.values(row.rubric_scores).map(r => (r && r.score) ? r.score : 0).filter(Boolean);
+    if (scores.length) return Math.round((scores.reduce((a,b)=>a+b,0)/scores.length/5)*100);
+  }
   if (row.type === 'op') {
     let s = 0;
     if (['P1','P2','P3','P4'].includes(row.severity))           s += 34;
@@ -1556,7 +1561,7 @@ function renderExercisesHub() {
   if (opSessions) {
     opSessions.forEach(s => {
       const log = Array.isArray(s.exercise_log) ? s.exercise_log : [];
-      rows.push({ type: 'op', date: s.created_at ? s.created_at.substring(0, 10) : '', scenario: s.scenario_title || s.scenario_id || '—', facilitator: s.facilitator_name || '—', breach: s.breach_declared, severity: s.tl_severity || '—', injectCount: log.length, discussionCount: null, notifCount: null, id: s.id });
+      rows.push({ type: 'op', date: s.created_at ? s.created_at.substring(0, 10) : '', scenario: s.scenario_title || s.scenario_id || '—', facilitator: s.facilitator_name || '—', breach: s.breach_declared, severity: s.tl_severity || '—', injectCount: log.length, discussionCount: null, notifCount: null, id: s.id, rubric_scores: s.rubric_scores || null });
     });
   }
   rows.sort((a, b) => b.date.localeCompare(a.date)); // newest first for display

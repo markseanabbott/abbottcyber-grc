@@ -615,8 +615,9 @@ function ttInit() {
     historicalSession: null,           // set when view = 'history_aar'
   };
   tteClearRubric();
-  // Pre-load custom DB scenarios in background so setup view can show them
   tteLoadDbScenarios();
+  // _rubricEditing: true shows the scoring form even after scores are saved (edit mode)
+  ttState._rubricEditing = false;
 }
 
 // Capture any in-DOM textarea/input values into ttState before re-rendering destroys them.
@@ -1185,6 +1186,113 @@ async function ttToggleNotif(itemId) {
   ttRender();
 }
 
+// ---- RUBRIC SCORING ----
+
+function ttRenderRubricCard() {
+  const dims   = tteRubricDimensions();
+  const rubric = tteGetRubric();
+  const grade  = tteRubricGrade();
+  const scored = tteRubricComplete();
+
+  // Compact summary view — show after saving unless edit mode is active
+  if (scored && !ttState._rubricEditing) {
+    return `<div class="card" style="margin-bottom:0.85rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="card-title" style="margin-bottom:0">&#x1F3AF; Performance Rubric</div>
+        <button class="btn btn-outline btn-sm" onclick="ttEditRubric()">Edit scores</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">
+        <div style="width:52px;height:52px;border-radius:50%;background:${grade.bg};display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:${grade.color};flex-shrink:0">${grade.letter}</div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:${grade.color}">Grade ${grade.letter} &mdash; ${grade.pct}%</div>
+          <div style="font-size:11px;color:var(--muted)">Facilitator-judged performance score</div>
+        </div>
+      </div>
+      <div style="display:grid;gap:5px">
+        ${dims.map(d => {
+          const r = rubric[d.id] || {};
+          return `<div style="display:flex;align-items:center;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border)">
+            <span style="color:var(--text);font-weight:600">${d.label}</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="display:flex;gap:2px">${[1,2,3,4,5].map(n => `<span style="width:16px;height:16px;border-radius:50%;background:${n <= (r.score||0) ? grade.color : '#e5e7eb'};display:inline-block"></span>`).join('')}</div>
+              <span style="font-weight:700;color:${grade.color};min-width:12px">${r.score || '—'}</span>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  // Scoring form
+  return `<div class="card" style="margin-bottom:0.85rem">
+    <div class="card-title">&#x1F3AF; Facilitator Performance Rubric</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5">
+      Score this exercise across 5 dimensions <strong>(1 = poor &nbsp;·&nbsp; 5 = excellent)</strong>. Your scores generate the A&ndash;F grade shown on the exercises dashboard trend line.
+    </div>
+    <div style="display:grid;gap:16px">
+      ${dims.map(d => {
+        const r = rubric[d.id] || {};
+        return `<div style="padding-bottom:14px;border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;flex-wrap:wrap;gap:6px">
+            <div style="font-size:12px;font-weight:700;color:var(--text)">${d.label}</div>
+            <div style="display:flex;gap:3px">
+              ${[1,2,3,4,5].map(n => `<button class="crit-btn${r.score === n ? ' sel-Critical' : ''}" onclick="ttSetRubricDim('${d.id}',${n})" style="min-width:30px;font-weight:700">${n}</button>`).join('')}
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">${d.desc || ''}</div>
+          <input type="text" id="ttRubric_${d.id}" placeholder="Notes (optional)" value="${(r.notes || '').replace(/"/g,'&quot;')}" style="font-size:11px;padding:6px 9px">
+        </div>`;
+      }).join('')}
+    </div>
+    ${grade ? `<div style="margin-top:12px;padding:10px 14px;background:${grade.bg};border-radius:8px;display:flex;align-items:center;gap:12px">
+      <div style="width:38px;height:38px;border-radius:50%;background:${grade.color};display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;flex-shrink:0">${grade.letter}</div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:${grade.color}">Grade ${grade.letter} &mdash; ${grade.pct}%</div>
+        <div style="font-size:11px;color:${grade.color};opacity:0.8">${grade.pct>=90?'Excellent response':''}${grade.pct>=75&&grade.pct<90?'Strong performance':''}${grade.pct>=60&&grade.pct<75?'Adequate — some gaps identified':''}${grade.pct>=45&&grade.pct<60?'Below standard — significant gaps':''}${grade.pct<45?'Poor performance — intervention needed':''}</div>
+      </div>
+    </div>` : `<div style="margin-top:12px;font-size:11px;color:var(--muted)">Score all 5 dimensions to preview your grade.</div>`}
+    <div style="display:flex;justify-content:flex-end;margin-top:12px">
+      <button class="btn btn-primary btn-sm" onclick="ttSaveRubric()" ${!scored ? 'disabled title="Score all 5 dimensions first"' : ''}>Save rubric scores →</button>
+    </div>
+  </div>`;
+}
+
+function ttSetRubricDim(dimId, score) {
+  // Capture any typed notes before re-render
+  tteRubricDimensions().forEach(d => {
+    const el = document.getElementById('ttRubric_' + d.id);
+    if (el) {
+      const existing = tteGetRubric()[d.id];
+      if (existing && existing.score) tteSetRubricScore(d.id, existing.score, el.value);
+    }
+  });
+  tteSetRubricScore(dimId, score);
+  ttRender();
+}
+
+function ttEditRubric() { ttState._rubricEditing = true; ttRender(); }
+
+async function ttSaveRubric() {
+  // Final note capture
+  tteRubricDimensions().forEach(d => {
+    const el = document.getElementById('ttRubric_' + d.id);
+    if (el) {
+      const existing = tteGetRubric()[d.id];
+      if (existing && existing.score) tteSetRubricScore(d.id, existing.score, el.value);
+    }
+  });
+  if (!tteRubricComplete()) { toast('Score all 5 dimensions first', '#dc2626'); return; }
+  const rubric = tteGetRubric();
+  const grade  = tteRubricGrade();
+  try {
+    await sb.tt.updateSession(ttState.sessionId, { rubric_scores: rubric, updated_at: new Date().toISOString() });
+    await ttLog('rubric_scored', { grade: grade.letter, pct: grade.pct });
+    toast('Rubric saved — Grade: ' + grade.letter, '#15803d');
+    ttState._rubricEditing = false;
+    ttRender();
+  } catch (e) { toast('Could not save rubric — ' + e.message, '#dc2626'); }
+}
+
 // ---- AAR ----
 function ttRenderAAR() {
   const scenario = TT_SCENARIOS[ttState.scenarioId];
@@ -1207,8 +1315,9 @@ function ttRenderAAR() {
   return `${renderTierBanner()}
   ${ttHeaderBar()}
   <div style="font-size:17px;font-weight:700;margin-bottom:0.85rem">&#x1F4C4; After Action Report — ${scenario.title}</div>
+  ${ttRenderRubricCard()}
   <div class="summary-metrics">
-    <div class="sm-card"><div class="sm-val">${score}</div><div class="sm-lbl">Exercise score</div></div>
+    <div class="sm-card"><div class="sm-val">${score}</div><div class="sm-lbl">Objective score</div></div>
     <div class="sm-card"><div class="sm-val">${critAccPct}%</div><div class="sm-lbl">Criticality acc.</div></div>
     <div class="sm-card"><div class="sm-val">${injectsAnswered}/${totalInjects}</div><div class="sm-lbl">Injects answered</div></div>
     <div class="sm-card"><div class="sm-val">${notifChecked}/${TT_NOTIF_ITEMS.length}</div><div class="sm-lbl">Notifs filed</div></div>
@@ -1464,6 +1573,35 @@ function ttRenderHistoryAAR() {
         <div style="color:var(--muted);font-size:11px;margin-top:2px">${inj.mitre.tactic} · ${inj.mitre.technique}</div>
       </div>`).join('')}
   </div>` : ''}
+
+  ${(() => {
+    const rs = s.rubric_scores;
+    if (!rs || !Object.keys(rs).length) return '';
+    const dims = TTE_DEFAULT_RUBRIC;
+    const scores = Object.values(rs).map(r => r.score || 0).filter(Boolean);
+    if (!scores.length) return '';
+    const avg = scores.reduce((a,b) => a+b,0) / scores.length;
+    const pct = Math.round((avg/5)*100);
+    const g = pct>=90?{l:'A',c:'#15803d',bg:'#dcfce7'}:pct>=75?{l:'B',c:'#1d4ed8',bg:'#dbeafe'}:pct>=60?{l:'C',c:'#d97706',bg:'#fef3c7'}:pct>=45?{l:'D',c:'#ea580c',bg:'#ffedd5'}:{l:'F',c:'#dc2626',bg:'#fee2e2'};
+    return `<div class="card" style="margin-bottom:0.75rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="card-title" style="margin-bottom:0">&#x1F3AF; Performance Rubric</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:40px;height:40px;border-radius:50%;background:${g.bg};display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:${g.c}">${g.l}</div>
+          <div style="font-size:14px;font-weight:700;color:${g.c}">Grade ${g.l} &mdash; ${pct}%</div>
+        </div>
+      </div>
+      <div style="display:grid;gap:4px">
+        ${dims.map(d => { const r = rs[d.id]||{}; return r.score ? `<div style="display:flex;align-items:center;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border)">
+          <span style="color:var(--text);font-weight:600">${d.label}</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="display:flex;gap:2px">${[1,2,3,4,5].map(n=>`<span style="width:14px;height:14px;border-radius:50%;background:${n<=(r.score||0)?g.c:'#e5e7eb'};display:inline-block"></span>`).join('')}</div>
+            <span style="font-weight:700;color:${g.c}">${r.score}/5</span>
+          </div>
+        </div>${r.notes?`<div style="font-size:11px;color:var(--muted);padding:2px 0 4px 0">${r.notes}</div>`:''}` : ''; }).join('')}
+      </div>
+    </div>`;
+  })()}
 
   <div class="card">
     <div class="card-title">Exercise timeline</div>
