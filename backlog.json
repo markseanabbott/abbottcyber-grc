@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5.0",
   "created": "2026-05-14",
-  "updated": "2026-06-26 (session 84)",
+  "updated": "2026-06-27 (session 85)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -2360,8 +2360,9 @@
         {
           "id": "gov6",
           "text": "Vendor criticality and risk tier — per-vendor: business criticality (Critical/High/Moderate/Low) with rationale, risk tier (mirrors TPRA), data access types (PII, payment, health, IP, infrastructure), jurisdiction, data residency. Certifications held (SOC 2 Type I/II, ISO 27001, ISO 42001, PCI DSS, HIPAA BAA, CSA STAR). Last TPRA assessment date with link to TPRA record if one exists.",
-          "done": false,
-          "phase": 2
+          "done": true,
+          "phase": 2,
+          "notes": "PATCH_048: ALTER TABLE vendor_directory adds criticality, criticality_rationale, risk_tier, data_access jsonb, jurisdiction, data_residency, certifications jsonb. vendor_directory.js: modal gains 2 tabs (Basic Info / Risk & Criticality). Tab switching via vendorDirSetTab() toggles display:grid/none in-place — no re-render, no field-value loss. Chip toggles (data access + certifications) update _vdChips module var + button visuals only, also no re-render. Criticality filter pill row above table. TPRA lookup: loadVendorDirectory() fetches vendor_assessments (completed) in parallel, builds tpraMap keyed by normalised vendor_name — date+tier shown as purple chip under vendor name in table and read-only panel in Risk tab. critFilter state added. vendorDirSetCritFilter(), vendorDirToggleChip() exported."
         },
         {
           "id": "gov7",
