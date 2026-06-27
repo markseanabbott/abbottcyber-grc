@@ -1404,7 +1404,6 @@ function renderAssessmentsHub() {
 // ============================================================
 
 const EXERCISE_CATALOG = [
-  { id: 'ex_hub',    label: 'Exercise Hub',             icon: '📋', description: 'Browse all available tabletop scenarios and manage past exercise sessions.', nav: 'ex_hub' },
   { id: 'tabletop',  label: 'Tabletop — Operational',   icon: '🎯', description: 'Ransomware, BEC, and operational incident response scenarios for your whole team.', nav: 'tabletop' },
   { id: 'tt_ai',     label: 'Tabletop — AI Governance', icon: '🤖', description: 'AI risk and governance scenarios aligned to NIST AI RMF and ISO 42001.', nav: 'tt_ai' },
   { id: 'tt_exec',   label: 'Tabletop — Executive',     icon: '💼', description: 'Board and executive-level crisis response and decision-making scenarios.', nav: 'tt_exec',   comingSoon: true },
@@ -1415,6 +1414,33 @@ const EXERCISE_CATALOG = [
 function renderExercisesHub() {
   if (!currentOrg) return '';
 
+  // Trigger async load of operational sessions (from ex_hub.js)
+  if (typeof exHubEnsureOp === 'function') exHubEnsureOp();
+
+  // ── Build exercise history rows ──
+  const aiRuns    = ((orgAssessments[currentOrg?.id] || {})['ai_tabletop'] || []);
+  const opSessions = exHubState?.opSessions ?? null;
+  const rows = [];
+
+  aiRuns.forEach(r => {
+    const a = r.answers || {};
+    rows.push({ type: 'ai', date: r.date || r.assessed_at || '', scenario: a.scenarioName || a.scenarioId || '—', facilitator: a.facilitator || r.conductedBy || '—', breach: null, severity: null, injectCount: Object.keys(a.injectNotes || {}).length, discussionCount: Object.keys(a.discussionNotes || {}).length, notifCount: Object.values(a.notifChecks || {}).filter(Boolean).length, id: r.id });
+  });
+  if (opSessions) {
+    opSessions.forEach(s => {
+      const log = Array.isArray(s.exercise_log) ? s.exercise_log : [];
+      rows.push({ type: 'op', date: s.created_at ? s.created_at.substring(0, 10) : '', scenario: s.scenario_title || s.scenario_id || '—', facilitator: s.facilitator_name || '—', breach: s.breach_declared, severity: s.tl_severity || '—', injectCount: log.length, discussionCount: null, notifCount: null, id: s.id });
+    });
+  }
+  rows.sort((a, b) => b.date.localeCompare(a.date));
+
+  const total       = rows.length;
+  const breachCount = rows.filter(r => r.breach === true).length;
+  const aiCount     = rows.filter(r => r.type === 'ai').length;
+  const opCount     = rows.filter(r => r.type === 'op').length;
+  const loading     = opSessions === null;
+
+  // ── Section buckets ──
   const EX_GROUPS = [
     {
       label: 'Cybersecurity Exercises',
@@ -1428,15 +1454,63 @@ function renderExercisesHub() {
     {
       label: 'AI Governance Exercises',
       items: [
-        { icon: '🤖', label: 'AI Governance Tabletop',    description: 'AI-specific exercises across Governance (policy, model risk, bias, NIST AI RMF) and Attack Simulation (prompt injection, phishing, model extraction) tracks.', nav: 'tt_ai' },
+        { icon: '🤖', label: 'AI Governance Tabletop', description: 'AI-specific exercises across Governance (policy, model risk, bias, NIST AI RMF) and Attack Simulation (prompt injection, phishing, model extraction) tracks.', nav: 'tt_ai' },
       ],
     },
   ];
+  const [cyberGroup, aiGroup] = EX_GROUPS.map(g => ({ ...g, visible: g.items.filter(i => i.comingSoon || hasPageAccess(i.nav)) }));
 
-  const [cyberGroup, aiGroup] = EX_GROUPS.map(g => ({
-    ...g,
-    visible: g.items.filter(i => i.comingSoon || hasPageAccess(i.nav)),
-  }));
+  // ── History table ──
+  const historyHtml = loading
+    ? `<div class="card" style="text-align:center;padding:1.5rem;color:var(--muted)">
+        <div class="spinner" style="border-color:rgba(21,33,104,.2);border-top-color:var(--navy);width:16px;height:16px;margin:0 auto .5rem"></div>
+        <div style="font-size:12px">Loading sessions…</div>
+      </div>`
+    : rows.length === 0 ? ''
+    : `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:.5rem">Exercise History</div>
+      <div class="card" style="padding:0">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="border-bottom:2px solid var(--border)">
+            <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Date</th>
+            <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Track</th>
+            <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Scenario</th>
+            <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Facilitator</th>
+            <th style="text-align:center;padding:10px 14px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Outcome</th>
+            <th style="padding:10px 14px"></th>
+          </tr></thead>
+          <tbody>${rows.map((r, i) => {
+            const isAi = r.type === 'ai';
+            const trackBadge = isAi
+              ? `<span class="badge" style="background:#ede9fe;color:#6d28d9">AI Governance</span>`
+              : `<span class="badge" style="background:#dbeafe;color:#1d4ed8">Cybersecurity</span>`;
+            let outcome = '';
+            if (isAi) {
+              outcome = `<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center">
+                ${r.injectCount > 0 ? `<span class="badge b-navy">${r.injectCount} inject notes</span>` : ''}
+                ${r.discussionCount > 0 ? `<span class="badge b-gray">${r.discussionCount} discussion</span>` : ''}
+                ${r.notifCount > 0 ? `<span class="badge b-amber">${r.notifCount} notif</span>` : ''}
+              </div>`;
+            } else {
+              const sc = r.severity === 'P1' ? '#dc2626' : r.severity === 'P2' ? '#d97706' : '#5a6a8a';
+              outcome = `<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center">
+                <span class="badge" style="background:${sc};color:#fff">${r.severity}</span>
+                ${r.breach === true ? `<span class="badge b-red">Breach declared</span>` : r.breach === false ? `<span class="badge b-green">No breach</span>` : ''}
+              </div>`;
+            }
+            const aarBtn = isAi
+              ? `<button class="btn btn-sm btn-outline" onclick="exHubViewAiAAR('${r.id}')">View AAR</button>`
+              : `<button class="btn btn-sm btn-outline" onclick="exHubViewOpAAR('${r.id}')">View AAR</button>`;
+            return `<tr style="border-bottom:1px solid var(--border);${i % 2 === 1 ? 'background:#fafbff' : ''}">
+              <td style="padding:10px 14px;font-size:13px;font-weight:600;white-space:nowrap">${r.date}</td>
+              <td style="padding:10px 14px">${trackBadge}</td>
+              <td style="padding:10px 14px;font-size:13px;max-width:220px">${r.scenario}</td>
+              <td style="padding:10px 14px;font-size:12px;color:var(--muted)">${r.facilitator}</td>
+              <td style="padding:10px 14px;text-align:center">${outcome}</td>
+              <td style="padding:10px 14px;text-align:right">${aarBtn}</td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>
+      </div>`;
 
   return `
   ${renderTierBanner()}
@@ -1446,10 +1520,20 @@ function renderExercisesHub() {
       <div style="font-size:12px;color:var(--muted)">Tabletop exercises and scenario simulations for ${escH(currentOrg.name)}</div>
     </div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start">
-    ${cyberGroup.visible.length  ? _govBucket(cyberGroup,  cyberGroup.visible)  : ''}
-    ${aiGroup.visible.length     ? _govBucket(aiGroup,     aiGroup.visible)     : ''}
-  </div>`;
+
+  <div class="summary-metrics" style="margin-bottom:1.25rem">
+    <div class="sm-card"><div class="sm-val">${total}</div><div class="sm-lbl">Total exercises</div></div>
+    <div class="sm-card"><div class="sm-val">${opCount}</div><div class="sm-lbl">Cybersecurity</div></div>
+    <div class="sm-card"><div class="sm-val">${aiCount}</div><div class="sm-lbl">AI Governance</div></div>
+    <div class="sm-card"><div class="sm-val" style="color:${breachCount > 0 ? '#dc2626' : '#15803d'}">${breachCount}</div><div class="sm-lbl">Breach events</div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start;margin-bottom:1.25rem">
+    ${cyberGroup.visible.length ? _govBucket(cyberGroup, cyberGroup.visible) : ''}
+    ${aiGroup.visible.length    ? _govBucket(aiGroup,    aiGroup.visible)    : ''}
+  </div>
+
+  ${historyHtml}`;
 }
 
 // ============================================================
