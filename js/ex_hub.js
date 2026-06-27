@@ -78,42 +78,42 @@ function exHubRender() {
   const opCount = rows.filter(r => r.type === 'op').length;
   const loading = opSessions === null;
 
-  // Section card helpers (mirrors governance hub style)
-  const _exCard = (icon, label, desc, nav) => `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .9rem;border-radius:9px;border:1px solid var(--border);background:var(--bg);gap:1rem">
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.2rem">
-          <span style="font-size:1rem;flex-shrink:0">${icon}</span>
-          <div style="font-size:13px;font-weight:700;color:var(--text)">${label}</div>
-        </div>
-        <div style="font-size:11px;color:var(--muted);line-height:1.4">${desc}</div>
-      </div>
-      <div style="flex-shrink:0"><button class="btn btn-cyan btn-sm" onclick="setNav('${nav}')">View →</button></div>
-    </div>`;
+  // Reuse governance hub's _govBucket / _govCard helpers (global from home.js)
+  const EX_SECTIONS = [
+    {
+      label: 'Cybersecurity Exercises',
+      items: [
+        { icon: '🛡️', label: 'Cybersecurity Tabletop', description: 'Run incident response exercises for ransomware, BEC, and other threat scenarios. Multi-role, inject-driven, breach-declaration gate.', nav: 'tabletop' },
+      ],
+    },
+    {
+      label: 'AI Governance Exercises',
+      items: [
+        { icon: '🤖', label: 'AI Governance Tabletop', description: 'AI-specific exercises across Governance (policy, model risk, bias, NIST AI RMF) and Attack Simulation (prompt injection, phishing, model extraction) tracks.', nav: 'tt_ai' },
+      ],
+    },
+  ];
 
-  const _exBucket = (label, cards) => `
-    <div style="background:#fff;border-radius:13px;box-shadow:0 2px 16px rgba(21,33,104,0.09);border:1px solid var(--border);padding:1.1rem 1.25rem 1.25rem">
-      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--navy);opacity:.55;margin-bottom:.75rem">${label}</div>
-      <div style="display:flex;flex-direction:column;gap:.55rem">${cards}</div>
-    </div>`;
+  const [cyberSection, aiSection] = EX_SECTIONS.map(s => ({
+    ...s,
+    visible: s.items.filter(i => (typeof hasPageAccess !== 'function' || hasPageAccess(i.nav))),
+  }));
 
-  const sectionGrid = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem">
-      ${_exBucket('Cybersecurity Exercises', _exCard('🛡️', 'Cybersecurity Tabletop',
-        'Run incident response exercises for ransomware, BEC, and other threat scenarios. Multi-role, inject-driven, breach-declaration gate.',
-        'tabletop'))}
-      ${_exBucket('AI Governance Exercises', _exCard('🤖', 'AI Governance Tabletop',
-        'AI-specific exercises across Governance (policy, model risk, bias, NIST AI RMF) and Attack Simulation (prompt injection, phishing, model extraction) tracks.',
-        'tt_ai'))}
-    </div>`;
+  const cyberHtml = cyberSection.visible.length ? _govBucket(cyberSection, cyberSection.visible) : '';
+  const aiHtml    = aiSection.visible.length    ? _govBucket(aiSection, aiSection.visible)       : '';
 
   return `${renderTierBanner()}
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:1rem">
-    <div style="font-size:17px;font-weight:700">🎯 Exercises Hub</div>
-    <div style="font-size:12px;color:var(--muted)">${currentOrg.name}</div>
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:17px;font-weight:700">🎯 Exercises</div>
+      <div style="font-size:12px;color:var(--muted)">Tabletop exercises and scenario simulations for ${escH(currentOrg.name)}</div>
+    </div>
   </div>
 
-  ${sectionGrid}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start;margin-bottom:1.25rem">
+    ${cyberHtml}
+    ${aiHtml}
+  </div>
 
   <div class="summary-metrics" style="margin-bottom:1.25rem">
     <div class="sm-card"><div class="sm-val">${total}</div><div class="sm-lbl">Total exercises</div></div>

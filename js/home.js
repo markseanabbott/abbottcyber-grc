@@ -463,18 +463,18 @@ function renderHome() {
 
 const WIDGET_CATALOG = [
   { id: 'maturity',        label: 'Security Maturity',        icon: '📊', nav: 'home',            type: 'maturity', desc: 'Unified maturity level across all assessment dimensions — Initial through Optimizing.' },
-  { id: 'cis',             label: 'CIS Controls v8',          icon: '✅', nav: 'cis',             type: 'score',    desc: '' },
-  { id: 'insurance',       label: 'Insurance Readiness',      icon: '🛡️', nav: 'insurance',       type: 'score',    desc: '' },
-  { id: 'techstack',       label: 'Technology Stack',         icon: '🖥️', nav: 'techstack',       type: 'score',    desc: '' },
-  { id: 'cmmc',            label: 'CMMC Level 1',             icon: '🛡️', nav: 'cmmc',            type: 'score',    desc: '' },
-  { id: 'cmmc2',           label: 'CMMC Level 2',             icon: '🏛️', nav: 'cmmc2',           type: 'score',    desc: '' },
-  { id: 'ai_unified',      label: 'AI Readiness',             icon: '🤖', nav: 'ai_readiness',    type: 'ai',       desc: '' },
-  { id: 'risk_register',   label: 'Risk Register',            icon: '⚠️', nav: 'riskregister',    type: 'risk',     desc: '' },
-  { id: 'ai_risk_register',label: 'AI Risk Register',         icon: '🧠', nav: 'ai_risk_register',type: 'ai_risk',  desc: 'Open AI-specific risks tracked with NIST AI RMF and ISO 42001 controls.' },
-  { id: 'ai_tool_catalog', label: 'AI Application Inventory', icon: '📦', nav: 'ai_tool_catalog', type: 'ai_tools', desc: 'Approved, conditional, and shadow IT AI tool counts for this organization.' },
-  { id: 'gap_register',    label: 'Tool Gap Register',        icon: '🔧', nav: 'gap_register',    type: 'gap',      desc: '' },
-  { id: 'tpra',            label: 'Vendor Risk (TPRA)',       icon: '🔍', nav: 'tpra',            type: 'link',     desc: 'Deep-dive vendor risk assessments. Tier vendors Critical to Low based on data sensitivity and security posture.' },
-  { id: 'tabletop',        label: 'Tabletop Exercises',       icon: '🎯', nav: 'tabletop',        type: 'link',     desc: 'Cybersecurity tabletop exercises. Operational, AI Governance, and more scenarios available.' },
+  { id: 'cis',             label: 'CIS Controls v8',          icon: '✅', nav: 'cis',             type: 'score',    desc: '',        group: 'g_assessments' },
+  { id: 'insurance',       label: 'Insurance Readiness',      icon: '🛡️', nav: 'insurance',       type: 'score',    desc: '',        group: 'g_assessments' },
+  { id: 'techstack',       label: 'Technology Stack',         icon: '🖥️', nav: 'techstack',       type: 'score',    desc: '',        group: 'g_assessments' },
+  { id: 'cmmc',            label: 'CMMC Level 1',             icon: '🛡️', nav: 'cmmc',            type: 'score',    desc: '',        group: 'g_assessments' },
+  { id: 'cmmc2',           label: 'CMMC Level 2',             icon: '🏛️', nav: 'cmmc2',           type: 'score',    desc: '',        group: 'g_assessments' },
+  { id: 'ai_unified',      label: 'AI Readiness',             icon: '🤖', nav: 'ai_readiness',    type: 'ai',       desc: '',        group: 'g_assessments' },
+  { id: 'risk_register',   label: 'Risk Register',            icon: '⚠️', nav: 'riskregister',    type: 'risk',     desc: '',        group: 'g_governance'  },
+  { id: 'ai_risk_register',label: 'AI Risk Register',         icon: '🧠', nav: 'ai_risk_register',type: 'ai_risk',  desc: 'Open AI-specific risks tracked with NIST AI RMF and ISO 42001 controls.', group: 'g_governance' },
+  { id: 'ai_tool_catalog', label: 'AI Application Inventory', icon: '📦', nav: 'ai_tool_catalog', type: 'ai_tools', desc: 'Approved, conditional, and shadow IT AI tool counts for this organization.',  group: 'g_governance' },
+  { id: 'gap_register',    label: 'Tool Gap Register',        icon: '🔧', nav: 'gap_register',    type: 'gap',      desc: '',        group: 'g_reporting'   },
+  { id: 'tpra',            label: 'Vendor Risk (TPRA)',       icon: '🔍', nav: 'tpra',            type: 'link',     desc: 'Deep-dive vendor risk assessments. Tier vendors Critical to Low based on data sensitivity and security posture.', group: 'g_assessments' },
+  { id: 'tabletop',        label: 'Tabletop Exercises',       icon: '🎯', nav: 'tabletop',        type: 'link',     desc: 'Cybersecurity tabletop exercises. Operational, AI Governance, and more scenarios available.', group: 'g_exercises' },
 ];
 
 const DEFAULT_WIDGETS = [
@@ -556,6 +556,8 @@ function renderDashWidget(wid, h, rrRows, rrLoaded) {
   const def = WIDGET_CATALOG.find(w => w.id === wid);
   if (!def) return '';
   if (typeof hasPageAccess === 'function' && !hasPageAccess(def.nav)) return '';
+  // Also gate by JSONB module_access (covers users created before grants system)
+  if (def.group && typeof hasModuleAccess === 'function' && !hasModuleAccess(def.group)) return '';
   switch (def.type) {
     case 'maturity': return _widgetMaturity(h);
     case 'score':    return _widgetScore(def, h);
@@ -599,7 +601,8 @@ function _renderWidgetGrid(h, rrRows, rrLoaded) {
 function _renderCustomizePanel() {
   const draft = dashCustomize.draft || [];
   const available = WIDGET_CATALOG.filter(w =>
-    typeof hasPageAccess !== 'function' || hasPageAccess(w.nav)
+    (typeof hasPageAccess !== 'function' || hasPageAccess(w.nav)) &&
+    (!w.group || typeof hasModuleAccess !== 'function' || hasModuleAccess(w.group))
   );
 
   const rows = available.map(w => {
