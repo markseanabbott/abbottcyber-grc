@@ -1415,33 +1415,40 @@ const EXERCISE_CATALOG = [
 function renderExercisesHub() {
   if (!currentOrg) return '';
 
-  const cards = EXERCISE_CATALOG.filter(e => hasPageAccess(e.nav)).map(e => {
-    return `<div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column">
-      <div style="padding:1rem 1rem .6rem;flex:1">
-        <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.4rem">
-          <span style="font-size:1.1rem;flex-shrink:0">${e.icon}</span>
-          <div style="font-size:13px;font-weight:700;flex:1">${e.label}</div>
-        </div>
-        <div style="font-size:11px;color:var(--muted);line-height:1.45">${e.description}</div>
-      </div>
-      <div style="padding:.5rem 1rem .75rem;border-top:1px solid var(--border);display:flex;gap:5px">
-        ${e.comingSoon
-          ? `<span style="font-size:11px;font-weight:700;color:var(--muted);padding:4px 10px;border-radius:6px;background:var(--bg)">Coming soon</span>`
-          : `<button class="btn btn-cyan btn-sm" onclick="setNav('${e.nav}')" style="flex:1">View / Run</button>`}
-      </div>
-    </div>`;
-  }).join('');
+  const EX_GROUPS = [
+    {
+      label: 'Cybersecurity Exercises',
+      items: [
+        { icon: '🛡️', label: 'Cybersecurity Tabletop',   description: 'Ransomware, BEC, and operational incident response scenarios. Multi-role, inject-driven, breach-declaration gate.',  nav: 'tabletop'  },
+        { icon: '💼', label: 'Tabletop — Executive',      description: 'Board and executive-level crisis response and decision-making scenarios.',                                            nav: 'tt_exec',   comingSoon: true },
+        { icon: '🚛', label: 'Tabletop — Vendor',         description: 'Third-party and supply chain incident scenarios with vendor coordination.',                                          nav: 'tt_vendor', comingSoon: true },
+        { icon: '🔄', label: 'Tabletop — BCDR',           description: 'Business continuity and disaster recovery scenario exercises.',                                                      nav: 'tt_bcdr',   comingSoon: true },
+      ],
+    },
+    {
+      label: 'AI Governance Exercises',
+      items: [
+        { icon: '🤖', label: 'AI Governance Tabletop',    description: 'AI-specific exercises across Governance (policy, model risk, bias, NIST AI RMF) and Attack Simulation (prompt injection, phishing, model extraction) tracks.', nav: 'tt_ai' },
+      ],
+    },
+  ];
+
+  const [cyberGroup, aiGroup] = EX_GROUPS.map(g => ({
+    ...g,
+    visible: g.items.filter(i => i.comingSoon || hasPageAccess(i.nav)),
+  }));
 
   return `
   ${renderTierBanner()}
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:0.85rem;flex-wrap:wrap;gap:8px">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
     <div>
       <div style="font-size:17px;font-weight:700">🎯 Exercises</div>
-      <div style="font-size:12px;color:var(--muted)">All available exercises for ${escH(currentOrg.name)}</div>
+      <div style="font-size:12px;color:var(--muted)">Tabletop exercises and scenario simulations for ${escH(currentOrg.name)}</div>
     </div>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:.75rem">
-    ${cards}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start">
+    ${cyberGroup.visible.length  ? _govBucket(cyberGroup,  cyberGroup.visible)  : ''}
+    ${aiGroup.visible.length     ? _govBucket(aiGroup,     aiGroup.visible)     : ''}
   </div>`;
 }
 
