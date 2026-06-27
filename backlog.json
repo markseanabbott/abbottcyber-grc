@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5.0",
   "created": "2026-05-14",
-  "updated": "2026-06-27 (session 85)",
+  "updated": "2026-06-27 (session 86)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1423,9 +1423,22 @@
           "done": false
         },
         {
+          "id": "tt_engine",
+          "text": "Reusable tabletop engine: shared JS module (tabletop_engine.js) handling scenario loading (DB + built-in fallback), branching inject navigation, inject path tracking, rubric scoring, and mode support (local/remote)",
+          "done": true,
+          "notes": "Session 86: js/tabletop_engine.js (new, 281 lines). tteState, tteNormalise(), tteLoadDbScenarios(), tteGetScenarioList(), tteLoadScenario(), tteInitEngine(), tteCurrentInject(), tteBranches(), tteHasMultipleBranches(), tteNavigate(branchId), ttePrev(), tteCanGoBack(), tteIsLastInject(), ttePathJson(), tteRestorePath(). Rubric: TTE_DEFAULT_RUBRIC (5 dims), tteRubricDimensions(), tteSetRubricScore(), tteRubricGrade(). UI: tteRenderBranchPanel(). PATCH_049: tabletop_scenarios table + mode/scenario_db_id/inject_path/rubric_scores on tabletop_sessions. tabletop.js updated: mode selector in setup, tteInitEngine() called at launch, _ttAdvance() shared helper, ttSaveAndBranch(), ttPrevInject() uses ttePrev(). All 7 built-in scenarios continue to work unchanged."
+        },
+        {
+          "id": "tt_engine_rubric_ui",
+          "text": "AAR rubric scoring modal: post-exercise facilitator scores 5 dimensions × 1–5, notes per dimension, saves to rubric_scores on tabletop_sessions, generates A–F grade that feeds the exercise trend line",
+          "done": false,
+          "priority": "High"
+        },
+        {
           "id": "t3",
-          "text": "Scenario builder: create custom exercises from scratch or clone/modify existing ones",
-          "done": false
+          "text": "Scenario builder UI: create custom exercises with branching inject trees stored in tabletop_scenarios table; WYSIWYG inject editor with branch options, facilitator notes, role prompts, MITRE mapping",
+          "done": false,
+          "priority": "High"
         },
         {
           "id": "t4",

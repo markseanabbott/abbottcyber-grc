@@ -601,6 +601,7 @@ function ttInit() {
     view: 'setup',                     // setup | commentary | declaration | inject | breach | notif | aar | history_aar
     scenarioId: null,
     facilitatorName: '',
+    mode: 'local',                     // 'local' (one screen) | 'remote' (session code + participant devices)
     sessionId: null,
     sessionCode: null,
     currentInject: 0,
@@ -613,6 +614,9 @@ function ttInit() {
     completedSessions: null,           // null = not yet loaded; [] = loaded, empty
     historicalSession: null,           // set when view = 'history_aar'
   };
+  tteClearRubric();
+  // Pre-load custom DB scenarios in background so setup view can show them
+  tteLoadDbScenarios();
 }
 
 // Capture any in-DOM textarea/input values into ttState before re-rendering destroys them.
@@ -710,20 +714,40 @@ function ttRenderSetup() {
       <div><div class="field-lbl">Facilitator</div>
         <input type="text" id="ttFacName" placeholder="e.g. Mark Abbott" value="${ttState.facilitatorName || ''}"/></div>
     </div>
-    <div class="field-lbl" style="margin-bottom:5px">Scenario</div>
-    ${Object.values(TT_SCENARIOS).map(s => `
-      <div class="mini-opt${ttState.scenarioId === s.id ? ' sel' : ''}" onclick="ttPickScenario('${s.id}')" style="align-items:flex-start;padding:10px 12px">
+    <div class="field-lbl" style="margin-bottom:5px">Session mode</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div class="mini-opt${ttState.mode === 'local' ? ' sel' : ''}" onclick="ttSetMode('local')" style="align-items:flex-start;padding:10px 12px;cursor:pointer">
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:700;color:var(--text)">${s.title}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">${s.summary}</div>
-          <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">
-            <span class="badge b-gray">${s.industry}</span>
-            <span class="badge b-cyan">${s.duration}</span>
-            <span class="badge ${s.difficulty === 'Hard' ? 'b-red' : 'b-amber'}">${s.difficulty}</span>
-            <span class="badge b-purple">${s.injects.length} injects + Step 0</span>
-          </div>
+          <div style="font-size:13px;font-weight:700;color:var(--text)">&#x1F4BB; Local (Facilitated)</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Facilitator runs on one screen. Group participates verbally.</div>
         </div>
-      </div>`).join('')}
+      </div>
+      <div class="mini-opt${ttState.mode === 'remote' ? ' sel' : ''}" onclick="ttSetMode('remote')" style="align-items:flex-start;padding:10px 12px;cursor:pointer">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:var(--text)">&#x1F517; Remote (Session Code)</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Participants join on their own devices via a 6-char code.</div>
+        </div>
+      </div>
+    </div>
+    <div class="field-lbl" style="margin-bottom:5px">Scenario</div>
+    ${(() => {
+      const dbScens = (tteState.dbScenarios || []).filter(s => (s.track || 'operational') === 'operational');
+      const builtins = Object.values(TT_SCENARIOS);
+      const allScens = [...dbScens, ...builtins];
+      return allScens.map(s => `
+        <div class="mini-opt${ttState.scenarioId === s.id ? ' sel' : ''}" onclick="ttPickScenario('${s.id}')" style="align-items:flex-start;padding:10px 12px">
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;color:var(--text)">${s.title}${s._source === 'db' ? ' <span class="badge b-purple" style="font-size:9px">Custom</span>' : ''}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${s.summary || s.description || ''}</div>
+            <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">
+              ${s.industry ? `<span class="badge b-gray">${s.industry}</span>` : ''}
+              ${s.duration || s.duration_mins ? `<span class="badge b-cyan">${s.duration || (s.duration_mins + ' min')}</span>` : ''}
+              ${s.difficulty ? `<span class="badge ${s.difficulty === 'Hard' || s.difficulty === 'Advanced' ? 'b-red' : 'b-amber'}">${s.difficulty}</span>` : ''}
+              <span class="badge b-purple">${(s.injects || []).length} injects + Step 0</span>
+            </div>
+          </div>
+        </div>`).join('');
+    })()}
     <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end">
       <button class="btn btn-primary" onclick="ttLaunchSession()" ${!orgOk ? 'disabled' : ''}>Create session →</button>
     </div>
@@ -733,13 +757,17 @@ function ttRenderSetup() {
 }
 
 function ttPickScenario(id) { ttSnapshot(); ttState.scenarioId = id; ttRender(); }
+function ttSetMode(m) { ttSnapshot(); ttState.mode = m; ttRender(); }
 
 async function ttLaunchSession() {
   ttSnapshot();
   if (!currentOrg) { toast('Select an organisation first', '#dc2626'); return; }
   if (!ttState.scenarioId) { toast('Pick a scenario', '#dc2626'); return; }
   if (!ttState.facilitatorName.trim()) { toast('Enter facilitator name', '#dc2626'); return; }
-  const scenario = TT_SCENARIOS[ttState.scenarioId];
+  // Load scenario through engine (DB first, then built-in fallback)
+  const scenario = await tteLoadScenario(ttState.scenarioId) || TT_SCENARIOS[ttState.scenarioId];
+  if (!scenario) { toast('Scenario not found', '#dc2626'); return; }
+  tteInitEngine(scenario, ttState.mode);
   try {
     const code = await sb.tt.newCode();
     if (!code) throw new Error('Session code RPC returned empty');
@@ -752,6 +780,8 @@ async function ttLaunchSession() {
       facilitator_name: ttState.facilitatorName.trim(),
       current_inject: 0,
       exercise_log: [],
+      mode: ttState.mode,
+      inject_path: [],
     });
     ttState.sessionId = created.id;
     ttState.sessionCode = created.session_code;
@@ -856,21 +886,24 @@ async function ttSubmitDeclaration() {
 
 // ---- INJECT ----
 function ttRenderInject() {
-  const scenario = TT_SCENARIOS[ttState.scenarioId];
+  const scenario = (tteState.scenario) || TT_SCENARIOS[ttState.scenarioId];
   const idx = ttState.currentInject;
-  const inj = scenario.injects[idx];
+  const inj = (tteState.scenario ? tteCurrentInject() : null) || scenario.injects[idx];
   if (!inj) {
     // Past the last inject — pick next gate
     ttState.view = ttState.breach.declared ? 'notif' : 'aar';
     return renderTabletop();
   }
   const responses = ttState.responses[idx] || {};
+  const pathNum   = (tteState.injectPath || []).length + 1;  // 1-based position in path
+  const totalInj  = (scenario.injects || []).length;
+  const canGoBack = tteCanGoBack() || idx > 0;
   return `${renderTierBanner()}
   ${ttHeaderBar()}
   ${ttNistTrack(inj.phaseIdx)}
   <div class="inject-card">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
-      <span class="badge b-cyan">Inject ${idx + 1} of ${scenario.injects.length}</span>
+      <span class="badge b-cyan">Inject ${pathNum} of ${totalInj}</span>
       <span class="badge b-gray">${inj.ingest}</span>
       <span class="badge b-navy">${TT_NIST_PHASES[inj.phaseIdx]}</span>
     </div>
@@ -895,12 +928,13 @@ function ttRenderInject() {
     </div>
     ${inj.triggersBreach && !ttState.breach.declared ? `<div class="fn-box" style="font-size:12px"><b>&#x26A0;&#xFE0F; Breach trigger.</b> This inject contains a breach indicator. After responses are saved, the breach declaration gate opens.</div>` : ''}
     <div style="display:flex;gap:8px;justify-content:space-between;align-items:center">
-      <button class="btn btn-outline btn-sm" onclick="ttPrevInject()" ${idx === 0 ? 'disabled' : ''}>← Previous inject</button>
+      <button class="btn btn-outline btn-sm" onclick="ttPrevInject()" ${!canGoBack ? 'disabled' : ''}>← Previous inject</button>
       <div style="display:flex;gap:6px">
         <button class="btn btn-cyan btn-sm" onclick="ttSaveResponses(${idx}, false)">Save responses</button>
         <button class="btn btn-primary" onclick="ttSaveResponses(${idx}, true)">Save & continue →</button>
       </div>
     </div>
+    ${tteRenderBranchPanel('ttSaveAndBranch')}
   </div>
   ${ttRenderLobbyPanel()}
   ${ttRenderResponseFeedPanel(idx)}`;
@@ -916,13 +950,20 @@ function ttSetCrit(idx, roleId, c) {
 
 function ttPrevInject() {
   ttSnapshot();
-  if (ttState.currentInject > 0) { ttState.currentInject -= 1; ttRender(); }
+  if (tteCanGoBack()) {
+    ttePrev();
+    ttState.currentInject = tteState.currentIndex;
+    ttRender();
+  } else if (ttState.currentInject > 0) {
+    ttState.currentInject -= 1;
+    ttRender();
+  }
 }
 
 async function ttSaveResponses(idx, advance) {
   ttSnapshot();
-  const scenario = TT_SCENARIOS[ttState.scenarioId];
-  const inj = scenario.injects[idx];
+  const scenario = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
+  const inj = (tteState.scenario ? tteCurrentInject() : null) || scenario.injects[idx];
   for (const r of TT_ROLES) {
     const rr = (ttState.responses[idx] && ttState.responses[idx][r.id]) || {};
     const text = (rr.text || '').trim();
@@ -940,20 +981,60 @@ async function ttSaveResponses(idx, advance) {
   await ttLog('inject_responses_saved', { inject: idx });
   toast('Responses saved', '#15803d');
   if (!advance) { ttRender(); return; }
-  // Advance
-  if (inj.triggersBreach && !ttState.breach.declared) {
+  // Advance via default branch
+  await _ttAdvance(idx, 'default', inj);
+}
+
+// Shared advance logic — used by ttSaveResponses AND ttSaveAndBranch
+async function _ttAdvance(idx, branchId, inj) {
+  const resolvedInj = inj || (tteState.scenario ? tteCurrentInject() : TT_SCENARIOS[ttState.scenarioId].injects[idx]);
+  if (resolvedInj && resolvedInj.triggersBreach && !ttState.breach.declared) {
     ttState.view = 'breach';
-  } else if (idx + 1 < scenario.injects.length) {
-    ttState.currentInject = idx + 1;
-  } else if (ttState.breach.declared) {
-    ttState.view = 'notif';
   } else {
-    ttState.view = 'aar';
+    const nextIndex = tteState.scenario
+      ? tteNavigate(branchId)
+      : (idx + 1 < TT_SCENARIOS[ttState.scenarioId].injects.length ? idx + 1 : null);
+    if (nextIndex !== null && nextIndex !== undefined) {
+      ttState.currentInject = nextIndex;
+    } else if (ttState.breach.declared) {
+      ttState.view = 'notif';
+    } else {
+      ttState.view = 'aar';
+    }
   }
   try {
-    await sb.tt.updateSession(ttState.sessionId, { current_inject: ttState.currentInject, updated_at: new Date().toISOString() });
+    await sb.tt.updateSession(ttState.sessionId, {
+      current_inject: ttState.currentInject,
+      inject_path: ttePathJson(),
+      updated_at: new Date().toISOString(),
+    });
   } catch (e) { console.warn('session pointer save failed', e); }
   ttRender();
+}
+
+// Called by branch panel buttons — saves responses then navigates via chosen branch
+async function ttSaveAndBranch(branchId) {
+  ttSnapshot();
+  const idx = ttState.currentInject;
+  const scenario = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
+  const inj = (tteState.scenario ? tteCurrentInject() : null) || scenario.injects[idx];
+  for (const r of TT_ROLES) {
+    const rr = (ttState.responses[idx] && ttState.responses[idx][r.id]) || {};
+    const text = (rr.text || '').trim();
+    if (!text && !rr.criticality) continue;
+    try {
+      await sb.tt.upsertResponse({
+        session_id: ttState.sessionId,
+        inject_index: idx,
+        role_id: r.id,
+        response_text: text || null,
+        criticality: rr.criticality || null,
+      });
+    } catch (e) { console.warn('response save failed for', r.id, e); }
+  }
+  await ttLog('inject_responses_saved', { inject: idx, branch: branchId });
+  toast('Responses saved', '#15803d');
+  await _ttAdvance(idx, branchId, inj);
 }
 
 // ---- BREACH GATE ----
@@ -1023,13 +1104,20 @@ async function ttDeclareBreach() {
     });
     await ttLog('breach_declared', { ts, rationale: ttState.breach.rationale });
     toast('Breach declared — notification clock started', '#b91c1c');
-    const scenario = TT_SCENARIOS[ttState.scenarioId];
-    if (ttState.currentInject + 1 < scenario.injects.length) {
-      ttState.currentInject += 1;
+    // Advance to next inject via engine (or fallback to index+1)
+    const scenario = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
+    const nextIndex = tteState.scenario
+      ? tteNavigate('default')
+      : (ttState.currentInject + 1 < scenario.injects.length ? ttState.currentInject + 1 : null);
+    if (nextIndex !== null && nextIndex !== undefined) {
+      ttState.currentInject = nextIndex;
       ttState.view = 'inject';
     } else {
       ttState.view = 'notif';
     }
+    try {
+      await sb.tt.updateSession(ttState.sessionId, { inject_path: ttePathJson(), updated_at: new Date().toISOString() });
+    } catch (e) { console.warn('inject path save failed', e); }
     ttRender();
   } catch (e) { toast('Could not save breach — ' + e.message, '#dc2626'); }
 }
