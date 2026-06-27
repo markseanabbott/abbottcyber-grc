@@ -1,6 +1,6 @@
 {
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "created": "2026-05-14",
   "updated": "2026-06-26 (session 84)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
