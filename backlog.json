@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.4.1",
   "created": "2026-05-14",
-  "updated": "2026-06-26 (session 83)",
+  "updated": "2026-06-26 (session 84)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -686,6 +686,13 @@
           "done": true,
           "phase": 1,
           "notes": "js/home.js: added group field to each WIDGET_CATALOG entry mapping to nav group ID (g_assessments, g_governance, g_reporting, g_exercises — maturity widget has no group, always visible). renderDashWidget() now checks both hasPageAccess(def.nav) and hasModuleAccess(def.group). _renderCustomizePanel() available list filtered by same dual check."
+        },
+        {
+          "id": "ux10",
+          "text": "Exercise scoring — A–F grade per completed exercise, performance trend sparkline at top of exercises page, tabletop dashboard widget upgraded from generic link card to score/grade/sparkline widget matching CIS/Insurance style.",
+          "done": true,
+          "phase": 1,
+          "notes": "js/home.js: exCalcScore(row) — op: severity declared (34) + breach decision (33) + log ≥3 entries (33); AI: inject notes (40) + discussion (30) + notif checklist (30). exGrade(score) → {letter,color,bg}. renderExercisesHub() adds scored rows, performance trend card (grade letter + full-width sparkline canvas + grade legend A-F) above stats strip, Grade column in history table. _widgetTabletop(h) — new dashboard widget: latest grade letter big, score%, delta, 60×24 sparkline, avg/count. WIDGET_CATALOG tabletop: type changed to 'tabletop', nav to 'exercises'. drawExSparkline(canvasId) generic canvas draw via data-scores attribute. drawExPageCharts() called on exercises nav. drawHomeCharts() calls drawExSparkline('wd-trend-tabletop'). exHubEnsureOp() re-renders on home so dashboard widget updates when op sessions arrive."
         }
       ]
     },
