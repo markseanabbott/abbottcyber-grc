@@ -885,60 +885,156 @@ async function ttSubmitDeclaration() {
   } catch (e) { toast('Could not save declaration — ' + e.message, '#dc2626'); }
 }
 
-// ---- INJECT ----
+// ---- INJECT (redesigned) ----
+
+const TT_NIST_SHORT = ['Preparation','Detection','Containment','Eradication','Recovery','Post-incident'];
+const TT_PHASE_CLASSES = ['prep','detection','containment','eradication','recovery','post'];
+
+function ttNewAppBar(scenario, pathNum, totalInj) {
+  return `<div class="tt-app-bar">
+    <div>
+      <div class="tt-app-bar-title">${scenario.title} <span style="opacity:0.5;font-weight:400">· ${ttState.facilitatorName || '—'}</span></div>
+      <div class="tt-app-bar-sub">Session: ${ttState.sessionCode || '—'}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="tt-inject-counter">Inject ${pathNum} of ${totalInj}</span>
+      <span class="tt-live-pill">LIVE</span>
+    </div>
+  </div>`;
+}
+
+function ttNewNistBar(activeIdx) {
+  let html = '<div class="tt-nist-bar">';
+  TT_NIST_SHORT.forEach((label, i) => {
+    const isDone = i < activeIdx;
+    const isNow  = i === activeIdx;
+    html += `<div class="tt-nist-step">
+      <div class="tt-nist-dot ${isDone ? 'done' : isNow ? 'now' : ''}">${isDone ? '✓' : (i + 1)}</div>
+      <span class="tt-nist-label ${isNow ? 'now' : ''}">${label}</span>
+    </div>`;
+    if (i < TT_NIST_SHORT.length - 1) html += `<div class="tt-nist-line ${isDone ? 'done' : ''}"></div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+function ttRenderGameCard(inj, pathNum) {
+  const phaseClass  = TT_PHASE_CLASSES[inj.phaseIdx] || 'detection';
+  const phaseLabel  = TT_NIST_PHASES[inj.phaseIdx] || 'Detection & Analysis';
+  const ingestRaw   = (inj.ingest || '').toLowerCase();
+  const ingestClass = ingestRaw.includes('psa') ? 'psa' : ingestRaw.includes('soc') ? 'soc' : 'technician';
+  const ingestLabel = ingestRaw.includes('psa') ? 'PSA' : ingestRaw.includes('soc') ? 'SOC' : 'TECH';
+  const cardCode    = `INJ-${String(pathNum).padStart(2, '0')}`;
+  const primaryRoles = inj.primaryRoles || ['ic','tl','cl','lc','es'];
+
+  // Normalise MITRE — supports single object or array
+  const mitreRaw  = inj.mitre;
+  const mitreList = Array.isArray(mitreRaw)
+    ? mitreRaw
+    : (mitreRaw ? [{ tactic: mitreRaw.tactic, tech: mitreRaw.technique }] : []);
+
+  const mitreHtml = mitreList.length ? `
+    <div class="tt-card-section-label">MITRE ATT&amp;CK</div>
+    <div class="tt-mitre-list">
+      ${mitreList.map(m => {
+        const tacticId = (m.tactic || '').split(' ')[0];
+        const techText = m.tech || m.technique || '';
+        return `<div class="tt-mitre-row">
+          <span class="tt-mitre-tactic">${tacticId}</span>
+          <span class="tt-mitre-tech">${techText}</span>
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
+  const pipHtml = TT_ROLES.map(r =>
+    `<div class="tt-pip ${r.id} ${primaryRoles.includes(r.id) ? 'primary' : ''}" title="${r.name}">${r.icon}</div>`
+  ).join('');
+
+  return `<div class="tt-game-card">
+    <div class="tt-card-head ${phaseClass}">
+      <div class="tt-card-phase">${phaseLabel}</div>
+      <div class="tt-card-title">${inj.title}</div>
+      <div class="tt-card-badge">
+        <span class="tt-ingest-label ${ingestClass}">${ingestLabel}</span>
+        Inject ${pathNum}
+      </div>
+    </div>
+    <div class="tt-card-body">
+      <div class="tt-card-desc">${inj.body}</div>
+      ${mitreHtml}
+      <div class="tt-card-section-label">Roles</div>
+      <div class="tt-role-pips">${pipHtml}</div>
+    </div>
+    <div class="tt-card-footer">
+      <span class="tt-card-code">${cardCode}</span>
+      ${inj.triggersBreach ? '<span style="color:#ef4444;font-size:12px">&#x26A0;</span>' : ''}
+    </div>
+  </div>`;
+}
+
+function ttRenderRoleRows(idx, responses, inj) {
+  const primaryRoles = inj.primaryRoles || ['ic','tl','cl','lc','es'];
+  return `<div class="tt-response-area">
+    <div class="tt-response-label">Responses</div>
+    ${TT_ROLES.map(r => {
+      const rr      = responses[r.id] || {};
+      const crit    = rr.criticality || '';
+      const primary = primaryRoles.includes(r.id);
+      const placeholder = primary
+        ? (inj.rolePrompts && inj.rolePrompts[r.id] ? inj.rolePrompts[r.id] : r.name + ' response…')
+        : 'Not primary this inject';
+      const safeVal = (rr.text || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+      return `<div class="tt-role-row${primary ? '' : ' dimmed'}">
+        <div class="tt-role-icon ${r.id}" title="${r.name}">${r.icon}</div>
+        <span class="tt-role-name">${r.id.toUpperCase()}</span>
+        <input class="tt-role-input" id="ttResp_${idx}_${r.id}"
+          placeholder="${placeholder.replace(/"/g, '&quot;')}"
+          value="${safeVal}" />
+        <button class="tt-crit-btn ${crit.toLowerCase()}"
+          onclick="ttCycleCrit(${idx},'${r.id}','${crit}')">${crit || '—'}</button>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
 function ttRenderInject() {
   const scenario = (tteState.scenario) || TT_SCENARIOS[ttState.scenarioId];
-  const idx = ttState.currentInject;
-  const inj = (tteState.scenario ? tteCurrentInject() : null) || scenario.injects[idx];
+  const idx      = ttState.currentInject;
+  const inj      = (tteState.scenario ? tteCurrentInject() : null) || scenario.injects[idx];
   if (!inj) {
-    // Past the last inject — pick next gate
     ttState.view = ttState.breach.declared ? 'notif' : 'aar';
     return renderTabletop();
   }
   const responses = ttState.responses[idx] || {};
-  const pathNum   = (tteState.injectPath || []).length + 1;  // 1-based position in path
+  const pathNum   = (tteState.injectPath || []).length + 1;
   const totalInj  = (scenario.injects || []).length;
   const canGoBack = tteCanGoBack() || idx > 0;
+
   return `${renderTierBanner()}
-  ${ttHeaderBar()}
-  ${ttNistTrack(inj.phaseIdx)}
-  <div class="inject-card">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
-      <span class="badge b-cyan">Inject ${pathNum} of ${totalInj}</span>
-      <span class="badge b-gray">${inj.ingest}</span>
-      <span class="badge b-navy">${TT_NIST_PHASES[inj.phaseIdx]}</span>
-    </div>
-    <div style="font-size:14px;font-weight:700;margin-bottom:6px">${inj.title}</div>
-    <div class="inject-body-box">${inj.body}</div>
-    <div class="role-grid">
-      ${TT_ROLES.map(r => {
-        const rr = responses[r.id] || {};
-        const crit = rr.criticality || '';
-        return `<div class="role-resp">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-            <span style="font-size:14px">${r.icon}</span>
-            <div style="font-size:11px;font-weight:700;color:var(--navy)">${r.name}</div>
-          </div>
-          <div style="font-size:11px;color:var(--muted);line-height:1.4;margin-bottom:6px"><b>Prompt:</b> ${inj.rolePrompts[r.id]}</div>
-          <textarea id="ttResp_${idx}_${r.id}" placeholder="Action / decision taken" style="min-height:48px;font-size:11px">${(rr.text || '').replace(/</g,'&lt;')}</textarea>
-          <div style="margin-top:5px">
-            ${['Critical','High','Medium','Low'].map(c => `<button class="crit-btn ${crit === c ? 'sel-' + c : ''}" onclick="ttSetCrit(${idx},'${r.id}','${c}')">${c}</button>`).join(' ')}
-          </div>
-        </div>`;
-      }).join('')}
-    </div>
-    ${inj.triggersBreach && !ttState.breach.declared ? `<div class="fn-box" style="font-size:12px"><b>&#x26A0;&#xFE0F; Breach trigger.</b> This inject contains a breach indicator. After responses are saved, the breach declaration gate opens.</div>` : ''}
-    <div style="display:flex;gap:8px;justify-content:space-between;align-items:center">
-      <button class="btn btn-outline btn-sm" onclick="ttPrevInject()" ${!canGoBack ? 'disabled' : ''}>← Previous inject</button>
-      <div style="display:flex;gap:6px">
-        <button class="btn btn-cyan btn-sm" onclick="ttSaveResponses(${idx}, false)">Save responses</button>
-        <button class="btn btn-primary" onclick="ttSaveResponses(${idx}, true)">Save & continue →</button>
-      </div>
+  <div class="tt-inject-frame">
+    ${ttNewAppBar(scenario, pathNum, totalInj)}
+    ${ttNewNistBar(inj.phaseIdx)}
+    <div class="tt-inject-body">
+      ${ttRenderGameCard(inj, pathNum)}
+      ${ttRenderRoleRows(idx, responses, inj)}
     </div>
     ${tteRenderBranchPanel('ttSaveAndBranch')}
+    <div class="tt-action-bar">
+      <button class="tt-btn tt-btn-ghost" onclick="ttPrevInject()" ${!canGoBack ? 'disabled' : ''}>← Previous inject</button>
+      <div style="display:flex;gap:8px">
+        <button class="tt-btn tt-btn-outline" onclick="ttSaveResponses(${idx}, false)">Save responses</button>
+        <button class="tt-btn tt-btn-primary" onclick="ttSaveResponses(${idx}, true)">Save &amp; continue →</button>
+      </div>
+    </div>
   </div>
   ${ttRenderLobbyPanel()}
   ${ttRenderResponseFeedPanel(idx)}`;
+}
+
+function ttCycleCrit(idx, roleId, current) {
+  const order = ['','Critical','High','Medium','Low'];
+  const next = order[(order.indexOf(current) + 1) % order.length];
+  ttSetCrit(idx, roleId, next);
 }
 
 function ttSetCrit(idx, roleId, c) {

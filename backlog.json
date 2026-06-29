@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5.0",
   "created": "2026-05-14",
-  "updated": "2026-06-27 (session 88)",
+  "updated": "2026-06-29 (session 89)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1496,6 +1496,13 @@
       "description": "Technical scenario track for IT and security teams with vCISO facilitator console.",
       "items": [
         {
+          "id": "tt_ui_1",
+          "text": "Inject card UI redesign: rebuilt ttRenderInject() with game-card layout — phase-coloured header band (detection/containment/eradication/recovery/post), MITRE tags, role pips with primary dimming, compact role response rows with colour-coded icons, criticality cycle button. New NIST dot tracker. All CSS in modules.css (tt-* classes), role/breach colour vars in core.css. Matching Cowork design spec exactly.",
+          "done": true,
+          "priority": "High",
+          "notes": "js/tabletop.js: ttRenderInject() rebuilt, helpers ttNewAppBar(), ttNewNistBar(), ttRenderGameCard(), ttRenderRoleRows(), ttCycleCrit() added. css/core.css: --role-ic/tl/cl/lc/es + breach vars. css/modules.css: full tt-* class block. Design refs: tabletop_design_spec.md, tabletop_sample_inject_screen.html."
+        },
+        {
           "id": "t11",
           "text": "Scenarios: ransomware via phishing (built), BEC wire fraud (built), active directory compromise, cloud misconfiguration, credential theft",
           "done": true
@@ -1894,6 +1901,12 @@
           "id": "tt_auto_10",
           "text": "Participant progress display: during the exercise each participant sees a live inject counter, role status indicators (who has responded), and a running exercise clock",
           "done": false
+        },
+        {
+          "id": "ata_ai_7",
+          "text": "Critical miss consequence screen: when Haiku detects a major eradication or remediation failure (e.g. network not isolated, MFA not reset, backups not verified before restore), interrupt the inject flow with a full-screen red CONSEQUENCE ACTIVATED card before the next inject loads. Shows: what was missed, which role owned it, and the resulting escalation narrated in plain language. Holds 8–10 seconds or until dismissed. Designed to be uncomfortable.",
+          "done": false,
+          "priority": "High"
         }
       ]
     },

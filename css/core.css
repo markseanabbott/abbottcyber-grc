@@ -7,6 +7,8 @@
   --sidebar-w:240px;
   --header-h:85px;
   --outer-pad:48px;
+  --role-ic:#b45309;--role-tl:#1d4ed8;--role-cl:#7c3aed;--role-lc:#059669;--role-es:#c2410c;
+  --breach-bg:#450a0a;--breach-head:#7f1d1d;--breach-text:#fca5a5;--breach-border:rgba(252,165,165,0.2);
 }
 html{background:#fff;font-size:16px}
 body{font-family:'Inter',sans-serif;font-weight:400;background:#fff;color:var(--text);font-size:16px;line-height:1.5;min-height:100vh;padding:0 var(--outer-pad);zoom:1.2}

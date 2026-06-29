@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<!--
+  TABLETOP REDESIGN — BREACH GATE SAMPLE
+  =======================================
+  Reference component for Claude Code.
+  This is the breach declaration screen — triggered mid-exercise when breach evidence is confirmed.
+  Both IC and ES must sign before the declare button unlocks.
+  Copy CSS patterns and JS logic into js/tabletop.js and css/modules.css.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Breach gate — design sample</title>
+<style>
+  :root {
+    --navy: #152168;
+    --cyan: #07B4D9;
+    --border: #dde3ef;
+    --text:  #1a2340;
+    --muted: #5a6a8a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #1a0505; font-family: 'Kanit', sans-serif; padding: 24px; color: var(--text); }
+
+  /* ── Breach gate wrapper ── */
+  /*
+    The breach gate replaces the normal inject screen entirely.
+    It uses a dark red treatment throughout — no light surfaces.
+    Render it by swapping the inject screen div content, not a modal.
+  */
+  .breach-gate {
+    border-radius: 12px;
+    overflow: hidden;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  /* Header band */
+  .breach-header {
+    background: #7f1d1d;
+    padding: 20px 24px;
+    text-align: center;
+  }
+  .breach-trigger-pill {
+    display: inline-block;
+    background: rgba(220,38,38,0.25);
+    border: 0.5px solid rgba(252,165,165,0.3);
+    color: #fca5a5;
+    font-size: 10px;
+    padding: 3px 14px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .breach-headline {
+    font-size: 20px;
+    font-weight: 500;
+    color: #fca5a5;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .breach-subtext {
+    font-size: 12px;
+    color: rgba(252,165,165,0.75);
+    line-height: 1.6;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+
+  /* Body */
+  .breach-body {
+    background: #450a0a;
+    padding: 18px 22px 20px;
+  }
+
+  /* Evidence box */
+  .breach-evidence {
+    padding: 12px 14px;
+    background: rgba(252,165,165,0.07);
+    border-radius: 8px;
+    border: 0.5px solid rgba(252,165,165,0.15);
+    font-size: 12px;
+    color: rgba(252,165,165,0.85);
+    line-height: 1.65;
+    margin-bottom: 16px;
+  }
+  .breach-evidence strong { color: #f87171; }
+
+  /* Co-sign grid — 2 columns */
+  .breach-cosign-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .cosign-slot {
+    border-radius: 10px;
+    border: 1.5px dashed rgba(252,165,165,0.25);
+    padding: 14px;
+    text-align: center;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  /* Signed state — applied via JS when role signs */
+  .cosign-slot.signed {
+    border-style: solid;
+    border-color: #16a34a;
+    background: rgba(22,163,74,0.12);
+  }
+
+  .cosign-role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.08);
+    padding: 4px 11px;
+    border-radius: 20px;
+    margin-bottom: 8px;
+    font-size: 11px;
+    color: #fca5a5;
+  }
+  .cosign-slot.signed .cosign-role-badge {
+    background: rgba(22,163,74,0.2);
+    color: #4ade80;
+  }
+
+  .cosign-status-icon {
+    font-size: 24px;
+    margin: 6px 0;
+    color: rgba(252,165,165,0.3);
+    display: block;
+  }
+  .cosign-slot.signed .cosign-status-icon {
+    color: #4ade80;
+  }
+
+  .cosign-status-text {
+    font-size: 11px;
+    color: rgba(252,165,165,0.45);
+  }
+  .cosign-slot.signed .cosign-status-text {
+    color: #4ade80;
+  }
+
+  .cosign-signed-name {
+    font-size: 10px;
+    color: rgba(74,222,128,0.6);
+    margin-top: 3px;
+    display: none;
+  }
+  .cosign-slot.signed .cosign-signed-name { display: block; }
+
+  .cosign-sign-btn {
+    margin-top: 8px;
+    background: rgba(255,255,255,0.1);
+    border: 0.5px solid rgba(255,255,255,0.2);
+    color: #fca5a5;
+    padding: 5px 13px;
+    border-radius: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: 'Kanit', sans-serif;
+  }
+  .cosign-sign-btn:hover { background: rgba(255,255,255,0.15); }
+  .cosign-slot.signed .cosign-sign-btn { display: none; }
+
+  /* Rationale */
+  .breach-rationale-label {
+    display: block;
+    font-size: 11px;
+    color: rgba(252,165,165,0.6);
+    margin-bottom: 6px;
+  }
+  .breach-rationale-textarea {
+    width: 100%;
+    background: rgba(255,255,255,0.07);
+    border: 0.5px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    color: #fca5a5;
+    padding: 10px 12px;
+    font-size: 12px;
+    resize: none;
+    height: 70px;
+    font-family: 'Kanit', sans-serif;
+    margin-bottom: 14px;
+  }
+  .breach-rationale-textarea::placeholder { color: rgba(252,165,165,0.3); }
+
+  /* Declare button
+     Default: locked — greyed out, cursor not-allowed
+     When both cosign-slots have class .signed: unlock it via JS
+  */
+  .breach-declare-btn {
+    width: 100%;
+    padding: 13px;
+    border-radius: 8px;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'Kanit', sans-serif;
+    cursor: not-allowed;
+    background: #991b1b;
+    color: rgba(255,255,255,0.4);
+    transition: background 0.2s, color 0.2s;
+  }
+  /* Unlocked state — add class .ready via JS when both signed */
+  .breach-declare-btn.ready {
+    cursor: pointer;
+    background: #dc2626;
+    color: #fff;
+  }
+  .breach-declare-btn.ready:hover { background: #b91c1c; }
+
+  .breach-lock-hint {
+    text-align: center;
+    font-size: 11px;
+    color: rgba(252,165,165,0.35);
+    margin-top: 8px;
+  }
+  .breach-lock-hint.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div class="breach-gate">
+
+  <!-- Header -->
+  <div class="breach-header">
+    <div class="breach-trigger-pill">Inject 3 trigger — breach threshold met</div>
+    <div class="breach-headline">⚠ Breach declaration required</div>
+    <div class="breach-subtext">
+      Guest PII confirmed in exfiltrated PMS data. IC and ES must both authorize before the 72-hour notification clock starts.
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="breach-body">
+
+    <!-- Evidence -->
+    <div class="breach-evidence">
+      <strong>What triggered this:</strong> Inject 3 revealed guest reservation data in the encrypted file list.
+      The IR firm has confirmed data exfiltration from the PMS database 18 hours before encryption.
+      Guest names, card-type indicators, and stay dates are in scope.
+      This meets the breach threshold under state AG notification law.
+    </div>
+
+    <!-- Co-sign grid -->
+    <div class="breach-cosign-grid">
+
+      <!-- IC slot — pre-signed in this sample -->
+      <div class="cosign-slot signed" id="slot-ic">
+        <div class="cosign-role-badge">🧭 Incident Commander</div>
+        <span class="cosign-status-icon">✓</span>
+        <div class="cosign-status-text" id="ic-status">Signed — 10:47 AM</div>
+        <div class="cosign-signed-name">Sarah Mitchell</div>
+        <button class="cosign-sign-btn" onclick="sign('ic')">Sign as IC →</button>
+      </div>
+
+      <!-- ES slot — unsigned in this sample -->
+      <div class="cosign-slot" id="slot-es">
+        <div class="cosign-role-badge">💼 Executive Sponsor</div>
+        <span class="cosign-status-icon">🔒</span>
+        <div class="cosign-status-text" id="es-status">Awaiting sign-off</div>
+        <div class="cosign-signed-name">James Thornton</div>
+        <button class="cosign-sign-btn" onclick="sign('es')">Sign as ES →</button>
+      </div>
+
+    </div>
+
+    <!-- Rationale -->
+    <label class="breach-rationale-label">Rationale for declaration (required)</label>
+    <textarea class="breach-rationale-textarea" placeholder="Describe the evidence that confirms this is a reportable breach…">Guest PII confirmed in exfiltrated PMS data. Card-type indicators present. IR firm confirms exfiltration 18h before encryption event. Meets breach threshold under state notification law.</textarea>
+
+    <!-- Declare button -->
+    <button class="breach-declare-btn" id="declare-btn" onclick="declare()">
+      ⚠ Declare breach — start 72-hour clock
+    </button>
+    <div class="breach-lock-hint" id="lock-hint">Waiting for ES signature to unlock</div>
+
+  </div>
+</div>
+
+<script>
+  // Track which roles have signed
+  var signed = { ic: true, es: false }; // IC pre-signed for sample
+
+  function sign(role) {
+    signed[role] = true;
+    var slot = document.getElementById('slot-' + role);
+    slot.classList.add('signed');
+    var now = new Date();
+    var time = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0') + ' ' + (now.getHours() >= 12 ? 'PM' : 'AM');
+    document.getElementById(role + '-status').textContent = 'Signed — ' + time;
+    checkUnlock();
+  }
+
+  function checkUnlock() {
+    var btn = document.getElementById('declare-btn');
+    var hint = document.getElementById('lock-hint');
+    if (signed.ic && signed.es) {
+      btn.classList.add('ready');
+      hint.classList.add('hidden');
+    }
+  }
+
+  function declare() {
+    if (!signed.ic || !signed.es) return;
+    // In production: log breach timestamp, start 72hr clock, navigate to notification checklist
+    alert('Breach declared. 72-hour clock started.\n\nIn production: navigate to notification checklist screen.');
+  }
+
+  // Run on load to set initial state
+  checkUnlock();
+</script>
+
+</body>
+</html>

@@ -215,3 +215,68 @@
 .cis-ans-btn.sel-partial{background:var(--amber-bg);border-color:#fcd34d;color:var(--amber)}
 .cis-ans-btn.sel-na{background:#f1f5f9;border-color:#cbd5e1;color:var(--muted)}
 .cis-ans-btn.sel-cc{background:#f0fdfa;border-color:#5eead4;color:#0f766e}
+
+/* ── Tabletop redesign ── */
+.tt-inject-frame{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff;margin-bottom:0.85rem}
+.tt-app-bar{background:var(--navy);color:#fff;padding:10px 16px;display:flex;align-items:center;justify-content:space-between}
+.tt-app-bar-title{font-size:14px;font-weight:500}
+.tt-app-bar-sub{font-size:11px;opacity:0.6;margin-top:2px}
+.tt-inject-counter{font-size:14px;font-weight:500;color:var(--cyan2)}
+.tt-live-pill{background:rgba(255,255,255,0.15);border:0.5px solid rgba(255,255,255,0.25);color:#fff;font-size:10px;padding:2px 9px;border-radius:10px}
+.tt-nist-bar{display:flex;align-items:center;padding:9px 16px;background:#f8fafc;border-bottom:1px solid var(--border);overflow-x:auto;gap:0}
+.tt-nist-step{display:flex;align-items:center;gap:5px;flex:1;min-width:70px}
+.tt-nist-dot{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted);flex-shrink:0;background:#fff}
+.tt-nist-dot.done{background:#dcfce7;border-color:#16a34a;color:#16a34a}
+.tt-nist-dot.now{background:var(--cyan);border-color:var(--cyan);color:#fff}
+.tt-nist-label{font-size:9px;color:var(--muted);white-space:nowrap}
+.tt-nist-label.now{color:var(--cyan);font-weight:500}
+.tt-nist-line{flex:1;height:1px;background:var(--border);margin:0 3px;flex-shrink:0}
+.tt-nist-line.done{background:#16a34a}
+.tt-inject-body{display:flex;gap:16px;padding:16px;background:#f8fafc;flex-wrap:wrap}
+.tt-game-card{width:175px;border-radius:10px;overflow:hidden;border:2px solid var(--border);background:#fff;flex-shrink:0;font-size:11px}
+.tt-card-head{padding:10px 12px 9px;text-align:center}
+.tt-card-head.prep,.tt-card-head.detection{background:#1e3a8a}
+.tt-card-head.containment{background:#78350f}
+.tt-card-head.eradication{background:#7c2d12}
+.tt-card-head.recovery{background:#064e3b}
+.tt-card-head.post{background:#1e293b}
+.tt-card-phase{font-size:8px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.7;color:#fff;margin-bottom:4px}
+.tt-card-title{font-size:10px;font-weight:500;color:#fff;line-height:1.3;text-transform:uppercase}
+.tt-card-badge{display:inline-flex;align-items:center;gap:4px;margin-top:7px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:2px 9px;font-size:8px;color:#fff}
+.tt-ingest-label{font-size:7px;padding:1px 5px;border-radius:3px;font-weight:500}
+.tt-ingest-label.psa{background:rgba(250,206,138,0.25);color:#fed7aa}
+.tt-ingest-label.soc{background:rgba(7,180,217,0.25);color:#07D1F2}
+.tt-ingest-label.technician{background:rgba(124,58,237,0.25);color:#ddd6fe}
+.tt-card-body{padding:9px 11px}
+.tt-card-desc{font-size:9px;line-height:1.55;color:var(--muted);border-bottom:0.5px solid var(--border);padding-bottom:7px;margin-bottom:7px}
+.tt-card-section-label{font-size:8px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:5px}
+.tt-mitre-list{margin-bottom:8px}
+.tt-mitre-row{display:flex;align-items:flex-start;gap:4px;margin-bottom:3px}
+.tt-mitre-tactic{font-size:7px;padding:1px 4px;border-radius:2px;background:#f0f4fa;color:var(--navy);border:0.5px solid var(--border);white-space:nowrap;flex-shrink:0;line-height:1.4}
+.tt-mitre-tech{font-size:8px;color:var(--muted);line-height:1.35}
+.tt-role-pips{display:flex;justify-content:center;gap:3px;margin:6px 0 5px}
+.tt-pip{width:18px;height:18px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;opacity:0.2}
+.tt-pip.primary{opacity:1}
+.tt-pip.ic{background:var(--role-ic)}.tt-pip.tl{background:var(--role-tl)}.tt-pip.cl{background:var(--role-cl)}.tt-pip.lc{background:var(--role-lc)}.tt-pip.es{background:var(--role-es)}
+.tt-card-footer{background:#f8fafc;border-top:0.5px solid var(--border);padding:5px 10px;display:flex;justify-content:space-between;align-items:center}
+.tt-card-code{font-size:8px;color:var(--muted);font-family:monospace}
+.tt-response-area{flex:1;min-width:200px}
+.tt-response-label{font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px}
+.tt-role-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border:0.5px solid var(--border);border-radius:7px;background:#fff;margin-bottom:6px}
+.tt-role-row.dimmed{opacity:0.45}
+.tt-role-icon{width:24px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex-shrink:0}
+.tt-role-icon.ic{background:var(--role-ic)}.tt-role-icon.tl{background:var(--role-tl)}.tt-role-icon.cl{background:var(--role-cl)}.tt-role-icon.lc{background:var(--role-lc)}.tt-role-icon.es{background:var(--role-es)}
+.tt-role-name{font-size:10px;font-weight:500;color:var(--text);min-width:24px}
+.tt-role-input{flex:1;border:none;background:transparent;font-size:11px;color:var(--text);outline:none;font-family:'Kanit','Inter',sans-serif;min-width:0}
+.tt-role-input::placeholder{color:#b0b8cc}
+.tt-crit-btn{font-size:9px;padding:2px 7px;border-radius:4px;border:0.5px solid var(--border);color:var(--muted);background:transparent;cursor:pointer;flex-shrink:0;white-space:nowrap;font-family:'Kanit','Inter',sans-serif}
+.tt-crit-btn.critical{border-color:#ef4444;color:#ef4444}
+.tt-crit-btn.high{border-color:#f59e0b;color:#b45309}
+.tt-crit-btn.medium{border-color:var(--cyan);color:#0369a1}
+.tt-crit-btn.low{border-color:var(--border);color:var(--muted)}
+.tt-action-bar{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;border-top:1px solid var(--border);background:#f8fafc}
+.tt-btn{padding:7px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Kanit','Inter',sans-serif}
+.tt-btn-ghost{border:0.5px solid var(--border);background:transparent;color:var(--muted)}
+.tt-btn-ghost:disabled{opacity:0.35;cursor:not-allowed}
+.tt-btn-outline{border:0.5px solid var(--border);background:#fff;color:var(--text)}
+.tt-btn-primary{border:none;background:var(--navy);color:#fff}
