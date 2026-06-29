@@ -366,19 +366,20 @@ function renderInsuranceCostTab() {
   const run = insState.costRun;
   if (!run) return renderInsuranceDashboard();
   const answers = run.answers || {};
-  const { gaps } = rcExtractInsGaps(answers);
+  const { gaps, configGaps } = rcExtractInsGaps(answers);
   const gapCount = Object.keys(RC_INS_TO_TOOL).filter(qId => (answers[qId] ?? -1) < 1.0 && answers[qId] !== undefined).length;
+  const totalToolTypes = gaps.length + configGaps.length;
 
   return `
   ${renderTierBanner()}
   <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:8px">
     <div>
       <div style="font-size:17px;font-weight:700">💲 Cost to Remediate</div>
-      <div style="font-size:12px;color:var(--muted)">${escH(currentOrg.name)} · Insurance Readiness · ${run.date || '—'} · ${gapCount} gap${gapCount!==1?'s':''} across ${gaps.length} tool type${gaps.length!==1?'s':''}</div>
+      <div style="font-size:12px;color:var(--muted)">${escH(currentOrg.name)} · Insurance Readiness · ${run.date || '—'} · ${gapCount} gap${gapCount!==1?'s':''} across ${totalToolTypes} tool type${totalToolTypes!==1?'s':''}</div>
     </div>
     <button class="btn btn-outline btn-sm" onclick="insState.view='dashboard';renderMain()">← Back</button>
   </div>
-  ${renderRemediationCosts(gaps, currentOrg.id, { runDate: run.date })}`;
+  ${renderRemediationCosts(gaps, currentOrg.id, { configGaps, runDate: run.date })}`;
 }
 
 function insOpenAssessment(origIdx) {

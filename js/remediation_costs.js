@@ -237,12 +237,21 @@ const RC_INS_TO_TOOL = {
 // ── GAP EXTRACTION ────────────────────────────────────────────
 
 // From CIS answers + goal + (optional) POAM items for risk_decision
+// Returns gaps (tool absent — needs purchase) and configGaps (tool present via
+// Tech Stack but CIS safeguard is unmet — feature/coverage gap, not a new purchase).
 function rcExtractCISGaps(answers, goal, poamItems) {
   const goalN     = { ig1: 1, ig2: 2, ig3: 3 }[goal] || 3;
   const items     = poamItems || {};
-  const typeMap   = {};     // toolType → {label, sources, riskAccepted}
-  const accepted  = [];     // {sf, ctrlName, title, rationale}
-  const noTool    = [];     // ctrl numbers with no tool mapping
+  const typeMap   = {};     // tool absent → needs purchase
+  const configMap = {};     // tool present → feature/coverage gap only
+  const accepted  = [];
+  const noTool    = [];
+
+  // Use Tech Stack confirmed tools (any 'yes') to distinguish missing vs config gap.
+  // If Tech Stack not loaded, confirmedTypes is empty and all gaps treated as missing.
+  const { confirmedTypes = new Set() } = (tsState?.answers && typeof rcExtractTSGaps === 'function')
+    ? rcExtractTSGaps()
+    : {};
 
   CIS_SAFEGUARDS.filter(s =>
     (goal ? s.ig <= goalN : true) &&
@@ -257,30 +266,39 @@ function rcExtractCISGaps(answers, goal, poamItems) {
     }
 
     if (types.length === 0) {
-      // Safeguard has no tool mapping — process/policy/config safeguard
       if (!noTool.find(x => x.ctrl === s.ctrl)) noTool.push({ ctrl:s.ctrl, ctrlName:s.ctrlName });
       return;
     }
 
     types.forEach(t => {
-      if (!typeMap[t]) typeMap[t] = { toolType:t, sources:[] };
-      typeMap[t].sources.push(s.sf);
+      const map = confirmedTypes.has(t) ? configMap : typeMap;
+      if (!map[t]) map[t] = { toolType:t, sources:[] };
+      map[t].sources.push(s.sf);
     });
   });
 
-  return { gaps: Object.values(typeMap), accepted, noTool };
+  return { gaps: Object.values(typeMap), configGaps: Object.values(configMap), accepted, noTool };
 }
 
 // From insurance answers — gap = answered below full score (< 1.0)
+// Splits into gaps (tool absent) and configGaps (tool present via Tech Stack).
 function rcExtractInsGaps(answers) {
-  const typeMap = {};
+  const typeMap   = {};
+  const configMap = {};
+
+  const { confirmedTypes = new Set() } = (tsState?.answers && typeof rcExtractTSGaps === 'function')
+    ? rcExtractTSGaps()
+    : {};
+
   Object.entries(RC_INS_TO_TOOL).forEach(([qId, toolType]) => {
     const score = answers[qId];
     if (score === undefined || score >= 1.0) return;
-    if (!typeMap[toolType]) typeMap[toolType] = { toolType, sources: [] };
-    if (!typeMap[toolType].sources.includes(qId)) typeMap[toolType].sources.push(qId);
+    const map = confirmedTypes.has(toolType) ? configMap : typeMap;
+    if (!map[toolType]) map[toolType] = { toolType, sources: [] };
+    if (!map[toolType].sources.includes(qId)) map[toolType].sources.push(qId);
   });
-  return { gaps: Object.values(typeMap) };
+
+  return { gaps: Object.values(typeMap), configGaps: Object.values(configMap) };
 }
 
 // From tsState answers (tech stack)
@@ -316,7 +334,7 @@ function rcExtractTSGaps() {
 
 function renderRemediationCosts(gaps, orgId, opts = {}) {
   const hc     = rcGetHeadcount(orgId);
-  const { accepted = [], noTool = [], runDate = '' } = opts;
+  const { accepted = [], noTool = [], configGaps = [], runDate = '' } = opts;
 
   // Look up pricing for each gap
   const priced  = [];
@@ -474,7 +492,23 @@ function renderRemediationCosts(gaps, orgId, opts = {}) {
     </div>`;
   }
 
-  const hasAnything = priced.length || missing.length || accepted.length;
+  // Tool present — feature/coverage gap (not a new purchase)
+  let configHtml = '';
+  if (configGaps.length > 0) {
+    configHtml = `
+    <div class="card" style="padding:12px 16px;margin-bottom:1rem;border-left:3px solid #0284c7">
+      <div style="font-size:12px;font-weight:700;margin-bottom:4px;color:#0c4a6e">🔧 ${configGaps.length} tool${configGaps.length !== 1 ? 's' : ''} already deployed — configuration or coverage gap</div>
+      <div style="font-size:11px;color:#075985;margin-bottom:8px;line-height:1.5">These tools are confirmed present in your Tech Stack. The gap is in feature enablement or coverage — <strong>not a new purchase.</strong> Work with your MSP to close the configuration gap.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${configGaps.map(g => {
+          const lbl = typeMeta[g.toolType]?.label || g.toolType;
+          return `<span style="font-size:10px;padding:2px 8px;background:#e0f2fe;border:1px solid #7dd3fc;border-radius:4px;color:#0c4a6e">${escH(lbl)}<span style="opacity:.65;margin-left:4px">(${g.sources.length} control${g.sources.length !== 1 ? 's' : ''})</span></span>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  const hasAnything = priced.length || missing.length || accepted.length || configGaps.length;
 
   return `
     ${hcBanner}
@@ -484,6 +518,7 @@ function renderRemediationCosts(gaps, orgId, opts = {}) {
       <div style="font-weight:700;color:var(--text);margin-bottom:.25rem">No gaps to remediate</div>
       <div style="font-size:12px">All assessed controls are met or not applicable.</div>
     </div>` : ''}
+    ${configHtml}
     ${tableHtml}
     ${missingHtml}
     ${acceptedHtml}

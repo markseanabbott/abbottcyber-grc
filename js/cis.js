@@ -1774,7 +1774,7 @@ function renderCISCostTab() {
     Object.entries(run.answers || {}).filter(([k]) => !k.startsWith('_'))
   );
   const goal = (run.answers || {})._goal || null;
-  const { gaps, accepted, noTool } = rcExtractCISGaps(answers, goal, cisState.poamItems);
+  const { gaps, configGaps, accepted, noTool } = rcExtractCISGaps(answers, goal, cisState.poamItems);
 
   return `
   ${renderTierBanner()}
@@ -1785,7 +1785,7 @@ function renderCISCostTab() {
     </div>
     <button class="btn btn-outline btn-sm" onclick="cisNavToDashboard()">← Back</button>
   </div>
-  ${renderRemediationCosts(gaps, currentOrg.id, { accepted, noTool, runDate: run.date })}`;
+  ${renderRemediationCosts(gaps, currentOrg.id, { accepted, noTool, configGaps, runDate: run.date })}`;
 }
 
 function cisCollectPoamData() {
