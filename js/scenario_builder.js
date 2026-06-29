@@ -100,6 +100,7 @@ function renderSbList() {
       <div style="font-size:12px;color:var(--muted);margin-top:2px">Create MITRE ATT&amp;CK-mapped exercise scenarios. Published scenarios appear in the exercise runner.</div>
     </div>
     <div style="display:flex;gap:8px;flex-shrink:0">
+      <button class="btn btn-outline btn-sm" onclick="sbShowHelp()">&#x2139;&#xFE0F; How to use</button>
       <button class="btn btn-outline btn-sm" onclick="sbNew()">+ New scenario</button>
     </div>
   </div>
@@ -149,7 +150,7 @@ function renderSbList() {
       <thead>
         <tr>
           <th>Title</th><th>Industry</th><th>Difficulty</th>
-          <th style="text-align:center">Injects</th><th style="text-align:right">Action</th>
+          <th style="text-align:center">Injects</th><th>Status</th><th style="text-align:right">Action</th>
         </tr>
       </thead>
       <tbody>
@@ -162,6 +163,7 @@ function renderSbList() {
             <td style="color:var(--muted)">${s.industry || '—'}</td>
             <td>${sbDiffBadge(s.difficulty)}</td>
             <td style="text-align:center;color:var(--text)">${(s.injects || []).length}</td>
+            <td><span class="badge b-green" style="font-size:10px">Published</span></td>
             <td style="text-align:right;white-space:nowrap">
               <div style="display:flex;gap:6px;justify-content:flex-end">
                 <button class="btn btn-outline btn-sm" onclick="sbViewFlowBuiltin('${s.id}')">📊 Flow</button>
@@ -490,6 +492,57 @@ function sbRenderInjectForm(inj, idx, totalInjects) {
 // ---- ACTIONS — LIST VIEW ------------------------------------------
 
 function sbSetFilter(f) { sbState.filterStatus = f; sbRender(); }
+
+function sbShowHelp() {
+  const existing = document.getElementById('sbHelpModal');
+  if (existing) { existing.style.display = 'flex'; return; }
+  const el = document.createElement('div');
+  el.id = 'sbHelpModal';
+  el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;display:flex;align-items:center;justify-content:center';
+  el.onclick = function(e) { if (e.target === el) el.style.display = 'none'; };
+  el.innerHTML = `
+    <div style="background:#fff;border-radius:14px;max-width:580px;width:94%;max-height:85vh;overflow-y:auto;padding:2rem;box-shadow:0 20px 60px rgba(0,0,0,0.25)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+        <div style="font-size:16px;font-weight:700;color:var(--navy)">How to Use Scenario Builder</div>
+        <button onclick="document.getElementById('sbHelpModal').style.display='none'" style="background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;line-height:1">&times;</button>
+      </div>
+      <div style="font-size:13px;color:var(--text);line-height:1.8">
+        <div style="font-weight:700;color:var(--navy);margin-bottom:4px">Two types of scenarios</div>
+        <p style="margin:0 0 1rem">
+          <strong>Built-in scenarios</strong> are pre-built and always live in the Exercise Runner. You cannot edit them directly — clone one to create a customized copy.<br>
+          <strong>Custom scenarios</strong> are yours to create, edit, and publish. They start as <em>Draft</em> and only appear in the Exercise Runner once you publish them.
+        </p>
+        <div style="font-weight:700;color:var(--navy);margin-bottom:4px">To run a built-in scenario</div>
+        <ol style="margin:0 0 1rem;padding-left:1.25rem">
+          <li>Go to <strong>Exercises</strong> in the sidebar.</li>
+          <li>Find the scenario and click <strong>Launch</strong>.</li>
+        </ol>
+        <div style="font-weight:700;color:var(--navy);margin-bottom:4px">To customize a built-in scenario</div>
+        <ol style="margin:0 0 1rem;padding-left:1.25rem">
+          <li>Find the built-in in the <strong>All</strong> tab below.</li>
+          <li>Click <strong>Clone</strong> — this creates an editable copy as a Draft.</li>
+          <li>Edit the title, injects, and settings to fit your client.</li>
+          <li>Click <strong>Publish</strong> to make it live in the Exercise Runner.</li>
+        </ol>
+        <div style="font-weight:700;color:var(--navy);margin-bottom:4px">To create a scenario from scratch</div>
+        <ol style="margin:0 0 1rem;padding-left:1.25rem">
+          <li>Click <strong>+ New scenario</strong> in the top right.</li>
+          <li>Fill in the title, track, difficulty, and summary.</li>
+          <li>Add injects — each inject is a situation card presented to players during the exercise.</li>
+          <li>Use <strong>📊 Flow</strong> to preview how the exercise will play out.</li>
+          <li>Click <strong>Publish</strong> when ready — the scenario will appear in the Exercise Runner.</li>
+        </ol>
+        <div style="font-weight:700;color:var(--navy);margin-bottom:4px">Tabs explained</div>
+        <ul style="margin:0;padding-left:1.25rem">
+          <li><strong>All</strong> — shows everything: your custom scenarios plus all built-ins.</li>
+          <li><strong>Draft</strong> — custom scenarios not yet published.</li>
+          <li><strong>Published</strong> — custom scenarios live in the Exercise Runner.</li>
+        </ul>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(el);
+}
 
 function sbNew() {
   sbState.editing = sbBlankScenario();
