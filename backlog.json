@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5.0",
   "created": "2026-05-14",
-  "updated": "2026-06-29 (session 91)",
+  "updated": "2026-06-29 (session 92)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1487,6 +1487,13 @@
           "text": "Scenario Library (platform-layer): pre-built scenarios by threat profile and vertical — ransomware, BEC/wire fraud, AiTM credential theft, supply chain compromise, regulatory audit surprise. Scenarios include timed injects, role mapping pre-populated from client onboarding data, and frequency tracking for compliance programs (HIPAA, CMMC, cyber insurance).",
           "done": true,
           "notes": "Session 91: js/scenario_library.js (new file). renderScenarioLibrary() — filter bar (industry/threat/compliance/difficulty), 3-col responsive card grid, compliance alert banner (overdue programs shown by amber banner), last-run tracking from tabletop_sessions, per-card role hints derived from org profile (health data→LC note, payment data→TL note, hospitality→CL note, small team→role-merge note). TT_SCENARIO_LIBRARY_META maps all 9 scenario IDs to {threatProfiles, industries, compliance, recommendedFrequency}. SL_COMPLIANCE defines 4 programs (cyber_insurance, hipaa, cmmc, pci_dss) with freq and badge config. slLaunchScenario(id) pre-selects scenario and navigates to tabletop. Two new full scenarios added to TT_SCENARIOS in tabletop.js: aitm_cred_theft (AiTM phishing/session-token hijack, 4 injects, Hard, All industries) and reg_audit_surprise (State AG privacy inquiry, 4 injects, Medium, All industries). Nav: scenario_library added to g_exercises group. slState declared in config.js; reset in selectOrg in app.js."
+        },
+        {
+          "id": "sl3",
+          "title": "Exercises page: exercise history link",
+          "text": "The exercises landing page shows performance stats but has no way to reach the completed exercise list or AAR views. Add a \"View Exercise History\" button or a compact recent-runs table at the bottom of the exercises page so facilitators can review past sessions without navigating elsewhere.",
+          "done": false,
+          "priority": "Low"
         }
       ]
     },
@@ -2225,6 +2232,20 @@
         {
           "id": "ai21",
           "text": "AI Security Assessment — dedicated assessment module covering the technical security posture of an organisation's AI usage, distinct from the governance/compliance focus of NIST AI RMF and ISO 42001. Scope to cover: prompt injection controls, model access and API key management, data sent to AI providers (data leakage risk), AI output validation and human-in-the-loop controls, AI tool inventory and shadow AI, vendor security posture for AI providers, adversarial input handling, and AI-specific incident response. Likely a survey-based format similar to Insurance Readiness or Tech Stack, with scored output and gap report. Ties into TPRA for AI vendor assessment and the AI Tabletop track for incident readiness.",
+          "done": false,
+          "priority": "Medium"
+        },
+        {
+          "id": "ai_pyr_2",
+          "title": "AI pyramid legend",
+          "text": "Add a colour key below the AI maturity pyramid showing all five statuses with their colours: Implemented (green), Partial (yellow), Compensating Control (amber), N/A (grey), Not Addressed (red). Especially needed now that CC and N/A are visually distinct — clients need to know what each colour means.",
+          "done": false,
+          "priority": "Medium"
+        },
+        {
+          "id": "ai_pyr_3",
+          "title": "AI Readiness: org AI role selector — auto-N/A inapplicable sections",
+          "text": "Add a question in the AI Readiness setup or org profile: does this org build AI (developer/vendor) or use AI from third-party vendors? If \"user\", auto-mark Model Development, Training, and related build-side sections as N/A so they render grey instead of red on the pyramid. Prevents misrepresenting AI consumers as having gaps in controls that simply do not apply to them.",
           "done": false,
           "priority": "Medium"
         }
