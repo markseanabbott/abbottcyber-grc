@@ -3418,6 +3418,7 @@ function renderCISReport() {
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         ${generateBtn}
         ${hasCommentary ? `<button class="btn btn-outline btn-sm" onclick="cisState.commentaryEditing=!cisState.commentaryEditing;renderMain()">${cisState.commentaryEditing ? '✕ Cancel' : '✏️ Edit'}</button>` : ''}
+        <button class="btn btn-outline btn-sm" onclick="cisGenerateReportPrompt()" title="Copy prompt to paste into Claude manually">📋 Copy Prompt</button>
       </div>
     </div>
     ${cisState.commentaryEditing
