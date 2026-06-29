@@ -408,8 +408,8 @@ function aiuCalcGroupScores(answers, frameworks) {
     let totalW = 0, earnedW = 0;
     controls.forEach(c => {
       const v = answers[c.id];
-      const val = (v === 'yes' || v === 'cc') ? 1 : v === 'partial' ? 0.5 : null;
-      if (val === null) return;
+      const val = (v === 'yes' || v === 'cc') ? 1 : v === 'partial' ? 0.5 : v === 'no' ? 0 : null;
+      if (val === null) return; // unanswered or na — excluded from scoring
       totalW += c.weight; earnedW += val * c.weight;
     });
     return { grp, pct: totalW > 0 ? Math.round(earnedW / totalW * 100) : null,
@@ -722,7 +722,7 @@ function renderAiUnifiedForm() {
     let grpW = 0, grpEarned = 0;
     controls.forEach(c => {
       const v = aiUnifiedState.answers[c.id];
-      const val = v==='yes'?1:v==='partial'?0.5:null;
+      const val = (v==='yes'||v==='cc')?1:v==='partial'?0.5:v==='no'?0:null;
       if (val===null) return;
       grpW += c.weight; grpEarned += val*c.weight;
     });
@@ -1474,7 +1474,7 @@ function aiuDrawRadar(canvasId, groupScores) {
 }
 
 function aiuBuildPyramidState(answers) {
-  const ANSWER_TO_STATUS = { yes: 'green', partial: 'yellow', no: 'red' };
+  const ANSWER_TO_STATUS = { yes: 'green', partial: 'yellow', no: 'red', na: 'grey', cc: 'grey' };
   const state = {};
   Object.entries(AI_PYR_MAP).forEach(([segId, ctrlId]) => {
     state[segId] = ANSWER_TO_STATUS[answers[ctrlId]] || 'red';
@@ -1487,8 +1487,8 @@ function aiuBuildPyramidSvgStr(pyrState) {
   const NT = AI_PYR_TIERS.length, TH = (BASE_Y - TIP_Y) / NT;
   const cx = W / 2;
   function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  function getFill(st) { return {red:'#c00000',yellow:'#e8a000',blue:'#2e7ab0',green:'#00af50'}[st]||'#888'; }
-  function getStroke(st) { return {red:'#960000',yellow:'#b87800',blue:'#1e5a8a',green:'#007a38'}[st]||'#555'; }
+  function getFill(st) { return {red:'#c00000',yellow:'#e8a000',blue:'#2e7ab0',green:'#00af50',grey:'#94a3b8'}[st]||'#888'; }
+  function getStroke(st) { return {red:'#960000',yellow:'#b87800',blue:'#1e5a8a',green:'#007a38',grey:'#64748b'}[st]||'#555'; }
   function tierBounds(ti) {
     const topY = TIP_Y + ti * TH, botY = topY + TH;
     const ft = (topY - TIP_Y) / (BASE_Y - TIP_Y), fb = (botY - TIP_Y) / (BASE_Y - TIP_Y);
@@ -1614,10 +1614,10 @@ function aiuCopyReportPrompt() {
     .map(g=>`• ${g.id} (${AI_WEIGHT_LABELS[g.weight]}) [${AI_GROUP_META[g.grp].label}]: ${g.title}`).join('\n');
 
   const pyrState = aiuBuildPyramidState(answers);
-  const PYR_STATUS_LABEL = { green:'Implemented', yellow:'Partial', blue:'In Progress', red:'Not Addressed' };
+  const PYR_STATUS_LABEL = { green:'Implemented', yellow:'Partial', blue:'In Progress', red:'Not Addressed', grey:'N/A or Compensating Control' };
   const pyrSummary = AI_PYR_TIERS.map(tier => {
     const segs = tier.cols.filter(c=>c.type==='seg');
-    const counts = { green:0, yellow:0, blue:0, red:0 };
+    const counts = { green:0, yellow:0, blue:0, red:0, grey:0 };
     segs.forEach(s => { counts[pyrState[s.id]||'red']++; });
     return `  ${tier.label}: ${counts.green} Implemented / ${counts.yellow} Partial / ${counts.blue} In Progress / ${counts.red} Not Addressed`;
   }).join('\n');
