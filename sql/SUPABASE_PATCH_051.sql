@@ -61,7 +61,7 @@ VALUES (
         "tl": "Initiate DR pre-checks now — validate replication status and determine how stale the DR data is. What is the current RPO? How many transactions have not replicated? Can we do a controlled shutdown of primary before battery fails?",
         "cl": "Notify the three SLA-committed clients now — they are already calling. Be honest about the ETA. Draft a proactive notice to all 14 clients. Do not promise a restoration time you cannot keep.",
         "lc": "Review SLA commitments immediately. At 4–6 hours, some clients will have a right to SLA credit. Does your contract cap liability for outages caused by utility failure (force majeure)? Advise the IC before promises are made to clients.",
-        "es": "Authorise the DR failover decision. If DR fails, the downside is worse than a controlled wait — but batteries expire in 8 minutes. Who has authority to approve the call? Make the decision now."
+        "es": "Authorize the DR failover decision. If DR fails, the downside is worse than a controlled wait — but batteries expire in 8 minutes. Who has authority to approve the call? Make the decision now."
       }
     },
     {
@@ -74,9 +74,9 @@ VALUES (
       "rolePrompts": {
         "ic": "Document the 6-hour RPO breach. Who approved the replication conflict being left unresolved? This is an audit finding. Communicate the data gap to affected clients before they discover it themselves.",
         "tl": "Assess what can be reconstructed: email-based order confirmations, bank transaction records, manual logs. What is the reconciliation effort — hours or days? Can you restore partial functionality while reconciliation proceeds?",
-        "cl": "Brief the two escalated enterprise clients directly. Acknowledge the data gap, explain what is being done to reconcile, and give a timeline. No minimising — they need accurate information to brief their own teams.",
+        "cl": "Brief the two escalated enterprise clients directly. Acknowledge the data gap, explain what is being done to reconcile, and give a timeline. No minimizing — they need accurate information to brief their own teams.",
         "lc": "The unresolved replication conflict is a documented failure that contributed to data loss. This is relevant to SLA breach claims and potentially E&O liability. Preserve all records of the replication conflict ticket and who had visibility.",
-        "es": "The replication conflict was known and unresolved. This is a process failure, not just a technology failure. After recovery, commission a BCDR programme review — test frequency, escalation paths, and on-call authority. Brief the board."
+        "es": "The replication conflict was known and unresolved. This is a process failure, not just a technology failure. After recovery, commission a BCDR program review — test frequency, escalation paths, and on-call authority. Brief the board."
       }
     },
     {
@@ -91,7 +91,7 @@ VALUES (
         "tl": "Update the DR runbook this week. Remove decommissioned systems, verify all recovery steps are accurate, and schedule a DR test within 60 days. The test must include the database replication validation.",
         "cl": "Prepare the formal incident report for the requesting client. Include: timeline, root cause, what was recovered, what data was affected, and the remediation plan. Transparent and professionally written.",
         "lc": "Issue the SLA credits proactively — do not wait for clients to invoice them. Proactive credit issuance reduces churn risk and demonstrates good faith. Confirm whether the incident triggers any insurance reporting obligation.",
-        "es": "Approve the BCDR programme investment: annual DR testing, quarterly runbook reviews, and a documented on-call authority matrix. The $18K in SLA credits is cheap compared to client loss — but the root cause is programme neglect, and that needs board-level visibility."
+        "es": "Approve the BCDR program investment: annual DR testing, quarterly runbook reviews, and a documented on-call authority matrix. The $18K in SLA credits is cheap compared to client loss — but the root cause is program neglect, and that needs board-level visibility."
       }
     }
   ]'::jsonb,
@@ -104,7 +104,7 @@ VALUES (
   'All',
   'Hard',
   '~60 min',
-  'Your core payroll and HR SaaS vendor sends an email: they are shutting down in 30 days. No acquirer has been found. Data export is available for 30 days, after which all data is deleted. Payroll runs in 8 days. The organisation has no secondary system and the contract has no data portability clause.',
+  'Your core payroll and HR SaaS vendor sends an email: they are shutting down in 30 days. No acquirer has been found. Data export is available for 30 days, after which all data is deleted. Payroll runs in 8 days. The organization has no secondary system and the contract has no data portability clause.',
   ARRAY['bcdr', 'third-party', 'availability'],
   ARRAY['cyber_insurance'],
   '{
@@ -126,8 +126,8 @@ VALUES (
         "ic": "Three options: (1) rush the fast-onboard replacement — high risk, unknown. (2) Manual payroll via bank — requires external payroll service. (3) Pay this cycle manually from last cycle''s data and clean up next cycle. What can you actually execute in 8 days?",
         "tl": "Export EVERYTHING from the vendor platform today — not just payroll data but employee records, tax withholdings (YTD), direct deposit info, benefits enrollment, and historical pay stubs. Transform the CSV into a format usable by the most likely replacement.",
         "cl": "Communicate with employees now. They have a right to know payroll may be disrupted. Set expectations: payroll will be delivered, you are managing a vendor crisis. Do not be vague — employees will find out.",
-        "lc": "Missing payroll is a legal liability in most jurisdictions. Research your obligations: how long do you have before a missed payroll becomes a labour law violation? Is there a manual payroll option via your bank that meets legal requirements? What does your contract with the vendor say about service continuity?",
-        "es": "Authorise emergency spend for an external payroll processing firm to handle this cycle manually. Cost is secondary to meeting the payroll deadline. Communicate with the board — missed payroll is a trust-destroying event."
+        "lc": "Missing payroll is a legal liability in most jurisdictions. Research your obligations: how long do you have before a missed payroll becomes a labor law violation? Is there a manual payroll option via your bank that meets legal requirements? What does your contract with the vendor say about service continuity?",
+        "es": "Authorize emergency spend for an external payroll processing firm to handle this cycle manually. Cost is secondary to meeting the payroll deadline. Communicate with the board — missed payroll is a trust-destroying event."
       }
     },
     {
@@ -139,25 +139,25 @@ VALUES (
       "mitre": {"tactic": "N/A — BCDR", "technique": "Data integrity failure"},
       "rolePrompts": {
         "ic": "The missing data affects legal payroll accuracy. Can you reconstruct it from bank records, email approvals, or manager approvals? What is the litigation risk of running payroll with potentially incorrect YTD data?",
-        "tl": "Screen-scrape or manually export the missing records while the platform is still up. Use the UI, browser developer tools, or any API access available. Every record is potentially worth real money — prioritise expense claims and overtime.",
+        "tl": "Screen-scrape or manually export the missing records while the platform is still up. Use the UI, browser developer tools, or any API access available. Every record is potentially worth real money — prioritize expense claims and overtime.",
         "cl": "Do not tell employees their data may be missing until you know the scope and have a recovery plan. Premature disclosure creates panic with no actionable information.",
         "lc": "Running payroll with incorrect YTD tax data creates employer tax liability. Consult your payroll accountant immediately. The vendor has potentially breached their contract by failing to provide a complete data export — document this for any future claim.",
-        "es": "Authorise the manual data reconstruction effort — it is cheaper than the liability of incorrect payroll. Escalate to the vendor''s investors or board if you have any contact information. This vendor failure may be recoverable under your commercial cyber or professional liability policy."
+        "es": "Authorize the manual data reconstruction effort — it is cheaper than the liability of incorrect payroll. Escalate to the vendor''s investors or board if you have any contact information. This vendor failure may be recoverable under your commercial cyber or professional liability policy."
       }
     },
     {
       "ingest": "HR + management",
       "title": "Replacement onboarded — lessons learned and vendor risk gaps identified",
-      "body": "The emergency payroll cycle was processed manually with an external firm at a cost of $4,200. The replacement platform was onboarded within 11 days (missing the first payroll cycle by 3 days — employees were paid 3 days late). Post-incident review reveals: no vendor risk assessment was ever performed on the payroll platform, the contract had no SLA, no data portability clause, and no business continuity requirement. The same gap exists for three other critical SaaS platforms the organisation relies on.",
+      "body": "The emergency payroll cycle was processed manually with an external firm at a cost of $4,200. The replacement platform was onboarded within 11 days (missing the first payroll cycle by 3 days — employees were paid 3 days late). Post-incident review reveals: no vendor risk assessment was ever performed on the payroll platform, the contract had no SLA, no data portability clause, and no business continuity requirement. The same gap exists for three other critical SaaS platforms the organization relies on.",
       "phaseIdx": 3,
       "correctCriticality": "Medium",
       "mitre": {"tactic": "N/A — Post-incident", "technique": "Vendor risk gap"},
       "rolePrompts": {
-        "ic": "Assign a vendor risk assessment programme — every critical SaaS platform needs a DR plan and data portability verification. The three other at-risk platforms need immediate review.",
+        "ic": "Assign a vendor risk assessment program — every critical SaaS platform needs a DR plan and data portability verification. The three other at-risk platforms need immediate review.",
         "tl": "For each critical SaaS dependency: confirm data export capability today (test it), document the export format and transformation requirements, and identify a replacement with estimated onboarding time. This is your BCDR documentation for vendor failure.",
         "cl": "Communicate with employees about the 3-day delay — acknowledge it, explain why, and confirm it will not happen again. A brief all-hands or email from the CEO is appropriate.",
         "lc": "Update all new SaaS contracts to include: data portability clause, 90-day notice for service discontinuation, SLA minimums, and right to audit. Retroactively negotiate these terms with existing critical vendors on renewal.",
-        "es": "Approve a vendor risk programme as a standing operational requirement. The $4,200 emergency payroll cost plus team disruption is the lesson cost — invest in preventing recurrence across all critical vendors."
+        "es": "Approve a vendor risk program as a standing operational requirement. The $4,200 emergency payroll cost plus team disruption is the lesson cost — invest in preventing recurrence across all critical vendors."
       }
     }
   ]'::jsonb,
@@ -189,16 +189,16 @@ VALUES (
     {
       "ingest": "SOC alert",
       "title": "Technical assessment complete — no clean recovery path without ransom",
-      "body": "Forensic team assessment: the encryption is LockBit 3.0 with no known decryption vulnerability. Rebuilding from the 3-week-old tape backup means 3 weeks of lost transactions and data. Full rebuild from scratch (hardware, OS, applications, data re-entry) is estimated at 4–5 weeks and $280,000 in labour and infrastructure. Key systems affected include the ERP, CRM, and all client-facing platforms. Three enterprise clients have already emailed asking for system access restoration timelines. One has mentioned their own contractual obligations depend on your system availability.",
+      "body": "Forensic team assessment: the encryption is LockBit 3.0 with no known decryption vulnerability. Rebuilding from the 3-week-old tape backup means 3 weeks of lost transactions and data. Full rebuild from scratch (hardware, OS, applications, data re-entry) is estimated at 4–5 weeks and $280,000 in labor and infrastructure. Key systems affected include the ERP, CRM, and all client-facing platforms. Three enterprise clients have already emailed asking for system access restoration timelines. One has mentioned their own contractual obligations depend on your system availability.",
       "phaseIdx": 1,
       "correctCriticality": "Critical",
       "mitre": {"tactic": "TA0040 Impact", "technique": "T1486 Data Encrypted for Impact"},
       "triggersBreach": true,
       "rolePrompts": {
         "ic": "Frame the decision for the board clearly: pay $500K (recover in 3–5 days, lose $200K after insurance), or rebuild ($280K cost, 4–5 weeks, risk losing clients). What is the revenue impact of 4–5 weeks of downtime vs $200K out of pocket? Prepare the numbers.",
-        "tl": "Validate the rebuild estimate — is 4–5 weeks realistic or pessimistic? What could be done faster if you prioritised only the most critical systems? Identify the minimum viable recovery: what systems do you NEED in week 1 vs week 3?",
+        "tl": "Validate the rebuild estimate — is 4–5 weeks realistic or pessimistic? What could be done faster if you prioritized only the most critical systems? Identify the minimum viable recovery: what systems do you NEED in week 1 vs week 3?",
         "cl": "The board decision must remain confidential. No external communication about the ransom or the decision-making process. Clients need a status update — give them a timeline without revealing you are considering payment.",
-        "lc": "Confirm: paying a ransom may have legal implications depending on the jurisdiction and sanctioned entities list — check the attacker group against OFAC. Notify the FBI IC3 regardless of the payment decision. Insurance carrier must be on a call before payment is authorised — the $300K sub-limit has conditions.",
+        "lc": "Confirm: paying a ransom may have legal implications depending on the jurisdiction and sanctioned entities list — check the attacker group against OFAC. Notify the FBI IC3 regardless of the payment decision. Insurance carrier must be on a call before payment is authorized — the $300K sub-limit has conditions.",
         "es": "This is your decision with the board. The financial analysis: $200K out-of-pocket vs $280K rebuild plus 4–5 weeks of revenue loss. What is your weekly revenue? What is the cost of losing one enterprise client permanently? Frame the risk and make a recommendation."
       }
     },
@@ -213,8 +213,8 @@ VALUES (
         "ic": "The calculus has changed: this is now a double-extortion scenario. Payment at $1M is $700K above the insurance sub-limit. Non-payment means public data leak in 72 hours. Breach notification obligations exist regardless of payment. What is the board''s position?",
         "tl": "Assess the exfiltration claim — is it credible? Review egress logs from the pre-detection period. If 40GB was transferred, where did it go? What data categories were in those files? This determines notification scope.",
         "cl": "Prepare for the leak scenario now — assume it happens in 72 hours and draft the breach notification and press response. If data is published, you need to respond within hours, not days. The leak itself becomes the news.",
-        "lc": "The exfiltration constitutes a confirmed breach regardless of whether you pay. Notification obligations are triggered now. FBI notification required. Insurance carrier must be updated on the scope change. OFAC check on the attacker group is now critical — payment to a sanctioned entity is a federal offence.",
-        "es": "Recommend to the board: begin breach notification program now regardless of the payment decision. The data leak is coming either way — getting ahead of it with proactive notification is better than reacting to the leak site publication. Authorise notification spend."
+        "lc": "The exfiltration constitutes a confirmed breach regardless of whether you pay. Notification obligations are triggered now. FBI notification required. Insurance carrier must be updated on the scope change. OFAC check on the attacker group is now critical — payment to a sanctioned entity is a federal offense.",
+        "es": "Recommend to the board: begin breach notification program now regardless of the payment decision. The data leak is coming either way — getting ahead of it with proactive notification is better than reacting to the leak site publication. Authorize notification spend."
       }
     },
     {
@@ -225,11 +225,11 @@ VALUES (
       "correctCriticality": "High",
       "mitre": {"tactic": "N/A — Post-decision", "technique": "Recovery"},
       "rolePrompts": {
-        "ic": "If paid: immediate post-payment actions — verify decryptor works before confirming payment receipt, run forensics to confirm attacker access is closed, do NOT assume paying means they are gone. If not paid: rebuild prioritisation — what comes back in day 1, week 1, week 2?",
+        "ic": "If paid: immediate post-payment actions — verify decryptor works before confirming payment receipt, run forensics to confirm attacker access is closed, do NOT assume paying means they are gone. If not paid: rebuild prioritization — what comes back in day 1, week 1, week 2?",
         "tl": "Either path: a full forensic investigation is mandatory. How did they get in? How long were they in before encryption? What controls failed? This is your post-incident report for insurance, clients, and the board.",
         "cl": "Breach notification program goes out regardless of the payment decision — the exfiltration happened. Client communication on the restoration timeline is also needed. Two separate messages, two separate tracks.",
         "lc": "Insurance claim documentation: gather all costs, timelines, and decisions with dates. The carrier will require a full incident timeline. If paid: confirm payment was OFAC-clean. File police report and FBI IC3 report. Both are required for most cyber insurance claims.",
-        "es": "Board debrief: what would have prevented this? The backup failure is the critical gap — a working air-gapped backup would have eliminated the ransom option entirely. Authorise a backup programme audit and DR test schedule as the first post-incident action."
+        "es": "Board debrief: what would have prevented this? The backup failure is the critical gap — a working air-gapped backup would have eliminated the ransom option entirely. Authorize a backup program audit and DR test schedule as the first post-incident action."
       }
     }
   ]'::jsonb,
@@ -279,7 +279,7 @@ VALUES (
         "ic": "This is now a governance crisis, not just a breach crisis. The email suggests the delay was intentional for business reasons — that changes the regulatory and legal exposure significantly. Coordinate the response with legal and the board chair before any public statement.",
         "tl": "Preserve all internal communications relating to the notification delay decision. Do not delete anything. Legal hold applies to all email and messaging records from the breach discovery date forward.",
         "cl": "No public comment on the internal email until legal has reviewed it and the board has met. Holding statement only: ''We are reviewing the matter and will have a statement following our board meeting today.'' Do not confirm or deny the email''s authenticity.",
-        "lc": "The email is likely discoverable in regulatory proceedings. Assess whether the delay constituted wilful concealment — this changes civil penalty exposure significantly. Outside counsel with regulatory experience is required immediately. Notify your D&O carrier.",
+        "lc": "The email is likely discoverable in regulatory proceedings. Assess whether the delay constituted willful concealment — this changes civil penalty exposure significantly. Outside counsel with regulatory experience is required immediately. Notify your D&O carrier.",
         "es": "The board meeting is critical. The executive who sent that email needs to be represented by personal counsel — their interests may diverge from the company''s. Consider whether the board chair should lead the public response rather than the executive team. This is a governance moment."
       }
     },
@@ -291,9 +291,9 @@ VALUES (
       "correctCriticality": "Critical",
       "mitre": {"tactic": "N/A — Regulatory + Legal", "technique": "N/A"},
       "rolePrompts": {
-        "ic": "Prioritise the largest enterprise client — losing 22% of ARR in addition to the breach is an existential risk. Assign your CEO and General Counsel to manage that relationship directly. Regulatory responses are important but can be managed through outside counsel.",
+        "ic": "Prioritize the largest enterprise client — losing 22% of ARR in addition to the breach is an existential risk. Assign your CEO and General Counsel to manage that relationship directly. Regulatory responses are important but can be managed through outside counsel.",
         "tl": "Prepare the complete technical incident timeline for the AG responses. This must be factually accurate and complete — inconsistencies between your technical record and other evidence will be devastating.",
-        "cl": "Full public transparency is now the only viable strategy. Hiding or minimising anything will be used against you. Issue a comprehensive public statement: what happened, what you did, what you should have done differently, and what you are doing now. Take accountability.",
+        "cl": "Full public transparency is now the only viable strategy. Hiding or minimizing anything will be used against you. Issue a comprehensive public statement: what happened, what you did, what you should have done differently, and what you are doing now. Take accountability.",
         "lc": "Director liability is a real concern given the email. D&O coverage has conditions — ensure all directors understand they need personal counsel for the AG investigation. Company counsel and director counsel may have conflicting interests. Engage separate outside counsel for the company response.",
         "es": "The board must decide on executive accountability: does the executive who sent the email remain in their role? The answer affects regulatory posture, client relationships, and staff morale. There is no neutral option — a decision either way sends a signal."
       }
@@ -336,7 +336,7 @@ VALUES (
         "tl": "Contact OpenAI to determine: (1) was the data used for training? (2) can it be deleted? (3) has anyone else accessed it? OpenAI has a data deletion process — initiate it immediately. Document the request and any responses.",
         "cl": "Call the client CISO and CEO today — before they call again. Acknowledge what happened, confirm you are investigating, and give them a timeline for a written response. Do not be defensive. This client is too important to lose over a policy gap.",
         "lc": "Review the client contract: does it contain a confidentiality clause covering data shared with third parties? Does uploading to OpenAI constitute a breach of contract? Assess breach notification obligations — was any data PII under applicable state law? If the client data included employee information, additional obligations may apply.",
-        "es": "Authorise the client remediation response. Brief the board. Issue an immediate AI tool policy via email today — all employees, before end of business. Embargo all use of non-approved AI tools with client data effective immediately."
+        "es": "Authorize the client remediation response. Brief the board. Issue an immediate AI tool policy via email today — all employees, before end of business. Embargo all use of non-approved AI tools with client data effective immediately."
       }
     },
     {
@@ -351,7 +351,7 @@ VALUES (
         "tl": "Extend the audit: email logs, cloud storage, browser extensions. Implement technical controls today: block known AI tool domains at the firewall for corporate devices. Evaluate enterprise-grade AI tools with proper data handling agreements as legitimate alternatives.",
         "cl": "Three client notification tracks — each client gets a personal call from the CEO or Managing Partner before any written notice. Each situation is different; tailor the communication to what their data actually was and what the exposure means for them.",
         "lc": "The healthcare client''s patient data is a potential HIPAA breach. 60-day notification clock may apply depending on the client''s status as a covered entity or BA. Engage HIPAA counsel immediately. All three client contracts must be reviewed for data handling obligations. Notify your cyber carrier.",
-        "es": "Approve an enterprise AI governance programme: approved tool list, data classification policy, employee training, and technical controls. The cost of doing nothing is losing multiple clients. This is a board-level governance failure — recommend a formal AI policy adoption at the next board meeting."
+        "es": "Approve an enterprise AI governance program: approved tool list, data classification policy, employee training, and technical controls. The cost of doing nothing is losing multiple clients. This is a board-level governance failure — recommend a formal AI policy adoption at the next board meeting."
       }
     },
     {
@@ -366,7 +366,7 @@ VALUES (
         "tl": "Deliver the technical controls: approved AI tool list, data classification labels in email and file systems, browser-level controls on personal AI tool access, and enterprise AI tools with proper DPAs. Document everything for the Hartwell audit response.",
         "cl": "Your AI governance posture is now a competitive differentiator — or a liability. Draft a one-page ''Our AI Policy'' summary for prospective clients. The two pipeline clients are an opportunity: show them you''ve addressed this proactively.",
         "lc": "Complete the HIPAA assessment for the healthcare client. The breach assessment must determine: was PHI actually in the uploaded notes? Was the AI tool a HIPAA business associate? If yes, notification to HHS and patients may be required. This is the highest-risk element of the incident.",
-        "es": "Approve the enterprise AI programme budget. Brief the board on the full scope: 7 employees, 3 clients, potential HIPAA exposure, Hartwell cure notice. Frame it as a governance response, not a disciplinary matter. The policy gap is an organisational failure, not just an employee failure."
+        "es": "Approve the enterprise AI program budget. Brief the board on the full scope: 7 employees, 3 clients, potential HIPAA exposure, Hartwell cure notice. Frame it as a governance response, not a disciplinary matter. The policy gap is an organizational failure, not just an employee failure."
       }
     }
   ]'::jsonb,
@@ -374,7 +374,7 @@ VALUES (
   'ai_tool_shadow'
 ),
 (
-  'Deepfake CEO Fraud — $180K Wire Transfer Authorised',
+  'Deepfake CEO Fraud — $180K Wire Transfer Authorized',
   'ai_governance',
   'All',
   'Hard',
@@ -399,10 +399,10 @@ VALUES (
       "mitre": {"tactic": "TA0040 Impact", "technique": "T1657 Financial Theft via Social Engineering + AI Deepfake"},
       "triggersBreach": true,
       "rolePrompts": {
-        "ic": "The wire is likely gone. Focus: (1) preserve all forensic evidence of the call. (2) notify cyber insurance carrier today — wire fraud is typically covered under social engineering / funds transfer fraud coverage. (3) notify FBI IC3 — they have a wire recall programme with higher success rates than bank-to-bank. (4) identify the internal knowledge leak.",
-        "tl": "Forensic priorities: capture the Teams call log (Microsoft can provide metadata), the caller''s external account, the display of the deepfake video. Analyse how the attacker knew the acquisition target name — who had access to that information? Check for email compromise or insider knowledge.",
+        "ic": "The wire is likely gone. Focus: (1) preserve all forensic evidence of the call. (2) notify cyber insurance carrier today — wire fraud is typically covered under social engineering / funds transfer fraud coverage. (3) notify FBI IC3 — they have a wire recall program with higher success rates than bank-to-bank. (4) identify the internal knowledge leak.",
+        "tl": "Forensic priorities: capture the Teams call log (Microsoft can provide metadata), the caller''s external account, the display of the deepfake video. Analyze how the attacker knew the acquisition target name — who had access to that information? Check for email compromise or insider knowledge.",
         "cl": "Internal-only communication at this stage. Do not tell employees about the deepfake — the attacker may have additional targets in the company. Brief only leadership and finance team leads.",
-        "lc": "Notify the cyber insurance carrier immediately — funds transfer fraud coverage has strict reporting timelines (often 24–72 hours). The FBI IC3 wire recall programme occasionally recovers funds if reported quickly. File both today.",
+        "lc": "Notify the cyber insurance carrier immediately — funds transfer fraud coverage has strict reporting timelines (often 24–72 hours). The FBI IC3 wire recall program occasionally recovers funds if reported quickly. File both today.",
         "es": "Brief the board today. The $180K is likely a loss. The more important question: how did the attacker know the acquisition target name? That suggests either email compromise, an insider, or significant OSINT. An internal security assessment is required."
       }
     },
@@ -433,7 +433,7 @@ VALUES (
         "tl": "Implement a verbal verification code system for all wire transfers: any wire request — regardless of apparent source — requires a verbal code phrase confirmed via a pre-established direct call (not video). Brief the finance team on this procedure today.",
         "cl": "Brief all staff about the second attempt — but frame it as a success. ''Our training worked. Here is what the AP manager did right.'' This builds confidence rather than fear. The threat group is likely to try again.",
         "lc": "FBI cooperation is in your interest — provide all logs, account details, and evidence. Confirm your cyber insurance claim is in progress and has received the FBI case number. The claim may cover both the $180K loss and the incident response costs.",
-        "es": "Authorise a deepfake awareness programme: all-staff training, a verification code protocol, and a policy requiring dual approval for any wire transfer over a defined threshold. The $180K loss funds a significant security improvement programme. Make that investment now."
+        "es": "Authorize a deepfake awareness program: all-staff training, a verification code protocol, and a policy requiring dual approval for any wire transfer over a defined threshold. The $180K loss funds a significant security improvement program. Make that investment now."
       }
     }
   ]'::jsonb,
@@ -457,7 +457,7 @@ VALUES (
   '{
     "ingest": "Technician anomaly",
     "source": "Front desk supervisor — closing inspection",
-    "raw": "Supervisor found a small plastic device attached to the card reader slot on Terminal 2 at the front desk. It looks like it was designed to blend in — same colour as the reader. She almost missed it. I pulled it off — it seems to have a small memory chip inside. The terminal has been running all day. I don''t know how long it''s been there. The other two terminals look normal.",
+    "raw": "Supervisor found a small plastic device attached to the card reader slot on Terminal 2 at the front desk. It looks like it was designed to blend in — same color as the reader. She almost missed it. I pulled it off — it seems to have a small memory chip inside. The terminal has been running all day. I don''t know how long it''s been there. The other two terminals look normal.",
     "correctSeverity": "P2",
     "correctDeclare": false
   }'::jsonb,
@@ -488,7 +488,7 @@ VALUES (
         "ic": "Coordinate between the PFI, legal, and the acquiring bank. Your job is to ensure PFI has access to everything they need and that no evidence is disturbed. Card brand timelines for your formal breach notification report will be set by the acquiring bank — track them.",
         "tl": "Provide the PFI with full access: terminals, camera footage, network logs, any access records for the terminal area. The PFI is the lead forensic investigator — do not conduct parallel forensics that could contaminate their work.",
         "cl": "Guest notification scope is 2,847 cards over 21 days. Compile the guest list from your PMS records for that date range — anyone who used Terminal 2. Prepare a notification letter. Card brands require you notify affected cardholders.",
-        "lc": "State breach notification required for payment card data in most jurisdictions. Card brand rules (Visa CISP, Mastercard SDP) have their own notification and remediation timelines — your acquiring bank will communicate these. PCI fine exposure: assessed per month until remediation is confirmed — engage your PCI compliance programme manager.",
+        "lc": "State breach notification required for payment card data in most jurisdictions. Card brand rules (Visa CISP, Mastercard SDP) have their own notification and remediation timelines — your acquiring bank will communicate these. PCI fine exposure: assessed per month until remediation is confirmed — engage your PCI compliance program manager.",
         "es": "Financial impact: $34K in charge-backs plus PFI cost plus notification cost plus potential PCI fines. Budget for total exposure of $75–150K. Review your cyber insurance coverage — skimmer incidents are typically covered under payment card breach coverage. Confirm with your carrier today."
       }
     },
@@ -504,7 +504,7 @@ VALUES (
         "tl": "Implement the technical and physical controls: tamper-evident seals on all terminals, daily inspection sign-off procedure, camera coverage audit, and network segmentation review of the POS environment. Document everything for the re-assessment.",
         "cl": "The complimentary night offer to affected guests is the right call — it acknowledges the impact without admitting a specific legal liability. Track uptake and cost. Update the hotel''s security messaging on the website proactively — ''we take your security seriously'' is better coming from you than being forced out.",
         "lc": "Work with the acquiring bank and PFI on your re-assessment timeline. Cooperating fully and completing remediation quickly reduces fine exposure. Confirm with your cyber carrier that the claim includes PFI costs and charge-backs — most PCI breach riders cover both.",
-        "es": "Approve the full remediation budget. The total cost of this incident (PFI + charge-backs + notification + complimentary nights + re-assessment) is the cost of inadequate physical security. Invest in the prevention programme now: regular PCI self-assessments, annual QSA review, and physical terminal security as a standing checklist."
+        "es": "Approve the full remediation budget. The total cost of this incident (PFI + charge-backs + notification + complimentary nights + re-assessment) is the cost of inadequate physical security. Invest in the prevention program now: regular PCI self-assessments, annual QSA review, and physical terminal security as a standing checklist."
       }
     }
   ]'::jsonb,
@@ -539,8 +539,8 @@ VALUES (
         "ic": "Disable debug logging immediately. Rotate all credentials for the log platform. Initiate a full access audit: who accessed those logs in the past 90 days, what did they download or query? Notify your acquiring bank — this is required under PCI DSS and needs to happen today.",
         "tl": "Kill debug mode now across all environments. Purge the PAN-containing logs from the active log platform after preserving a forensic copy. Review the log management platform for any export or query history that might indicate the PAN data was accessed externally. Audit the backup files — can PAN data be selectively purged from those?",
         "cl": "Internal only at this stage. Do not notify customers until the scope assessment is complete and legal has reviewed notification obligations. No public statement.",
-        "lc": "PCI DSS Requirement 3.3 prohibits storing PAN data post-authorisation except in specific encrypted circumstances. This is a clear violation. Your acquiring bank notification is mandatory under PCI. Breach notification under state law: PANs are covered payment card data — notification may be required even without confirmed exfiltration if PANs were accessible to unauthorised parties (the contractors). Engage PCI counsel immediately.",
-        "es": "Brief the board — this is a serious compliance failure. The QSA pre-assessment likely saved you from a worse outcome during the formal assessment. Authorise full cooperation with the QSA and acquiring bank. Budget for PCI breach response: acquiring bank reporting, possible PFI engagement, and potential fine exposure."
+        "lc": "PCI DSS Requirement 3.3 prohibits storing PAN data post-authorization except in specific encrypted circumstances. This is a clear violation. Your acquiring bank notification is mandatory under PCI. Breach notification under state law: PANs are covered payment card data — notification may be required even without confirmed exfiltration if PANs were accessible to unauthorized parties (the contractors). Engage PCI counsel immediately.",
+        "es": "Brief the board — this is a serious compliance failure. The QSA pre-assessment likely saved you from a worse outcome during the formal assessment. Authorize full cooperation with the QSA and acquiring bank. Budget for PCI breach response: acquiring bank reporting, possible PFI engagement, and potential fine exposure."
       }
     },
     {
@@ -552,11 +552,11 @@ VALUES (
       "mitre": {"tactic": "TA0010 Exfiltration", "technique": "T1048 Exfiltration over Alternative Protocol — Log export"},
       "triggersBreach": true,
       "rolePrompts": {
-        "ic": "Confirmed exfiltration of PAN data by an unauthorised party (no need-to-know). This is now a confirmed PCI breach. Acquiring bank must be notified immediately. PFI engagement is now required — this is not optional under PCI DSS. Contact the contractor through the staffing firm with legal counsel present.",
+        "ic": "Confirmed exfiltration of PAN data by an unauthorized party (no need-to-know). This is now a confirmed PCI breach. Acquiring bank must be notified immediately. PFI engagement is now required — this is not optional under PCI DSS. Contact the contractor through the staffing firm with legal counsel present.",
         "tl": "Preserve all access logs, export records, and file metadata. Do not alert the contractor through any channel before legal is ready — this is potential evidence in a criminal matter. Confirm the 4.2GB exports: what file content was in those exports? How many unique PANs?",
         "cl": "Breach notification to cardholders is now likely required. Do not notify until you know the scope — how many unique card numbers were in the 4.2GB export? Get that number from the engineering team before drafting notices.",
         "lc": "Contractor export of PAN data is likely a criminal matter — CFAA and potentially fraud statutes apply. Do not contact the contractor without legal counsel. Refer to FBI for potential criminal investigation. Your acquiring bank notification triggers the formal PCI breach process. File a claim with your cyber carrier now.",
-        "es": "This incident has escalated to a confirmed breach with a potential insider element. Brief the board with full facts. The reputational and financial exposure is significant: PCI fines, cardholder notification costs, PFI costs, and potential criminal referral. Authorise the full response budget."
+        "es": "This incident has escalated to a confirmed breach with a potential insider element. Brief the board with full facts. The reputational and financial exposure is significant: PCI fines, cardholder notification costs, PFI costs, and potential criminal referral. Authorize the full response budget."
       }
     },
     {
@@ -569,9 +569,9 @@ VALUES (
       "rolePrompts": {
         "ic": "Three parallel tracks: (1) PFI engagement — get under contract this week. (2) Cardholder notification program — 14,200 notices, 31 states. (3) Code-level remediation — eliminate all PAN logging and implement a log scanning tool to detect future occurrences. Set milestones on all three.",
         "tl": "Implement: (1) disable debug logging permanently in all environments — move to structured logging that masks PAN data by design. (2) Implement a log scanning rule that alerts on any string matching PAN format (16-digit sequences). (3) Review ALL logging configurations for any other sensitive data (CVV, expiry, auth codes). (4) Document all remediation steps for the PFI and QSA.",
-        "cl": "14,200 cardholder notifications — most will go by mail as required. Prepare a dedicated email inbox and call line for cardholder enquiries. Draft a press statement for the scenario where a cardholder notifies the media. Brief customer-facing staff on what to say if asked.",
+        "cl": "14,200 cardholder notifications — most will go by mail as required. Prepare a dedicated email inbox and call line for cardholder inquiries. Draft a press statement for the scenario where a cardholder notifies the media. Brief customer-facing staff on what to say if asked.",
         "lc": "File with all 31 applicable state AGs as required. PCI fines from Visa and Mastercard will be assessed through your acquiring bank — negotiate the timeline and remediation milestones to minimise ongoing fine assessment. The contractor non-response is concerning — brief the FBI on the investigative status and seek their assistance in locating them.",
-        "es": "Approve the full remediation budget: PFI ($25–50K), notification program ($30–80K), legal costs, PCI fines, and QSA re-assessment. Total exposure: $150–300K minimum. This incident was preventable — a PCI compliance review prior to the debug mode being enabled would have caught this configuration. Invest in a developer security training programme and a pre-deployment PCI controls checklist."
+        "es": "Approve the full remediation budget: PFI ($25–50K), notification program ($30–80K), legal costs, PCI fines, and QSA re-assessment. Total exposure: $150–300K minimum. This incident was preventable — a PCI compliance review prior to the debug mode being enabled would have caught this configuration. Invest in a developer security training program and a pre-deployment PCI controls checklist."
       }
     }
   ]'::jsonb,
