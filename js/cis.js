@@ -4197,59 +4197,55 @@ function cisGenerateReportPrompt() {
       ? `Score of ${score}% meets the ${ADVANCE_THRESHOLD}% advancement threshold. The foundational ${goal.toUpperCase()} program is solid — recommend scoping next year's assessment at ${nextIg} to expand the security framework.`
       : `Score of ${score}% is below the ${ADVANCE_THRESHOLD}% advancement threshold. Recommend consolidating the current ${goal.toUpperCase()} program — depth before breadth — before expanding scope to ${nextIg}.`;
 
-  const prompt = `You are a concise cybersecurity reporting assistant. Write a short CIS Controls executive report commentary for ${currentOrg.name}. Audience: non-technical CEO or board.
-
-CRITICAL FORMATTING RULES — any violation makes the output unusable:
-- Plain text ONLY. Zero markdown. No ** no __ no ## no > no backticks. Nothing that is not a letter, number, punctuation, or hyphen bullet.
-- Bullets must use exactly "- " (hyphen space). No other bullet character.
-- Numbered items must use "1." "2." "3." format only.
-- Use the EXACT section markers shown (---CONTROLS--- etc). Do not invent new sections.
-- Be brief. Each instruction is a hard cap, not a suggestion.
-- Do not restate numbers the client can already see on the page. Interpret them instead.
+  const prompt = `Write a CIS Controls executive report for ${currentOrg.name}. Audience: non-technical CEO or board. No markdown. Plain text only.
 
 ASSESSMENT DATA:
 Organisation: ${currentOrg.name}
 Date: ${run.date || 'Unknown'} | Assessor: ${run.conductedBy || 'Not specified'}
 Framework: CIS Controls v8 — ${goal.toUpperCase()} | Score: ${score}% (${band})
-Safeguards in scope: ${yesN} Yes / ${partN} Partial / ${noCount} No
+Safeguards: ${yesN} Implemented / ${partN} Partial / ${noCount} Not addressed
 IG breakdown: ${igProg}
-Score trend: ${trendStr} | Change vs prior: ${trendDelta}
+Trend: ${trendStr} | Change vs prior: ${trendDelta}
 Controls improved: ${improvedAreas}
 Controls regressed: ${regressedAreas}
-Programme direction: ${advancementNote}
+Direction: ${advancementNote}
 
-Top priority gaps (No answers, IG1 first):
+Top gaps (No answers, IG1 first):
 ${noGaps || '— None —'}
 
 Partially addressed:
 ${partGaps || '— None —'}
 
-OUTPUT — write EXACTLY this structure in this order. Nothing before, nothing after, no added headings:
+=== REQUIRED OUTPUT FORMAT ===
 
-[2–3 sentences only. What does ${score}% mean for the business — not a restatement of the number but what it signals about exposure and readiness. End with 1 sentence on program direction using the context: "${advancementNote}" — speak to business value, not thresholds.]
+Your output must follow this EXACT structure. Copy the section headers word-for-word. Do not add any other headers or sections. Do not write any text before EXECUTIVE SUMMARY.
+
+EXECUTIVE SUMMARY
+2-3 sentence paragraph. Interpret what ${score}% means for the business — not a restatement of the number, but what it signals about exposure and readiness. End with one sentence on program direction drawing from: "${advancementNote}"
 
 KEY FINDINGS
-- [Most critical gap framed as business consequence — what could go wrong, not a technical label — 1 sentence max]
-- [Second finding — different risk area — 1 sentence]
-- [Third finding — 1 sentence]
-- [Fourth finding only if genuinely distinct — omit if not]
+Write 3-4 bullet lines. Each line MUST start with "- " (hyphen then space). One sentence per bullet. Frame each as a business consequence, not a technical label. Example of correct format:
+- Without a formal data inventory, the organisation cannot identify where sensitive information lives or who has access, creating significant exposure in the event of a breach.
+- Unmanaged software creates entry points for ransomware that existing controls cannot reliably detect or block.
+Now write the real findings using the gap data above, same format:
 
 PRIORITY RECOMMENDATIONS
-1. [Specific action + 1-sentence why-now rationale — no vague advice]
-2. [Second action + rationale]
-3. [Third action only if genuinely needed — omit if not]
+Write 3 numbered items. Each MUST start with the number and a period: "1." "2." "3." One sentence action plus one sentence rationale. Example of correct format:
+1. Establish a formal data inventory documenting where sensitive data resides and who can access it — this is the foundational step that makes all other security decisions more effective.
+2. Implement automated vulnerability scanning with documented remediation timelines — known weaknesses that go unpatched are straightforward targets for attackers.
+Now write the real recommendations using the gap data above, same format:
 
 ---CONTROLS---
-- [1 sentence: what IG1 coverage signals about foundational security readiness]
-${goalN >= 2 ? `- [1 sentence: what IG2${goalN >= 3 ? '/IG3' : ''} progress signals about program depth]` : ''}
+- One sentence: what IG1 coverage at ${igProg.split('/')[0] || 'this level'} signals about the organisation's foundational security readiness.
+${goalN >= 2 ? `- One sentence: what IG2${goalN >= 3 ? '/IG3' : ''} progress signals about program depth and operational maturity.` : ''}
 
 ---TREND---
-- [1 sentence: ${hasTrend ? `what the ${trendDelta} trajectory signals about program momentum${improvedAreas && improvedAreas !== 'None — no gains detected' && improvedAreas !== 'N/A — first assessment' ? ` — name the improved areas (${improvedAreas}) as capabilities gained` : ''}${regressedAreas && regressedAreas !== 'None' && regressedAreas !== 'N/A — first assessment' ? `, acknowledge any regression (${regressedAreas}) briefly` : ''}` : `establish this as the opening baseline for ${currentOrg.name} — a starting point, not a verdict`}]
+- One sentence: ${hasTrend ? `interpret the ${trendDelta} change — name improved control areas (${improvedAreas}) as capabilities gained${regressedAreas && regressedAreas !== 'None' && regressedAreas !== 'N/A — first assessment' ? `, briefly acknowledge regression in (${regressedAreas})` : ''}` : `establish this as the opening baseline for ${currentOrg.name} — frame it as a starting point, not a verdict`}.
 
 ---GAPS---
-- [Pattern: where do the top gaps cluster — control domain or type?]
-- [Business risk: what combined exposure do the top gaps create?]
-- [First step: the single most logical action to close the most critical exposure]`;
+- One sentence: where do the top gaps cluster — what control domain or risk type?
+- One sentence: what combined business exposure do these gaps create together?
+- One sentence: the single most logical first action to close the most critical exposure.`;
 
   navigator.clipboard.writeText(prompt)
     .then(() => toast('✓ AI prompt copied — paste into Claude to generate commentary', '#152168'))
@@ -4345,7 +4341,11 @@ function cisExportReportWord() {
     }
 
     text.split('\n').map(l => l.trim()).forEach(line => {
-      if (!line) { flushItems(); mode = 'prose'; return; }
+      if (!line) {
+        // Don't exit structured modes on blank lines — AI often puts a blank after the section header
+        if (mode === 'findings' || mode === 'recommendations' || mode === 'bullets' || mode === 'numbered') return;
+        flushItems(); mode = 'prose'; return;
+      }
       if (/^KEY FINDINGS$/i.test(line)) { flushItems(); html += SUBHEAD('Key Findings'); mode = 'findings'; return; }
       if (/^PRIORITY RECOMMENDATIONS?$/i.test(line)) { flushItems(); html += SUBHEAD('Priority Recommendations'); mode = 'recommendations'; return; }
       if (/^EXECUTIVE SUMMARY$/i.test(line)) { flushItems(); html += SUBHEAD('Executive Summary'); mode = 'prose'; return; }
