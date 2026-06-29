@@ -7,7 +7,9 @@
 -- Step 1: Add columns missing from PATCH_050
 ALTER TABLE tabletop_scenarios
   ADD COLUMN IF NOT EXISTS compliance_tags text[] DEFAULT '{}',
-  ADD COLUMN IF NOT EXISTS industry text;
+  ADD COLUMN IF NOT EXISTS industry text,
+  ADD COLUMN IF NOT EXISTS duration text,
+  ADD COLUMN IF NOT EXISTS summary text;
 
 -- Step 2: Seed platform scenarios
 -- These are org_id = NULL (shared, platform-wide).
