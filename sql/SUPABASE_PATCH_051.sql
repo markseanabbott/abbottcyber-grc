@@ -4,9 +4,10 @@
 -- Run in the Supabase SQL Editor after PATCH_050.
 -- Safe to re-run: uses ON CONFLICT DO NOTHING via unique source_id checks.
 
--- Step 1: Add compliance_tags column (missing from PATCH_050)
+-- Step 1: Add columns missing from PATCH_050
 ALTER TABLE tabletop_scenarios
-  ADD COLUMN IF NOT EXISTS compliance_tags text[] DEFAULT '{}';
+  ADD COLUMN IF NOT EXISTS compliance_tags text[] DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS industry text;
 
 -- Step 2: Seed platform scenarios
 -- These are org_id = NULL (shared, platform-wide).
