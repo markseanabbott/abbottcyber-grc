@@ -109,7 +109,7 @@ VALUES (
       "correctCriticality": "Critical",
       "mitre": {"tactic": "N/A — BCDR", "technique": "Third-party vendor failure"},
       "rolePrompts": {
-        "ic": "Three options: (1) rush the fast-onboard replacement — high risk, unknown. (2) Manual payroll via bank — requires external payroll service. (3) Pay this cycle manually from last cycle's data and clean up next cycle. What can you actually execute in 8 days?",
+        "ic": "Three options: (1) rush the fast-onboard replacement — high risk, unknown. (2) Manual payroll via bank — requires external payroll service. (3) Pay this cycle manually from last cycle''s data and clean up next cycle. What can you actually execute in 8 days?",
         "tl": "Export EVERYTHING from the vendor platform today — not just payroll data but employee records, tax withholdings (YTD), direct deposit info, benefits enrollment, and historical pay stubs. Transform the CSV into a format usable by the most likely replacement.",
         "cl": "Communicate with employees now. They have a right to know payroll may be disrupted. Set expectations: payroll will be delivered, you are managing a vendor crisis. Do not be vague — employees will find out.",
         "lc": "Missing payroll is a legal liability in most jurisdictions. Research your obligations: how long do you have before a missed payroll becomes a labour law violation? Is there a manual payroll option via your bank that meets legal requirements? What does your contract with the vendor say about service continuity?",
