@@ -1474,7 +1474,7 @@ function aiuDrawRadar(canvasId, groupScores) {
 }
 
 function aiuBuildPyramidState(answers) {
-  const ANSWER_TO_STATUS = { yes: 'green', partial: 'yellow', no: 'red', na: 'grey', cc: 'grey' };
+  const ANSWER_TO_STATUS = { yes: 'green', partial: 'yellow', no: 'red', na: 'grey', cc: 'amber' };
   const state = {};
   Object.entries(AI_PYR_MAP).forEach(([segId, ctrlId]) => {
     state[segId] = ANSWER_TO_STATUS[answers[ctrlId]] || 'red';
@@ -1487,8 +1487,8 @@ function aiuBuildPyramidSvgStr(pyrState) {
   const NT = AI_PYR_TIERS.length, TH = (BASE_Y - TIP_Y) / NT;
   const cx = W / 2;
   function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  function getFill(st) { return {red:'#c00000',yellow:'#e8a000',blue:'#2e7ab0',green:'#00af50',grey:'#94a3b8'}[st]||'#888'; }
-  function getStroke(st) { return {red:'#960000',yellow:'#b87800',blue:'#1e5a8a',green:'#007a38',grey:'#64748b'}[st]||'#555'; }
+  function getFill(st) { return {red:'#c00000',yellow:'#e8a000',blue:'#2e7ab0',green:'#00af50',grey:'#94a3b8',amber:'#f97316'}[st]||'#888'; }
+  function getStroke(st) { return {red:'#960000',yellow:'#b87800',blue:'#1e5a8a',green:'#007a38',grey:'#64748b',amber:'#c2410c'}[st]||'#555'; }
   function tierBounds(ti) {
     const topY = TIP_Y + ti * TH, botY = topY + TH;
     const ft = (topY - TIP_Y) / (BASE_Y - TIP_Y), fb = (botY - TIP_Y) / (BASE_Y - TIP_Y);
@@ -1614,12 +1614,12 @@ function aiuCopyReportPrompt() {
     .map(g=>`• ${g.id} (${AI_WEIGHT_LABELS[g.weight]}) [${AI_GROUP_META[g.grp].label}]: ${g.title}`).join('\n');
 
   const pyrState = aiuBuildPyramidState(answers);
-  const PYR_STATUS_LABEL = { green:'Implemented', yellow:'Partial', blue:'In Progress', red:'Not Addressed', grey:'N/A or Compensating Control' };
+  const PYR_STATUS_LABEL = { green:'Implemented', yellow:'Partial', blue:'In Progress', red:'Not Addressed', grey:'N/A', amber:'Compensating Control' };
   const pyrSummary = AI_PYR_TIERS.map(tier => {
     const segs = tier.cols.filter(c=>c.type==='seg');
-    const counts = { green:0, yellow:0, blue:0, red:0, grey:0 };
+    const counts = { green:0, yellow:0, blue:0, red:0, grey:0, amber:0 };
     segs.forEach(s => { counts[pyrState[s.id]||'red']++; });
-    return `  ${tier.label}: ${counts.green} Implemented / ${counts.yellow} Partial / ${counts.blue} In Progress / ${counts.red} Not Addressed`;
+    return `  ${tier.label}: ${counts.green} Implemented / ${counts.yellow} Partial / ${counts.amber} Compensating / ${counts.red} Not Addressed / ${counts.grey} N/A`;
   }).join('\n');
 
   const prompt = `Write a professional AI governance executive report commentary for ${currentOrg?.name}. Target audience: non-technical CEO or board. Focus on business risk and practical outcomes — avoid jargon.
@@ -1997,10 +1997,12 @@ async function aiuExportWord() {
   // ── Pyramid maturity state table ──────────────────────────────────────────────
   const pyrState = aiuBuildPyramidState(answers);
   const PYR_STATUS = {
-    green:  { label: 'Implemented',   bg: '#dcfce7', col: '#15803d' },
-    yellow: { label: 'Partial',        bg: '#fef3c7', col: '#b45309' },
-    blue:   { label: 'In Progress',    bg: '#dbeafe', col: '#1d4ed8' },
-    red:    { label: 'Not Addressed',  bg: '#fee2e2', col: '#dc2626' },
+    green:  { label: 'Implemented',          bg: '#dcfce7', col: '#15803d' },
+    yellow: { label: 'Partial',              bg: '#fef3c7', col: '#b45309' },
+    blue:   { label: 'In Progress',          bg: '#dbeafe', col: '#1d4ed8' },
+    red:    { label: 'Not Addressed',        bg: '#fee2e2', col: '#dc2626' },
+    grey:   { label: 'N/A',                  bg: '#f1f5f9', col: '#64748b' },
+    amber:  { label: 'Compensating Control', bg: '#fff7ed', col: '#c2410c' },
   };
   const pyrRowsHtml = AI_PYR_TIERS.map(tier => {
     const tc = AI_PYR_TIER_COLORS[tier.label];
