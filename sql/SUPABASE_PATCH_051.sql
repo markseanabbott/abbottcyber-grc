@@ -205,7 +205,7 @@ VALUES (
     },
     {
       "ingest": "HR + management",
-      "title": "Board decision made — managing the aftermath',",
+      "title": "Board decision made — managing the aftermath",
       "body": "The board has made their decision (facilitator discretion: either outcome is valid for discussion). Participants should discuss: if they paid, what happens in the next 30 days (decryption, post-recovery audit, insurance claim, FBI cooperation, client communication about the exfiltration)? If they did not pay, what happens (rebuild timeline, data leak management, client notification, press response, client retention)? The goal of this inject is a structured post-decision debrief.",
       "phaseIdx": 3,
       "correctCriticality": "High",
@@ -271,7 +271,7 @@ VALUES (
     },
     {
       "ingest": "Bank + finance team",
-      "title": "State AG opens formal investigation — enterprise client threatens termination',",
+      "title": "State AG opens formal investigation — enterprise client threatens termination",
       "body": "Two state attorneys general have issued formal investigative demands for all records related to the breach and the notification timeline. Your largest enterprise client (22% of ARR) has sent a formal notice that they are reviewing the contract for breach — their data was included in the incident. Their legal team is asking for the internal email and the decision timeline. Three other enterprise clients have placed account holds pending review. The board has met and is requesting a briefing from outside counsel on director liability.",
       "phaseIdx": 3,
       "correctCriticality": "Critical",
@@ -342,7 +342,7 @@ VALUES (
     },
     {
       "ingest": "PSA ticket",
-      "title": "Clients demand written AI data handling policy — one threatens contract termination',",
+      "title": "Clients demand written AI data handling policy — one threatens contract termination",
       "body": "All three affected clients have responded. Hartwell Industries (largest client) has issued a formal cure notice under their contract — they require a written AI data handling policy, evidence of employee training completion, and a technical control audit within 30 days. A second client has accepted your apology and is monitoring. The healthcare consulting client has engaged their own legal counsel and is requesting a full HIPAA breach assessment. Your proposal pipeline has also been affected — two prospective clients have asked about your AI governance posture during contract negotiations.",
       "phaseIdx": 3,
       "correctCriticality": "High",
@@ -378,7 +378,7 @@ VALUES (
   '[
     {
       "ingest": "Bank + finance team",
-      "title": "Wire confirmed cleared — bank initiated recall but probability is low',",
+      "title": "Wire confirmed cleared — bank initiated recall but probability is low",
       "body": "The bank confirmed: the $180K wire transferred to an account at a foreign bank. A recall request has been initiated — success probability is less than 15% once funds leave a domestic correspondent bank. Forensic review of the finance manager''s laptop shows: the Teams call came from an external account with a display name matching the CEO. The video quality was high — only subtle lip-sync lag was notable. The finance manager reports the ''CEO'' mentioned a specific acquisition target by name (a real company the CEO had mentioned in passing at a team lunch). The attacker had specific internal knowledge.",
       "phaseIdx": 1,
       "correctCriticality": "Critical",
@@ -409,7 +409,7 @@ VALUES (
     },
     {
       "ingest": "HR + management",
-      "title": "Finance team shaken — second wire attempt intercepted',",
+      "title": "Finance team shaken — second wire attempt intercepted",
       "body": "Three days after the initial incident, a second deepfake call was attempted — this time targeting the Accounts Payable manager with a $95K wire request. The AP manager recognised the lip-sync lag from the all-staff briefing and refused, calling the CFO directly to verify. The second attempt failed. However, the AP manager is visibly shaken and three finance team members have asked HR about the safety of their roles. The attacker group appears to be retrying. FBI IC3 has confirmed they are tracking this threat group and have 4 other victims in similar industries.',
       "phaseIdx": 3,
       "correctCriticality": "High",
@@ -450,7 +450,7 @@ VALUES (
   '[
     {
       "ingest": "Technician anomaly",
-      "title": "Forensic analysis — skimmer has been in place for approximately 3 weeks',",
+      "title": "Forensic analysis — skimmer has been in place for approximately 3 weeks",
       "body": "Payment processor forensics on the removed skimmer: it is a professional overlay skimmer with a 16GB chip capable of storing approximately 10,000 card records. Chip analysis reveals it contains 2,847 card records collected over what appears to be 21 days. The records include full track 2 data (card number, expiry, CVV) sufficient for card cloning. Terminal 2 processes an average of 135 transactions per day. The other two terminals were physically inspected and are clean. Security camera review shows a person spent approximately 90 seconds at the terminal 3 weeks ago during a busy check-in period — they appear to have installed it then.",
       "phaseIdx": 1,
       "correctCriticality": "Critical",
@@ -465,7 +465,7 @@ VALUES (
     },
     {
       "ingest": "Bank + finance team",
-      "title": "Acquiring bank notified — fraud already detected on 140 of the captured cards',",
+      "title": "Acquiring bank notified — fraud already detected on 140 of the captured cards",
       "body": "Your acquiring bank and Visa/Mastercard have been notified. The payment brands report that 140 of the 2,847 card numbers from the skimmer have already been used fraudulently — totalling approximately $34,000 in fraudulent charges across 140 cardholders in the past 10 days. The PFI engagement has been initiated. Card brands are issuing charge-backs to your merchant account for the fraudulent transactions. You are also liable for the PFI cost (typically $20,000–$50,000) as the breached merchant. The camera footage has been secured.",
       "phaseIdx": 2,
       "correctCriticality": "High",
@@ -480,7 +480,7 @@ VALUES (
     },
     {
       "ingest": "PSA ticket",
-      "title": "Notification complete — PCI remediation plan and re-assessment required',",
+      "title": "Notification complete — PCI remediation plan and re-assessment required",
       "body": "All 2,847 guests have been notified by mail as required. 23 guests have called to report they received the letter. Guest relations has handled all calls — responses have been empathetic and the hotel is offering a complimentary night to affected guests. The PFI has completed their initial report: root cause is inadequate physical security of the POS terminals. Required remediation includes: PCI-compliant terminal mounting, tamper-evident seals, daily terminal inspection checklist, and security camera coverage of all POS terminals. You will be required to complete a new PCI SAQ or QSA assessment to restore full merchant status.',
       "phaseIdx": 3,
       "correctCriticality": "Medium",
@@ -488,7 +488,7 @@ VALUES (
       "rolePrompts": {
         "ic": "The PFI remediation plan is a compliance requirement, not a recommendation. Assign the property manager to own the physical security improvements. Set a 30-day completion target for the physical controls so you can demonstrate progress to your acquiring bank.",
         "tl": "Implement the technical and physical controls: tamper-evident seals on all terminals, daily inspection sign-off procedure, camera coverage audit, and network segmentation review of the POS environment. Document everything for the re-assessment.",
-        "cl": "The complimentary night offer to affected guests is the right call — it acknowledges the impact without admitting a specific legal liability. Track uptake and cost. Update the hotel''s security messaging on the website proactively — ''we take your security seriously'' is better coming from you than being forced out.',",
+        "cl": "The complimentary night offer to affected guests is the right call — it acknowledges the impact without admitting a specific legal liability. Track uptake and cost. Update the hotel''s security messaging on the website proactively — ''we take your security seriously'' is better coming from you than being forced out.",
         "lc": "Work with the acquiring bank and PFI on your re-assessment timeline. Cooperating fully and completing remediation quickly reduces fine exposure. Confirm with your cyber carrier that the claim includes PFI costs and charge-backs — most PCI breach riders cover both.",
         "es": "Approve the full remediation budget. The total cost of this incident (PFI + charge-backs + notification + complimentary nights + re-assessment) is the cost of inadequate physical security. Invest in the prevention programme now: regular PCI self-assessments, annual QSA review, and physical terminal security as a standing checklist."
       }
@@ -516,7 +516,7 @@ VALUES (
   '[
     {
       "ingest": "Technician anomaly",
-      "title": "Debug logging has been running for 14 months — 90-day retention means PANs in active logs',",
+      "title": "Debug logging has been running for 14 months — 90-day retention means PANs in active logs",
       "body": "Engineering investigation: debug mode was enabled 14 months ago during a performance troubleshooting exercise and was never turned off. The application has logged approximately 340,000 transactions in that period. Current 90-day retention window contains approximately 72,000 transactions with full PAN data in the application logs. Logs are stored in the application server, replicated to a centralised log management platform, and backed up weekly to offsite cloud storage. Access to the log platform: 12 engineers, 3 DevOps contractors. No evidence of exfiltration — but no way to definitively confirm.",
       "phaseIdx": 1,
       "correctCriticality": "Critical",
@@ -531,7 +531,7 @@ VALUES (
     },
     {
       "ingest": "SOC alert",
-      "title": "Access audit reveals contractor accessed logs with PAN data 6 times in past 90 days',",
+      "title": "Access audit reveals contractor accessed logs with PAN data 6 times in past 90 days",
       "body": "Log platform access audit results: one DevOps contractor (engaged through a staffing firm, currently off-boarded 3 weeks ago) accessed the production log platform 6 times in the past 90 days, including two exports of log files totalling 4.2GB. The exports were classified as routine debugging at the time — no one flagged them. The contractor had a legitimate role but there was no need-to-know for payment data. The contractor''s offboarding checklist shows their access credentials were revoked, but the exports happened before offboarding. The contractor is reachable via the staffing firm.",
       "phaseIdx": 2,
       "correctCriticality": "Critical",
@@ -547,7 +547,7 @@ VALUES (
     },
     {
       "ingest": "PSA ticket",
-      "title": "PCI scope reassessment required — QSA pauses formal assessment',",
+      "title": "PCI scope reassessment required — QSA pauses formal assessment",
       "body": "The QSA has paused the formal PCI assessment pending resolution of the breach. Under PCI DSS, you cannot complete a successful assessment while a breach investigation is in progress. The acquiring bank has placed your merchant account under enhanced monitoring and is requiring a Forensic Investigator report before restoring normal processing fees. Your legal team has confirmed: PAN data from the export (approximately 14,200 unique card numbers) meets the notification threshold in 31 states. The contractor has not responded to the staffing firm''s outreach.",
       "phaseIdx": 3,
       "correctCriticality": "High",
