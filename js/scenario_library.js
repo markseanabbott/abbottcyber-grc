@@ -211,7 +211,7 @@ async function slEnsureData() {
 
   if (!slState.dbScenarios) {
     try {
-      const rows = await sbFetch(`/rest/v1/tabletop_scenarios?status=eq.published&select=id,title,industry,difficulty,duration,summary,tags,injects,compliance_tags`, 'GET');
+      const rows = await sbFetch(`tabletop_scenarios?status=eq.published&select=id,title,industry,difficulty,duration,summary,tags,injects,compliance_tags,source_id`, 'GET');
       slState.dbScenarios = Array.isArray(rows) ? rows : [];
     } catch (e) {
       slState.dbScenarios = [];
