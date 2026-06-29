@@ -4,15 +4,22 @@
 -- Run in the Supabase SQL Editor after PATCH_050.
 -- Safe to re-run: uses ON CONFLICT DO NOTHING via unique source_id checks.
 
--- Step 1: Add columns missing from PATCH_050
--- (CREATE TABLE IF NOT EXISTS is a no-op when the table already exists,
---  so columns added in the PATCH_050 CREATE may not be present in older deployments)
+-- Step 1: Bring tabletop_scenarios up to the full PATCH_050 schema.
+-- The table was created from an older version and CREATE TABLE IF NOT EXISTS
+-- is a no-op on existing tables, so none of the newer columns were added.
+-- ADD COLUMN IF NOT EXISTS is idempotent — safe to re-run.
 ALTER TABLE tabletop_scenarios
-  ADD COLUMN IF NOT EXISTS compliance_tags text[] DEFAULT '{}',
   ADD COLUMN IF NOT EXISTS industry        text,
+  ADD COLUMN IF NOT EXISTS difficulty      text,
   ADD COLUMN IF NOT EXISTS duration        text,
   ADD COLUMN IF NOT EXISTS summary         text,
-  ADD COLUMN IF NOT EXISTS tags            text[];
+  ADD COLUMN IF NOT EXISTS tags            text[],
+  ADD COLUMN IF NOT EXISTS compliance_tags text[] DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS declaration     jsonb  NOT NULL DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS injects         jsonb  NOT NULL DEFAULT '[]',
+  ADD COLUMN IF NOT EXISTS source_id       text,
+  ADD COLUMN IF NOT EXISTS source_title    text,
+  ADD COLUMN IF NOT EXISTS created_by      text;
 
 -- Step 2: Seed platform scenarios
 -- These are org_id = NULL (shared, platform-wide).
