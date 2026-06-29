@@ -337,49 +337,49 @@ function _slExStatsHtml() {
   }
   rows.sort((a, b) => b.date.localeCompare(a.date));
 
-  const scoredRows   = rows.map(r => ({ ...r, score: typeof exCalcScore === 'function' ? exCalcScore(r) : 80 }));
-  const total        = scoredRows.length;
-  const breachCount  = scoredRows.filter(r => r.breach === true).length;
-  const aiCount      = scoredRows.filter(r => r.type === 'ai').length;
-  const opCount      = scoredRows.filter(r => r.type === 'op').length;
-  const loading      = opSessions === null;
-  const avgScore     = total > 0 ? Math.round(scoredRows.reduce((s, r) => s + r.score, 0) / total) : 0;
-  const latestScore  = total > 0 ? scoredRows[0].score : 0;
-  const latestGrade  = typeof exGrade === 'function' ? exGrade(latestScore) : { letter: 'A', color: '#15803d' };
+  const scoredRows  = rows.map(r => ({ ...r, score: typeof exCalcScore === 'function' ? exCalcScore(r) : 80 }));
+  const total       = scoredRows.length;
+  const breachCount = scoredRows.filter(r => r.breach === true).length;
+  const aiCount     = scoredRows.filter(r => r.type === 'ai').length;
+  const opCount     = scoredRows.filter(r => r.type === 'op').length;
+  const loading     = opSessions === null;
+  const avgScore    = total > 0 ? Math.round(scoredRows.reduce((s, r) => s + r.score, 0) / total) : 0;
+  const latestScore = total > 0 ? scoredRows[0].score : 0;
+  const latestGrade = typeof exGrade === 'function' ? exGrade(latestScore) : { letter: 'A', color: '#15803d' };
   const chronoScores = [...scoredRows].reverse().map(r => r.score);
 
-  const trendCard = total > 0 ? `
-  <div style="background:#fff;border:1px solid var(--border);border-radius:13px;box-shadow:0 2px 16px rgba(21,33,104,0.07);padding:.9rem 1.25rem;margin-bottom:1rem;display:flex;gap:1.5rem;align-items:center">
-    <div style="text-align:center;min-width:56px">
-      <div style="font-size:2.5rem;font-weight:800;color:${latestGrade.color};line-height:1">${latestGrade.letter}</div>
-      <div style="font-size:10px;font-weight:700;color:${latestGrade.color};margin-top:2px">${latestScore}%</div>
-    </div>
-    <div style="flex:1;min-width:0">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
-        <div style="font-size:12px;font-weight:700;color:var(--text)">Exercise Performance</div>
-        <div style="font-size:11px;color:var(--muted)">${total} run${total !== 1 ? 's' : ''} · ${avgScore}% avg</div>
-      </div>
-      <canvas id="ex-trend-chart" height="40" data-scores='${JSON.stringify(chronoScores)}' style="width:100%;display:block"></canvas>
-      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px">
-        <span>${scoredRows[scoredRows.length - 1]?.date || ''}</span>
-        <span>${scoredRows[0]?.date || ''}</span>
-      </div>
-    </div>
-    <div style="font-size:10px;line-height:2.1;color:var(--muted);text-align:right;flex-shrink:0">
-      <div><strong style="color:#15803d">A</strong> ≥90%</div>
-      <div><strong style="color:#1d4ed8">B</strong> ≥75%</div>
-      <div><strong style="color:#d97706">C</strong> ≥60%</div>
-      <div><strong style="color:#ea580c">D</strong> ≥45%</div>
-      <div><strong style="color:#dc2626">F</strong> &lt;45%</div>
-    </div>
-  </div>` : '';
+  const statGrid = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;flex-shrink:0;align-content:start">
+      <div class="sm-card" style="padding:8px 10px;margin:0"><div class="sm-val" style="font-size:1.1rem">${loading ? '…' : total}</div><div class="sm-lbl">Total</div></div>
+      <div class="sm-card" style="padding:8px 10px;margin:0"><div class="sm-val" style="font-size:1.1rem">${loading ? '…' : opCount}</div><div class="sm-lbl">Cyber</div></div>
+      <div class="sm-card" style="padding:8px 10px;margin:0"><div class="sm-val" style="font-size:1.1rem">${loading ? '…' : aiCount}</div><div class="sm-lbl">AI Gov</div></div>
+      <div class="sm-card" style="padding:8px 10px;margin:0"><div class="sm-val" style="font-size:1.1rem;color:${breachCount > 0 ? '#dc2626' : 'inherit'}">${loading ? '…' : breachCount}</div><div class="sm-lbl">Breaches</div></div>
+    </div>`;
 
-  return `${trendCard}
-  <div class="summary-metrics" style="margin-bottom:1.25rem">
-    <div class="sm-card"><div class="sm-val">${loading ? '…' : total}</div><div class="sm-lbl">Total Exercises</div></div>
-    <div class="sm-card"><div class="sm-val">${loading ? '…' : opCount}</div><div class="sm-lbl">Cybersecurity</div></div>
-    <div class="sm-card"><div class="sm-val">${loading ? '…' : aiCount}</div><div class="sm-lbl">AI Governance</div></div>
-    <div class="sm-card"><div class="sm-val" style="color:${breachCount > 0 ? '#dc2626' : 'inherit'}">${loading ? '…' : breachCount}</div><div class="sm-lbl">Breach Events</div></div>
+  if (total === 0) {
+    return `<div style="display:flex;gap:.75rem;margin-bottom:1.25rem;align-items:stretch">${statGrid}</div>`;
+  }
+
+  return `
+  <div style="display:flex;gap:.75rem;margin-bottom:1.25rem;align-items:stretch">
+    <div style="flex:1;background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:12px;min-width:0">
+      <div style="text-align:center;flex-shrink:0;min-width:44px">
+        <div style="font-size:2rem;font-weight:800;color:${latestGrade.color};line-height:1">${latestGrade.letter}</div>
+        <div style="font-size:9px;font-weight:700;color:${latestGrade.color};margin-top:1px">${latestScore}%</div>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+          <div style="font-size:11px;font-weight:700;color:var(--text)">Exercise Performance</div>
+          <div style="font-size:10px;color:var(--muted)">${total} run${total !== 1 ? 's' : ''} · ${avgScore}% avg</div>
+        </div>
+        <canvas id="ex-trend-chart" height="28" data-scores='${JSON.stringify(chronoScores)}' style="width:100%;display:block"></canvas>
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:2px">
+          <span>${scoredRows[scoredRows.length - 1]?.date || ''}</span>
+          <span>${scoredRows[0]?.date || ''}</span>
+        </div>
+      </div>
+    </div>
+    ${statGrid}
   </div>`;
 }
 
@@ -622,34 +622,6 @@ function slDoLaunch(scenarioId, mode, facilitatorName) {
 }
 
 // ──────────────────────────────────────────────────────────────────
-// EXERCISE TRACK CARDS — quick-launch row above stats
-// ──────────────────────────────────────────────────────────────────
-
-function _slExTrackCards(scenarioCount) {
-  return `
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.25rem">
-    <div style="border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;background:#fff;display:flex;align-items:center;gap:10px">
-      <div style="font-size:1.5rem">🛡️</div>
-      <div>
-        <div style="font-size:13px;font-weight:700;color:var(--text)">Cybersecurity Tabletop</div>
-        <div style="font-size:11px;color:var(--muted)">${scenarioCount} scenarios below — pick one and click Launch</div>
-      </div>
-    </div>
-    <div onclick="setNav('tt_ai')"
-      onmouseenter="this.style.borderColor='var(--cyan)';this.style.boxShadow='0 0 0 3px rgba(7,180,217,.12)'"
-      onmouseleave="this.style.borderColor='var(--border)';this.style.boxShadow='none'"
-      style="border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;background:#fff;display:flex;align-items:center;gap:10px;cursor:pointer;transition:border-color .15s,box-shadow .15s">
-      <div style="font-size:1.5rem">🤖</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:700;color:var(--text)">AI Governance Tabletop</div>
-        <div style="font-size:11px;color:var(--muted)">Governance &amp; attack simulation exercises</div>
-      </div>
-      <div style="font-size:12px;color:var(--cyan);font-weight:700;flex-shrink:0">Go →</div>
-    </div>
-  </div>`;
-}
-
-// ──────────────────────────────────────────────────────────────────
 // MAIN RENDER
 // ──────────────────────────────────────────────────────────────────
 
@@ -669,8 +641,6 @@ function renderScenarioLibrary() {
       <div style="font-size:12px;color:var(--muted)">Tabletop exercises and scenario simulations for ${escH(currentOrg.name)}</div>
     </div>
   </div>
-
-  ${_slExTrackCards(allScenarios.length)}
 
   ${_slExStatsHtml()}
 
@@ -694,7 +664,7 @@ function renderScenarioLibrary() {
       <div style="font-size:12px">Try clearing a filter above.</div>
     </div>
   ` : `
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem">
       ${filtered.map(s => slRenderCard(s)).join('')}
     </div>
   `}
