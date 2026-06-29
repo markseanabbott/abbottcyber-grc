@@ -1,12 +1,9 @@
 -- SUPABASE_PATCH_053.sql
 -- Fixes Commonwealth English spellings in PATCH_051 scenario data.
--- Converts all British spellings to US English across title, summary,
--- declaration, and injects fields for the 8 platform scenarios.
--- Safe to re-run (idempotent — replace on already-correct text is a no-op).
+-- Safe to re-run (replace on already-correct text is a no-op).
 
 UPDATE tabletop_scenarios
 SET
-  -- Fix title (text field)
   title = replace(replace(replace(replace(replace(
     title,
     'Authorised',  'Authorized'),
@@ -15,7 +12,6 @@ SET
     'authorising', 'authorizing'),
     'Authorise',   'Authorize'),
 
-  -- Fix summary (text field)
   summary = replace(replace(replace(replace(replace(replace(replace(
     summary,
     'organisation',  'organization'),
@@ -26,8 +22,7 @@ SET
     'Programme',     'Program'),
     'labour',        'labor'),
 
-  -- Fix declaration jsonb
-  declaration = replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(
+  declaration = replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(
     declaration::text,
     'Authorisation',   'Authorization'),
     'authorisation',   'authorization'),
@@ -57,12 +52,9 @@ SET
     'Minimise',        'Minimize'),
     'wilful',          'willful'),
     'offence',         'offense'),
-    'colour',          'color'),
-    'enquiries',       'inquiries')
-    )::jsonb,
+    'colour',          'color')::jsonb,
 
-  -- Fix injects jsonb (same replacements)
-  injects = replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(
+  injects = replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(
     injects::text,
     'Authorisation',   'Authorization'),
     'authorisation',   'authorization'),
@@ -93,9 +85,7 @@ SET
     'wilful',          'willful'),
     'offence',         'offense'),
     'colour',          'color'),
-    'enquiries',       'inquiries'),
-    'Analyse',         'Analyze')
-    )::jsonb
+    'Analyse',         'Analyze')::jsonb
 
 WHERE source_id IN (
   'bcdr_dc_failure',
@@ -108,7 +98,6 @@ WHERE source_id IN (
   'pci_pan_in_logs'
 );
 
--- Verify title fix
 SELECT source_id, title FROM tabletop_scenarios
 WHERE source_id IN (
   'bcdr_dc_failure','bcdr_critical_vendor',
