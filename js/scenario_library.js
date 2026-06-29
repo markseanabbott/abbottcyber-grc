@@ -511,9 +511,16 @@ function slShowLaunchModal(scenarioId) {
   const s     = TT_SCENARIOS[scenarioId] || (slState.dbScenarios || []).find(d => d.id === scenarioId) || {};
   const title = s.title || scenarioId;
 
+  const existing = document.getElementById('slLaunchModal');
+  if (existing) existing.remove();
+
   function modeCard(mode, icon, heading, sub, live) {
+    const needsName = live && (mode === 'human_local' || mode === 'human_remote');
+    const action = needsName
+      ? `_slModalNameStep('${scenarioId}','${mode}')`
+      : `slDoLaunch('${scenarioId}','${mode}')`;
     const clickAttr = live
-      ? `onclick="slDoLaunch('${scenarioId}','${mode}')" onmouseenter="this.style.borderColor='var(--cyan)'" onmouseleave="this.style.borderColor='var(--border)'"`
+      ? `onclick="${action}" onmouseenter="this.style.borderColor='var(--cyan)'" onmouseleave="this.style.borderColor='var(--border)'"`
       : '';
     return `<div ${clickAttr}
       style="flex:1;min-width:180px;padding:16px 14px;border-radius:12px;border:2px solid ${live ? 'var(--border)' : '#e5e7eb'};background:${live ? '#fff' : '#f9fafb'};cursor:${live ? 'pointer' : 'default'};transition:border-color .15s;position:relative;${live ? '' : 'opacity:.5'}">
@@ -527,7 +534,7 @@ function slShowLaunchModal(scenarioId) {
   const html = `
   <div id="slLaunchModal" onclick="if(event.target===this)slCloseLaunchModal()"
     style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem">
-    <div style="background:#fff;border-radius:16px;max-width:600px;width:100%;padding:1.75rem;box-shadow:0 20px 60px rgba(0,0,0,0.25)">
+    <div id="slLaunchModalBox" style="background:#fff;border-radius:16px;max-width:600px;width:100%;padding:1.75rem;box-shadow:0 20px 60px rgba(0,0,0,0.25)">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem">
         <div>
           <div style="font-size:16px;font-weight:700;color:var(--text)">🚀 Launch Exercise</div>
@@ -548,12 +555,52 @@ function slShowLaunchModal(scenarioId) {
   document.body.insertAdjacentHTML('beforeend', html);
 }
 
+function _slModalNameStep(scenarioId, mode) {
+  const box = document.getElementById('slLaunchModalBox');
+  if (!box) return;
+  const s     = TT_SCENARIOS[scenarioId] || (slState.dbScenarios || []).find(d => d.id === scenarioId) || {};
+  const title = s.title || scenarioId;
+  const modeLabel = mode === 'human_local' ? 'Facilitator — Local' : 'Facilitator — Remote';
+
+  box.innerHTML = `
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem">
+      <div>
+        <div style="font-size:16px;font-weight:700;color:var(--text)">👥 ${escH(modeLabel)}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px">${escH(title)}</div>
+      </div>
+      <button onclick="slCloseLaunchModal()" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer;line-height:1;padding:0">&times;</button>
+    </div>
+    <div style="margin-bottom:1.25rem">
+      <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text);margin-bottom:6px">Your name (facilitator)</label>
+      <input id="slFacNameInput" type="text" placeholder="e.g. Mark Abbott"
+        style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;color:var(--text);box-sizing:border-box;outline:none"
+        onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='var(--border)'"
+        onkeydown="if(event.key==='Enter')_slNameLaunch('${scenarioId}','${mode}')">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="slShowLaunchModal('${scenarioId}')">← Back</button>
+      <button class="btn btn-primary" onclick="_slNameLaunch('${scenarioId}','${mode}')">Launch exercise →</button>
+    </div>`;
+
+  setTimeout(() => document.getElementById('slFacNameInput')?.focus(), 50);
+}
+
+function _slNameLaunch(scenarioId, mode) {
+  const name = (document.getElementById('slFacNameInput')?.value || '').trim();
+  if (!name) {
+    const el = document.getElementById('slFacNameInput');
+    if (el) { el.style.borderColor = '#dc2626'; el.focus(); }
+    return;
+  }
+  slDoLaunch(scenarioId, mode, name);
+}
+
 function slCloseLaunchModal() {
   const el = document.getElementById('slLaunchModal');
   if (el) el.remove();
 }
 
-function slDoLaunch(scenarioId, mode) {
+function slDoLaunch(scenarioId, mode, facilitatorName) {
   slCloseLaunchModal();
 
   if (mode === 'ai_local') {
@@ -567,10 +614,39 @@ function slDoLaunch(scenarioId, mode) {
   if (mode === 'human_local' || mode === 'human_remote') {
     if (!ttState) ttInit();
     ttState.scenarioId = scenarioId;
+    if (facilitatorName) ttState.facilitatorName = facilitatorName;
     ttState.view = 'setup';
     setNav('tabletop');
     return;
   }
+}
+
+// ──────────────────────────────────────────────────────────────────
+// EXERCISE TRACK CARDS — quick-launch row above stats
+// ──────────────────────────────────────────────────────────────────
+
+function _slExTrackCards(scenarioCount) {
+  return `
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.25rem">
+    <div style="border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;background:#fff;display:flex;align-items:center;gap:10px">
+      <div style="font-size:1.5rem">🛡️</div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Cybersecurity Tabletop</div>
+        <div style="font-size:11px;color:var(--muted)">${scenarioCount} scenarios below — pick one and click Launch</div>
+      </div>
+    </div>
+    <div onclick="setNav('tt_ai')"
+      onmouseenter="this.style.borderColor='var(--cyan)';this.style.boxShadow='0 0 0 3px rgba(7,180,217,.12)'"
+      onmouseleave="this.style.borderColor='var(--border)';this.style.boxShadow='none'"
+      style="border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;background:#fff;display:flex;align-items:center;gap:10px;cursor:pointer;transition:border-color .15s,box-shadow .15s">
+      <div style="font-size:1.5rem">🤖</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:var(--text)">AI Governance Tabletop</div>
+        <div style="font-size:11px;color:var(--muted)">Governance &amp; attack simulation exercises</div>
+      </div>
+      <div style="font-size:12px;color:var(--cyan);font-weight:700;flex-shrink:0">Go →</div>
+    </div>
+  </div>`;
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -593,6 +669,8 @@ function renderScenarioLibrary() {
       <div style="font-size:12px;color:var(--muted)">Tabletop exercises and scenario simulations for ${escH(currentOrg.name)}</div>
     </div>
   </div>
+
+  ${_slExTrackCards(allScenarios.length)}
 
   ${_slExStatsHtml()}
 
@@ -647,3 +725,5 @@ window.slLaunchScenario      = slLaunchScenario;
 window.slShowLaunchModal     = slShowLaunchModal;
 window.slCloseLaunchModal    = slCloseLaunchModal;
 window.slDoLaunch            = slDoLaunch;
+window._slModalNameStep      = _slModalNameStep;
+window._slNameLaunch         = _slNameLaunch;
