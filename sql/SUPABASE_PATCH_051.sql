@@ -5,11 +5,14 @@
 -- Safe to re-run: uses ON CONFLICT DO NOTHING via unique source_id checks.
 
 -- Step 1: Add columns missing from PATCH_050
+-- (CREATE TABLE IF NOT EXISTS is a no-op when the table already exists,
+--  so columns added in the PATCH_050 CREATE may not be present in older deployments)
 ALTER TABLE tabletop_scenarios
   ADD COLUMN IF NOT EXISTS compliance_tags text[] DEFAULT '{}',
-  ADD COLUMN IF NOT EXISTS industry text,
-  ADD COLUMN IF NOT EXISTS duration text,
-  ADD COLUMN IF NOT EXISTS summary text;
+  ADD COLUMN IF NOT EXISTS industry        text,
+  ADD COLUMN IF NOT EXISTS duration        text,
+  ADD COLUMN IF NOT EXISTS summary         text,
+  ADD COLUMN IF NOT EXISTS tags            text[];
 
 -- Step 2: Seed platform scenarios
 -- These are org_id = NULL (shared, platform-wide).
