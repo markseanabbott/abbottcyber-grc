@@ -987,9 +987,8 @@ function ttRenderRoleRows(idx, responses, inj) {
       return `<div class="tt-role-row${primary ? '' : ' dimmed'}">
         <div class="tt-role-icon ${r.id}" title="${r.name}">${r.icon}</div>
         <span class="tt-role-name">${r.name}</span>
-        <input class="tt-role-input" id="ttResp_${idx}_${r.id}"
-          placeholder="${placeholder.replace(/"/g, '&quot;')}"
-          value="${safeVal}" />
+        <textarea class="tt-role-input" id="ttResp_${idx}_${r.id}"
+          placeholder="${placeholder.replace(/"/g, '&quot;')}" rows="2">${safeVal}</textarea>
         <button class="tt-crit-btn ${crit.toLowerCase()}"
           onclick="ttCycleCrit(${idx},'${r.id}','${crit}')">${crit || '—'}</button>
       </div>`;

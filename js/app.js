@@ -504,6 +504,11 @@ function renderMain() {
     }
     return;
   }
+  if (activeNav === 'scenario_builder') {
+    el.innerHTML = renderScenarioBuilder();
+    sbInit();
+    return;
+  }
   if (activeNav === 'company_profile') { el.innerHTML = renderCompanyProfile(); return; }
   if (activeNav === 'home') {
     el.innerHTML = renderHome();

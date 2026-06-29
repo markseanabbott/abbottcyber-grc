@@ -124,9 +124,10 @@ const NAV = [
     { id: 'pricing_schedule',  icon: '💲', label: 'Pricing Schedule',     live: true, phase: 1, tierOnly: ['grandfather','father'], adminOnly: true },
   ]},
   { id: 'g_platform', group: 'Platform Admin', icon: '🔧', platformAdminOnly: true, items: [
-    { id: 'modules',   icon: '📦', label: 'Module Management', live: true, phase: 1 },
-    { id: 'backlog',   icon: '📋', label: 'Feature Backlog',   live: true, phase: 1 },
-    { id: 'audit_log', icon: '🔍', label: 'Audit Log',         live: true, phase: 1 },
+    { id: 'modules',          icon: '📦', label: 'Module Management', live: true, phase: 1 },
+    { id: 'backlog',          icon: '📋', label: 'Feature Backlog',   live: true, phase: 1 },
+    { id: 'audit_log',        icon: '🔍', label: 'Audit Log',         live: true, phase: 1 },
+    { id: 'scenario_builder', icon: '🎬', label: 'Scenario Builder',  live: true, phase: 3 },
   ]},
 ];
 
@@ -159,3 +160,4 @@ let tpraState = null;  // Third-Party Risk Assessment state; per-org, hydrated o
 let nistAiState = { answers: {}, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '' };
 let iso42001State = { answers: {}, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '' };
 let aiUnifiedState = { answers: {}, frameworks: { nist: true, iso: true }, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '', poamRun: null, poamItems: {}, matrixRuns: [], matrixGroup: 'g1' };
+let sbState = { view: 'list', scenarios: [], loaded: false, editing: null, expandedInject: null, filterStatus: 'all' };  // Scenario Builder

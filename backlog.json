@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5.0",
   "created": "2026-05-14",
-  "updated": "2026-06-29 (session 89)",
+  "updated": "2026-06-29 (session 90)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1438,8 +1438,9 @@
         {
           "id": "t3",
           "text": "Scenario builder UI: create custom exercises with branching inject trees stored in tabletop_scenarios table; WYSIWYG inject editor with branch options, facilitator notes, role prompts, MITRE mapping",
-          "done": false,
-          "priority": "High"
+          "done": true,
+          "priority": "High",
+          "notes": "js/scenario_builder.js — full CRUD module. List view (custom + built-in read-only with Clone). Editor: metadata, Step 0 declaration, inject accordion (phase, MITRE, criticality, roles, prompts, branches). Save draft / Publish to tabletop_scenarios table. Published scenarios auto-appear in exercise runner via existing tteLoadDbScenarios(). SQL: SUPABASE_PATCH_050.sql. Nav: Platform Admin → Scenario Builder. State: sbState in config.js."
         },
         {
           "id": "t4",
