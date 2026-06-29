@@ -903,7 +903,7 @@ function cisHydrate() {
   const last = runs[cisLatestIdx(runs)] || null;
   const rawAnswers = last ? Object.assign({}, last.answers || {}) : {};
   const answers = Object.fromEntries(Object.entries(rawAnswers).filter(([k]) => !k.startsWith('_')));
-  cisState = { answers, openPanels: {}, orgId: currentOrg?.id, view: 'dashboard', editId: null, conductedBy: '', editDate: '', notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '', gapRun: null, igFilter: 'all', closed: false };
+  cisState = { answers, openPanels: {}, orgId: currentOrg?.id, view: 'dashboard', editId: null, conductedBy: '', editDate: '', notes: {}, openComments: {}, quickAnswers: {}, quickEditId: null, poamRun: null, poamItems: {}, poamNotes: {}, reportRun: null, reportCommentary: '', commentaryEditing: false, gapRun: null, igFilter: 'all', closed: false };
 }
 
 // ── GOAL ──────────────────────────────────────────────────────────────────────
@@ -3344,6 +3344,7 @@ function cisOpenReport(idx) {
   if (!run) return;
   cisState.reportRun = run;
   cisState.reportCommentary = (run.answers || {})._exec_commentary || '';
+  cisState.commentaryEditing = false;
   cisState.view = 'report';
   renderMain();
 }
@@ -3381,6 +3382,13 @@ function renderCISReport() {
   const commentary = cisState.reportCommentary || '';
   const topGaps = scopedSfs.filter(s => answers[s.sf] === 'no');
 
+  // Hash-based staleness check
+  const storedHash = (run.answers || {})._commentary_hash || '';
+  const currentHash = cisAnswerHash(answers, goal);
+  const hasCommentary = !!commentary;
+  const isStale = hasCommentary && !!storedHash && storedHash !== currentHash;
+  const isCurrent = hasCommentary && storedHash === currentHash;
+
   // Stacked bar proportions (out of all scoped safeguards)
   const barBase = scopedSfs.length;
   const yesPct  = barBase > 0 ? (yesN  / barBase * 100).toFixed(1) : 0;
@@ -3388,6 +3396,45 @@ function renderCISReport() {
   const noPct   = barBase > 0 ? (noN   / barBase * 100).toFixed(1) : 0;
   const naPct   = barBase > 0 ? (naN   / barBase * 100).toFixed(1) : 0;
   const unPct   = barBase > 0 ? (unanswered / barBase * 100).toFixed(1) : 0;
+
+  // Commentary card HTML (rendered at top of report)
+  const statusBadge = isCurrent
+    ? `<span style="font-size:11px;color:#15803d;font-weight:600">✅ Report current</span>`
+    : isStale
+      ? `<span style="font-size:11px;color:#b45309;font-weight:600">⚠️ Answers changed since last report</span>`
+      : `<span style="font-size:11px;color:var(--muted)">No report generated yet</span>`;
+
+  const generateBtn = `<button id="cisGenerateBtn" class="btn btn-sm"
+    style="${!hasCommentary ? 'background:var(--cyan);color:#fff;border:none' : isStale ? 'background:#b45309;color:#fff;border:none' : 'border:1.5px solid var(--border);background:#fff;color:var(--muted)'}"
+    onclick="cisGenerateReport()">${!hasCommentary ? '✨ Generate Report' : '↻ Regenerate'}</button>`;
+
+  const commentaryCardHtml = `
+  <div class="card" style="padding:1.25rem;margin-bottom:1rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Executive Commentary</div>
+        <div style="margin-top:3px">${statusBadge}</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        ${generateBtn}
+        ${hasCommentary ? `<button class="btn btn-outline btn-sm" onclick="cisState.commentaryEditing=!cisState.commentaryEditing;renderMain()">${cisState.commentaryEditing ? '✕ Cancel' : '✏️ Edit'}</button>` : ''}
+      </div>
+    </div>
+    ${cisState.commentaryEditing
+      ? `<textarea id="cisReportCommentary" rows="10" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border);font-family:Inter,sans-serif;font-size:13px;color:var(--text);resize:vertical;line-height:1.7">${escH(commentary)}</textarea>
+         <div style="display:flex;gap:6px;margin-top:8px">
+           <button class="btn btn-cyan btn-sm" onclick="cisSaveCommentaryEdit()">Save Commentary</button>
+           <button class="btn btn-outline btn-sm" onclick="cisState.commentaryEditing=false;renderMain()">Cancel</button>
+         </div>`
+      : hasCommentary
+        ? `<div id="cisCommentaryDisplay" style="font-family:Inter,sans-serif">${fmtCommentary(commentary, '')}</div>`
+        : `<div style="padding:2rem;text-align:center;background:var(--bg);border-radius:8px;color:var(--muted)">
+             <div style="font-size:24px;margin-bottom:8px">✨</div>
+             <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">No report generated yet</div>
+             <div style="font-size:12px">Click Generate Report to create an AI-written executive narrative for this assessment.</div>
+           </div>`
+    }
+  </div>`;
 
   return `
   ${renderTierBanner()}
@@ -3403,6 +3450,8 @@ function renderCISReport() {
       <button class="btn btn-outline btn-sm" onclick="cisExportReportWord()">📄 Export Word</button>
     </div>
   </div>
+
+  ${commentaryCardHtml}
 
   <!-- Score strip -->
   <div class="card" style="padding:.65rem 1.1rem;margin-bottom:1rem;display:flex;align-items:center;gap:0;flex-wrap:wrap">
@@ -3542,26 +3591,7 @@ function renderCISReport() {
     <div style="font-size:13px;font-weight:700">No gaps — all scoped safeguards are Yes or Partial</div>
   </div>`}
 
-  <!-- Commentary -->
-  <div class="card" style="padding:1.25rem">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-      <div>
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Executive Commentary</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">Written narrative for client presentation</div>
-      </div>
-      <div style="display:flex;gap:6px">
-        <button class="btn btn-outline btn-sm" onclick="cisGenerateReportPrompt()" title="Generate a data-rich prompt to paste into Claude">✨ Generate AI Prompt</button>
-        <button class="btn btn-cyan btn-sm" onclick="cisSaveCommentary()">Save Commentary</button>
-      </div>
-    </div>
-    <textarea id="cisReportCommentary" rows="8"
-      placeholder="Type your executive commentary here, or click ✨ Generate AI Prompt — paste the output into Claude, copy the response back here, then Save."
-      style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border);font-family:Inter,sans-serif;font-size:13px;color:var(--text);resize:vertical;line-height:1.7"
-    >${escH(commentary)}</textarea>
-    <div style="font-size:10px;color:var(--muted);margin-top:6px">
-      💡 <strong>Generate AI Prompt</strong> copies a pre-filled prompt to your clipboard. Paste into Claude → get polished commentary → paste back above → Save.
-    </div>
-  </div>`;
+  `;
 }
 
 // ── REPORT CHARTS ─────────────────────────────────────────────────────────────
@@ -3572,9 +3602,6 @@ function drawReportCharts() {
   const answers = Object.fromEntries(
     Object.entries(run.answers || {}).filter(([k]) => !k.startsWith('_'))
   );
-  const goal = (run.answers || {})._goal;
-  const goalN = { ig1: 1, ig2: 2, ig3: 3 }[goal] || 3;
-  cisDrawRadar('cisReportRadar', answers, goalN);
   const runs = (orgAssessments[currentOrg?.id] || {})['cis'] || [];
   if (runs.length >= 1) cisDrawReportTrend('cisReportTrend', runs);
 }
@@ -4140,15 +4167,23 @@ function cisDrawTrendLine(canvasId, runs) {
 
 // ── REPORT ACTIONS ────────────────────────────────────────────────────────────
 
-function cisGenerateReportPrompt() {
-  const run = cisState.reportRun;
-  if (!run) return;
+function cisAnswerHash(answers, goal) {
+  const str = (goal || '') + '|' + Object.entries(answers)
+    .filter(([k]) => !k.startsWith('_'))
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => k + ':' + v)
+    .join('|');
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = Math.imul(31, h) + str.charCodeAt(i) | 0;
+  return Math.abs(h).toString(36);
+}
 
+function cisBuildReportPrompt(run) {
   const answers = Object.fromEntries(
     Object.entries(run.answers || {}).filter(([k]) => !k.startsWith('_'))
   );
   const goal = (run.answers || {})._goal;
-  if (!goal) { toast('No IG goal recorded for this assessment', '#b45309'); return; }
+  if (!goal) { toast('No IG goal recorded for this assessment', '#b45309'); return null; }
 
   const goalN = { ig1: 1, ig2: 2, ig3: 3 }[goal] || 3;
   const { score, yes: yesN, partial: partN } = cisCalcScore(answers, goal);
@@ -4269,25 +4304,101 @@ ${goalN >= 2 ? `- One sentence: what IG2${goalN >= 3 ? '/IG3' : ''} progress sig
 - One sentence: what combined business exposure do these gaps create together?
 - One sentence: the single most logical first action to close the most critical exposure.`;
 
-  navigator.clipboard.writeText(prompt)
-    .then(() => toast('✓ AI prompt copied — paste into Claude to generate commentary', '#152168'))
-    .catch(() => {
-      const ta = document.getElementById('cisReportCommentary');
-      if (ta) { ta.value = prompt; ta.select(); ta.scrollIntoView(); }
-      toast('Clipboard blocked — prompt placed in commentary field', '#b45309');
-    });
+  return prompt;
 }
 
+// Clipboard fallback — kept for manual use if needed
+function cisGenerateReportPrompt() {
+  const run = cisState.reportRun;
+  if (!run) return;
+  const prompt = cisBuildReportPrompt(run);
+  if (!prompt) return;
+  navigator.clipboard.writeText(prompt)
+    .then(() => toast('✓ Prompt copied to clipboard', '#152168'))
+    .catch(() => toast('Clipboard blocked', '#b45309'));
+}
+
+// In-app AI generation — calls Supabase Edge Function
+async function cisGenerateReport() {
+  const run = cisState.reportRun;
+  if (!run?.id) { toast('Open a saved assessment first', '#b45309'); return; }
+
+  const btn = document.getElementById('cisGenerateBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Generating…'; }
+
+  const prompt = cisBuildReportPrompt(run);
+  if (!prompt) { if (btn) { btn.disabled = false; btn.textContent = '✨ Generate Report'; } return; }
+
+  const answers = Object.fromEntries(Object.entries(run.answers || {}).filter(([k]) => !k.startsWith('_')));
+  const goal = (run.answers || {})._goal || '';
+
+  try {
+    const resp = await fetch(`${SB_URL}/functions/v1/ai-generate`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, max_tokens: 1400 })
+    });
+    if (!resp.ok) throw new Error(`Edge Function error ${resp.status}`);
+    const { text, error } = await resp.json();
+    if (error) throw new Error(error);
+
+    const hash = cisAnswerHash(answers, goal);
+    const updatedAnswers = { ...(run.answers || {}), _exec_commentary: text, _commentary_hash: hash };
+    await sb.updateAssessment(run.id, { answers: updatedAnswers });
+
+    run.answers = updatedAnswers;
+    cisState.reportRun = run;
+    cisState.reportCommentary = text;
+    cisState.commentaryEditing = false;
+
+    const runs = (orgAssessments[currentOrg?.id] || {})['cis'] || [];
+    const idx = runs.findIndex(r => r.id === run.id);
+    if (idx !== -1) runs[idx] = { ...runs[idx], answers: updatedAnswers };
+
+    auditLog('ai_report_generated', 'assessment', 'CIS Controls v8', { goal });
+    toast('✅ Report generated and saved', '#15803d');
+    renderMain();
+  } catch(e) {
+    toast('Generate failed: ' + e.message, '#dc2626');
+    if (btn) { btn.disabled = false; btn.textContent = '✨ Generate Report'; }
+  }
+}
+
+// Save manually edited commentary (from the edit textarea)
+async function cisSaveCommentaryEdit() {
+  const run = cisState.reportRun;
+  if (!run?.id) { toast('Cannot save — assessment ID missing', '#dc2626'); return; }
+  const text = (document.getElementById('cisReportCommentary')?.value || '').trim();
+  const answers = Object.fromEntries(Object.entries(run.answers || {}).filter(([k]) => !k.startsWith('_')));
+  const goal = (run.answers || {})._goal || '';
+  const hash = cisAnswerHash(answers, goal);
+  try {
+    const updatedAnswers = { ...(run.answers || {}), _exec_commentary: text, _commentary_hash: hash };
+    await sb.updateAssessment(run.id, { answers: updatedAnswers });
+    run.answers = updatedAnswers;
+    cisState.reportRun = run;
+    cisState.reportCommentary = text;
+    cisState.commentaryEditing = false;
+    const runs = (orgAssessments[currentOrg?.id] || {})['cis'] || [];
+    const idx = runs.findIndex(r => r.id === run.id);
+    if (idx !== -1) runs[idx] = { ...runs[idx], answers: updatedAnswers };
+    toast('✓ Commentary saved', '#15803d');
+    renderMain();
+  } catch(e) {
+    toast('Save failed: ' + e.message, '#dc2626');
+  }
+}
+
+// Legacy — kept so Word export still works (it calls cisSaveCommentary internally)
 async function cisSaveCommentary() {
   const run = cisState.reportRun;
   if (!run?.id) { toast('Cannot save — assessment ID missing', '#dc2626'); return; }
-  const commentary = (document.getElementById('cisReportCommentary')?.value || '').trim();
+  const commentary = (document.getElementById('cisReportCommentary')?.value || cisState.reportCommentary || '').trim();
   try {
     const updatedAnswers = { ...(run.answers || {}), _exec_commentary: commentary };
     await sb.updateAssessment(run.id, { answers: updatedAnswers });
     cisState.reportRun = { ...run, answers: updatedAnswers };
     cisState.reportCommentary = commentary;
-    // Keep in-memory cache consistent so re-open doesn't lose commentary
     const runs = (orgAssessments[currentOrg?.id] || {})['cis'] || [];
     const idx  = runs.findIndex(r => r.id === run.id);
     if (idx !== -1) runs[idx] = { ...runs[idx], answers: updatedAnswers };
