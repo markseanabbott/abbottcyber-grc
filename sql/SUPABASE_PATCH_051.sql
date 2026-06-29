@@ -410,7 +410,7 @@ VALUES (
     {
       "ingest": "HR + management",
       "title": "Finance team shaken — second wire attempt intercepted",
-      "body": "Three days after the initial incident, a second deepfake call was attempted — this time targeting the Accounts Payable manager with a $95K wire request. The AP manager recognised the lip-sync lag from the all-staff briefing and refused, calling the CFO directly to verify. The second attempt failed. However, the AP manager is visibly shaken and three finance team members have asked HR about the safety of their roles. The attacker group appears to be retrying. FBI IC3 has confirmed they are tracking this threat group and have 4 other victims in similar industries.',
+      "body": "Three days after the initial incident, a second deepfake call was attempted — this time targeting the Accounts Payable manager with a $95K wire request. The AP manager recognised the lip-sync lag from the all-staff briefing and refused, calling the CFO directly to verify. The second attempt failed. However, the AP manager is visibly shaken and three finance team members have asked HR about the safety of their roles. The attacker group appears to be retrying. FBI IC3 has confirmed they are tracking this threat group and have 4 other victims in similar industries.",
       "phaseIdx": 3,
       "correctCriticality": "High",
       "mitre": {"tactic": "TA0040 Impact", "technique": "Social Engineering — Deepfake repeat attempt"},
@@ -481,7 +481,7 @@ VALUES (
     {
       "ingest": "PSA ticket",
       "title": "Notification complete — PCI remediation plan and re-assessment required",
-      "body": "All 2,847 guests have been notified by mail as required. 23 guests have called to report they received the letter. Guest relations has handled all calls — responses have been empathetic and the hotel is offering a complimentary night to affected guests. The PFI has completed their initial report: root cause is inadequate physical security of the POS terminals. Required remediation includes: PCI-compliant terminal mounting, tamper-evident seals, daily terminal inspection checklist, and security camera coverage of all POS terminals. You will be required to complete a new PCI SAQ or QSA assessment to restore full merchant status.',
+      "body": "All 2,847 guests have been notified by mail as required. 23 guests have called to report they received the letter. Guest relations has handled all calls — responses have been empathetic and the hotel is offering a complimentary night to affected guests. The PFI has completed their initial report: root cause is inadequate physical security of the POS terminals. Required remediation includes: PCI-compliant terminal mounting, tamper-evident seals, daily terminal inspection checklist, and security camera coverage of all POS terminals. You will be required to complete a new PCI SAQ or QSA assessment to restore full merchant status.",
       "phaseIdx": 3,
       "correctCriticality": "Medium",
       "mitre": {"tactic": "N/A — Post-incident", "technique": "PCI remediation"},
