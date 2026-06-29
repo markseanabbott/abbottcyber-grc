@@ -149,6 +149,16 @@ const TT_SCENARIO_LIBRARY_META = {
   },
 };
 
+// ── Track (exercise type) labels ──────────────────────────────────
+const SL_TRACK_LABELS = {
+  operational: 'Security Operations',
+  executive:   'Executive',
+  bcdr:        'BCDR',
+  ai:          'AI & Technology',
+  pci:         'PCI / Payment',
+  vendor:      'Vendor Risk',
+};
+
 // ── Compliance program display config ─────────────────────────────
 const SL_COMPLIANCE = {
   cyber_insurance: { label: 'Cyber Insurance', color: '#1d4ed8', bg: '#dbeafe',  icon: '🛡️', freqMonths: 12, freqLabel: 'Annual'     },
@@ -308,6 +318,7 @@ function slBuildScenarioList() {
 
   const dbItems = (slState.dbScenarios || []).map(s => ({
     ...s,
+    track:    s.track === 'exec' ? 'executive' : (s.track || 'operational'),
     _source:  'db',
     _meta: {
       threatProfiles: Array.isArray(s.tags) ? s.tags.filter(t => SL_THREAT_LABELS[t]) : [],
@@ -331,6 +342,7 @@ function slApplyFilter(scenarios) {
   return scenarios.filter(s => {
     const meta = s._meta || {};
     const inds = meta.industries || [];
+    if (f.track !== 'all' && (s.track || 'operational') !== f.track) return false;
     if (f.industry !== 'all' && !inds.includes(f.industry) && !inds.includes('All')) return false;
     if (f.threat !== 'all' && !(meta.threatProfiles || []).includes(f.threat)) return false;
     if (f.compliance !== 'all' && !(meta.compliance || []).includes(f.compliance)) return false;
@@ -347,7 +359,7 @@ function slSetFilter(key, val) {
 }
 
 function slClearFilters() {
-  slState.filter = { industry: 'all', threat: 'all', compliance: 'all', difficulty: 'all' };
+  slState.filter = { track: 'all', industry: 'all', threat: 'all', compliance: 'all', difficulty: 'all' };
   document.getElementById('mainContent').innerHTML = renderScenarioLibrary();
   setTimeout(drawExPageCharts, 80);
   slEnsureData();
@@ -471,16 +483,24 @@ function _slExStatsHtml() {
 
 function slRenderFilterBar(scenarios) {
   const f = slState.filter;
+  const tracks     = [...new Set(scenarios.map(s => s.track || 'operational'))].sort((a,b) => {
+    const order = ['operational','executive','bcdr','ai','pci','vendor'];
+    return (order.indexOf(a) === -1 ? 99 : order.indexOf(a)) - (order.indexOf(b) === -1 ? 99 : order.indexOf(b));
+  });
   const industries = [...new Set(scenarios.flatMap(s => (s._meta?.industries || []).filter(i => i !== 'All')))].sort();
   const threats    = [...new Set(scenarios.flatMap(s => s._meta?.threatProfiles || []))].sort();
   const programs   = [...new Set(scenarios.flatMap(s => s._meta?.compliance || []))].sort();
   const diffs      = ['Easy', 'Medium', 'Hard'];
 
-  const anyActive  = f.industry !== 'all' || f.threat !== 'all' || f.compliance !== 'all' || f.difficulty !== 'all';
+  const anyActive  = f.track !== 'all' || f.industry !== 'all' || f.threat !== 'all' || f.compliance !== 'all' || f.difficulty !== 'all';
   const selStyle   = `font-family:inherit;font-size:12px;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff;color:var(--text);cursor:pointer;outline:none`;
 
   const selW = `width:100%;${selStyle}`;
-  return `<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr${anyActive?' auto':''};gap:8px;align-items:center;margin-bottom:1.25rem">
+  return `<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr${anyActive?' auto':''};gap:8px;align-items:center;margin-bottom:1.25rem">
+    <select style="${selW}" onchange="slSetFilter('track',this.value)">
+      <option value="all" ${f.track==='all'?'selected':''}>All Exercise Types</option>
+      ${tracks.map(t => `<option value="${t}" ${f.track===t?'selected':''}>${SL_TRACK_LABELS[t]||t}</option>`).join('')}
+    </select>
     <select style="${selW}" onchange="slSetFilter('industry',this.value)">
       <option value="all" ${f.industry==='all'?'selected':''}>All Industries</option>
       ${industries.map(i => `<option value="${escH(i)}" ${f.industry===i?'selected':''}>${escH(i)}</option>`).join('')}
