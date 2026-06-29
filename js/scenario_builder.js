@@ -104,14 +104,19 @@ function renderSbList() {
     </div>
   </div>
 
-  <div class="view-tabs" style="margin-bottom:1rem">
+  <div class="view-tabs" style="margin-bottom:4px">
     ${['all', 'draft', 'published'].map(s =>
       `<div class="view-tab${f === s ? ' active' : ''}" onclick="sbSetFilter('${s}')">${s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}</div>`
     ).join('')}
   </div>
+  <div style="font-size:11px;color:var(--muted);margin-bottom:1rem">These tabs filter platform and custom scenarios. <strong>Draft</strong> = not yet in the exercise runner. <strong>Published</strong> = live and launchable.</div>
+
+  <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:0.5rem">
+    ${f === 'all' ? 'Platform & Custom Scenarios' : f === 'published' ? 'Published Scenarios — Live in Exercise Runner' : 'Draft Scenarios — Not Yet Live'}
+  </div>
 
   ${sbState.scenarios.length === 0 ? `
-    <div class="card" style="text-align:center;padding:2.5rem;color:var(--muted)">
+    <div class="card" style="text-align:center;padding:2.5rem;color:var(--muted);margin-bottom:1.5rem">
       <div style="font-size:36px;margin-bottom:0.5rem">&#x1F3AC;</div>
       <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">No custom scenarios yet</div>
       <div style="font-size:12px;margin-bottom:1rem">Clone a built-in to get started, or create one from scratch.</div>
@@ -135,8 +140,9 @@ function renderSbList() {
   </div>
   `}
 
-  <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:0.5rem">
-    Built-in Scenarios — Clone to customize
+  ${f !== 'all' ? '' : `
+  <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:0.5rem;margin-top:0.5rem">
+    Built-in Scenarios — always live, clone to customize
   </div>
   <div class="card" style="padding:0;overflow:hidden">
     <table class="sb-table">
@@ -166,7 +172,7 @@ function renderSbList() {
         `).join('')}
       </tbody>
     </table>
-  </div>`;
+  </div>`}`;
 }
 
 function sbRenderListRow(s) {
