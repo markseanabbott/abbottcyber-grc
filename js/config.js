@@ -160,4 +160,4 @@ let tpraState = null;  // Third-Party Risk Assessment state; per-org, hydrated o
 let nistAiState = { answers: {}, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '' };
 let iso42001State = { answers: {}, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '' };
 let aiUnifiedState = { answers: {}, frameworks: { nist: true, iso: true }, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '', poamRun: null, poamItems: {}, matrixRuns: [], matrixGroup: 'g1' };
-let sbState = { view: 'list', scenarios: [], loaded: false, editing: null, expandedInject: null, filterStatus: 'all' };  // Scenario Builder
+let sbState = { view: 'list', scenarios: [], loaded: false, editing: null, expandedInject: null, filterStatus: 'all', flowScenario: null };  // Scenario Builder
