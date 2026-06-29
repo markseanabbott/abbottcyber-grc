@@ -986,7 +986,7 @@ function ttRenderRoleRows(idx, responses, inj) {
       const safeVal = (rr.text || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
       return `<div class="tt-role-row${primary ? '' : ' dimmed'}">
         <div class="tt-role-icon ${r.id}" title="${r.name}">${r.icon}</div>
-        <span class="tt-role-name">${r.id.toUpperCase()}</span>
+        <span class="tt-role-name">${r.name}</span>
         <input class="tt-role-input" id="ttResp_${idx}_${r.id}"
           placeholder="${placeholder.replace(/"/g, '&quot;')}"
           value="${safeVal}" />
