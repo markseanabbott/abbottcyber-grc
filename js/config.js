@@ -162,4 +162,4 @@ let nistAiState = { answers: {}, openPanels: {}, openComments: {}, notes: {}, ed
 let iso42001State = { answers: {}, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '' };
 let aiUnifiedState = { answers: {}, frameworks: { nist: true, iso: true }, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '', poamRun: null, poamItems: {}, matrixRuns: [], matrixGroup: 'g1' };
 let sbState = { view: 'list', scenarios: [], loaded: false, editing: null, expandedInject: null, filterStatus: 'all', flowScenario: null };  // Scenario Builder
-let slState = { filter: { industry: 'all', threat: 'all', compliance: 'all', difficulty: 'all' }, sessions: null, dbScenarios: null };  // Scenario Library
+let slState = { filter: { track: 'all', industry: 'all', threat: 'all', compliance: 'all', difficulty: 'all' }, sessions: null, dbScenarios: null };  // Scenario Library
