@@ -17,6 +17,7 @@ ALTER TABLE tabletop_scenarios
   ADD COLUMN IF NOT EXISTS compliance_tags text[] DEFAULT '{}',
   ADD COLUMN IF NOT EXISTS declaration     jsonb  NOT NULL DEFAULT '{}',
   ADD COLUMN IF NOT EXISTS injects         jsonb  NOT NULL DEFAULT '[]',
+  ADD COLUMN IF NOT EXISTS status          text   NOT NULL DEFAULT 'draft',
   ADD COLUMN IF NOT EXISTS source_id       text,
   ADD COLUMN IF NOT EXISTS source_title    text,
   ADD COLUMN IF NOT EXISTS created_by      text;
