@@ -1,7 +1,8 @@
 // ============================================================
 // SCENARIO LIBRARY — Browse and launch tabletop scenarios
-// Platform-layer library with compliance frequency tracking
-// and org-aware role hints from onboarding profile data.
+// Landing page for the Exercises nav section.
+// Includes exercise performance stats (chart + stat cards) at
+// top, then dropdown filters and scenario selection cards below.
 // ============================================================
 
 // ── Library metadata (maps TT_SCENARIOS IDs → program tags) ──────
@@ -105,9 +106,9 @@ const SL_THREAT_LABELS = {
 
 // ── Frequency recommendation labels ───────────────────────────────
 const SL_FREQ = {
-  annual:      { label: 'Annual',             months: 12 },
-  semi_annual: { label: 'Semi-annual',        months: 6  },
-  quarterly:   { label: 'Quarterly',          months: 3  },
+  annual:      { label: 'Annual',      months: 12 },
+  semi_annual: { label: 'Semi-annual', months: 6  },
+  quarterly:   { label: 'Quarterly',   months: 3  },
 };
 
 // ──────────────────────────────────────────────────────────────────
@@ -136,8 +137,12 @@ async function slEnsureData() {
     changed = true;
   }
 
-  if (changed && activeNav === 'scenario_library') {
+  // Ensure ex_hub operational sessions are loaded for stats
+  if (typeof exHubEnsureOp === 'function') exHubEnsureOp();
+
+  if (changed && (activeNav === 'scenario_library' || activeNav === 'exercises')) {
     document.getElementById('mainContent').innerHTML = renderScenarioLibrary();
+    setTimeout(drawExPageCharts, 80);
   }
 }
 
@@ -223,9 +228,10 @@ function slBuildScenarioList() {
     ...s,
     _source:  'db',
     _meta: {
-      threatProfiles: [],
+      threatProfiles: Array.isArray(s.tags) ? s.tags.filter(t => SL_THREAT_LABELS[t]) : [],
       industries:     s.industry ? [s.industry] : ['All'],
-      compliance:     Array.isArray(s.tags) ? s.tags.filter(t => SL_COMPLIANCE[t]) : [],
+      compliance:     Array.isArray(s.compliance_tags) ? s.compliance_tags.filter(t => SL_COMPLIANCE[t])
+                    : Array.isArray(s.tags) ? s.tags.filter(t => SL_COMPLIANCE[t]) : [],
       recommendedFrequency: 'annual',
     },
     _lastRun: slLastRun(s.id),
@@ -254,6 +260,14 @@ function slApplyFilter(scenarios) {
 function slSetFilter(key, val) {
   slState.filter[key] = val;
   document.getElementById('mainContent').innerHTML = renderScenarioLibrary();
+  setTimeout(drawExPageCharts, 80);
+  slEnsureData();
+}
+
+function slClearFilters() {
+  slState.filter = { industry: 'all', threat: 'all', compliance: 'all', difficulty: 'all' };
+  document.getElementById('mainContent').innerHTML = renderScenarioLibrary();
+  setTimeout(drawExPageCharts, 80);
   slEnsureData();
 }
 
@@ -265,20 +279,17 @@ function slComplianceAlerts(scenarios) {
   if (!slState.sessions) return '';
   const profile = currentOrg ? (orgProfiles[currentOrg.id] || null) : null;
 
-  // Determine which compliance programs are relevant to this org
   const relevantPrograms = new Set();
   const orgCompliance = profile ? (profile.regulatory_scope || []) : [];
   if (Array.isArray(orgCompliance)) orgCompliance.forEach(c => relevantPrograms.add(c));
-  if (profile?.handles_health_data)   relevantPrograms.add('hipaa');
-  if (profile?.handles_payment_data)  relevantPrograms.add('pci_dss');
-  relevantPrograms.add('cyber_insurance'); // always relevant
+  if (profile?.handles_health_data)  relevantPrograms.add('hipaa');
+  if (profile?.handles_payment_data) relevantPrograms.add('pci_dss');
+  relevantPrograms.add('cyber_insurance');
 
-  // Find overdue compliance programs across all scenarios for this org
   const overdue = [];
   relevantPrograms.forEach(prog => {
     if (!SL_COMPLIANCE[prog]) return;
     const cfg = SL_COMPLIANCE[prog];
-    // Find the most recent run of ANY scenario tagged with this program
     const tagged = scenarios.filter(s => (s._meta?.compliance || []).includes(prog));
     const lastRunDates = tagged.map(s => s._lastRun).filter(Boolean);
     lastRunDates.sort((a, b) => b.localeCompare(a));
@@ -301,6 +312,109 @@ function slComplianceAlerts(scenarios) {
         </span>
       </div>
     `).join('')}
+  </div>`;
+}
+
+// ──────────────────────────────────────────────────────────────────
+// EXERCISE STATS SECTION — performance chart + stat cards
+// Pulls from exHubState and orgAssessments (same source as ex_hub.js)
+// ──────────────────────────────────────────────────────────────────
+
+function _slExStatsHtml() {
+  const aiRuns     = ((orgAssessments[currentOrg?.id] || {})['ai_tabletop'] || []);
+  const opSessions = exHubState?.opSessions ?? null;
+  const rows       = [];
+
+  aiRuns.forEach(r => {
+    const a = r.answers || {};
+    rows.push({ type: 'ai', date: r.date || r.assessed_at || '', scenario: a.scenarioName || a.scenarioId || '—', breach: null, severity: null, rubric_scores: null });
+  });
+  if (opSessions) {
+    opSessions.forEach(s => {
+      const log = Array.isArray(s.exercise_log) ? s.exercise_log : [];
+      rows.push({ type: 'op', date: s.created_at ? s.created_at.substring(0, 10) : '', scenario: s.scenario_title || '—', breach: s.breach_declared, severity: s.tl_severity || '—', injectCount: log.length, id: s.id, rubric_scores: s.rubric_scores || null });
+    });
+  }
+  rows.sort((a, b) => b.date.localeCompare(a.date));
+
+  const scoredRows   = rows.map(r => ({ ...r, score: typeof exCalcScore === 'function' ? exCalcScore(r) : 80 }));
+  const total        = scoredRows.length;
+  const breachCount  = scoredRows.filter(r => r.breach === true).length;
+  const aiCount      = scoredRows.filter(r => r.type === 'ai').length;
+  const opCount      = scoredRows.filter(r => r.type === 'op').length;
+  const loading      = opSessions === null;
+  const avgScore     = total > 0 ? Math.round(scoredRows.reduce((s, r) => s + r.score, 0) / total) : 0;
+  const latestScore  = total > 0 ? scoredRows[0].score : 0;
+  const latestGrade  = typeof exGrade === 'function' ? exGrade(latestScore) : { letter: 'A', color: '#15803d' };
+  const chronoScores = [...scoredRows].reverse().map(r => r.score);
+
+  const trendCard = total > 0 ? `
+  <div style="background:#fff;border:1px solid var(--border);border-radius:13px;box-shadow:0 2px 16px rgba(21,33,104,0.07);padding:.9rem 1.25rem;margin-bottom:1rem;display:flex;gap:1.5rem;align-items:center">
+    <div style="text-align:center;min-width:56px">
+      <div style="font-size:2.5rem;font-weight:800;color:${latestGrade.color};line-height:1">${latestGrade.letter}</div>
+      <div style="font-size:10px;font-weight:700;color:${latestGrade.color};margin-top:2px">${latestScore}%</div>
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
+        <div style="font-size:12px;font-weight:700;color:var(--text)">Exercise Performance</div>
+        <div style="font-size:11px;color:var(--muted)">${total} run${total !== 1 ? 's' : ''} · ${avgScore}% avg</div>
+      </div>
+      <canvas id="ex-trend-chart" height="40" data-scores='${JSON.stringify(chronoScores)}' style="width:100%;display:block"></canvas>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px">
+        <span>${scoredRows[scoredRows.length - 1]?.date || ''}</span>
+        <span>${scoredRows[0]?.date || ''}</span>
+      </div>
+    </div>
+    <div style="font-size:10px;line-height:2.1;color:var(--muted);text-align:right;flex-shrink:0">
+      <div><strong style="color:#15803d">A</strong> ≥90%</div>
+      <div><strong style="color:#1d4ed8">B</strong> ≥75%</div>
+      <div><strong style="color:#d97706">C</strong> ≥60%</div>
+      <div><strong style="color:#ea580c">D</strong> ≥45%</div>
+      <div><strong style="color:#dc2626">F</strong> &lt;45%</div>
+    </div>
+  </div>` : '';
+
+  return `${trendCard}
+  <div class="summary-metrics" style="margin-bottom:1.25rem">
+    <div class="sm-card"><div class="sm-val">${loading ? '…' : total}</div><div class="sm-lbl">Total Exercises</div></div>
+    <div class="sm-card"><div class="sm-val">${loading ? '…' : opCount}</div><div class="sm-lbl">Cybersecurity</div></div>
+    <div class="sm-card"><div class="sm-val">${loading ? '…' : aiCount}</div><div class="sm-lbl">AI Governance</div></div>
+    <div class="sm-card"><div class="sm-val" style="color:${breachCount > 0 ? '#dc2626' : 'inherit'}">${loading ? '…' : breachCount}</div><div class="sm-lbl">Breach Events</div></div>
+  </div>`;
+}
+
+// ──────────────────────────────────────────────────────────────────
+// FILTER BAR — four dropdowns
+// ──────────────────────────────────────────────────────────────────
+
+function slRenderFilterBar(scenarios) {
+  const f = slState.filter;
+  const industries = [...new Set(scenarios.flatMap(s => (s._meta?.industries || []).filter(i => i !== 'All')))].sort();
+  const threats    = [...new Set(scenarios.flatMap(s => s._meta?.threatProfiles || []))].sort();
+  const programs   = [...new Set(scenarios.flatMap(s => s._meta?.compliance || []))].sort();
+  const diffs      = ['Easy', 'Medium', 'Hard'];
+
+  const anyActive  = f.industry !== 'all' || f.threat !== 'all' || f.compliance !== 'all' || f.difficulty !== 'all';
+  const selStyle   = `font-family:inherit;font-size:12px;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff;color:var(--text);cursor:pointer;outline:none`;
+
+  return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem">
+    <select style="${selStyle}" onchange="slSetFilter('industry',this.value)">
+      <option value="all" ${f.industry==='all'?'selected':''}>All Industries</option>
+      ${industries.map(i => `<option value="${escH(i)}" ${f.industry===i?'selected':''}>${escH(i)}</option>`).join('')}
+    </select>
+    <select style="${selStyle}" onchange="slSetFilter('threat',this.value)">
+      <option value="all" ${f.threat==='all'?'selected':''}>All Threats</option>
+      ${threats.map(t => `<option value="${t}" ${f.threat===t?'selected':''}>${SL_THREAT_LABELS[t]||t}</option>`).join('')}
+    </select>
+    <select style="${selStyle}" onchange="slSetFilter('compliance',this.value)">
+      <option value="all" ${f.compliance==='all'?'selected':''}>All Compliance</option>
+      ${programs.map(p => { const cfg = SL_COMPLIANCE[p]||{}; return `<option value="${p}" ${f.compliance===p?'selected':''}>${cfg.label||p}</option>`; }).join('')}
+    </select>
+    <select style="${selStyle}" onchange="slSetFilter('difficulty',this.value)">
+      <option value="all" ${f.difficulty==='all'?'selected':''}>All Difficulties</option>
+      ${diffs.map(d => `<option value="${d}" ${f.difficulty===d?'selected':''}>${d}</option>`).join('')}
+    </select>
+    ${anyActive ? `<button class="btn btn-outline btn-sm" onclick="slClearFilters()">Clear</button>` : ''}
   </div>`;
 }
 
@@ -345,7 +459,6 @@ function slRenderCard(s) {
 
   return `
   <div style="background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:0;overflow:hidden;display:flex;flex-direction:column">
-    <!-- Card header -->
     <div style="background:linear-gradient(135deg,var(--navy),var(--navy2));padding:12px 14px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
         <div style="font-size:13px;font-weight:700;color:#fff;line-height:1.3">${escH(s.title)}${isDbScen ? ' <span style="font-size:9px;opacity:0.7;font-weight:400">(Custom)</span>' : ''}</div>
@@ -361,18 +474,10 @@ function slRenderCard(s) {
       </div>
     </div>
 
-    <!-- Card body -->
     <div style="padding:12px 14px;flex:1;display:flex;flex-direction:column;gap:8px">
-      <!-- Summary -->
       <div style="font-size:11px;color:var(--muted);line-height:1.5">${escH((s.summary || '').slice(0, 180))}${(s.summary || '').length > 180 ? '…' : ''}</div>
-
-      <!-- Threat chips -->
       ${threatChips ? `<div style="display:flex;flex-wrap:wrap;gap:4px">${threatChips}</div>` : ''}
-
-      <!-- Compliance badges -->
       ${complianceBadges ? `<div style="display:flex;flex-wrap:wrap;gap:4px">${complianceBadges}</div>` : ''}
-
-      <!-- Freq + last run -->
       <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
         <div>
           <div style="font-size:9px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:2px">Recommended</div>
@@ -385,64 +490,87 @@ function slRenderCard(s) {
             : freqBadge}
         </div>
       </div>
-
-      <!-- Role hints -->
       ${hintHtml}
     </div>
 
-    <!-- Launch footer -->
-    <div style="border-top:1px solid var(--border);padding:10px 14px;display:flex;gap:6px;align-items:center">
-      <button class="btn btn-primary btn-sm" style="flex:1" onclick="slLaunchScenario('${s.id}')">Launch →</button>
+    <div style="border-top:1px solid var(--border);padding:10px 14px">
+      <button class="btn btn-primary btn-sm" style="width:100%" onclick="slLaunchScenario('${s.id}')">Launch →</button>
     </div>
   </div>`;
 }
 
 // ──────────────────────────────────────────────────────────────────
-// FILTER BAR
+// LAUNCH MODAL — choose run mode before entering exercise
 // ──────────────────────────────────────────────────────────────────
 
-function slRenderFilterBar(scenarios) {
-  const f = slState.filter;
+function slLaunchScenario(scenarioId) {
+  slShowLaunchModal(scenarioId);
+}
 
-  const industries = [...new Set(scenarios.flatMap(s => s._meta?.industries || []))].sort();
-  const threats    = [...new Set(scenarios.flatMap(s => s._meta?.threatProfiles || []))].sort();
-  const programs   = [...new Set(scenarios.flatMap(s => s._meta?.compliance || []))].sort();
-  const diffs      = ['Easy', 'Medium', 'Hard'];
+function slShowLaunchModal(scenarioId) {
+  const s     = TT_SCENARIOS[scenarioId] || (slState.dbScenarios || []).find(d => d.id === scenarioId) || {};
+  const title = s.title || scenarioId;
 
-  function sel(key, val, label) {
-    const active = f[key] === val;
-    return `<button onclick="slSetFilter('${key}','${val}')"
-      style="font-size:11px;font-weight:${active ? '700' : '500'};padding:4px 10px;border-radius:20px;border:1.5px solid ${active ? 'var(--navy)' : 'var(--border)'};background:${active ? 'var(--navy)' : '#fff'};color:${active ? '#fff' : 'var(--text)'};cursor:pointer;white-space:nowrap">
-      ${label}
-    </button>`;
+  function modeCard(mode, icon, heading, sub, live) {
+    const clickAttr = live
+      ? `onclick="slDoLaunch('${scenarioId}','${mode}')" onmouseenter="this.style.borderColor='var(--cyan)'" onmouseleave="this.style.borderColor='var(--border)'"`
+      : '';
+    return `<div ${clickAttr}
+      style="flex:1;min-width:180px;padding:16px 14px;border-radius:12px;border:2px solid ${live ? 'var(--border)' : '#e5e7eb'};background:${live ? '#fff' : '#f9fafb'};cursor:${live ? 'pointer' : 'default'};transition:border-color .15s;position:relative;${live ? '' : 'opacity:.5'}">
+      <div style="font-size:1.6rem;margin-bottom:6px">${icon}</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">${heading}</div>
+      <div style="font-size:11px;color:var(--muted);line-height:1.5">${sub}</div>
+      ${!live ? `<span style="position:absolute;top:8px;right:8px;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;background:#e5e7eb;color:#6b7280">Coming soon</span>` : ''}
+    </div>`;
   }
 
-  return `<div style="margin-bottom:1.25rem">
-    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px">
-      <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Industry</span>
-      ${sel('industry', 'all', 'All')}
-      ${industries.filter(i => i !== 'All').map(i => sel('industry', i, i)).join('')}
-      ${industries.includes('All') ? sel('industry', 'All', 'All verticals') : ''}
-    </div>
-    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:6px">
-      <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Threat</span>
-      ${sel('threat', 'all', 'All')}
-      ${threats.map(t => sel('threat', t, SL_THREAT_LABELS[t] || t)).join('')}
-    </div>
-    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:6px">
-      <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Compliance</span>
-      ${sel('compliance', 'all', 'All')}
-      ${programs.map(p => {
-        const cfg = SL_COMPLIANCE[p] || {};
-        return sel('compliance', p, (cfg.icon ? cfg.icon + ' ' : '') + (cfg.label || p));
-      }).join('')}
-    </div>
-    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:6px">
-      <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Difficulty</span>
-      ${sel('difficulty', 'all', 'All')}
-      ${diffs.map(d => sel('difficulty', d, d)).join('')}
+  const html = `
+  <div id="slLaunchModal" onclick="if(event.target===this)slCloseLaunchModal()"
+    style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem">
+    <div style="background:#fff;border-radius:16px;max-width:600px;width:100%;padding:1.75rem;box-shadow:0 20px 60px rgba(0,0,0,0.25)">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:var(--text)">🚀 Launch Exercise</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:3px">${escH(title)}</div>
+        </div>
+        <button onclick="slCloseLaunchModal()" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer;line-height:1;padding:0">&times;</button>
+      </div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:10px">How would you like to run this exercise?</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        ${modeCard('ai_local',     '🤖', 'AI Run — Local',           'AI acts as game master. Participants are in the same room.',                             true)}
+        ${modeCard('ai_remote',    '🤖', 'AI Run — Remote',          'AI-facilitated with remote participants joining via session code.',                     false)}
+        ${modeCard('human_local',  '👥', 'Facilitator — Local',      'Human facilitator runs injects live. All participants in the same room.',               true)}
+        ${modeCard('human_remote', '👥', 'Facilitator — Remote',     'Jackbox-style: participants join from any device via a session code.',                  true)}
+      </div>
     </div>
   </div>`;
+
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function slCloseLaunchModal() {
+  const el = document.getElementById('slLaunchModal');
+  if (el) el.remove();
+}
+
+function slDoLaunch(scenarioId, mode) {
+  slCloseLaunchModal();
+
+  if (mode === 'ai_local') {
+    if (!aittState) aittInit();
+    aittState.scenarioId = scenarioId;
+    aittState.view = 'setup';
+    setNav('tt_ai');
+    return;
+  }
+
+  if (mode === 'human_local' || mode === 'human_remote') {
+    if (!ttState) ttInit();
+    ttState.scenarioId = scenarioId;
+    ttState.view = 'setup';
+    setNav('tabletop');
+    return;
+  }
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -452,26 +580,27 @@ function slRenderFilterBar(scenarios) {
 function renderScenarioLibrary() {
   if (!currentOrg) return `<div class="card" style="padding:2rem;text-align:center;color:var(--muted)">Select an organization to browse scenarios.</div>`;
 
-  const allScenarios  = slBuildScenarioList();
-  const filtered      = slApplyFilter(allScenarios);
-  const loading       = slState.sessions === null;
+  if (typeof exHubEnsureOp === 'function') exHubEnsureOp();
 
-  const profile = orgProfiles[currentOrg.id] || null;
-  const orgIndustry = profile?.industry || currentOrg.industry || '';
+  const allScenarios = slBuildScenarioList();
+  const filtered     = slApplyFilter(allScenarios);
+  const loading      = slState.sessions === null;
 
   return `${renderTierBanner()}
   <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
     <div>
-      <div style="font-size:17px;font-weight:700">📚 Scenario Library</div>
-      <div style="font-size:12px;color:var(--muted)">${allScenarios.length} scenarios available · ${filtered.length} shown · ${currentOrg.name}</div>
-    </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-outline btn-sm" onclick="setNav('exercises')">← Exercises</button>
-      <button class="btn btn-outline btn-sm" onclick="setNav('tabletop')">Run exercise</button>
+      <div style="font-size:17px;font-weight:700">🎯 Exercises</div>
+      <div style="font-size:12px;color:var(--muted)">Tabletop exercises and scenario simulations for ${escH(currentOrg.name)}</div>
     </div>
   </div>
 
+  ${_slExStatsHtml()}
+
   ${slComplianceAlerts(allScenarios)}
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">${allScenarios.length} scenarios · ${filtered.length} shown</div>
+  </div>
 
   ${slRenderFilterBar(allScenarios)}
 
@@ -500,21 +629,10 @@ function renderScenarioLibrary() {
         <strong>CMMC L2</strong> requires annual incident response exercises (3.6.2).
         <strong>HIPAA</strong> Security Rule §164.308(a)(8) requires periodic testing and revision of contingency plans.
         <strong>PCI DSS</strong> Req 12.10.2 requires annual IR plan testing.
-        Exercise history is tracked per organization and visible in the <a href="#" onclick="setNav('exercises');return false" style="color:var(--cyan)">Exercises hub</a>.
+        Exercise history is tracked per organization and visible in the performance chart above.
       </div>
     </div>
   ` : ''}`;
-}
-
-// ──────────────────────────────────────────────────────────────────
-// LAUNCH ACTION
-// ──────────────────────────────────────────────────────────────────
-
-function slLaunchScenario(scenarioId) {
-  if (!ttState) ttInit();
-  ttState.view = 'setup';
-  ttState.scenarioId = scenarioId;
-  setNav('tabletop');
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -524,4 +642,8 @@ function slLaunchScenario(scenarioId) {
 window.renderScenarioLibrary = renderScenarioLibrary;
 window.slEnsureData          = slEnsureData;
 window.slSetFilter           = slSetFilter;
+window.slClearFilters        = slClearFilters;
 window.slLaunchScenario      = slLaunchScenario;
+window.slShowLaunchModal     = slShowLaunchModal;
+window.slCloseLaunchModal    = slCloseLaunchModal;
+window.slDoLaunch            = slDoLaunch;

@@ -21,7 +21,7 @@ async function exHubEnsureOp() {
   } catch(e) {
     exHubState.opSessions = [];
   }
-  if (['exercises', 'ex_hub', 'home'].includes(activeNav)) renderMain();
+  if (['exercises', 'scenario_library', 'ex_hub', 'home'].includes(activeNav)) renderMain();
 }
 
 function exHubRender() {
