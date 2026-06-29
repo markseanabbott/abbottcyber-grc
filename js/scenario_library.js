@@ -397,24 +397,25 @@ function slRenderFilterBar(scenarios) {
   const anyActive  = f.industry !== 'all' || f.threat !== 'all' || f.compliance !== 'all' || f.difficulty !== 'all';
   const selStyle   = `font-family:inherit;font-size:12px;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff;color:var(--text);cursor:pointer;outline:none`;
 
-  return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem">
-    <select style="${selStyle}" onchange="slSetFilter('industry',this.value)">
+  const selW = `width:100%;${selStyle}`;
+  return `<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr${anyActive?' auto':''};gap:8px;align-items:center;margin-bottom:1.25rem">
+    <select style="${selW}" onchange="slSetFilter('industry',this.value)">
       <option value="all" ${f.industry==='all'?'selected':''}>All Industries</option>
       ${industries.map(i => `<option value="${escH(i)}" ${f.industry===i?'selected':''}>${escH(i)}</option>`).join('')}
     </select>
-    <select style="${selStyle}" onchange="slSetFilter('threat',this.value)">
+    <select style="${selW}" onchange="slSetFilter('threat',this.value)">
       <option value="all" ${f.threat==='all'?'selected':''}>All Threats</option>
       ${threats.map(t => `<option value="${t}" ${f.threat===t?'selected':''}>${SL_THREAT_LABELS[t]||t}</option>`).join('')}
     </select>
-    <select style="${selStyle}" onchange="slSetFilter('compliance',this.value)">
+    <select style="${selW}" onchange="slSetFilter('compliance',this.value)">
       <option value="all" ${f.compliance==='all'?'selected':''}>All Compliance</option>
       ${programs.map(p => { const cfg = SL_COMPLIANCE[p]||{}; return `<option value="${p}" ${f.compliance===p?'selected':''}>${cfg.label||p}</option>`; }).join('')}
     </select>
-    <select style="${selStyle}" onchange="slSetFilter('difficulty',this.value)">
+    <select style="${selW}" onchange="slSetFilter('difficulty',this.value)">
       <option value="all" ${f.difficulty==='all'?'selected':''}>All Difficulties</option>
       ${diffs.map(d => `<option value="${d}" ${f.difficulty===d?'selected':''}>${d}</option>`).join('')}
     </select>
-    ${anyActive ? `<button class="btn btn-outline btn-sm" onclick="slClearFilters()">Clear</button>` : ''}
+    ${anyActive ? `<button class="btn btn-outline btn-sm" style="white-space:nowrap" onclick="slClearFilters()">Clear</button>` : ''}
   </div>`;
 }
 
@@ -585,14 +586,28 @@ function _slModalNameStep(scenarioId, mode) {
   setTimeout(() => document.getElementById('slFacNameInput')?.focus(), 50);
 }
 
-function _slNameLaunch(scenarioId, mode) {
+async function _slNameLaunch(scenarioId, mode) {
   const name = (document.getElementById('slFacNameInput')?.value || '').trim();
   if (!name) {
     const el = document.getElementById('slFacNameInput');
     if (el) { el.style.borderColor = '#dc2626'; el.focus(); }
     return;
   }
-  slDoLaunch(scenarioId, mode, name);
+
+  slCloseLaunchModal();
+
+  // Prime ttState and jump straight to the exercise — skip the setup screen
+  if (!ttState) ttInit();
+  ttState.scenarioId     = scenarioId;
+  ttState.facilitatorName = name;
+  ttState.mode           = mode === 'human_remote' ? 'remote' : 'local';
+
+  // Switch nav so sidebar reflects tabletop as active
+  activeNav = 'tabletop';
+  if (typeof buildNav === 'function') buildNav();
+
+  // Launch the session directly (creates Supabase record, moves to commentary / Step 0)
+  await ttLaunchSession();
 }
 
 function slCloseLaunchModal() {
@@ -664,7 +679,7 @@ function renderScenarioLibrary() {
       <div style="font-size:12px">Try clearing a filter above.</div>
     </div>
   ` : `
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.75rem">
       ${filtered.map(s => slRenderCard(s)).join('')}
     </div>
   `}
