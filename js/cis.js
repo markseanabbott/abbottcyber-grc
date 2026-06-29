@@ -1127,6 +1127,7 @@ function renderCISDashboard() {
           <button class="btn btn-outline btn-sm" style="margin-right:4px" onclick="cisOpenPoam(${origIdx})">📋 POAM</button>
           <button class="btn btn-outline btn-sm" style="margin-right:4px;border-color:#15803d;color:#15803d" onclick="cisOpenCost(${origIdx})">💲 Cost</button>
           <button class="btn btn-outline btn-sm" style="margin-right:4px" onclick="cisOpenAssessment(${origIdx})">${runClosed ? '👁 View' : 'View / Edit'}</button>
+          ${!runClosed ? `<button class="btn btn-outline btn-sm" style="margin-right:4px;border-color:#15803d;color:#15803d" onclick="cisMarkCompleteById('${r.id}')" title="Close this assessment">🔒 Close</button>` : `<button class="btn btn-outline btn-sm" style="margin-right:4px;border-color:#64748b;color:#64748b" onclick="cisReopenById('${r.id}')" title="Re-open for editing">🔓</button>`}
           <button class="btn btn-outline btn-sm" style="margin-right:4px;border-color:#7c3aed;color:#7c3aed" onclick="cisDuplicateAssessment(${origIdx})" title="Duplicate to today">⊕ Dup</button>
           <button class="btn btn-outline btn-sm" style="margin-right:4px;border-color:#7c3aed;color:#7c3aed" onclick="cisSaveAsTemplate(${origIdx})" title="Save as platform template">📌</button>
           <button class="btn btn-red btn-sm" onclick="cisDeleteAssessment(${origIdx})">Delete</button>
@@ -1342,7 +1343,8 @@ function renderCISForm() {
           </div>
           ${isClosed
             ? `<button class="btn btn-outline btn-sm" style="border-color:#15803d;color:#15803d" onclick="cisReopenAssessment()">🔓 Re-open</button>`
-            : `<button class="btn btn-cyan btn-sm" id="cisSaveBtn" onclick="cisSave()">${cisState.editId ? 'Update Assessment' : 'Save to Database'}</button>`
+            : `<button class="btn btn-cyan btn-sm" id="cisSaveBtn" onclick="cisSave()">${cisState.editId ? 'Update Assessment' : 'Save to Database'}</button>
+               ${cisState.editId ? `<button class="btn btn-sm" style="background:#15803d;color:#fff;border:none;white-space:nowrap" onclick="cisMarkComplete()">🔒 Close Assessment</button>` : ''}`
           }
         </div>
     </div>
@@ -2430,6 +2432,37 @@ async function cisReopenAssessment() {
   }
 }
 
+// Close / reopen directly from history list (no need to open assessment first)
+async function cisMarkCompleteById(id) {
+  const runs = (orgAssessments[currentOrg?.id] || {})['cis'] || [];
+  const run = runs.find(r => r.id === id);
+  if (!run) return;
+  const goal = (run.answers || {})._goal || 'ig1';
+  const { score } = cisCalcScore(Object.fromEntries(Object.entries(run.answers || {}).filter(([k]) => !k.startsWith('_'))), goal);
+  const answersToSave = Object.assign({}, run.answers, { _closed: true });
+  try {
+    await sb.updateAssessment(id, { score, answers: answersToSave });
+    run.answers = answersToSave;
+    auditLog('assessment_finalised', 'assessment', 'CIS Controls v8', { score, goal });
+    toast('✅ Assessment closed', '#15803d');
+    renderMain();
+  } catch(e) { toast('Failed: ' + e.message, '#dc2626'); }
+}
+
+async function cisReopenById(id) {
+  const runs = (orgAssessments[currentOrg?.id] || {})['cis'] || [];
+  const run = runs.find(r => r.id === id);
+  if (!run) return;
+  const answersToSave = Object.assign({}, run.answers, { _closed: false });
+  try {
+    await sb.updateAssessment(id, { answers: answersToSave });
+    run.answers = answersToSave;
+    auditLog('assessment_reopened', 'assessment', 'CIS Controls v8', {});
+    toast('Assessment re-opened', '#1d4ed8');
+    renderMain();
+  } catch(e) { toast('Re-open failed: ' + e.message, '#dc2626'); }
+}
+
 // ── EXPORT ────────────────────────────────────────────────────────────────────
 
 function cisLoadScript(src) {
@@ -3480,17 +3513,6 @@ function renderCISReport() {
         : ''}
     </div>
 
-  </div>
-
-  <!-- Maturity Radar -->
-  <div class="card" style="padding:1.1rem;margin-bottom:1rem">
-    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:6px">
-      <div>
-        <div style="font-size:13px;font-weight:700;color:var(--text)">🎯 Maturity Radar — CIS Controls 1–18</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">Score per control · green = implemented · amber = partial · red = gap · grey = out of IG${goalN} scope</div>
-      </div>
-    </div>
-    <canvas id="cisReportRadar" width="700" height="400" style="width:100%;max-width:700px;display:block;margin:0 auto"></canvas>
   </div>
 
   <!-- Controls Accordion -->
