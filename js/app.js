@@ -146,6 +146,7 @@ async function selectOrg(id) {
   aiUnifiedState = { answers: {}, frameworks: { nist: true, iso: true }, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '', poamRun: null, poamItems: {}, matrixRuns: [], matrixGroup: 'g1' };
   if (ttState) { ttState.completedSessions = null; ttState.historicalSession = null; }
   exHubState = { opSessions: null };
+  slState = { filter: { industry: 'all', threat: 'all', compliance: 'all', difficulty: 'all' }, sessions: null, dbScenarios: null };
   if (typeof maState !== 'undefined') maState = { view:'list', stepIdx:0, editId:null, list:[], listLoaded:false, saving:false, detailTab:'summary', expandedFindings:{}, framing:{ target_name:'', deal_type:'', target_industry:'', target_employee_band:'', deal_value_band:'', risk_tolerance:'moderate', assessor:'', assessed_at:'', user_count:'', endpoint_count:'', data_sources:[], include_ai_screen:false, include_insurance_review:false }, answers:{}, poamItems:{}, currentAssessment:null, pricingCatalog:{}, parentPricingCatalog:{}, pricingLoaded:false };
   await loadAssessments(id);
   updateOrgUI(); buildNav(); renderMain();
@@ -520,7 +521,8 @@ function renderMain() {
   }
   if (activeNav === 'assessments')  { el.innerHTML = voB + renderAssessmentsHub(); setTimeout(drawAllHubTrends, 80); return; }
   if (activeNav === 'governance')   { el.innerHTML = voB + renderGovernanceHub(); return; }
-  if (activeNav === 'exercises')    { el.innerHTML = voB + renderExercisesHub(); setTimeout(drawExPageCharts, 80); return; }
+  if (activeNav === 'exercises')        { el.innerHTML = voB + renderExercisesHub(); setTimeout(drawExPageCharts, 80); return; }
+  if (activeNav === 'scenario_library') { el.innerHTML = renderScenarioLibrary(); slEnsureData(); return; }
   if (activeNav === 'insurance') { el.innerHTML = voB + renderInsurance(); drawTrend(); return; }
   if (activeNav === 'cis') { el.innerHTML = voB + renderCIS(); setTimeout(() => { const c = document.getElementById('cisTrendChart'); if (c) cisTrendDraw(); if (cisState.view === 'report') drawReportCharts(); }, 80); return; }  // trend draw covers both dashboard + form views
   if (activeNav === 'orgs') { el.innerHTML = renderOrgManager(); setTimeout(updateParentOptions, 100); return; }

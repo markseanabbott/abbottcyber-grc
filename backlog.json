@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.5.0",
   "created": "2026-05-14",
-  "updated": "2026-06-29 (session 90)",
+  "updated": "2026-06-29 (session 91)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1485,8 +1485,8 @@
         {
           "id": "t10b",
           "text": "Scenario Library (platform-layer): pre-built scenarios by threat profile and vertical — ransomware, BEC/wire fraud, AiTM credential theft, supply chain compromise, regulatory audit surprise. Scenarios include timed injects, role mapping pre-populated from client onboarding data, and frequency tracking for compliance programs (HIPAA, CMMC, cyber insurance).",
-          "done": false,
-          "priority": null
+          "done": true,
+          "notes": "Session 91: js/scenario_library.js (new file). renderScenarioLibrary() — filter bar (industry/threat/compliance/difficulty), 3-col responsive card grid, compliance alert banner (overdue programs shown by amber banner), last-run tracking from tabletop_sessions, per-card role hints derived from org profile (health data→LC note, payment data→TL note, hospitality→CL note, small team→role-merge note). TT_SCENARIO_LIBRARY_META maps all 9 scenario IDs to {threatProfiles, industries, compliance, recommendedFrequency}. SL_COMPLIANCE defines 4 programs (cyber_insurance, hipaa, cmmc, pci_dss) with freq and badge config. slLaunchScenario(id) pre-selects scenario and navigates to tabletop. Two new full scenarios added to TT_SCENARIOS in tabletop.js: aitm_cred_theft (AiTM phishing/session-token hijack, 4 injects, Hard, All industries) and reg_audit_surprise (State AG privacy inquiry, 4 injects, Medium, All industries). Nav: scenario_library added to g_exercises group. slState declared in config.js; reset in selectOrg in app.js."
         }
       ]
     },

@@ -107,7 +107,8 @@ const NAV = [
     { id: 'governance', icon: '⚖️', label: 'Governance', live: true, phase: 1 },
   ]},
   { id: 'g_exercises', group: 'Exercises', icon: '🎯', items: [
-    { id: 'exercises', icon: '🎯', label: 'Exercises', live: true, phase: 1 },
+    { id: 'exercises',        icon: '🎯', label: 'Exercises',       live: true, phase: 1 },
+    { id: 'scenario_library', icon: '📚', label: 'Scenario Library', live: true, phase: 3 },
   ]},
   { id: 'g_reporting', group: 'Reports', icon: '📊', items: [
     { id: 'gap_register', icon: '📋', label: 'Tool Gap Register', live: true, phase: 1 },
@@ -161,3 +162,4 @@ let nistAiState = { answers: {}, openPanels: {}, openComments: {}, notes: {}, ed
 let iso42001State = { answers: {}, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '' };
 let aiUnifiedState = { answers: {}, frameworks: { nist: true, iso: true }, openPanels: {}, openComments: {}, notes: {}, editId: null, date: '', conductedBy: '', view: 'dashboard', reportRun: null, reportCommentary: '', poamRun: null, poamItems: {}, matrixRuns: [], matrixGroup: 'g1' };
 let sbState = { view: 'list', scenarios: [], loaded: false, editing: null, expandedInject: null, filterStatus: 'all', flowScenario: null };  // Scenario Builder
+let slState = { filter: { industry: 'all', threat: 'all', compliance: 'all', difficulty: 'all' }, sessions: null, dbScenarios: null };  // Scenario Library
