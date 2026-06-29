@@ -591,7 +591,7 @@ const TT_SCENARIOS = {
     declaration: {
       ingest: 'PSA ticket',
       source: 'Finance team — Senior Accountant',
-      raw: 'I clicked a DocuSign link in an email and it took me to what looked like my Microsoft login. I typed in my password and did the MFA. But the URL looked weird — it wasn't microsoft.com. I don\'t know if I was phished. I\'m logged in fine now. Should I be worried?',
+      raw: 'I clicked a DocuSign link in an email and it took me to what looked like my Microsoft login. I typed in my password and did the MFA. But the URL looked weird — it wasn\'t microsoft.com. I don\'t know if I was phished. I\'m logged in fine now. Should I be worried?',
       correctSeverity: 'P2',
       correctDeclare: true,
     },

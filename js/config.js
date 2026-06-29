@@ -107,8 +107,7 @@ const NAV = [
     { id: 'governance', icon: '⚖️', label: 'Governance', live: true, phase: 1 },
   ]},
   { id: 'g_exercises', group: 'Exercises', icon: '🎯', items: [
-    { id: 'exercises',        icon: '🎯', label: 'Exercises',       live: true, phase: 1 },
-    { id: 'scenario_library', icon: '📚', label: 'Scenario Library', live: true, phase: 3 },
+    { id: 'exercises', icon: '🎯', label: 'Exercises', live: true, phase: 1 },
   ]},
   { id: 'g_reporting', group: 'Reports', icon: '📊', items: [
     { id: 'gap_register', icon: '📋', label: 'Tool Gap Register', live: true, phase: 1 },
@@ -129,6 +128,7 @@ const NAV = [
     { id: 'backlog',          icon: '📋', label: 'Feature Backlog',   live: true, phase: 1 },
     { id: 'audit_log',        icon: '🔍', label: 'Audit Log',         live: true, phase: 1 },
     { id: 'scenario_builder', icon: '🎬', label: 'Scenario Builder',  live: true, phase: 3 },
+    { id: 'scenario_library', icon: '📚', label: 'Scenario Library',  live: true, phase: 3 },
   ]},
 ];
 
