@@ -70,6 +70,83 @@ const TT_SCENARIO_LIBRARY_META = {
     recommendedFrequency: 'annual',
     mitreGroups:    [],
   },
+  insider_threat: {
+    threatProfiles: ['insider-threat', 'data-exfiltration', 'credential-theft'],
+    industries:     ['All'],
+    compliance:     ['cyber_insurance'],
+    recommendedFrequency: 'annual',
+    mitreGroups:    ['Exfiltration'],
+  },
+  cloud_misconfig: {
+    threatProfiles: ['cloud-exposure', 'data-breach', 'data-exfiltration'],
+    industries:     ['Technology / SaaS'],
+    compliance:     ['cyber_insurance'],
+    recommendedFrequency: 'annual',
+    mitreGroups:    ['Collection', 'Exfiltration'],
+  },
+  supply_chain_sw: {
+    threatProfiles: ['supply-chain', 'ransomware', 'lateral-movement', 'data-exfiltration'],
+    industries:     ['MSP'],
+    compliance:     ['cyber_insurance', 'hipaa'],
+    recommendedFrequency: 'semi_annual',
+    mitreGroups:    ['Initial Access', 'Lateral Movement', 'Exfiltration', 'Impact'],
+  },
+  bcdr_dc_failure: {
+    threatProfiles: ['bcdr', 'availability'],
+    industries:     ['All'],
+    compliance:     ['cyber_insurance'],
+    recommendedFrequency: 'annual',
+    mitreGroups:    [],
+  },
+  bcdr_critical_vendor: {
+    threatProfiles: ['bcdr', 'third-party', 'availability'],
+    industries:     ['All'],
+    compliance:     ['cyber_insurance'],
+    recommendedFrequency: 'annual',
+    mitreGroups:    [],
+  },
+  exec_ransom_decision: {
+    threatProfiles: ['ransomware', 'extortion'],
+    industries:     ['All'],
+    compliance:     ['cyber_insurance'],
+    recommendedFrequency: 'annual',
+    mitreGroups:    ['Impact'],
+  },
+  exec_breach_comm: {
+    threatProfiles: ['data-breach', 'regulatory', 'social-engineering'],
+    industries:     ['All'],
+    compliance:     ['cyber_insurance'],
+    recommendedFrequency: 'annual',
+    mitreGroups:    ['Exfiltration'],
+  },
+  ai_tool_shadow: {
+    threatProfiles: ['ai-governance', 'insider-threat', 'data-exfiltration'],
+    industries:     ['All'],
+    compliance:     ['cyber_insurance', 'hipaa'],
+    recommendedFrequency: 'annual',
+    mitreGroups:    [],
+  },
+  ai_deepfake_fraud: {
+    threatProfiles: ['ai-governance', 'bec', 'wire-fraud', 'social-engineering'],
+    industries:     ['All'],
+    compliance:     ['cyber_insurance'],
+    recommendedFrequency: 'annual',
+    mitreGroups:    ['Initial Access', 'Impact'],
+  },
+  pci_card_skimmer: {
+    threatProfiles: ['card-theft', 'pos-malware', 'supply-chain'],
+    industries:     ['Hospitality'],
+    compliance:     ['pci_dss', 'cyber_insurance'],
+    recommendedFrequency: 'annual',
+    mitreGroups:    ['Credential Access', 'Exfiltration'],
+  },
+  pci_pan_in_logs: {
+    threatProfiles: ['card-theft', 'compliance-response', 'data-breach'],
+    industries:     ['Technology / SaaS'],
+    compliance:     ['pci_dss', 'cyber_insurance'],
+    recommendedFrequency: 'annual',
+    mitreGroups:    ['Collection'],
+  },
 };
 
 // ── Compliance program display config ─────────────────────────────
@@ -102,6 +179,11 @@ const SL_THREAT_LABELS = {
   'extortion':           'Extortion',
   'regulatory':          'Regulatory',
   'compliance-response': 'Compliance Response',
+  'insider-threat':      'Insider Threat',
+  'cloud-exposure':      'Cloud Exposure',
+  'bcdr':                'BCDR',
+  'availability':        'Availability',
+  'ai-governance':       'AI Governance',
 };
 
 // ── Frequency recommendation labels ───────────────────────────────

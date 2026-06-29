@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -12,10 +12,10 @@
 <body>
 
 <!-- NOTE FOR COWORK:
-  This is the Abbott Cyber GRC Platform — a SaaS product for cybersecurity consulting.
+  This is the Abbott Cyber GRC Platform â€” a SaaS product for cybersecurity consulting.
   The full architecture, design decisions, and build context are in HANDOVER_NOTES.md.
   The backlog with all features (done and pending) is in backlog.json.
-  The Supabase database is already set up — connection details are in HANDOVER_NOTES.md.
+  The Supabase database is already set up â€” connection details are in HANDOVER_NOTES.md.
 
   FIRST TASK: Get the Supabase connection working.
   The fetch calls below use the correct URL and anon key.
@@ -53,8 +53,8 @@
         <div class="org-selector topbar-org-selector">
           <button class="org-btn topbar-org-btn" id="orgBtn" onclick="toggleOrgDD()">
             <div class="org-avatar av-platform" id="topAv" style="width:22px;height:22px;font-size:9px;flex-shrink:0">AC</div>
-            <span style="font-size:11px;font-weight:700;color:var(--text);white-space:nowrap" id="topOrgName">Loading…</span>
-            <span id="orgChev" style="font-size:10px;color:var(--muted)">▾</span>
+            <span style="font-size:11px;font-weight:700;color:var(--text);white-space:nowrap" id="topOrgName">Loadingâ€¦</span>
+            <span id="orgChev" style="font-size:10px;color:var(--muted)">â–¾</span>
           </button>
           <div class="org-dropdown topbar-org-dropdown" id="orgDD" style="display:none" onclick="event.stopPropagation()"></div>
         </div>
@@ -65,7 +65,7 @@
     <div class="content" id="mainContent">
       <div style="text-align:center;padding:3rem;color:var(--muted)">
         <div class="spinner" style="border-color:rgba(21,33,104,0.2);border-top-color:var(--navy);width:24px;height:24px;margin:0 auto 1rem"></div>
-        <div style="font-size:13px;font-weight:700;color:var(--text)">Connecting to Supabase…</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Connecting to Supabaseâ€¦</div>
       </div>
     </div>
   </div>
@@ -76,7 +76,7 @@
 <!-- IDLE TIMEOUT WARNING MODAL -->
 <div id="idleWarningModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center">
   <div style="background:#fff;border-radius:14px;padding:2rem 2rem 1.75rem;max-width:360px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.25)">
-    <div style="font-size:2.25rem;margin-bottom:0.5rem">⏱️</div>
+    <div style="font-size:2.25rem;margin-bottom:0.5rem">â±ï¸</div>
     <div style="font-size:16px;font-weight:700;color:#1a2340;margin-bottom:0.5rem">Session expiring</div>
     <div style="font-size:13px;color:#5a6a8a;line-height:1.6;margin-bottom:1.5rem">You'll be signed out in <strong id="idleCountdown" style="color:#1a2340">120</strong> seconds due to inactivity.</div>
     <button onclick="idleExtend()" style="width:100%;padding:11px;background:linear-gradient(135deg,#152168,#1a2a7a);color:#fff;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.02em">Stay signed in</button>
@@ -137,49 +137,49 @@
   <div id="aitcModalBox" style="background:#fff;border-radius:14px;max-width:680px;width:94%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)"></div>
 </div>
 
-<script src="js/xlsx.full.min.js?v=20260629r"></script>
-<script src="js/secrets.js?v=20260629r"></script>
-<script src="js/config.js?v=20260629r"></script>
-<script src="js/supabase.js?v=20260629r"></script>
-<script src="js/auth.js?v=20260629r"></script>
-<script src="js/home.js?v=20260629r"></script>
-<script src="js/orgs.js?v=20260629r"></script>
-<script src="js/insurance.js?v=20260629r"></script>
-<script src="js/assessment_core.js?v=20260629r"></script>
-<script src="js/cis.js?v=20260629r"></script>
-<script src="js/cmmc.js?v=20260629r"></script>
-<script src="js/cmmc2.js?v=20260629r"></script>
-<script src="js/techstack.js?v=20260629r"></script>
-<script src="js/tpra.js?v=20260629r"></script>
-<script src="js/ex_hub.js?v=20260629r"></script>
-<script src="js/policy_lib.js?v=20260629r"></script>
-<script src="js/risk_register.js?v=20260629r"></script>
-<script src="js/tabletop_engine.js?v=20260629r"></script>
-<script src="js/tabletop.js?v=20260629r"></script>
-<script src="js/ai_tabletop.js?v=20260629r"></script>
-<script src="js/multiplayer.js?v=20260629r"></script>
-<script src="js/nist_ai.js?v=20260629r"></script>
-<script src="js/iso42001.js?v=20260629r"></script>
-<script src="js/ai_hub.js?v=20260629r"></script>
-<script src="js/ai_unified.js?v=20260629r"></script>
-<script src="js/prefill.js?v=20260629r"></script>
-<script src="js/settings.js?v=20260629r"></script>
-<script src="js/users.js?v=20260629r"></script>
-<script src="js/modules.js?v=20260629r"></script>
-<script src="js/backlog_manager.js?v=20260629r"></script>
-<script src="js/audit_log.js?v=20260629r"></script>
-<script src="js/company_profile.js?v=20260629r"></script>
-<script src="js/ma_cdd.js?v=20260629r"></script>
-<script src="js/pricing_schedule.js?v=20260629r"></script>
-<script src="js/remediation_costs.js?v=20260629r"></script>
-<script src="js/gap_register.js?v=20260629r"></script>
-<script src="js/ai_tool_catalog.js?v=20260629r"></script>
-<script src="js/app_inventory.js?v=20260629r"></script>
-<script src="js/vendor_directory.js?v=20260629r"></script>
-<script src="js/ai_risk_register.js?v=20260629r"></script>
-<script src="js/submission_portal.js?v=20260629r"></script>
-<script src="js/scenario_builder.js?v=20260629r"></script>
-<script src="js/scenario_library.js?v=20260629r"></script>
-<script src="js/app.js?v=20260629r"></script>
+<script src="js/xlsx.full.min.js?v=20260629s"></script>
+<script src="js/secrets.js?v=20260629s"></script>
+<script src="js/config.js?v=20260629s"></script>
+<script src="js/supabase.js?v=20260629s"></script>
+<script src="js/auth.js?v=20260629s"></script>
+<script src="js/home.js?v=20260629s"></script>
+<script src="js/orgs.js?v=20260629s"></script>
+<script src="js/insurance.js?v=20260629s"></script>
+<script src="js/assessment_core.js?v=20260629s"></script>
+<script src="js/cis.js?v=20260629s"></script>
+<script src="js/cmmc.js?v=20260629s"></script>
+<script src="js/cmmc2.js?v=20260629s"></script>
+<script src="js/techstack.js?v=20260629s"></script>
+<script src="js/tpra.js?v=20260629s"></script>
+<script src="js/ex_hub.js?v=20260629s"></script>
+<script src="js/policy_lib.js?v=20260629s"></script>
+<script src="js/risk_register.js?v=20260629s"></script>
+<script src="js/tabletop_engine.js?v=20260629s"></script>
+<script src="js/tabletop.js?v=20260629s"></script>
+<script src="js/ai_tabletop.js?v=20260629s"></script>
+<script src="js/multiplayer.js?v=20260629s"></script>
+<script src="js/nist_ai.js?v=20260629s"></script>
+<script src="js/iso42001.js?v=20260629s"></script>
+<script src="js/ai_hub.js?v=20260629s"></script>
+<script src="js/ai_unified.js?v=20260629s"></script>
+<script src="js/prefill.js?v=20260629s"></script>
+<script src="js/settings.js?v=20260629s"></script>
+<script src="js/users.js?v=20260629s"></script>
+<script src="js/modules.js?v=20260629s"></script>
+<script src="js/backlog_manager.js?v=20260629s"></script>
+<script src="js/audit_log.js?v=20260629s"></script>
+<script src="js/company_profile.js?v=20260629s"></script>
+<script src="js/ma_cdd.js?v=20260629s"></script>
+<script src="js/pricing_schedule.js?v=20260629s"></script>
+<script src="js/remediation_costs.js?v=20260629s"></script>
+<script src="js/gap_register.js?v=20260629s"></script>
+<script src="js/ai_tool_catalog.js?v=20260629s"></script>
+<script src="js/app_inventory.js?v=20260629s"></script>
+<script src="js/vendor_directory.js?v=20260629s"></script>
+<script src="js/ai_risk_register.js?v=20260629s"></script>
+<script src="js/submission_portal.js?v=20260629s"></script>
+<script src="js/scenario_builder.js?v=20260629s"></script>
+<script src="js/scenario_library.js?v=20260629s"></script>
+<script src="js/app.js?v=20260629s"></script>
 </body>
 </html>
