@@ -108,6 +108,8 @@ function renderAiPyramidCard(idPrefix, editable) {
             <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#e8a000;margin-right:3px;vertical-align:middle"></span>Partial</span>
             <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#2e7ab0;margin-right:3px;vertical-align:middle"></span>In Progress</span>
             <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#00af50;margin-right:3px;vertical-align:middle"></span>Implemented</span>
+            <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#f97316;margin-right:3px;vertical-align:middle"></span>Comp. Control</span>
+            <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#94a3b8;margin-right:3px;vertical-align:middle"></span>N/A</span>
           </span>
         </div>
         <svg id="${idPrefix}-pyr" viewBox="-120 0 1540 710" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" style="flex:1;min-height:380px;width:100%;display:block"></svg>
@@ -144,7 +146,7 @@ function renderAiPyramidCard(idPrefix, editable) {
           </div>
         </div>
         <div style="border-top:1px solid var(--border);padding:10px 12px;flex-shrink:0">
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:6px">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:4px">
             <div style="border-radius:5px;padding:5px 2px;text-align:center;background:#c00000;border:2px solid #960000">
               <div id="${idPrefix}-s-r" style="font-size:15px;font-weight:700;font-family:monospace;color:#fff">0</div>
               <div style="font-size:8px;color:rgba(255,255,255,.8);line-height:1.2">Not Addressed</div>
@@ -157,9 +159,19 @@ function renderAiPyramidCard(idPrefix, editable) {
               <div id="${idPrefix}-s-b" style="font-size:15px;font-weight:700;font-family:monospace;color:#fff">0</div>
               <div style="font-size:8px;color:rgba(255,255,255,.8);line-height:1.2">In Progress</div>
             </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:6px">
             <div style="border-radius:5px;padding:5px 2px;text-align:center;background:#00af50;border:2px solid #007a38">
               <div id="${idPrefix}-s-g" style="font-size:15px;font-weight:700;font-family:monospace;color:#fff">0</div>
               <div style="font-size:8px;color:rgba(255,255,255,.8);line-height:1.2">Implemented</div>
+            </div>
+            <div style="border-radius:5px;padding:5px 2px;text-align:center;background:#f97316;border:2px solid #c2410c">
+              <div id="${idPrefix}-s-cc" style="font-size:15px;font-weight:700;font-family:monospace;color:#fff">0</div>
+              <div style="font-size:8px;color:rgba(255,255,255,.8);line-height:1.2">Comp. Control</div>
+            </div>
+            <div style="border-radius:5px;padding:5px 2px;text-align:center;background:#94a3b8;border:2px solid #64748b">
+              <div id="${idPrefix}-s-na" style="font-size:15px;font-weight:700;font-family:monospace;color:#fff">0</div>
+              <div style="font-size:8px;color:rgba(255,255,255,.8);line-height:1.2">N/A</div>
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
@@ -419,7 +431,7 @@ function initAiPyramid(idPrefix, editable, externalState, autoLoad) {
 
   // ── Initialise state ────────────────────────────────────────
   let _hasAssessment = false, _latestDate = null;
-  const ANSWER_STATUS = { yes: 'green', partial: 'yellow', no: 'red' };
+  const ANSWER_STATUS = { yes: 'green', partial: 'yellow', no: 'red', na: 'grey', cc: 'amber' };
   const state = {};
 
   if (externalState) {
@@ -439,8 +451,8 @@ function initAiPyramid(idPrefix, editable, externalState, autoLoad) {
   let selectedId = null;
 
   // ── Helpers ─────────────────────────────────────────────────
-  function getStatusFill(st) { return { red:'#c00000', yellow:'#e8a000', blue:'#2e7ab0', green:'#00af50' }[st] || '#888'; }
-  function getStatusStroke(st) { return { red:'#960000', yellow:'#b87800', blue:'#1e5a8a', green:'#007a38' }[st] || '#555'; }
+  function getStatusFill(st) { return { red:'#c00000', yellow:'#e8a000', blue:'#2e7ab0', green:'#00af50', grey:'#94a3b8', amber:'#f97316' }[st] || '#888'; }
+  function getStatusStroke(st) { return { red:'#960000', yellow:'#b87800', blue:'#1e5a8a', green:'#007a38', grey:'#64748b', amber:'#c2410c' }[st] || '#555'; }
 
   const W = 1400, TIP_Y = 28, BASE_Y = 690, HALF_W = 460, PAD = 5;
   const NT = AI_PYR_TIERS.length, TH = (BASE_Y - TIP_Y) / NT;
@@ -583,8 +595,8 @@ function initAiPyramid(idPrefix, editable, externalState, autoLoad) {
         statusArea.appendChild(btn);
       });
     } else {
-      const STATUS_LABELS = { red:'Not Addressed', yellow:'Partial', blue:'In Progress', green:'Implemented' };
-      const STATUS_COLS   = { red:'#c00000', yellow:'#e8a000', blue:'#2e7ab0', green:'#00af50' };
+      const STATUS_LABELS = { red:'Not Addressed', yellow:'Partial', blue:'In Progress', green:'Implemented', grey:'N/A', amber:'Compensating Control' };
+      const STATUS_COLS   = { red:'#c00000', yellow:'#e8a000', blue:'#2e7ab0', green:'#00af50', grey:'#94a3b8', amber:'#f97316' };
       const badge = document.createElement('span');
       badge.style.cssText = `display:inline-block;padding:3px 10px;border-radius:5px;font-size:10px;font-weight:700;color:#fff;background:${STATUS_COLS[status]||'#888'}`;
       badge.textContent = STATUS_LABELS[status] || status;
@@ -598,14 +610,19 @@ function initAiPyramid(idPrefix, editable, externalState, autoLoad) {
 
   function updateStats() {
     const vals = AI_PYR_SEGS.map(s => state[s.id]);
-    $('s-r').textContent = vals.filter(v => v === 'red').length;
-    $('s-y').textContent = vals.filter(v => v === 'yellow').length;
-    $('s-b').textContent = vals.filter(v => v === 'blue').length;
-    $('s-g').textContent = vals.filter(v => v === 'green').length;
-    const g = vals.filter(v => v === 'green').length;
-    const b = vals.filter(v => v === 'blue').length;
-    const y = vals.filter(v => v === 'yellow').length;
-    const pct = Math.round((g + b * 0.5 + y * 0.25) / vals.length * 100);
+    $('s-r').textContent  = vals.filter(v => v === 'red').length;
+    $('s-y').textContent  = vals.filter(v => v === 'yellow').length;
+    $('s-b').textContent  = vals.filter(v => v === 'blue').length;
+    $('s-g').textContent  = vals.filter(v => v === 'green').length;
+    const ccEl = $('s-cc'); if (ccEl) ccEl.textContent = vals.filter(v => v === 'amber').length;
+    const naEl = $('s-na'); if (naEl) naEl.textContent = vals.filter(v => v === 'grey').length;
+    // Exclude N/A from maturity denominator; CC counts as partial
+    const applicable = vals.filter(v => v !== 'grey');
+    const g = applicable.filter(v => v === 'green').length;
+    const b = applicable.filter(v => v === 'blue').length;
+    const y = applicable.filter(v => v === 'yellow').length;
+    const cc = applicable.filter(v => v === 'amber').length;
+    const pct = applicable.length > 0 ? Math.round((g + b * 0.5 + y * 0.25 + cc * 0.5) / applicable.length * 100) : 0;
     $('mat-pct').textContent = pct + '%';
     $('mat-fill').style.width = pct + '%';
     const srcEl = $('data-src');
