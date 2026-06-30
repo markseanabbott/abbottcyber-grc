@@ -388,16 +388,6 @@ function renderHome() {
   // Module access gate
   const _can = (gid) => typeof hasModuleAccess === 'function' ? hasModuleAccess(gid) : true;
 
-  // Quick links
-  const quickLinks = [
-    { id:'insurance',  icon:'🛡️', label:'Insurance Readiness', group:'g_assessments' },
-    { id:'techstack',  icon:'🖥️', label:'Technology Stack',    group:'g_assessments' },
-    { id:'cis',        icon:'✅', label:'CIS Controls',         group:'g_assessments' },
-    { id:'tpra',       icon:'🔍', label:'Vendor Risk',          group:'g_assessments' },
-    { id:'tabletop',   icon:'🎯', label:'Tabletop',             group:'g_exercises' },
-    { id:'ai_unified', icon:'🤖', label:'AI Readiness',         group:'g_ai_readiness' },
-  ].filter(l => _can(l.group));
-
   // Risk register rows for risk widget
   const rrLoaded = rrState.orgId === currentOrg.id;
   const rrRows = rrLoaded
@@ -440,18 +430,7 @@ function renderHome() {
 
   ${breakdownPanel}
 
-  <div style="display:flex;align-items:center;justify-content:space-between;margin:.75rem 0 ${dashCustomize.open ? '.5rem' : '.85rem'}">
-    ${!dashCustomize.open && quickLinks.length ? `<div style="display:flex;gap:.5rem;flex-wrap:wrap">
-      ${quickLinks.map(l => {
-        const runs = h[l.id] || [];
-        const last = runs.length ? runs[runs.length - 1] : null;
-        const dot  = last ? (last.score >= 70 ? '#15803d' : last.score >= 40 ? '#b45309' : '#dc2626') : '#cbd5e1';
-        return `<button onclick="setNav('${l.id}')" style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid var(--border);border-radius:20px;background:#fff;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--cyan)';this.style.color='var(--cyan)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
-          <span style="width:7px;height:7px;border-radius:50%;background:${dot};flex-shrink:0"></span>
-          ${l.icon} ${l.label}
-        </button>`;
-      }).join('')}
-    </div>` : '<div></div>'}
+  <div style="display:flex;align-items:center;justify-content:flex-end;margin:.75rem 0 ${dashCustomize.open ? '.5rem' : '.85rem'}">
     <button class="btn btn-outline btn-sm" onclick="toggleDashCustomize()" style="flex-shrink:0;${dashCustomize.open ? 'border-color:var(--navy);font-weight:700;color:var(--navy)' : ''}">
       ${dashCustomize.open ? '✕ Cancel' : '📐 Customize'}
     </button>
@@ -555,28 +534,35 @@ function _widgetLink(def) {
   </div>`;
 }
 
-// SVG semicircle dial — avg score 0-100, colour-banded green/amber/red/grey
-function _exDialSvg(avg, hasData) {
-  const cx = 90, cy = 80, r = 58, sw = 12;
+// Mini SVG semicircle dial for a single exercise — colour-banded green/amber/red/grey
+function _exMiniDialSvg(score, hasData) {
+  const cx = 26, cy = 28, r = 20, sw = 5;
   const color = !hasData ? '#cbd5e1'
-    : avg >= 70 ? '#15803d'
-    : avg >= 40 ? '#b45309'
+    : score >= 70 ? '#15803d'
+    : score >= 40 ? '#b45309'
     : '#dc2626';
-  // Background track: left (180°) → right (0°) clockwise
   const bgPath = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`;
   let fillPath = '';
-  if (hasData && avg > 0) {
-    const endRad = Math.PI * (1 - Math.min(avg, 100) / 100);
+  if (hasData && score > 0) {
+    const endRad = Math.PI * (1 - Math.min(score, 100) / 100);
     const ex = +(cx + r * Math.cos(endRad)).toFixed(2);
     const ey = +(cy - r * Math.sin(endRad)).toFixed(2);
     fillPath = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${ex} ${ey}`;
   }
-  return `<svg viewBox="0 0 180 98" width="158" height="86" style="display:block;margin:0 auto;overflow:visible">
+  return `<svg viewBox="0 0 52 32" width="52" height="32" style="display:block;margin:0 auto;overflow:visible">
     <path d="${bgPath}" fill="none" stroke="#e5e7eb" stroke-width="${sw}" stroke-linecap="round"/>
     ${fillPath ? `<path d="${fillPath}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round"/>` : ''}
-    <text x="${cx}" y="73" text-anchor="middle" font-size="28" font-weight="800" fill="${color}" font-family="monospace,sans-serif">${hasData ? avg : '—'}</text>
-    <text x="${cx}" y="87" text-anchor="middle" font-size="8" font-weight="700" fill="#94a3b8" letter-spacing="1" font-family="Inter,sans-serif">AVG SCORE</text>
+    <text x="${cx}" y="25" text-anchor="middle" font-size="11" font-weight="800" fill="${color}" font-family="monospace,sans-serif">${hasData ? score : '—'}</text>
   </svg>`;
+}
+
+// "2026-06-30" → "Jun 30"
+function _ttShortDate(s) {
+  if (!s) return '—';
+  const p = s.slice(0, 10).split('-');
+  if (p.length < 3) return s.slice(0, 10);
+  const m = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return (m[+p[1]] || p[1]) + ' ' + +p[2];
 }
 
 function _widgetTabletop(h) {
@@ -597,28 +583,31 @@ function _widgetTabletop(h) {
       rows.push({ ...row, score: exCalcScore(row) });
     });
   }
-  rows.sort((a, b) => a.date.localeCompare(b.date));
+  rows.sort((a, b) => b.date.localeCompare(a.date)); // newest first
 
-  const hasData  = rows.length > 0;
-  const avgScore = hasData ? Math.round(rows.reduce((s, r) => s + r.score, 0) / rows.length) : null;
-  const lastDate = hasData ? rows[rows.length - 1].date : null;
+  const hasData = rows.length > 0;
+  // Always render 4 slots; pad with nulls if fewer than 4 sessions
+  const slots = [rows[0] || null, rows[1] || null, rows[2] || null, rows[3] || null];
+
+  const dialsHtml = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.25rem;padding:.55rem .75rem .2rem">
+    ${slots.map(r => `<div style="text-align:center">
+      ${_exMiniDialSvg(r ? r.score : null, !!r)}
+      <div style="font-size:9px;color:${r ? 'var(--muted)' : '#e5e7eb'};margin-top:1px;line-height:1.2">${r ? _ttShortDate(r.date) : '·'}</div>
+    </div>`).join('')}
+  </div>
+  <div style="text-align:center;margin:.1rem 0 .35rem;font-size:10px;color:var(--muted)">
+    ${hasData ? `${rows.length} session${rows.length !== 1 ? 's' : ''} total` : 'No exercises yet'}
+  </div>`;
 
   return `<div class="card" style="padding:0;overflow:hidden;cursor:pointer" onclick="setNav('exercises')" onmouseover="this.style.boxShadow='0 0 0 2px var(--cyan)'" onmouseout="this.style.boxShadow=''">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:.65rem .9rem .45rem;border-bottom:1px solid var(--border)">
       <div style="font-size:12px;font-weight:700">🎯 Tabletop Exercises</div>
       <span style="font-size:11px;color:var(--cyan);font-weight:700">Open →</span>
     </div>
-    <div style="padding:.5rem .9rem .2rem">
-      ${loading && !hasData
-        ? `<div style="text-align:center;padding:2rem 0;color:var(--muted);font-size:12px"><div class="spinner" style="border-color:rgba(21,33,104,.2);border-top-color:var(--navy);width:14px;height:14px;margin:0 auto .5rem"></div>Loading…</div>`
-        : _exDialSvg(avgScore, hasData)
-      }
-      <div style="text-align:center;margin:.1rem 0 .35rem;font-size:10px;color:var(--muted)">
-        ${hasData
-          ? `${rows.length} session${rows.length !== 1 ? 's' : ''} · Last: ${lastDate || '—'}`
-          : 'No exercises yet'}
-      </div>
-    </div>
+    ${loading && !hasData
+      ? `<div style="text-align:center;padding:2rem 0;color:var(--muted);font-size:12px"><div class="spinner" style="border-color:rgba(21,33,104,.2);border-top-color:var(--navy);width:14px;height:14px;margin:0 auto .5rem"></div>Loading…</div>`
+      : dialsHtml
+    }
     <div style="padding:.3rem .9rem .65rem">
       <button class="btn btn-cyan btn-sm" style="width:100%;font-size:11px" onclick="event.stopPropagation();setNav('tabletop')">▶ Start New Exercise</button>
     </div>
