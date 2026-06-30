@@ -961,7 +961,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('cl2_3', 'cmmc_l2', 'CMMC Level 2 Assessment', 1, 2, 'CMMC L1 â†’ L2 pre-fill â€” when starting a CMMC L2 assessment, offer to pre-populate the 17 overlapping L1 practices from the most recent CMMC L1 assessment for the same org.', false, 'Low', NULL, '[]', 'add')
+VALUES ('cl2_3', 'cmmc_l2', 'CMMC Level 2 Assessment', 1, 2, 'CMMC L1 â†’ L2 pre-fill â€” when starting a CMMC L2 assessment, offer to pre-populate the 17 overlapping L1 practices from the most recent CMMC L1 assessment for the same org.', true, 'Low', 'prefill.js: cmmc2PrefillFromL1() â€” reads orgAssessments[orgId][''cmmc''], takes most recent run, strips ''DOMAIN.L1-'' prefix from each L1 practice ID (e.g. AC.L1-3.1.1 â†’ 3.1.1), copies to cmmc2State.answers only for the 17 l1:true practices and only if blank. cmmc2.js: ''From L1'' button (id=cmmc2L1PrefillBtn) added to form header left of ''From Tech Stack'' button. No SQL changes needed.', '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,

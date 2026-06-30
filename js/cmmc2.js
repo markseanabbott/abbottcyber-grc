@@ -450,6 +450,7 @@ function renderCMMC2Form() {
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn btn-outline btn-sm" onclick="cmmc2NavToDashboard()">← Back</button>
+      <button class="btn btn-outline btn-sm" id="cmmc2L1PrefillBtn" onclick="cmmc2PrefillFromL1()" title="Copy the 17 overlapping L1 practices from your most recent CMMC Level 1 assessment">&#8682; From L1</button>
       <button class="btn btn-outline btn-sm" id="cmmc2PrefillBtn" onclick="cmmc2PrefillFromTS()" title="Pre-populate practices from your Technology Stack survey">&#8681; From Tech Stack</button>
       <button class="btn btn-cyan btn-sm" id="cmmc2SaveBtn" onclick="cmmc2SaveAssessment()">💾 Save Assessment</button>
     </div>

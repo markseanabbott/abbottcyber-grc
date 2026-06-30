@@ -289,6 +289,50 @@ async function cisPrefillFromTS() {
   renderMain();
 }
 
+// ─── CMMC L2 ← L1 PREFILL ACTION ─────────────────────────────
+// Copies the 17 overlapping L1 practices from the most recent L1 assessment
+// into the L2 form. Only fills blank answers; will not overwrite existing ones.
+async function cmmc2PrefillFromL1() {
+  const btn = document.getElementById('cmmc2L1PrefillBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
+
+  const l1Runs = ((orgAssessments || {})[currentOrg?.id] || {})['cmmc'] || [];
+  if (!l1Runs.length) {
+    toast('No CMMC L1 assessment found for this org — complete a Level 1 assessment first', '#b45309');
+    if (btn) { btn.disabled = false; btn.innerHTML = '&#8682; From L1'; }
+    return;
+  }
+
+  // Most recent L1 run (last saved)
+  const latestL1 = l1Runs[l1Runs.length - 1];
+  const l1Answers = Object.fromEntries(
+    Object.entries(latestL1.answers || {}).filter(([k]) => !k.startsWith('_'))
+  );
+
+  // L1 practice IDs look like 'AC.L1-3.1.1' — strip to '3.1.1'
+  const l1ToL2Id = id => id.includes('-') ? id.split('-').slice(1).join('-') : id;
+
+  // Only pre-fill practices flagged l1:true in the L2 practice list
+  const l1PracticeIds = new Set(CMMC2_PRACTICES.filter(p => p.l1).map(p => p.id));
+
+  let filled = 0;
+  Object.entries(l1Answers).forEach(([l1Id, ans]) => {
+    const l2Id = l1ToL2Id(l1Id);
+    if (l1PracticeIds.has(l2Id) && cmmc2State.answers[l2Id] == null && ans) {
+      cmmc2State.answers[l2Id] = ans;
+      filled++;
+    }
+  });
+
+  if (filled > 0) {
+    toast('✓ ' + filled + ' L1 practices copied from ' + (latestL1.date || 'latest L1 assessment') + ' — review and adjust before saving', '#152168');
+  } else {
+    toast('All L1 practices already answered — nothing to prefill', '#b45309');
+  }
+  if (btn) { btn.disabled = false; btn.innerHTML = '&#8682; From L1'; }
+  renderMain();
+}
+
 // ─── CMMC L2 PREFILL ACTION ───────────────────────────────────
 async function cmmc2PrefillFromTS() {
   const btn = document.getElementById('cmmc2PrefillBtn');

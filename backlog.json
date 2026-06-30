@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.6.0",
   "created": "2026-05-14",
-  "updated": "2026-06-30 (session 99)",
+  "updated": "2026-06-30 (session 100)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -433,8 +433,9 @@
         {
           "id": "cl2_3",
           "text": "CMMC L1 → L2 pre-fill — when starting a CMMC L2 assessment, offer to pre-populate the 17 overlapping L1 practices from the most recent CMMC L1 assessment for the same org.",
-          "done": false,
-          "priority": "Low"
+          "done": true,
+          "priority": "Low",
+          "notes": "prefill.js: cmmc2PrefillFromL1() — reads orgAssessments[orgId]['cmmc'], takes most recent run, strips 'DOMAIN.L1-' prefix from each L1 practice ID (e.g. AC.L1-3.1.1 → 3.1.1), copies to cmmc2State.answers only for the 17 l1:true practices and only if blank. cmmc2.js: 'From L1' button (id=cmmc2L1PrefillBtn) added to form header left of 'From Tech Stack' button. No SQL changes needed."
         }
       ]
     },
