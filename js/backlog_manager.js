@@ -52,6 +52,18 @@ function _blmStatus(item) {
   return item.status || (item.done ? 'completed' : 'add');
 }
 
+// Fix UTF-8 em/en dashes and smart quotes stored as Windows-1252 mojibake
+function _blmClean(s) {
+  if (!s) return s;
+  return s
+    .replace(/â€”/g, '—') // â€" → em dash
+    .replace(/â€“/g, '–') // â€" → en dash
+    .replace(/â€™/g, '’') // â€™ → right single quote
+    .replace(/â€œ/g, '“') // â€œ → left double quote
+    .replace(/â€/g,       '—') // â€ fallback → em dash
+    .replace(/Â /g,       ' ');     // Â  → regular space
+}
+
 let blmState = {
   items:     [],
   loading:   false,
@@ -71,7 +83,12 @@ async function blmLoad() {
       'backlog_items?select=*&order=section_phase.asc.nullslast,sort_order.asc,id.asc',
       'GET', null, {}
     );
-    blmState.items = Array.isArray(rows) ? rows : [];
+    blmState.items = (Array.isArray(rows) ? rows : []).map(r => ({
+      ...r,
+      section_title: _blmClean(r.section_title),
+      text:          _blmClean(r.text),
+      notes:         _blmClean(r.notes),
+    }));
   } catch (e) {
     toast('Failed to load backlog: ' + e.message, '#dc2626');
     blmState.items = [];
@@ -227,7 +244,14 @@ function blmRenderList() {
     bySection[key].items.push(item);
   });
 
-  return Object.entries(bySection).map(([sectionId, sec]) =>
+  const sectionCount = Object.keys(bySection).length;
+  const collapseBar = sectionCount > 1 ? `
+    <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-bottom:.5rem">
+      <button onclick="blmExpandAll()" style="background:none;border:none;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;padding:2px 4px;text-decoration:underline">Expand All</button>
+      <button onclick="blmCollapseAll()" style="background:none;border:none;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;padding:2px 4px;text-decoration:underline">Collapse All</button>
+    </div>` : '';
+
+  return collapseBar + Object.entries(bySection).map(([sectionId, sec]) =>
     blmRenderSection(sectionId, sec.title, sec.phase, sec.items)
   ).join('');
 }
