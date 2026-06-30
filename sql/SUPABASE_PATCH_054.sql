@@ -414,7 +414,7 @@ VALUES
   ]'::jsonb,
   'published',
   'ai_rogue_automation'
-)
+);
 
 -- Verify
 SELECT source_id, title, track, status
