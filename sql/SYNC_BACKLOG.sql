@@ -1,4 +1,4 @@
--- SYNC_BACKLOG.sql -- generated 2026-06-29 (396 items)
+-- SYNC_BACKLOG.sql -- generated 2026-06-30 (396 items)
 -- Safe to re-run (ON CONFLICT DO UPDATE).
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
 VALUES ('s1', 'core', 'Core Concept', 1, 0, 'Security posture scoring for organisations / clients', true, NULL, NULL, '[]', 'completed')
@@ -3121,7 +3121,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('r31', 'risk_register_export', 'Risk Register â€” Excel Export', 2, 0, 'One-click export of full risk register to .xlsx', false, NULL, NULL, '[]', 'add')
+VALUES ('r31', 'risk_register_export', 'Risk Register â€” Excel Export', 2, 0, 'One-click export of full risk register to .xlsx', true, NULL, 'rrExportExcel() in risk_register.js â€” exports all rows sorted by inherent rating, 15 columns (Risk ID, Source, Ref, Risk Title, Description, Threat Source, Inherent/Residual Rating, Status, Owner, Due Date, Treatment Notes, Accepted By, Acceptance Rationale, Review Date). Filename: Risk_Register_[OrgName]_[date].xlsx. Button in module header.', '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,

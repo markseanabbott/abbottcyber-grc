@@ -49,6 +49,7 @@ function renderRiskRegister() {
     </div>
     <div style="display:flex;gap:.5rem;flex-wrap:wrap">
       <button class="btn btn-outline btn-sm" onclick="rrSyncFromPoam()" title="Pull latest CIS POAM gaps into the register">↻ CIS POAM</button>
+      <button class="btn btn-outline btn-sm" onclick="rrExportExcel()">↓ Excel</button>
       <button class="btn btn-cyan btn-sm" onclick="rrOpenAdd()">+ Add Risk</button>
     </div>
   </div>
@@ -737,6 +738,55 @@ async function rrSyncFromAiPoam() {
     toast('Sync failed: ' + e.message, '#dc2626');
     if (syncBtn) { syncBtn.disabled = false; syncBtn.textContent = '↻ AI Gov'; }
   }
+}
+
+// ─── EXPORT ──────────────────────────────────────────────────────────────────
+
+function rrExportExcel() {
+  const rows = rrState.rows;
+  if (!rows.length) { toast('No risks to export', '#ea580c'); return; }
+
+  const sourceLabel = s =>
+    s === 'cis_poam'  ? 'CIS POAM'     :
+    s === 'ai_poam'   ? 'AI Gov'        :
+    s === 'tabletop'  ? 'Tabletop AAR'  : 'Manual';
+
+  const rOrder = { Critical:0, High:1, Medium:2, Low:3 };
+  const sorted = [...rows].sort((a, b) => {
+    const ra = rOrder[a.inherent_risk_rating] ?? 4;
+    const rb = rOrder[b.inherent_risk_rating] ?? 4;
+    return ra !== rb ? ra - rb : (a.safeguard_id || 'z').localeCompare(b.safeguard_id || 'z');
+  });
+
+  const data = sorted.map(r => ({
+    'Risk ID':              r.risk_id || '',
+    'Source':               sourceLabel(r.source),
+    'Ref':                  r.safeguard_id || (r.control_number ? 'CIS ' + r.control_number : ''),
+    'Risk Title':           r.risk_title || '',
+    'Description':          r.risk_description || '',
+    'Threat Source':        r.threat_source || '',
+    'Inherent Rating':      r.inherent_risk_rating || '',
+    'Residual Rating':      r.residual_risk_rating || '',
+    'Status':               r.risk_status || '',
+    'Owner':                r.risk_owner || '',
+    'Due Date':             r.due_date || '',
+    'Treatment Notes':      r.treatment_notes || '',
+    'Accepted By':          r.accepted_by || '',
+    'Acceptance Rationale': r.acceptance_rationale || '',
+    'Review Date':          r.acceptance_review_date || '',
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [
+    {wch:10},{wch:13},{wch:10},{wch:36},{wch:46},{wch:14},
+    {wch:15},{wch:15},{wch:14},{wch:20},{wch:12},{wch:42},
+    {wch:20},{wch:42},{wch:14},
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Risk Register');
+  const orgSlug = (currentOrg?.name || 'org').replace(/[^a-z0-9]/gi, '_');
+  const date    = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `Risk_Register_${orgSlug}_${date}.xlsx`);
 }
 
 // ─── UTILITY ─────────────────────────────────────────────────────────────────

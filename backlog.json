@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.6.0",
   "created": "2026-05-14",
-  "updated": "2026-06-29 (session 97)",
+  "updated": "2026-06-30 (session 98)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1352,7 +1352,8 @@
         {
           "id": "r31",
           "text": "One-click export of full risk register to .xlsx",
-          "done": false
+          "done": true,
+          "notes": "rrExportExcel() in risk_register.js — exports all rows sorted by inherent rating, 15 columns (Risk ID, Source, Ref, Risk Title, Description, Threat Source, Inherent/Residual Rating, Status, Owner, Due Date, Treatment Notes, Accepted By, Acceptance Rationale, Review Date). Filename: Risk_Register_[OrgName]_[date].xlsx. Button in module header."
         },
         {
           "id": "r32",
