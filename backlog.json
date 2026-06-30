@@ -1486,12 +1486,27 @@
           "id": "t10b",
           "text": "Scenario Library (platform-layer): pre-built scenarios by threat profile and vertical — ransomware, BEC/wire fraud, AiTM credential theft, supply chain compromise, regulatory audit surprise. Scenarios include timed injects, role mapping pre-populated from client onboarding data, and frequency tracking for compliance programs (HIPAA, CMMC, cyber insurance).",
           "done": true,
-          "notes": "Session 91: js/scenario_library.js (new file). renderScenarioLibrary() — filter bar (industry/threat/compliance/difficulty), 3-col responsive card grid, compliance alert banner (overdue programs shown by amber banner), last-run tracking from tabletop_sessions, per-card role hints derived from org profile (health data→LC note, payment data→TL note, hospitality→CL note, small team→role-merge note). TT_SCENARIO_LIBRARY_META maps all 9 scenario IDs to {threatProfiles, industries, compliance, recommendedFrequency}. SL_COMPLIANCE defines 4 programs (cyber_insurance, hipaa, cmmc, pci_dss) with freq and badge config. slLaunchScenario(id) pre-selects scenario and navigates to tabletop. Two new full scenarios added to TT_SCENARIOS in tabletop.js: aitm_cred_theft (AiTM phishing/session-token hijack, 4 injects, Hard, All industries) and reg_audit_surprise (State AG privacy inquiry, 4 injects, Medium, All industries). Nav: scenario_library added to g_exercises group. slState declared in config.js; reset in selectOrg in app.js."
+          "notes": "Session 91: js/scenario_library.js. renderScenarioLibrary() — filter bar (industry/threat/compliance/difficulty), card grid, compliance alert banner, last-run tracking, per-card role hints. TT_SCENARIO_LIBRARY_META, SL_COMPLIANCE. Two new TT_SCENARIOS: aitm_cred_theft, reg_audit_surprise. Session 92: Expanded to 20 scenarios total — PATCH_051 seeded 8 platform scenarios (BCDR/Executive/AI/PCI tracks), PATCH_054 added 6 more AI Governance scenarios (NIST AI RMF aligned: training data exposure, supply chain attack, excessive agency, chatbot data leak, AI phishing, rogue automation). Exercise Type added as first filter (SL_TRACK_LABELS). Scenario cards changed to horizontal scroll row. PATCH_052 fixed RLS policies on tabletop_scenarios. PATCH_053 fixed Commonwealth English in live DB data. Fixed double /rest/v1/ prefix bug in slEnsureData query. tabletop.js updated to fall back to tteState.scenario for DB scenarios (UUID ids)."
         },
         {
           "id": "sl3",
           "title": "Exercises page: exercise history link",
           "text": "The exercises landing page shows performance stats but has no way to reach the completed exercise list or AAR views. Add a \"View Exercise History\" button or a compact recent-runs table at the bottom of the exercises page so facilitators can review past sessions without navigating elsewhere.",
+          "done": true,
+          "priority": "Low",
+          "notes": "Session 92: Past Exercises table added below horizontal scenario scroll row in scenario_library.js. Shows date, scenario, type, severity, breach outcome. Clickable rows navigate to read-only AAR via slViewAAR(sessionId) — loads session+responses+notifChecks from Supabase, reconstructs ttState, renders AAR with Back to Exercises button. tabletop.js updated to support ttState.readonly flag."
+        },
+        {
+          "id": "sl4",
+          "title": "Scenario Builder: add BCDR, AI, PCI track options",
+          "text": "The Scenario Builder track dropdown only offers Operational, Executive, Vendor. PATCH_051 introduced bcdr/ai/pci tracks for DB scenarios but the builder can't set them. Add these options to the track selector in sb-track so custom scenarios can be assigned to any track.",
+          "done": false,
+          "priority": "Medium"
+        },
+        {
+          "id": "sl5",
+          "title": "Scenario Library: score column in Past Exercises table",
+          "text": "The Past Exercises table shows date, scenario, type, severity, breach. Add a Score column (objective % from rubric or proxy) once rubric scoring is consistently populated — ties into the existing exCalcScore() function.",
           "done": false,
           "priority": "Low"
         }
