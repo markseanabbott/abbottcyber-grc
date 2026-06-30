@@ -790,6 +790,55 @@ function renderScenarioLibrary() {
 }
 
 // ──────────────────────────────────────────────────────────────────
+// VIEW PAST AAR
+// ──────────────────────────────────────────────────────────────────
+
+async function slViewAAR(sessionId) {
+  try {
+    const [session, responses, notifChecks] = await Promise.all([
+      sb.tt.getSession(sessionId),
+      sbFetch(`tabletop_responses?session_id=eq.${sessionId}&select=*`),
+      sbFetch(`tabletop_notif_checks?session_id=eq.${sessionId}&select=*`),
+    ]);
+    if (!session) { toast('Session not found', '#dc2626'); return; }
+    const scenario = await tteLoadScenario(session.scenario_id);
+    if (!scenario) { toast('Scenario data not found', '#dc2626'); return; }
+
+    if (!ttState) ttInit();
+    ttState.scenarioId      = session.scenario_id;
+    ttState.sessionId       = session.id;
+    ttState.sessionCode     = session.session_code;
+    ttState.facilitatorName = session.facilitator_name || '';
+    ttState.view            = 'aar';
+    ttState.readonly        = true;
+    ttState.declaration     = { severity: session.tl_severity || null, declare: session.tl_declare ?? null, assessment: session.tl_assessment || '' };
+    ttState.breach          = { declared: session.breach_declared || false, rationale: session.breach_rationale || '', ic_sign_time: session.ic_sign_time || null, es_sign_time: session.es_sign_time || null };
+    ttState.notifStartTime  = session.breach_timestamp || null;
+    ttState.exerciseLog     = Array.isArray(session.exercise_log) ? session.exercise_log : [];
+
+    ttState.responses = {};
+    (responses || []).forEach(r => {
+      if (!ttState.responses[r.inject_index]) ttState.responses[r.inject_index] = {};
+      ttState.responses[r.inject_index][r.role_id] = { criticality: r.criticality, text: r.response_text };
+    });
+
+    ttState.notifChecks = {};
+    (notifChecks || []).forEach(n => {
+      ttState.notifChecks[n.item_id] = { checked: n.checked, checkedAt: n.checked_at };
+    });
+
+    tteInitEngine(scenario, 'local');
+
+    activeNav = 'tabletop';
+    if (typeof buildNav === 'function') buildNav();
+    ttRender();
+  } catch (e) {
+    toast('Could not load AAR — ' + e.message, '#dc2626');
+    console.error(e);
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────
 // PAST EXERCISES TABLE
 // ──────────────────────────────────────────────────────────────────
 
@@ -828,11 +877,15 @@ function slRenderPastTests() {
             <th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Type</th>
             <th style="padding:9px 14px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Severity</th>
             <th style="padding:9px 14px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Breach</th>
+            <th style="padding:9px 14px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)"></th>
           </tr>
         </thead>
         <tbody>
-          ${rows.map((r, i) => `
-            <tr style="border-bottom:1px solid var(--border);${i % 2 === 1 ? 'background:#fafbfc' : ''}">
+          ${rows.map((r, i) => {
+            const clickable = !!r.id;
+            const rowStyle = `border-bottom:1px solid var(--border);${i % 2 === 1 ? 'background:#fafbfc;' : ''}${clickable ? 'cursor:pointer;' : ''}`;
+            const click = clickable ? `onclick="slViewAAR('${r.id}')" onmouseenter="this.style.background='#eef2ff'" onmouseleave="this.style.background='${i % 2 === 1 ? '#fafbfc' : '#fff'}'"`  : '';
+            return `<tr style="${rowStyle}" ${click}>
               <td style="padding:9px 14px;color:var(--muted);white-space:nowrap">${r.date}</td>
               <td style="padding:9px 14px;font-weight:600;color:var(--text);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escH(r.scenario)}</td>
               <td style="padding:9px 14px;color:var(--muted)">${r.type}</td>
@@ -842,7 +895,9 @@ function slRenderPastTests() {
               <td style="padding:9px 14px;text-align:center">
                 ${r.breach === true ? '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;background:#fee2e2;color:#dc2626">Declared</span>' : r.breach === false ? '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;background:#dcfce7;color:#15803d">Contained</span>' : '<span style="color:var(--muted)">—</span>'}
               </td>
-            </tr>`).join('')}
+              <td style="padding:9px 14px;text-align:center;color:var(--muted);font-size:11px">${clickable ? '→ AAR' : ''}</td>
+            </tr>`;
+          }).join('')}
         </tbody>
       </table>
     </div>
@@ -859,6 +914,7 @@ window.slSetFilter           = slSetFilter;
 window.slClearFilters        = slClearFilters;
 window.slLaunchScenario      = slLaunchScenario;
 window.slShowLaunchModal     = slShowLaunchModal;
+window.slViewAAR             = slViewAAR;
 window.slCloseLaunchModal    = slCloseLaunchModal;
 window.slDoLaunch            = slDoLaunch;
 window._slModalNameStep      = _slModalNameStep;

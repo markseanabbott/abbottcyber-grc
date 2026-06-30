@@ -1878,10 +1878,14 @@ function ttRenderAAR() {
     </div>
   </div>
 
+  ${ttState.readonly ? `
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+    <button class="btn btn-outline" onclick="setNav('scenario_library')">← Back to Exercises</button>
+  </div>` : `
   <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
     <button class="btn btn-outline" onclick="ttFinalise()">Mark exercise complete</button>
     <button class="btn btn-primary" onclick="ttRestart()">Start new exercise</button>
-  </div>`;
+  </div>`}`;
 }
 
 async function ttFinalise() {
