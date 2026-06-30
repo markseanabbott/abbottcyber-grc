@@ -15,6 +15,54 @@ const TT_ROLES = [
 
 const TT_NIST_PHASES = ['Preparation','Detection & Analysis','Containment','Eradication','Recovery','Post-Incident'];
 
+// Standard MITRE ATT&CK Enterprise tactic ordering (left to right)
+const MITRE_TACTICS_LIST = [
+  { id: 'TA0043', name: 'Reconnaissance' },
+  { id: 'TA0042', name: 'Resource Development' },
+  { id: 'TA0001', name: 'Initial Access' },
+  { id: 'TA0002', name: 'Execution' },
+  { id: 'TA0003', name: 'Persistence' },
+  { id: 'TA0004', name: 'Privilege Escalation' },
+  { id: 'TA0005', name: 'Defense Evasion' },
+  { id: 'TA0006', name: 'Credential Access' },
+  { id: 'TA0007', name: 'Discovery' },
+  { id: 'TA0008', name: 'Lateral Movement' },
+  { id: 'TA0009', name: 'Collection' },
+  { id: 'TA0011', name: 'Command & Control' },
+  { id: 'TA0010', name: 'Exfiltration' },
+  { id: 'TA0040', name: 'Impact' },
+];
+
+// Derive ordered inject index sequence from tteState.injectPath (shared by path map + matrix)
+function ttGetDisplayPath() {
+  const ip = tteState.injectPath || [];
+  if (ip.length === 0) return [];
+  const path = ip.map(p => p.index);
+  const last = ip[ip.length - 1];
+  const sc = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
+  const lastInj = sc && sc.injects[last.index];
+  const br = lastInj && lastInj.branches
+    ? (lastInj.branches.find(b => b.id === last.branchTaken) || lastInj.branches[0])
+    : null;
+  if (br && br.next_index != null) path.push(br.next_index);
+  return path;
+}
+
+// Parse tactic/technique strings from inject.mitre (handles "TA0001 Name + TA0002 Name" format)
+function ttParseMitreInject(mitre) {
+  const out = { tactics: [], techniques: [] };
+  if (!mitre) return out;
+  (mitre.tactic || '').split(/\s*\+\s*/).forEach(t => {
+    const m = t.trim().match(/^(TA\d{4})\s+(.+)$/);
+    if (m) out.tactics.push({ id: m[1], name: m[2].trim() });
+  });
+  (mitre.technique || '').split(/\s*\+\s*/).forEach(t => {
+    const m = t.trim().match(/^(T\d{4}(?:\.\d{3})?)\s+(.+)$/);
+    if (m) out.techniques.push({ id: m[1], name: m[2].trim() });
+  });
+  return out;
+}
+
 const TT_SCENARIOS = {
   ransom_phish: {
     id: 'ransom_phish',
@@ -1032,9 +1080,10 @@ function renderTabletop() {
     case 'inject':      return ttRenderInject();
     case 'breach':      return ttRenderBreachGate();
     case 'notif':       return ttRenderNotif();
-    case 'aar':         return ttRenderAAR();
-    case 'history_aar': return ttRenderHistoryAAR();
-    default:            return '<div class="card">Unknown tabletop view.</div>';
+    case 'aar':           return ttRenderAAR();
+    case 'history_aar':   return ttRenderHistoryAAR();
+    case 'mitre_matrix':  return ttRenderMitreMatrix();
+    default:              return '<div class="card">Unknown tabletop view.</div>';
   }
 }
 
@@ -1764,26 +1813,17 @@ function ttRenderMitrePath() {
   const scenario = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
   if (!scenario || !scenario.injects || scenario.injects.length === 0) return '';
 
-  const injectPath = tteState.injectPath || [];
-
   // For sessions without path data, show a placeholder
-  if (injectPath.length === 0) {
+  if ((tteState.injectPath || []).length === 0) {
     return `<div class="card">
       <div class="card-title">&#x2694;&#xFE0F; MITRE ATT&CK Path Map</div>
       <div style="font-size:12px;color:var(--muted);padding:.5rem 0">Path data is not available for this session. Path tracking was added in a later platform version — future sessions will display the full attack chain here.</div>
     </div>`;
   }
 
-  // Build the ordered sequence of inject indices the team visited
-  const displayPath = injectPath.map(p => p.index);
-  const lastStep = injectPath[injectPath.length - 1];
-  const lastInj = scenario.injects[lastStep.index];
-  const lastBranch = lastInj && lastInj.branches
-    ? (lastInj.branches.find(b => b.id === lastStep.branchTaken) || lastInj.branches[0])
-    : null;
-  if (lastBranch && lastBranch.next_index != null) displayPath.push(lastBranch.next_index);
-
+  const displayPath = ttGetDisplayPath();
   const visitedSet = new Set(displayPath);
+  const injectPath = tteState.injectPath || [];
   const branchTakenMap = {};
   injectPath.forEach(p => { branchTakenMap[p.index] = p.branchTaken; });
 
@@ -1866,7 +1906,10 @@ function ttRenderMitrePath() {
     </div>`;
 
   return `<div class="card">
-    <div class="card-title">&#x2694;&#xFE0F; MITRE ATT&CK Path Map</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem">
+      <div class="card-title" style="margin-bottom:0">&#x2694;&#xFE0F; MITRE ATT&CK Path Map</div>
+      <button class="btn btn-outline btn-sm" onclick="ttState.view='mitre_matrix';ttRender()" style="font-size:11px">&#x1F5FA;&#xFE0F; View Full Matrix</button>
+    </div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:1rem">
       Attack chain as it unfolded during this exercise. &nbsp;
       <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;border:2px solid var(--cyan);background:#eef8ff;display:inline-block"></span> Path taken</span> &nbsp;
@@ -1877,6 +1920,111 @@ function ttRenderMitrePath() {
       <div style="display:flex;align-items:flex-start;gap:0;min-width:max-content">${pathRow}</div>
     </div>
     ${unreachedSection}
+  </div>`;
+}
+
+// ---- MITRE ATT&CK Full Matrix View ----
+function ttRenderMitreMatrix() {
+  const scenario = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
+  if (!scenario) return '';
+  const title = (tteState.scenario || {}).title || (TT_SCENARIOS[ttState.scenarioId] || {}).title || 'Tabletop';
+
+  const displayPath = ttGetDisplayPath();
+  const visitedSet = new Set(displayPath);
+
+  // Build matrix: tacticId → { techniques: [{ id, name, encountered, injectNums }] }
+  const matrix = {};
+  MITRE_TACTICS_LIST.forEach(t => { matrix[t.id] = { techniques: [] }; });
+
+  scenario.injects.forEach((inj, idx) => {
+    const parsed = ttParseMitreInject(inj.mitre);
+    const encountered = visitedSet.has(idx);
+    const injectNum = idx + 1;
+    // Assign all techniques to all tactics mentioned in this inject
+    parsed.tactics.forEach(tac => {
+      if (!matrix[tac.id]) matrix[tac.id] = { techniques: [] };
+      parsed.techniques.forEach(tech => {
+        let existing = matrix[tac.id].techniques.find(t => t.id === tech.id);
+        if (!existing) {
+          existing = { id: tech.id, name: tech.name, encountered: false, injectNums: [] };
+          matrix[tac.id].techniques.push(existing);
+        }
+        if (!existing.injectNums.includes(injectNum)) existing.injectNums.push(injectNum);
+        if (encountered) existing.encountered = true;
+      });
+    });
+  });
+
+  // Summary stats
+  let totalTechs = 0, encTechs = 0;
+  MITRE_TACTICS_LIST.forEach(t => {
+    (matrix[t.id] || {techniques:[]}).techniques.forEach(tech => {
+      totalTechs++;
+      if (tech.encountered) encTechs++;
+    });
+  });
+
+  const cols = MITRE_TACTICS_LIST.map(tac => {
+    const techs = (matrix[tac.id] || {techniques:[]}).techniques;
+    const hasAny = techs.length > 0;
+    const hasEnc = techs.some(t => t.encountered);
+    const headerBg = hasEnc ? 'var(--navy)' : (hasAny ? '#6b7280' : '#d1d5db');
+    const headerColor = (hasEnc || hasAny) ? '#fff' : 'var(--muted)';
+    return `<div style="flex-shrink:0;width:128px">
+      <div style="font-size:9px;font-weight:700;text-align:center;padding:.4rem .3rem;border-radius:6px 6px 0 0;background:${headerBg};color:${headerColor};text-transform:uppercase;letter-spacing:.05em;line-height:1.3;min-height:2.6rem;display:flex;align-items:center;justify-content:center">
+        ${tac.name}${hasEnc ? '<br/><span style="font-size:8px;opacity:.8;font-weight:400">' + techs.filter(t=>t.encountered).length + ' triggered</span>' : ''}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px;margin-top:2px;min-height:28px">
+        ${techs.length === 0
+          ? `<div style="font-size:10px;color:var(--border);text-align:center;padding:.5rem .25rem;border:1px solid var(--border);border-radius:4px;margin-top:2px">—</div>`
+          : techs.map(tech => {
+              const enc = tech.encountered;
+              return `<div style="font-size:10px;padding:.3rem .4rem;border-radius:4px;line-height:1.3;
+                background:${enc ? 'var(--navy)' : 'var(--bg)'};
+                color:${enc ? '#fff' : 'var(--muted)'};
+                border:1px solid ${enc ? 'var(--cyan)' : 'var(--border)'};
+                font-weight:${enc ? '600' : '400'};
+                border-left:${enc ? '3px solid var(--cyan)' : '1px solid var(--border)'}
+              " title="Inject ${tech.injectNums.join(', ')}">
+                <div style="font-size:8px;opacity:.7;margin-bottom:1px">${tech.id}</div>
+                ${tech.name}
+                ${enc ? '' : `<div style="font-size:8px;opacity:.6;margin-top:1px">Inj ${tech.injectNums.join(',')}</div>`}
+              </div>`;
+            }).join('')
+        }
+      </div>
+    </div>`;
+  }).join('<div style="flex-shrink:0;width:3px;background:var(--border);border-radius:2px;margin:0 1px"></div>');
+
+  return `${renderTierBanner()}
+  <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;flex-wrap:wrap">
+    <button class="btn btn-outline btn-sm" onclick="ttState.view='aar';ttRender()">← Back to AAR</button>
+    <div style="font-size:17px;font-weight:700">&#x2694;&#xFE0F; MITRE ATT&CK Matrix — ${title}</div>
+  </div>
+  <div class="card" style="padding:.75rem">
+    <div style="display:flex;gap:1.5rem;margin-bottom:.75rem;font-size:12px;align-items:center;flex-wrap:wrap">
+      <span style="color:var(--muted)">${scenario.injects.length}-inject scenario &nbsp;·&nbsp; ${encTechs} of ${totalTechs} technique${totalTechs !== 1 ? 's' : ''} triggered</span>
+      <span style="display:inline-flex;align-items:center;gap:5px">
+        <span style="width:14px;height:14px;background:var(--navy);border-radius:3px;border-left:3px solid var(--cyan);display:inline-block"></span>
+        <span style="font-size:11px">Encountered</span>
+      </span>
+      <span style="display:inline-flex;align-items:center;gap:5px">
+        <span style="width:14px;height:14px;background:var(--bg);border:1px solid var(--border);border-radius:3px;display:inline-block"></span>
+        <span style="font-size:11px;color:var(--muted)">In scenario, not triggered</span>
+      </span>
+      <span style="display:inline-flex;align-items:center;gap:5px">
+        <span style="width:14px;height:14px;background:#d1d5db;border-radius:3px;display:inline-block"></span>
+        <span style="font-size:11px;color:var(--muted)">Tactic not used</span>
+      </span>
+    </div>
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:.5rem">
+      <div style="display:flex;align-items:flex-start;gap:0;min-width:max-content">
+        ${cols}
+      </div>
+    </div>
+    <div style="margin-top:.75rem;padding-top:.5rem;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">
+      Hover over a cell to see which inject triggered it. Techniques are assigned to all tactics referenced in the same inject.
+    </div>
   </div>`;
 }
 
