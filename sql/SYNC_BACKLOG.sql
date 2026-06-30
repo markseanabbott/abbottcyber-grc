@@ -1,7 +1,5 @@
-﻿-- SYNC_BACKLOG.sql — generated 2026-06-29 (396 items)
--- Full upsert of all backlog items from backlog.json into backlog_items.
+-- SYNC_BACKLOG.sql -- generated 2026-06-29 (396 items)
 -- Safe to re-run (ON CONFLICT DO UPDATE).
-
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
 VALUES ('s1', 'core', 'Core Concept', 1, 0, 'Security posture scoring for organisations / clients', true, NULL, NULL, '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
@@ -5941,4 +5939,3 @@ ON CONFLICT (id) DO UPDATE SET
   dependencies  = EXCLUDED.dependencies,
   status        = EXCLUDED.status,
   updated_at    = now();
-
