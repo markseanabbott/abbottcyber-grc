@@ -120,6 +120,83 @@ function tsDeriveCMMC(tsAnswers) {
   return derived;
 }
 
+// ─── CMMC L2 DERIVATION ───────────────────────────────────────
+// Maps CMMC L2 practice IDs (plain form, e.g. '3.1.3') → Tech Stack question IDs
+const _CMMC2_TS_MAP = [
+  // ACCESS CONTROL
+  { cmmc: '3.1.3',  ts: ['dlp', 'data_classification'],  strategy: 'best' }, // Control CUI flow
+  { cmmc: '3.1.5',  ts: ['pam', 'jml'],                  strategy: 'all'  }, // Least privilege
+  { cmmc: '3.1.6',  ts: ['pam'],                          strategy: 'best' }, // Non-privileged account use
+  { cmmc: '3.1.7',  ts: ['pam'],                          strategy: 'best' }, // Prevent privileged function execution
+  { cmmc: '3.1.12', ts: ['ztna', 'vpn_mfa'],             strategy: 'best' }, // Control remote access
+  { cmmc: '3.1.13', ts: ['ztna', 'vpn_mfa'],             strategy: 'best' }, // Remote access cryptography
+  { cmmc: '3.1.14', ts: ['ztna'],                         strategy: 'best' }, // Route remote access via managed control points
+  { cmmc: '3.1.17', ts: ['wifi_guest'],                   strategy: 'best' }, // Protect wireless access (auth + encryption)
+  { cmmc: '3.1.19', ts: ['fde'],                          strategy: 'best' }, // Encrypt CUI on mobile devices
+  // AWARENESS & TRAINING
+  { cmmc: '3.2.1',  ts: ['phishsim'],                     strategy: 'best' }, // Role-based risk awareness
+  { cmmc: '3.2.2',  ts: ['phishsim'],                     strategy: 'best' }, // Role-based security training
+  { cmmc: '3.2.3',  ts: ['phishsim'],                     strategy: 'best' }, // Insider threat awareness
+  // AUDIT & ACCOUNTABILITY
+  { cmmc: '3.3.1',  ts: ['log_agg'],                      strategy: 'best' }, // System audit logging
+  { cmmc: '3.3.2',  ts: ['siem_xdr', 'log_agg'],         strategy: 'best' }, // User action traceability
+  { cmmc: '3.3.3',  ts: ['siem_xdr'],                     strategy: 'best' }, // Review logged events
+  { cmmc: '3.3.4',  ts: ['siem_xdr'],                     strategy: 'best' }, // Alert on audit failure
+  { cmmc: '3.3.5',  ts: ['siem_xdr'],                     strategy: 'best' }, // Correlate audit records
+  { cmmc: '3.3.8',  ts: ['log_retention'],                strategy: 'best' }, // Protect audit information
+  // CONFIGURATION MANAGEMENT
+  { cmmc: '3.4.1',  ts: ['config_baselines'],             strategy: 'best' }, // Baseline configurations
+  { cmmc: '3.4.2',  ts: ['config_baselines'],             strategy: 'best' }, // Security configuration settings
+  { cmmc: '3.4.3',  ts: ['hw_inventory', 'sw_inventory'], strategy: 'best' }, // Track and document changes
+  { cmmc: '3.4.6',  ts: ['app_allowlist'],                strategy: 'best' }, // Least functionality
+  { cmmc: '3.4.7',  ts: ['app_allowlist', 'ngfw'],        strategy: 'best' }, // Restrict functions, ports, protocols
+  { cmmc: '3.4.8',  ts: ['app_allowlist'],                strategy: 'best' }, // Application execution control (deny-by-exception)
+  { cmmc: '3.4.9',  ts: ['app_allowlist'],                strategy: 'best' }, // Control user-installed software
+  // IDENTIFICATION & AUTHENTICATION
+  { cmmc: '3.5.3',  ts: ['mfa_users', 'mfa_admin'],      strategy: 'all'  }, // Multi-factor authentication (both user + admin)
+  { cmmc: '3.5.4',  ts: ['mfa_admin'],                    strategy: 'best' }, // Replay-resistant authentication
+  { cmmc: '3.5.5',  ts: ['jml'],                          strategy: 'best' }, // Identifier management
+  { cmmc: '3.5.6',  ts: ['jml'],                          strategy: 'best' }, // Disable inactive identifiers
+  // INCIDENT RESPONSE
+  { cmmc: '3.6.1',  ts: ['ir_retainer', 'paging'],       strategy: 'all'  }, // IR capability (retainer + escalation path)
+  { cmmc: '3.6.2',  ts: ['soar_runbook', 'ir_retainer'], strategy: 'best' }, // Track, document, report incidents
+  { cmmc: '3.6.3',  ts: ['ir_retainer'],                  strategy: 'best' }, // Test incident response capability
+  // MAINTENANCE
+  { cmmc: '3.7.5',  ts: ['mfa_admin', 'vpn_mfa'],        strategy: 'best' }, // MFA for remote maintenance
+  // MEDIA PROTECTION
+  { cmmc: '3.8.9',  ts: ['backup_immutable'],             strategy: 'best' }, // Protect CUI on backup media
+  // RISK ASSESSMENT
+  { cmmc: '3.11.2', ts: ['vuln_scan', 'asm'],             strategy: 'best' }, // Vulnerability scanning
+  { cmmc: '3.11.3', ts: ['remediation_sla'],              strategy: 'best' }, // Remediate vulnerabilities
+  // SECURITY ASSESSMENT
+  { cmmc: '3.12.1', ts: ['pentest'],                      strategy: 'best' }, // Periodically assess security controls
+  { cmmc: '3.12.3', ts: ['siem_xdr', 'mdr_24x7'],        strategy: 'best' }, // Monitor security controls ongoing
+  // SYSTEM & COMMUNICATIONS PROTECTION
+  { cmmc: '3.13.2', ts: ['segmentation'],                 strategy: 'best' }, // Architect for security (network segmentation)
+  { cmmc: '3.13.6', ts: ['ngfw'],                         strategy: 'best' }, // Deny by default / allow by exception
+  { cmmc: '3.13.7', ts: ['ztna'],                         strategy: 'best' }, // Prevent split tunneling (ZTNA routes all traffic)
+  { cmmc: '3.13.8', ts: ['ztna', 'vpn_mfa'],             strategy: 'best' }, // Encrypt CUI in transit
+  { cmmc: '3.13.10',ts: ['key_mgmt'],                     strategy: 'best' }, // Cryptographic key management
+  { cmmc: '3.13.15',ts: ['dmarc', 'esg'],                 strategy: 'best' }, // Protect authenticity of communications (DMARC/ESG)
+  { cmmc: '3.13.16',ts: ['fde'],                          strategy: 'best' }, // Protect CUI at rest
+  // SYSTEM & INFORMATION INTEGRITY
+  { cmmc: '3.14.3', ts: ['siem_xdr', 'mdr_24x7'],        strategy: 'best' }, // Security alerts and advisories
+  { cmmc: '3.14.6', ts: ['siem_xdr', 'mdr_24x7'],        strategy: 'best' }, // Monitor for attacks and unauthorized use
+  { cmmc: '3.14.7', ts: ['siem_xdr', 'mdr_24x7'],        strategy: 'best' }, // Identify unauthorized use
+];
+
+function tsDeriveCMMC2(tsAnswers) {
+  const derived = {};
+  _CMMC2_TS_MAP.forEach(mapping => {
+    const tsAns = mapping.strategy === 'all'
+      ? _tsAllAns(mapping.ts, tsAnswers)
+      : _tsBestAns(mapping.ts, tsAnswers);
+    if (!tsAns) return;
+    derived[mapping.cmmc] = tsAns;
+  });
+  return derived;
+}
+
 // ─── PUBLIC ───────────────────────────────────────────────────
 function tsHasTechStackData() {
   return !!(tsState && Object.keys(tsState.answers || {}).length > 0);
@@ -208,6 +285,38 @@ async function cisPrefillFromTS() {
     toast('✓ ' + filled + ' CIS safeguards prefilled from Tech Stack — review and adjust before saving', '#152168');
   } else {
     toast('All mapped safeguards already answered — nothing to prefill', '#b45309');
+  }
+  renderMain();
+}
+
+// ─── CMMC L2 PREFILL ACTION ───────────────────────────────────
+async function cmmc2PrefillFromTS() {
+  const btn = document.getElementById('cmmc2PrefillBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
+  const loaded = await tsEnsureLoaded();
+  if (!loaded) {
+    toast('No Tech Stack data found — complete a Tech Stack assessment first', '#b45309');
+    if (btn) { btn.disabled = false; btn.innerHTML = '&#8681; From Tech Stack'; }
+    return;
+  }
+  const tsAnswers = (tsState && tsState.answers) || {};
+  const cmmc2 = tsDeriveCMMC2(tsAnswers);
+  if (!Object.keys(cmmc2).length) {
+    toast('No mappable Tech Stack answers found', '#b45309');
+    if (btn) { btn.disabled = false; btn.innerHTML = '&#8681; From Tech Stack'; }
+    return;
+  }
+  let filled = 0;
+  Object.keys(cmmc2).forEach(practiceId => {
+    if (cmmc2State.answers[practiceId] == null) {
+      cmmc2State.answers[practiceId] = cmmc2[practiceId];
+      filled++;
+    }
+  });
+  if (filled > 0) {
+    toast('✓ ' + filled + ' CMMC L2 practices prefilled from Tech Stack — review and adjust before saving', '#152168');
+  } else {
+    toast('All mapped practices already answered — nothing to prefill', '#b45309');
   }
   renderMain();
 }

@@ -946,7 +946,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('cl2_2', 'cmmc_l2', 'CMMC Level 2 Assessment', 1, 1, 'CMMC L2 Tech Stack prefill â€” map relevant Technology Stack survey answers to CMMC Level 2 practices via derive_strategy, pre-populating L2 form where TS data covers the control. Extends the existing _CMMC_TS_MAP in prefill.js.', false, 'Low', NULL, '[]', 'add')
+VALUES ('cl2_2', 'cmmc_l2', 'CMMC Level 2 Assessment', 1, 1, 'CMMC L2 Tech Stack prefill â€” map relevant Technology Stack survey answers to CMMC Level 2 practices via derive_strategy, pre-populating L2 form where TS data covers the control. Extends the existing _CMMC_TS_MAP in prefill.js.', true, 'Low', 'prefill.js: added _CMMC2_TS_MAP (48 L2 practice mappings across all 14 NIST 800-171 domains), tsDeriveCMMC2(), cmmc2PrefillFromTS(). cmmc2.js: added ''From Tech Stack'' button in form header (id=cmmc2PrefillBtn). Practice IDs use plain format (3.1.3) not prefixed (AC.L2-3.1.3) to match cmmc2State.answers keys. Strategy: ''all'' for practices requiring paired controls (MFA both users+admin, IR retainer+paging, least privilege PAM+JML); ''best'' for all others. Practices with no TS signal (session lock, FIPS crypto, personnel security) intentionally omitted.', '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
