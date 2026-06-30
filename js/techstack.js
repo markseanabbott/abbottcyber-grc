@@ -546,6 +546,75 @@ const TS_CATS = [
       },
     ]
   },
+  {
+    id: 'physical', icon: '🏢', title: 'Physical & Operational Security',
+    desc: 'Physical access controls, media handling, external connections, and visitor management.',
+    questions: [
+      { id: 'physical_access', tool_category: 'Physical_Access_Control', question_type: 'presence', derive_strategy: 'standard',
+        text: 'Do you control physical access to server rooms, network closets, and workstations using badge access, locks, or equivalent controls?',
+        suggestion: 'Badge/keycard access systems, biometric readers, or keyed locks on server rooms and network closets. Log entry/exit. Review access lists quarterly.',
+        mappings: {
+          cis: [{ id: '3.3', title: 'Configure data access control lists', ig: '1' }],
+          nist: [{ id: 'PR.AA-05', title: 'Access permissions, entitlements, and authorizations are defined in a policy, managed, enforced, and reviewed' }],
+          insurance: { impact: 'low', note: 'Physical access controls are occasionally asked on applications for orgs with on-premise servers or POS environments.' },
+        }
+      },
+      { id: 'physical_monitoring', tool_category: 'Physical_Security_Monitoring', question_type: 'presence', derive_strategy: 'standard',
+        text: 'Do you monitor your physical facility with cameras, alarms, or physical security monitoring for IT areas?',
+        suggestion: 'CCTV covering server rooms, network closets, and entry points. Motion sensors and alarm systems. Footage retained for at least 30 days.',
+        mappings: {
+          cis: [],
+          nist: [{ id: 'DE.CM-06', title: 'External service provider activities and services are monitored to find potentially adverse events' }],
+          insurance: { impact: 'low', note: 'Physical monitoring is not commonly a rated factor for most SMB cyber policies but demonstrates operational maturity.' },
+        }
+      },
+      { id: 'visitor_mgmt', tool_category: 'Visitor_Management', question_type: 'process', derive_strategy: 'standard',
+        text: 'Do you require visitors to sign in and be escorted in areas containing IT equipment or sensitive data?',
+        suggestion: 'Visitor log (paper or digital) at reception. Require escort past the lobby for all non-employees. Temporary badges distinguishable from staff. Document contractor access separately.',
+        mappings: {
+          cis: [],
+          nist: [{ id: 'PR.AA-05', title: 'Access permissions, entitlements, and authorizations are defined in a policy, managed, enforced, and reviewed' }],
+          insurance: { impact: 'low', note: 'Relevant for orgs handling PCI/HIPAA data in physical environments. Not commonly a direct rating factor for most SMB cyber policies.' },
+        }
+      },
+      { id: 'physical_logs', tool_category: 'Physical_Access_Logging', question_type: 'process', derive_strategy: 'standard',
+        text: 'Do you maintain logs of who accessed sensitive physical areas (via badge records, visitor logs, or equivalent)?',
+        suggestion: 'Electronic badge access logs retained for 90+ days. Visitor logs retained for at least one year. Review for anomalies after any security incident.',
+        mappings: {
+          cis: [{ id: '8.2', title: 'Collect audit logs', ig: '1' }],
+          nist: [{ id: 'DE.AE-03', title: 'Event data are collected and correlated from multiple sources' }],
+          insurance: { impact: 'low', note: 'Physical access logging supports incident investigation and demonstrates security governance maturity.' },
+        }
+      },
+      { id: 'media_disposal', tool_category: 'Media_Disposal', question_type: 'process', derive_strategy: 'standard',
+        text: 'Do you have a documented process for sanitizing or destroying storage media (hard drives, USB drives, mobile devices) before disposal or reuse?',
+        suggestion: 'NIST SP 800-88 compliant wiping for reused drives. Physical shredding or degaussing for disposed drives. Certificate of destruction for vendor-handled disposal. Policy covering all device classes.',
+        mappings: {
+          cis: [{ id: '2.1', title: 'Establish and maintain a software inventory', ig: '1' }],
+          nist: [{ id: 'PR.DS-01', title: 'The confidentiality, integrity, and availability of data-at-rest are protected' }],
+          insurance: { impact: 'mid', note: 'Media disposal failures (lost/sold drives with recoverable data) are a notable breach vector. Carriers increasingly ask about disposal procedures for device-heavy orgs.' },
+        }
+      },
+      { id: 'ext_connections', tool_category: 'External_Connection_Control', question_type: 'process', derive_strategy: 'standard',
+        text: 'Do you restrict and authorize connections to external systems (contractor devices, guest networks, cloud services, partner integrations) on a documented basis?',
+        suggestion: 'Maintain an inventory of approved external connections. Use network segmentation to isolate contractor/guest access. Require formal approval for new external system connections. Review connections quarterly.',
+        mappings: {
+          cis: [{ id: '12.1', title: 'Ensure network infrastructure is up-to-date', ig: '1' }],
+          nist: [{ id: 'PR.AA-05', title: 'Access permissions, entitlements, and authorizations are defined in a policy, managed, enforced, and reviewed' }],
+          insurance: { impact: 'low', note: 'Third-party and contractor access controls are increasingly scrutinized in underwriting — especially after supply chain incidents.' },
+        }
+      },
+      { id: 'pub_access_controls', tool_category: 'Public_Access_Controls', question_type: 'process', derive_strategy: 'standard',
+        text: 'Do you have controls to prevent sensitive or confidential data from being posted to publicly accessible systems (websites, public cloud storage, shared drives)?',
+        suggestion: 'DLP policies blocking uploads to personal cloud storage. Review of publicly accessible SharePoint/OneDrive/S3 permissions. Content classification training for staff handling sensitive data. Periodic audit of public-facing storage.',
+        mappings: {
+          cis: [{ id: '3.1', title: 'Establish and maintain a data management process', ig: '1' }],
+          nist: [{ id: 'PR.DS-01', title: 'The confidentiality, integrity, and availability of data-at-rest are protected' }],
+          insurance: { impact: 'low', note: 'Accidental public exposure of sensitive data is a frequent notification trigger. Cloud storage misconfiguration is a top-5 breach cause.' },
+        }
+      },
+    ]
+  },
 ];
 
 // ---- TECH STACK — state, render, handlers ----

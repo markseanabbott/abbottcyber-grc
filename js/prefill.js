@@ -105,7 +105,15 @@ const _CMMC_TS_MAP = [
   { cmmc: 'SI.L1-3.14.1', ts: ['patching'],               strategy: 'best' }, // Flaw Remediation — patch management evidences flaw remediation
   { cmmc: 'SI.L1-3.14.2', ts: ['edr'],                    strategy: 'best' }, // Malicious Code Protection — EDR is the primary control
   { cmmc: 'SI.L1-3.14.4', ts: ['edr'],                    strategy: 'best' }, // Update Protection — EDR with auto-update = yes
-  { cmmc: 'SI.L1-3.14.5', ts: ['edr'],                    strategy: 'best' }, // System Scanning — EDR real-time scan = yes
+  { cmmc: 'SI.L1-3.14.5',  ts: ['edr'],                    strategy: 'best' }, // System Scanning — EDR real-time scan = yes
+  // Physical & Operational Security (previously unmapped L1 practices)
+  { cmmc: 'AC.L1-3.1.20',  ts: ['ext_connections'],        strategy: 'best' }, // External Connections — authorized external connection controls
+  { cmmc: 'AC.L1-3.1.22',  ts: ['pub_access_controls'],   strategy: 'best' }, // Publicly Accessible Content — controls on public system data
+  { cmmc: 'MP.L1-3.8.3',   ts: ['media_disposal'],         strategy: 'best' }, // Media Disposal — documented sanitize/destroy process
+  { cmmc: 'PE.L1-3.10.1',  ts: ['physical_access'],        strategy: 'best' }, // Limit Physical Access — badge/lock controls on IT areas
+  { cmmc: 'PE.L1-3.10.2',  ts: ['physical_monitoring'],    strategy: 'best' }, // Monitor Facility — cameras/alarms on IT facility
+  { cmmc: 'PE.L1-3.10.3',  ts: ['visitor_mgmt'],           strategy: 'best' }, // Escort Visitors — sign-in and escort process
+  { cmmc: 'PE.L1-3.10.4',  ts: ['physical_logs'],          strategy: 'best' }, // Physical Access Logs — badge/visitor log retention
 ];
 
 function tsDeriveCMMC(tsAnswers) {

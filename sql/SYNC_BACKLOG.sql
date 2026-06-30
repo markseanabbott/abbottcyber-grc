@@ -901,7 +901,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('cmmc3', 'cmmc_l1', 'CMMC Level 1 Assessment', 1, 2, 'CMMC Tech Stack mapping expansion: add PE/MP/AC-external questions to the Technology Stack survey so all 17 L1 practices can be pre-populated from TS data. Currently 7 practices (AC.L1-3.1.20, AC.L1-3.1.22, MP.L1-3.8.3, all 4 PE practices) require manual entry because they cover physical security â€” no TS questions exist for those areas.', false, 'Low', NULL, '[]', 'add')
+VALUES ('cmmc3', 'cmmc_l1', 'CMMC Level 1 Assessment', 1, 2, 'CMMC Tech Stack mapping expansion: add PE/MP/AC-external questions to the Technology Stack survey so all 17 L1 practices can be pre-populated from TS data. Currently 7 practices (AC.L1-3.1.20, AC.L1-3.1.22, MP.L1-3.8.3, all 4 PE practices) require manual entry because they cover physical security â€” no TS questions exist for those areas.', true, 'Low', 'techstack.js: new ''physical'' category (Physical & Operational Security, 7 questions) added to TS_CATS: physical_access, physical_monitoring, visitor_mgmt, physical_logs, media_disposal, ext_connections, pub_access_controls. Each has tool_category, question_type, suggestion, and cis/nist/insurance mappings. prefill.js: 7 new entries added to _CMMC_TS_MAP covering AC.L1-3.1.20, AC.L1-3.1.22, MP.L1-3.8.3, PE.L1-3.10.1-3.10.4. All 17 L1 practices now have TS coverage.', '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
@@ -5416,7 +5416,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('ma5', 'ma_cdd', 'M&A Cyber Due Diligence', 1, 4, 'Audit log for M&A â€” wire auditLog() into maSave() (create + complete), maDeleteAssessment(), and maConfirmAddEntity() to maintain full platform audit trail. Same pattern as CIS and AI Unified audit calls.', false, 'Low', NULL, '[]', 'add')
+VALUES ('ma5', 'ma_cdd', 'M&A Cyber Due Diligence', 1, 4, 'Audit log for M&A â€” wire auditLog() into maSave() (create + complete), maDeleteAssessment(), and maConfirmAddEntity() to maintain full platform audit trail. Same pattern as CIS and AI Unified audit calls.', true, 'Low', 'ma_cdd.js: auditLog() added to three functions. maSave(): ''assessment_finalised'' (status=complete) or ''assessment_saved'' (status=draft) with target name, rating, score. maDeleteAssessment(): ''assessment_deleted'' with target name. maConfirmAddEntity(): ''entity_created'' with entity name and linked_assessment id. All use resource_type ''assessment'' or ''org'', module ''M&A Due Diligence''.', '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,

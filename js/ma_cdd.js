@@ -1224,6 +1224,11 @@ async function maSave(status) {
       if (created) { maState.editId = created.id; maState.list.unshift(created); }
       if (status === 'complete') { maState.view = 'detail'; maState.currentAssessment = created; maState.poamItems = created?.answers?._poam || {}; }
     }
+    auditLog(
+      status === 'complete' ? 'assessment_finalised' : 'assessment_saved',
+      'assessment', 'M&A Due Diligence',
+      { target: row.target_name, rating, score }
+    );
     toast(status === 'complete' ? 'Assessment completed ✓' : 'Draft saved', '#15803d');
     if (status === 'draft') maState.view = 'list';
   } catch (e) {
@@ -1250,6 +1255,7 @@ async function maDeleteAssessment(id, name) {
   try {
     await sbFetch(`ma_assessments?id=eq.${id}`, 'DELETE');
     maState.list = maState.list.filter(x => x.id !== id);
+    auditLog('assessment_deleted', 'assessment', 'M&A Due Diligence', { target: name });
     toast('Assessment deleted', '#b45309');
     if (maState.view === 'detail' && maState.currentAssessment?.id === id) maNavToList();
     else document.getElementById('mainContent').innerHTML = renderMACDD();
@@ -1300,6 +1306,7 @@ async function maConfirmAddEntity(assessmentId) {
     const a = maState.list.find(x => x.id === assessmentId);
     if (a) { a.linked_org_id = org.id; maState.currentAssessment = a; }
     if (typeof allOrgs !== 'undefined') { const refreshed = await sbFetch('organisations?order=name.asc','GET'); if (refreshed) { allOrgs = refreshed; buildNav(); } }
+    auditLog('entity_created', 'org', 'M&A Due Diligence', { entity: name, linked_assessment: assessmentId });
     toast(`Entity "${name}" created and linked ✓`, '#15803d');
     document.getElementById('maAddEntityContainer').innerHTML = '';
     document.getElementById('mainContent').innerHTML = renderMACDD();

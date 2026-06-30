@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.6.0",
   "created": "2026-05-14",
-  "updated": "2026-06-30 (session 100)",
+  "updated": "2026-06-30 (session 101)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -400,8 +400,9 @@
         {
           "id": "cmmc3",
           "text": "CMMC Tech Stack mapping expansion: add PE/MP/AC-external questions to the Technology Stack survey so all 17 L1 practices can be pre-populated from TS data. Currently 7 practices (AC.L1-3.1.20, AC.L1-3.1.22, MP.L1-3.8.3, all 4 PE practices) require manual entry because they cover physical security — no TS questions exist for those areas.",
-          "done": false,
-          "priority": "Low"
+          "done": true,
+          "priority": "Low",
+          "notes": "techstack.js: new 'physical' category (Physical & Operational Security, 7 questions) added to TS_CATS: physical_access, physical_monitoring, visitor_mgmt, physical_logs, media_disposal, ext_connections, pub_access_controls. Each has tool_category, question_type, suggestion, and cis/nist/insurance mappings. prefill.js: 7 new entries added to _CMMC_TS_MAP covering AC.L1-3.1.20, AC.L1-3.1.22, MP.L1-3.8.3, PE.L1-3.10.1-3.10.4. All 17 L1 practices now have TS coverage."
         },
         {
           "id": "cmmc4",
@@ -2324,8 +2325,9 @@
         {
           "id": "ma5",
           "text": "Audit log for M&A — wire auditLog() into maSave() (create + complete), maDeleteAssessment(), and maConfirmAddEntity() to maintain full platform audit trail. Same pattern as CIS and AI Unified audit calls.",
-          "done": false,
-          "priority": "Low"
+          "done": true,
+          "priority": "Low",
+          "notes": "ma_cdd.js: auditLog() added to three functions. maSave(): 'assessment_finalised' (status=complete) or 'assessment_saved' (status=draft) with target name, rating, score. maDeleteAssessment(): 'assessment_deleted' with target name. maConfirmAddEntity(): 'entity_created' with entity name and linked_assessment id. All use resource_type 'assessment' or 'org', module 'M&A Due Diligence'."
         },
         {
           "id": "ps1",
