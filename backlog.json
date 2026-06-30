@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.6.0",
   "created": "2026-05-14",
-  "updated": "2026-06-29 (session 93)",
+  "updated": "2026-06-29 (session 94)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1979,7 +1979,8 @@
         {
           "id": "tb1",
           "text": "BCDR scenario library: datacenter outage, extended power failure, pandemic/key person loss, critical supplier failure, physical site loss",
-          "done": false
+          "done": true,
+          "notes": "5 BCDR scenarios added to TT_SCENARIOS in tabletop.js with track:'bcdr'. IDs: bcdr_dc_outage, bcdr_power_failure, bcdr_keyman, bcdr_supplier, bcdr_site_loss. Each has 4-5 injects, declaration block, NIST/ISO/BCI framework refs in mitre field. Reuses existing engine, roles, and AAR unchanged."
         },
         {
           "id": "tb2",
