@@ -781,23 +781,72 @@ function renderScenarioLibrary() {
       <div style="font-size:12px">Try clearing a filter above.</div>
     </div>
   ` : `
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.75rem">
-      ${filtered.map(s => slRenderCard(s)).join('')}
+    <div style="display:flex;gap:.75rem;overflow-x:auto;padding-bottom:.5rem;-webkit-overflow-scrolling:touch">
+      ${filtered.map(s => `<div style="flex-shrink:0;width:230px">${slRenderCard(s)}</div>`).join('')}
     </div>
   `}
 
-  ${!loading && filtered.length > 0 ? `
-    <div style="margin-top:1.5rem;padding:12px 16px;background:#f8fafc;border-radius:10px;border:1px solid var(--border)">
-      <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px">💡 Frequency guidance</div>
-      <div style="font-size:11px;color:var(--muted);line-height:1.6">
-        <strong>Cyber insurance</strong> underwriters typically require annual tabletop evidence.
-        <strong>CMMC L2</strong> requires annual incident response exercises (3.6.2).
-        <strong>HIPAA</strong> Security Rule §164.308(a)(8) requires periodic testing and revision of contingency plans.
-        <strong>PCI DSS</strong> Req 12.10.2 requires annual IR plan testing.
-        Exercise history is tracked per organization and visible in the performance chart above.
-      </div>
+  ${slRenderPastTests()}`;
+}
+
+// ──────────────────────────────────────────────────────────────────
+// PAST EXERCISES TABLE
+// ──────────────────────────────────────────────────────────────────
+
+function slRenderPastTests() {
+  const aiRuns     = ((orgAssessments[currentOrg?.id] || {})['ai_tabletop'] || []);
+  const opSessions = exHubState?.opSessions ?? null;
+  if (opSessions === null) return '';
+
+  const rows = [];
+  aiRuns.forEach(r => {
+    const a = r.answers || {};
+    rows.push({ type: 'AI Run', date: r.date || r.assessed_at || '', scenario: a.scenarioName || a.scenarioId || '—', breach: null, severity: '—', score: typeof exCalcScore === 'function' ? exCalcScore({ type:'ai', rubric_scores: null }) : '—' });
+  });
+  opSessions.forEach(s => {
+    rows.push({ type: 'Facilitator', date: s.created_at ? s.created_at.substring(0, 10) : '', scenario: s.scenario_title || '—', breach: s.breach_declared, severity: s.tl_severity || '—', id: s.id });
+  });
+  rows.sort((a, b) => b.date.localeCompare(a.date));
+
+  if (rows.length === 0) return `
+    <div style="margin-top:1.5rem">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:.6rem">Past Exercises</div>
+      <div style="padding:1.5rem;text-align:center;color:var(--muted);border:2px dashed var(--border);border-radius:10px;font-size:12px">No exercises run yet for ${escH(currentOrg?.name || '')}.</div>
+    </div>`;
+
+  const sevColor = s => s === 'P1' ? '#dc2626' : s === 'P2' ? '#d97706' : s === 'P3' ? '#2563eb' : '#6b7280';
+
+  return `
+  <div style="margin-top:1.5rem">
+    <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:.6rem">Past Exercises <span style="font-weight:400;color:var(--muted);font-size:11px">(${rows.length})</span></div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead>
+          <tr style="background:#f8fafc;border-bottom:1px solid var(--border)">
+            <th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Date</th>
+            <th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Scenario</th>
+            <th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Type</th>
+            <th style="padding:9px 14px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Severity</th>
+            <th style="padding:9px 14px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Breach</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((r, i) => `
+            <tr style="border-bottom:1px solid var(--border);${i % 2 === 1 ? 'background:#fafbfc' : ''}">
+              <td style="padding:9px 14px;color:var(--muted);white-space:nowrap">${r.date}</td>
+              <td style="padding:9px 14px;font-weight:600;color:var(--text);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escH(r.scenario)}</td>
+              <td style="padding:9px 14px;color:var(--muted)">${r.type}</td>
+              <td style="padding:9px 14px;text-align:center">
+                ${r.severity && r.severity !== '—' ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;background:${sevColor(r.severity)}1a;color:${sevColor(r.severity)}">${r.severity}</span>` : '<span style="color:var(--muted)">—</span>'}
+              </td>
+              <td style="padding:9px 14px;text-align:center">
+                ${r.breach === true ? '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;background:#fee2e2;color:#dc2626">Declared</span>' : r.breach === false ? '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;background:#dcfce7;color:#15803d">Contained</span>' : '<span style="color:var(--muted)">—</span>'}
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
     </div>
-  ` : ''}`;
+  </div>`;
 }
 
 // ──────────────────────────────────────────────────────────────────
