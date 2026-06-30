@@ -34,7 +34,7 @@ VALUES ('d3', 'dashboard_shell', 'Platform Dashboard Shell', 1, 2, 'Dashboard ho
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('d9', 'dashboard_shell', 'Platform Dashboard Shell', 1, 3, 'Company Profile page â€” consolidates organisation_profiles + new fields (device count, user count, primary IT provider); becomes ''Start Here'' intake; feeds framework auto-scoping', true, NULL, NULL, '[]', 'completed')
+VALUES ('d9', 'dashboard_shell', 'Platform Dashboard Shell', 1, 3, 'Company Profile page --- consolidates organisation_profiles + new fields (device count, user count, primary IT provider); becomes ''Start Here'' intake; feeds framework auto-scoping', true, NULL, NULL, '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
@@ -54,79 +54,79 @@ VALUES ('d7', 'dashboard_shell', 'Platform Dashboard Shell', 1, 7, 'Per-org asse
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('d10', 'dashboard_shell', 'Platform Dashboard Shell', 1, 8, 'Browser back/forward navigation â€” clicking nav items pushes a URL hash state so back/forward buttons work correctly. Refreshing the page lands on the same section.', true, NULL, NULL, '[]', 'completed')
+VALUES ('d10', 'dashboard_shell', 'Platform Dashboard Shell', 1, 8, 'Browser back/forward navigation --- clicking nav items pushes a URL hash state so back/forward buttons work correctly. Refreshing the page lands on the same section.', true, NULL, NULL, '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('d8', 'dashboard_shell', 'Platform Dashboard Shell', 1, 9, 'Nav rebuild â€” topbar org switcher, user avatar dropdown, regrouped nav sections', true, NULL, NULL, '[]', 'completed')
+VALUES ('d8', 'dashboard_shell', 'Platform Dashboard Shell', 1, 9, 'Nav rebuild --- topbar org switcher, user avatar dropdown, regrouped nav sections', true, NULL, NULL, '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('d11', 'dashboard_shell', 'Platform Dashboard Shell', 1, 10, 'Dashboard top bar redesign â€” portfolio-aware 4-card stat bar replacing the static single-org view with live cross-org metrics', true, NULL, NULL, '[]', 'completed')
+VALUES ('d11', 'dashboard_shell', 'Platform Dashboard Shell', 1, 10, 'Dashboard top bar redesign --- portfolio-aware 4-card stat bar replacing the static single-org view with live cross-org metrics', true, NULL, NULL, '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('d16', 'dashboard_shell', 'Platform Dashboard Shell', 1, 11, 'Custom configurable dashboard â€” users select which modules appear as widgets, set display priority (1 = first), and choose 1Ã—/2Ã—/3Ã— column width on a 3-column CSS grid. Config persisted per org in organisation_profiles.dashboard_config (jsonb).', true, 'High', NULL, '[]', 'completed')
+VALUES ('d16', 'dashboard_shell', 'Platform Dashboard Shell', 1, 11, 'Custom configurable dashboard --- users select which modules appear as widgets, set display priority (1 = first), and choose 1--/2--/3-- column width on a 3-column CSS grid. Config persisted per org in organisation_profiles.dashboard_config (jsonb).', true, 'High', NULL, '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('d13', 'dashboard_shell', 'Platform Dashboard Shell', 1, 12, 'Home dashboard â€” hide assessment panels with no data: Assessments chicklet (CIS/Insurance/TechStack) only shows modules with at least one completed run; AI Readiness panel hidden entirely when no assessment exists', true, 'Medium', NULL, '[]', 'completed')
+VALUES ('d13', 'dashboard_shell', 'Platform Dashboard Shell', 1, 12, 'Home dashboard --- hide assessment panels with no data: Assessments chicklet (CIS/Insurance/TechStack) only shows modules with at least one completed run; AI Readiness panel hidden entirely when no assessment exists', true, 'Medium', NULL, '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('d14', 'dashboard_shell', 'Platform Dashboard Shell', 1, 13, 'Home dashboard â€” Missing Tools panel: dynamic gap-filtered list showing up to 5 tool types that are actually missing (not deployed) based on current assessments, in risk-priority order. Only shows tools identified as gaps.', true, 'Medium', NULL, '[]', 'completed')
+VALUES ('d14', 'dashboard_shell', 'Platform Dashboard Shell', 1, 13, 'Home dashboard --- Missing Tools panel: dynamic gap-filtered list showing up to 5 tool types that are actually missing (not deployed) based on current assessments, in risk-priority order. Only shows tools identified as gaps.', true, 'Medium', NULL, '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('d15', 'dashboard_shell', 'Platform Dashboard Shell', 1, 14, 'Assessments Hub redesign â€” 5-column chicklet grid replacing table view; individual assessment sidebar items removed (single ''Assessments'' nav item remains); M&A Due Diligence added to catalog', true, 'Medium', NULL, '[]', 'completed')
+VALUES ('d15', 'dashboard_shell', 'Platform Dashboard Shell', 1, 14, 'Assessments Hub redesign --- 5-column chicklet grid replacing table view; individual assessment sidebar items removed (single ''Assessments'' nav item remains); M&A Due Diligence added to catalog', true, 'Medium', NULL, '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('d12', 'dashboard_shell', 'Platform Dashboard Shell', 1, 15, 'Tier display rename â€” grandfather â†’ Group, father â†’ Company, child â†’ Entity; display layer only (DB values unchanged)', true, NULL, NULL, '[]', 'completed')
+VALUES ('d12', 'dashboard_shell', 'Platform Dashboard Shell', 1, 15, 'Tier display rename --- grandfather --- Group, father --- Company, child --- Entity; display layer only (DB values unchanged)', true, NULL, NULL, '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('s6', 'survey', 'Phase 1 â€” Survey Engine', 1, 0, 'Build CIS Controls v8 survey question set', true, NULL, NULL, '[]', 'completed')
+VALUES ('s6', 'survey', 'Phase 1 --- Survey Engine', 1, 0, 'Build CIS Controls v8 survey question set', true, NULL, NULL, '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('s6a', 'survey', 'Phase 1 â€” Survey Engine', 1, 1, 'Insurance Readiness Assessment: dual-weighted scoring (security + insurance premium impact)', true, NULL, NULL, '[]', 'completed')
+VALUES ('s6a', 'survey', 'Phase 1 --- Survey Engine', 1, 1, 'Insurance Readiness Assessment: dual-weighted scoring (security + insurance premium impact)', true, NULL, NULL, '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('s6b', 'survey', 'Phase 1 â€” Survey Engine', 1, 2, 'Accordion-style survey panels per category, inline scoring', true, NULL, NULL, '[]', 'completed')
+VALUES ('s6b', 'survey', 'Phase 1 --- Survey Engine', 1, 2, 'Accordion-style survey panels per category, inline scoring', true, NULL, NULL, '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('s6c', 'survey', 'Phase 1 â€” Survey Engine', 1, 3, 'Save & record score: each submission appends to org assessment history', true, NULL, NULL, '[]', 'completed')
+VALUES ('s6c', 'survey', 'Phase 1 --- Survey Engine', 1, 3, 'Save & record score: each submission appends to org assessment history', true, NULL, NULL, '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('s6d', 'survey', 'Phase 1 â€” Survey Engine', 1, 4, 'Trend line chart: score history per module per org', true, NULL, NULL, '[]', 'completed')
+VALUES ('s6d', 'survey', 'Phase 1 --- Survey Engine', 1, 4, 'Trend line chart: score history per module per org', true, NULL, NULL, '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('s6e', 'survey', 'Phase 1 â€” Survey Engine', 1, 5, 'Premium savings estimator: gap-based insurance cost reduction estimates', true, NULL, NULL, '[]', 'completed')
+VALUES ('s6e', 'survey', 'Phase 1 --- Survey Engine', 1, 5, 'Premium savings estimator: gap-based insurance cost reduction estimates', true, NULL, NULL, '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('ins_redesign', 'survey', 'Phase 1 â€” Survey Engine', 1, 6, 'Insurance Readiness UX redesign: CIS-style dashboard/form split with assessment history table, conducted-by + date fields, newest-first sorting, Edit from history, and view-router state machine', true, NULL, NULL, '[]', 'completed')
+VALUES ('ins_redesign', 'survey', 'Phase 1 --- Survey Engine', 1, 6, 'Insurance Readiness UX redesign: CIS-style dashboard/form split with assessment history table, conducted-by + date fields, newest-first sorting, Edit from history, and view-router state machine', true, NULL, NULL, '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('s7', 'survey', 'Phase 1 â€” Survey Engine', 1, 7, 'Weighted scoring per control / IG tier (CIS)', true, NULL, NULL, '[]', 'completed')
+VALUES ('s7', 'survey', 'Phase 1 --- Survey Engine', 1, 7, 'Weighted scoring per control / IG tier (CIS)', true, NULL, NULL, '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('s8', 'survey', 'Phase 1 â€” Survey Engine', 1, 8, 'Role-based survey routing (IT admin, exec, etc.)', false, NULL, NULL, '[]', 'add')
+VALUES ('s8', 'survey', 'Phase 1 --- Survey Engine', 1, 8, 'Role-based survey routing (IT admin, exec, etc.)', false, NULL, NULL, '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('s9', 'survey', 'Phase 1 â€” Survey Engine', 1, 9, 'Gap analysis output with remediation priorities', false, NULL, NULL, '[]', 'add')
+VALUES ('s9', 'survey', 'Phase 1 --- Survey Engine', 1, 9, 'Gap analysis output with remediation priorities', false, NULL, NULL, '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('s10', 'survey', 'Phase 1 â€” Survey Engine', 1, 10, 'Export: PDF scorecard report', false, NULL, NULL, '[]', 'add')
+VALUES ('s10', 'survey', 'Phase 1 --- Survey Engine', 1, 10, 'Export: PDF scorecard report', false, NULL, NULL, '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
@@ -150,7 +150,7 @@ VALUES ('ts5', 'technology_stack', 'Technology Stack Survey', 1, 4, 'Tool stack 
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('ts6', 'technology_stack', 'Technology Stack Survey', 1, 5, 'Optional category toggles (Cloud Security Posture, Application Security) â€” show only when client has cloud / SaaS scope', true, NULL, NULL, '[]', 'completed')
+VALUES ('ts6', 'technology_stack', 'Technology Stack Survey', 1, 5, 'Optional category toggles (Cloud Security Posture, Application Security) --- show only when client has cloud / SaaS scope', true, NULL, NULL, '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id=EXCLUDED.section_id, section_title=EXCLUDED.section_title, section_phase=EXCLUDED.section_phase, sort_order=EXCLUDED.sort_order, "text"=EXCLUDED."text", done=EXCLUDED.done, priority=EXCLUDED.priority, status=EXCLUDED.status, updated_at=now();
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
