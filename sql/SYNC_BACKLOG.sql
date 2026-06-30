@@ -5911,7 +5911,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('ex2', 'exercises_hub', 'Exercises Hub & Scoring', 3, 1, 'Dashboard exercises chicklet with SVG dial â€” Replaces link-only Exercises widget. SVG dial arc (0â€“100) shows average exercise_score across all completed sessions. Colour-banded: green â‰¥70, amber 40â€“69, red <40, grey = no data. Sessions run count, last exercise date. ''Start New'' CTA.', false, NULL, NULL, '[]', 'add')
+VALUES ('ex2', 'exercises_hub', 'Exercises Hub & Scoring', 3, 1, 'Dashboard exercises chicklet with SVG dial â€” Replaces link-only Exercises widget. SVG dial arc (0â€“100) shows average exercise_score across all completed sessions. Colour-banded: green â‰¥70, amber 40â€“69, red <40, grey = no data. Sessions run count, last exercise date. ''Start New'' CTA.', true, NULL, 'home.js: added _exDialSvg(avg, hasData) â€” pure SVG semicircle gauge (no canvas), 180Â° arc, color-banded green/amber/red/grey. Rewrote _widgetTabletop(h) to show dial with avg score, session count, last date, and ''Start New Exercise'' CTA button. Data logic unchanged (exCalcScore combines AI + op sessions). Loading state preserved.', '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,

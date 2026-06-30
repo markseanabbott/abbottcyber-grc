@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.6.0",
   "created": "2026-05-14",
-  "updated": "2026-06-30 (session 102)",
+  "updated": "2026-06-30 (session 103)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -2578,7 +2578,8 @@
         {
           "id": "ex2",
           "text": "Dashboard exercises chicklet with SVG dial — Replaces link-only Exercises widget. SVG dial arc (0–100) shows average exercise_score across all completed sessions. Colour-banded: green ≥70, amber 40–69, red <40, grey = no data. Sessions run count, last exercise date. 'Start New' CTA.",
-          "done": false
+          "done": true,
+          "notes": "home.js: added _exDialSvg(avg, hasData) — pure SVG semicircle gauge (no canvas), 180° arc, color-banded green/amber/red/grey. Rewrote _widgetTabletop(h) to show dial with avg score, session count, last date, and 'Start New Exercise' CTA button. Data logic unchanged (exCalcScore combines AI + op sessions). Loading state preserved."
         },
         {
           "id": "ex3",

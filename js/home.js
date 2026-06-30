@@ -555,6 +555,30 @@ function _widgetLink(def) {
   </div>`;
 }
 
+// SVG semicircle dial — avg score 0-100, colour-banded green/amber/red/grey
+function _exDialSvg(avg, hasData) {
+  const cx = 90, cy = 80, r = 58, sw = 12;
+  const color = !hasData ? '#cbd5e1'
+    : avg >= 70 ? '#15803d'
+    : avg >= 40 ? '#b45309'
+    : '#dc2626';
+  // Background track: left (180°) → right (0°) clockwise
+  const bgPath = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`;
+  let fillPath = '';
+  if (hasData && avg > 0) {
+    const endRad = Math.PI * (1 - Math.min(avg, 100) / 100);
+    const ex = +(cx + r * Math.cos(endRad)).toFixed(2);
+    const ey = +(cy - r * Math.sin(endRad)).toFixed(2);
+    fillPath = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${ex} ${ey}`;
+  }
+  return `<svg viewBox="0 0 180 98" width="158" height="86" style="display:block;margin:0 auto;overflow:visible">
+    <path d="${bgPath}" fill="none" stroke="#e5e7eb" stroke-width="${sw}" stroke-linecap="round"/>
+    ${fillPath ? `<path d="${fillPath}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round"/>` : ''}
+    <text x="${cx}" y="73" text-anchor="middle" font-size="28" font-weight="800" fill="${color}" font-family="monospace,sans-serif">${hasData ? avg : '—'}</text>
+    <text x="${cx}" y="87" text-anchor="middle" font-size="8" font-weight="700" fill="#94a3b8" letter-spacing="1" font-family="Inter,sans-serif">AVG SCORE</text>
+  </svg>`;
+}
+
 function _widgetTabletop(h) {
   const aiRuns     = h['ai_tabletop'] || [];
   const opSessions = exHubState?.opSessions ?? null;
@@ -573,45 +597,30 @@ function _widgetTabletop(h) {
       rows.push({ ...row, score: exCalcScore(row) });
     });
   }
-  rows.sort((a, b) => a.date.localeCompare(b.date)); // oldest→newest for sparkline
+  rows.sort((a, b) => a.date.localeCompare(b.date));
 
-  if (rows.length === 0) {
-    return `<div class="card" style="padding:0;overflow:hidden;cursor:pointer" onclick="setNav('exercises')" onmouseover="this.style.boxShadow='0 0 0 2px var(--cyan)'" onmouseout="this.style.boxShadow=''">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:.65rem .9rem .45rem;border-bottom:1px solid var(--border)">
-        <div style="font-size:12px;font-weight:700">🎯 Tabletop Exercises</div>
-        <span style="font-size:11px;color:var(--cyan);font-weight:700">Open →</span>
-      </div>
-      <div style="padding:1.25rem .9rem;text-align:center;color:var(--muted);font-size:12px">
-        ${loading ? `<div class="spinner" style="border-color:rgba(21,33,104,.2);border-top-color:var(--navy);width:14px;height:14px;margin:0 auto .4rem"></div>Loading…` : '<div style="font-size:1.25rem;margin-bottom:.3rem">🎯</div>No exercises yet — click to start'}
-      </div>
-    </div>`;
-  }
-
-  const latestRow   = rows[rows.length - 1];
-  const latestGrade = exGrade(latestRow.score);
-  const avgScore    = Math.round(rows.reduce((s, r) => s + r.score, 0) / rows.length);
-  const chronoScores = rows.map(r => r.score);
-  const delta = rows.length >= 2
-    ? (() => { const d = rows[rows.length-1].score - rows[rows.length-2].score; return `<span style="font-size:10px;font-weight:700;color:${d >= 0 ? '#15803d' : '#dc2626'}">${d >= 0 ? '▲' : '▼'}${Math.abs(d)}</span>`; })()
-    : '';
+  const hasData  = rows.length > 0;
+  const avgScore = hasData ? Math.round(rows.reduce((s, r) => s + r.score, 0) / rows.length) : null;
+  const lastDate = hasData ? rows[rows.length - 1].date : null;
 
   return `<div class="card" style="padding:0;overflow:hidden;cursor:pointer" onclick="setNav('exercises')" onmouseover="this.style.boxShadow='0 0 0 2px var(--cyan)'" onmouseout="this.style.boxShadow=''">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:.65rem .9rem .45rem;border-bottom:1px solid var(--border)">
       <div style="font-size:12px;font-weight:700">🎯 Tabletop Exercises</div>
       <span style="font-size:11px;color:var(--cyan);font-weight:700">Open →</span>
     </div>
-    <div style="padding:.7rem .9rem">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem">
-        <div style="display:flex;align-items:baseline;gap:.35rem">
-          <span style="font-size:1.85rem;font-weight:800;color:${latestGrade.color};font-family:monospace;line-height:1">${latestGrade.letter}</span>
-          <span style="font-size:11px;font-weight:700;color:${latestGrade.color}">${latestRow.score}%</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:.35rem">
-          ${delta}
-          ${rows.length >= 2 ? `<canvas id="wd-trend-tabletop" width="60" height="24" data-scores='${JSON.stringify(chronoScores)}' style="flex-shrink:0"></canvas>` : ''}
-        </div>
+    <div style="padding:.5rem .9rem .2rem">
+      ${loading && !hasData
+        ? `<div style="text-align:center;padding:2rem 0;color:var(--muted);font-size:12px"><div class="spinner" style="border-color:rgba(21,33,104,.2);border-top-color:var(--navy);width:14px;height:14px;margin:0 auto .5rem"></div>Loading…</div>`
+        : _exDialSvg(avgScore, hasData)
+      }
+      <div style="text-align:center;margin:.1rem 0 .35rem;font-size:10px;color:var(--muted)">
+        ${hasData
+          ? `${rows.length} session${rows.length !== 1 ? 's' : ''} · Last: ${lastDate || '—'}`
+          : 'No exercises yet'}
       </div>
-      <div style="font-size:10px;color:var(--muted)">${rows.length} exercise${rows.length !== 1 ? 's' : ''} · Avg: ${avgScore}%</div>
+    </div>
+    <div style="padding:.3rem .9rem .65rem">
+      <button class="btn btn-cyan btn-sm" style="width:100%;font-size:11px" onclick="event.stopPropagation();setNav('tabletop')">▶ Start New Exercise</button>
     </div>
   </div>`;
 }
