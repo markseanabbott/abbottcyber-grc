@@ -2299,6 +2299,40 @@ async function ttDeleteActionItem(id) {
   } catch(e) { toast('Delete failed — ' + e.message, '#dc2626'); }
 }
 
+async function ttPushToRiskRegister(id) {
+  const item = (ttState.actionItems || []).find(i => i.id === id);
+  if (!item) return;
+  const scenario = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
+  const scenarioTitle = (scenario && scenario.title) || 'Tabletop Exercise';
+  const injectRef = (item.source_inject_idx !== null && item.source_inject_idx !== undefined && scenario)
+    ? `Inject ${item.source_inject_idx + 1}: ${scenario.injects[item.source_inject_idx]?.title || ''}.`
+    : '';
+  const desc = [item.notes, `Identified during tabletop exercise: ${scenarioTitle}.`, injectRef]
+    .filter(Boolean).join(' ');
+  try {
+    const result = await sb.riskRegister.add({
+      org_id:               currentOrg.id,
+      source:               'tabletop',
+      risk_title:           item.description,
+      risk_description:     desc,
+      inherent_risk_rating: item.priority,
+      risk_owner:           item.owner || null,
+      due_date:             item.due_date || null,
+      risk_status:          'Open',
+    });
+    const rrRow = Array.isArray(result) ? result[0] : result;
+    await sb.tt.updateActionItem(id, {
+      pushed_to_rr: true,
+      rr_entry_id:  rrRow?.id || null,
+      updated_at:   new Date().toISOString(),
+    });
+    auditLog('tabletop_action_item_pushed_to_rr', { id, rr_entry_id: rrRow?.id });
+    toast('Added to risk register', '#15803d');
+    ttState.actionItems = null;
+    await ttLoadActionItems();
+  } catch(e) { toast('Push failed — ' + e.message, '#dc2626'); }
+}
+
 async function ttCycleActionStatus(id, current) {
   const next = { open: 'in_progress', in_progress: 'closed', closed: 'open' }[current] || 'open';
   try {
@@ -2416,25 +2450,33 @@ function ttRenderActionItems() {
 
   // Item rows
   const itemRowsHtml = sorted.length ? sorted.map(item => {
+    const pushed = !!item.pushed_to_rr;
     const injectLabel = item.source_inject_idx !== null && item.source_inject_idx !== undefined && scenario
       ? ` <span style="color:var(--muted);font-weight:400"> — Inject ${item.source_inject_idx + 1}</span>` : '';
     const dueDate = item.due_date ? new Date(item.due_date + 'T00:00:00').toLocaleDateString() : null;
-    const overdue = item.due_date && item.status !== 'closed' && new Date(item.due_date + 'T00:00:00') < new Date();
-    return `<div style="border:1px solid var(--border);border-left:4px solid ${PRIO_COLOR[item.priority] || 'var(--muted)'};border-radius:6px;padding:.65rem .75rem;margin-bottom:.4rem">
+    const overdue = !pushed && item.due_date && item.status !== 'closed' && new Date(item.due_date + 'T00:00:00') < new Date();
+    const borderColor = pushed ? '#d1d5db' : (PRIO_COLOR[item.priority] || 'var(--muted)');
+    return `<div style="border:1px solid var(--border);border-left:4px solid ${borderColor};border-radius:6px;padding:.65rem .75rem;margin-bottom:.4rem;${pushed ? 'opacity:.45;' : ''}">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem">
         <div style="flex:1;min-width:0">
           <div style="font-size:12px;font-weight:600;color:var(--text);line-height:1.4;margin-bottom:.3rem">${item.description}${injectLabel}</div>
           <div style="display:flex;flex-wrap:wrap;gap:.3rem;align-items:center">
-            <span style="font-size:10px;font-weight:700;color:${PRIO_COLOR[item.priority]};padding:1px 7px;border:1px solid ${PRIO_COLOR[item.priority]};border-radius:4px">${item.priority}</span>
-            <button onclick="ttCycleActionStatus('${item.id}','${item.status}')" style="font-size:10px;font-weight:600;color:${STAT_COLOR[item.status]};padding:1px 7px;border:1px solid ${STAT_COLOR[item.status]};border-radius:4px;background:none;cursor:pointer;font-family:inherit">${STAT_LABEL[item.status]} ↻</button>
+            ${pushed
+              ? `<span style="font-size:10px;font-weight:700;color:#15803d;padding:1px 8px;border:1px solid #15803d;border-radius:4px;background:#dcfce7">&#x2713; In Risk Register</span>`
+              : `<span style="font-size:10px;font-weight:700;color:${PRIO_COLOR[item.priority]};padding:1px 7px;border:1px solid ${PRIO_COLOR[item.priority]};border-radius:4px">${item.priority}</span>
+                 <button onclick="ttCycleActionStatus('${item.id}','${item.status}')" style="font-size:10px;font-weight:600;color:${STAT_COLOR[item.status]};padding:1px 7px;border:1px solid ${STAT_COLOR[item.status]};border-radius:4px;background:none;cursor:pointer;font-family:inherit">${STAT_LABEL[item.status]} ↻</button>`
+            }
             ${item.owner ? `<span style="font-size:10px;color:var(--muted)">&#x1F464; ${item.owner}</span>` : ''}
             ${dueDate ? `<span style="font-size:10px;color:${overdue ? '#dc2626' : 'var(--muted)'}">&#x1F4C5; ${dueDate}${overdue ? ' — Overdue' : ''}</span>` : ''}
           </div>
           ${item.notes ? `<div style="font-size:11px;color:var(--muted);margin-top:.3rem;font-style:italic">${item.notes}</div>` : ''}
         </div>
         <div style="display:flex;gap:.3rem;flex-shrink:0">
-          <button class="btn btn-outline btn-sm" onclick="ttEditActionItem('${item.id}')" style="font-size:11px;padding:.2rem .5rem">Edit</button>
-          <button class="btn btn-red btn-sm" onclick="ttDeleteActionItem('${item.id}')" style="font-size:11px;padding:.2rem .5rem">&#x1F5D1;</button>
+          ${pushed ? '' : `
+            <button class="btn btn-cyan btn-sm" onclick="ttPushToRiskRegister('${item.id}')" style="font-size:11px;padding:.2rem .6rem" title="Add to risk register">&#x2192; Risk Register</button>
+            <button class="btn btn-outline btn-sm" onclick="ttEditActionItem('${item.id}')" style="font-size:11px;padding:.2rem .5rem">Edit</button>
+            <button class="btn btn-red btn-sm" onclick="ttDeleteActionItem('${item.id}')" style="font-size:11px;padding:.2rem .5rem">&#x1F5D1;</button>
+          `}
         </div>
       </div>
     </div>`;
@@ -2782,4 +2824,5 @@ window.ttEditActionItem = ttEditActionItem;
 window.ttSaveActionItem = ttSaveActionItem;
 window.ttDeleteActionItem = ttDeleteActionItem;
 window.ttCycleActionStatus = ttCycleActionStatus;
+window.ttPushToRiskRegister = ttPushToRiskRegister;
 
