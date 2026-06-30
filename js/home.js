@@ -534,25 +534,22 @@ function _widgetLink(def) {
   </div>`;
 }
 
-// Mini SVG semicircle dial for a single exercise — colour-banded green/amber/red/grey
-function _exMiniDialSvg(score, hasData) {
-  const cx = 26, cy = 28, r = 20, sw = 5;
-  const color = !hasData ? '#cbd5e1'
-    : score >= 70 ? '#15803d'
-    : score >= 40 ? '#b45309'
-    : '#dc2626';
+// Small inline SVG dial for a list-row — colour-banded, score inside
+function _exRowDialSvg(score) {
+  const cx = 20, cy = 20, r = 15, sw = 4;
+  const color = score >= 70 ? '#15803d' : score >= 40 ? '#b45309' : '#dc2626';
   const bgPath = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`;
   let fillPath = '';
-  if (hasData && score > 0) {
+  if (score > 0) {
     const endRad = Math.PI * (1 - Math.min(score, 100) / 100);
     const ex = +(cx + r * Math.cos(endRad)).toFixed(2);
     const ey = +(cy - r * Math.sin(endRad)).toFixed(2);
     fillPath = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${ex} ${ey}`;
   }
-  return `<svg viewBox="0 0 52 32" width="52" height="32" style="display:block;margin:0 auto;overflow:visible">
+  return `<svg viewBox="0 0 40 24" width="40" height="24" style="display:block;flex-shrink:0;overflow:visible">
     <path d="${bgPath}" fill="none" stroke="#e5e7eb" stroke-width="${sw}" stroke-linecap="round"/>
     ${fillPath ? `<path d="${fillPath}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round"/>` : ''}
-    <text x="${cx}" y="25" text-anchor="middle" font-size="11" font-weight="800" fill="${color}" font-family="monospace,sans-serif">${hasData ? score : '—'}</text>
+    <text x="${cx}" y="18" text-anchor="middle" font-size="8" font-weight="800" fill="${color}" font-family="monospace,sans-serif">${score}</text>
   </svg>`;
 }
 
@@ -573,31 +570,34 @@ function _widgetTabletop(h) {
   const rows = [];
   aiRuns.forEach(r => {
     const a = r.answers || {};
-    const row = { type: 'ai', date: r.date || r.assessed_at || '', injectCount: Object.keys(a.injectNotes || {}).length, discussionCount: Object.keys(a.discussionNotes || {}).length, notifCount: Object.values(a.notifChecks || {}).filter(Boolean).length, breach: null, severity: null };
+    const row = { type: 'ai', title: 'AI Governance', date: r.date || r.assessed_at || '', injectCount: Object.keys(a.injectNotes || {}).length, discussionCount: Object.keys(a.discussionNotes || {}).length, notifCount: Object.values(a.notifChecks || {}).filter(Boolean).length, breach: null, severity: null };
     rows.push({ ...row, score: exCalcScore(row) });
   });
   if (opSessions) {
     opSessions.forEach(s => {
       const log = Array.isArray(s.exercise_log) ? s.exercise_log : [];
-      const row = { type: 'op', date: s.created_at ? s.created_at.substring(0, 10) : '', injectCount: log.length, discussionCount: null, notifCount: null, breach: s.breach_declared, severity: s.tl_severity || '—', rubric_scores: s.rubric_scores || null };
+      const row = { type: 'op', title: s.scenario_title || 'Operational', date: s.created_at ? s.created_at.substring(0, 10) : '', injectCount: log.length, discussionCount: null, notifCount: null, breach: s.breach_declared, severity: s.tl_severity || '—', rubric_scores: s.rubric_scores || null };
       rows.push({ ...row, score: exCalcScore(row) });
     });
   }
   rows.sort((a, b) => b.date.localeCompare(a.date)); // newest first
 
   const hasData = rows.length > 0;
-  // Always render 4 slots; pad with nulls if fewer than 4 sessions
-  const slots = [rows[0] || null, rows[1] || null, rows[2] || null, rows[3] || null];
+  const recent  = rows.slice(0, 4);
 
-  const dialsHtml = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.25rem;padding:.55rem .75rem .2rem">
-    ${slots.map(r => `<div style="text-align:center">
-      ${_exMiniDialSvg(r ? r.score : null, !!r)}
-      <div style="font-size:9px;color:${r ? 'var(--muted)' : '#e5e7eb'};margin-top:1px;line-height:1.2">${r ? _ttShortDate(r.date) : '·'}</div>
-    </div>`).join('')}
-  </div>
-  <div style="text-align:center;margin:.1rem 0 .35rem;font-size:10px;color:var(--muted)">
-    ${hasData ? `${rows.length} session${rows.length !== 1 ? 's' : ''} total` : 'No exercises yet'}
-  </div>`;
+  const listHtml = hasData
+    ? recent.map((r, i) => {
+        const scoreColor = r.score >= 70 ? '#15803d' : r.score >= 40 ? '#b45309' : '#dc2626';
+        return `<div style="display:flex;align-items:center;gap:.65rem;padding:.4rem .9rem;${i < recent.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH(r.title)}</div>
+            <div style="font-size:10px;color:var(--muted)">${_ttShortDate(r.date)}</div>
+          </div>
+          ${_exRowDialSvg(r.score)}
+          <span style="font-size:13px;font-weight:800;color:${scoreColor};min-width:32px;text-align:right">${r.score}%</span>
+        </div>`;
+      }).join('')
+    : `<div style="padding:1.25rem .9rem;text-align:center;color:var(--muted);font-size:12px">No exercises yet</div>`;
 
   return `<div class="card" style="padding:0;overflow:hidden;cursor:pointer" onclick="setNav('exercises')" onmouseover="this.style.boxShadow='0 0 0 2px var(--cyan)'" onmouseout="this.style.boxShadow=''">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:.65rem .9rem .45rem;border-bottom:1px solid var(--border)">
@@ -606,8 +606,9 @@ function _widgetTabletop(h) {
     </div>
     ${loading && !hasData
       ? `<div style="text-align:center;padding:2rem 0;color:var(--muted);font-size:12px"><div class="spinner" style="border-color:rgba(21,33,104,.2);border-top-color:var(--navy);width:14px;height:14px;margin:0 auto .5rem"></div>Loading…</div>`
-      : dialsHtml
+      : listHtml
     }
+    ${hasData ? `<div style="padding:.2rem .9rem .1rem;text-align:center;font-size:10px;color:var(--muted)">${rows.length} session${rows.length !== 1 ? 's' : ''} total</div>` : ''}
     <div style="padding:.3rem .9rem .65rem">
       <button class="btn btn-cyan btn-sm" style="width:100%;font-size:11px" onclick="event.stopPropagation();setNav('tabletop')">▶ Start New Exercise</button>
     </div>
