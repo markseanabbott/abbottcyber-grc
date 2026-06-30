@@ -1759,6 +1759,127 @@ async function ttSaveRubric() {
   } catch (e) { toast('Could not save rubric — ' + e.message, '#dc2626'); }
 }
 
+// ---- MITRE ATT&CK Path Map ----
+function ttRenderMitrePath() {
+  const scenario = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
+  if (!scenario || !scenario.injects || scenario.injects.length === 0) return '';
+
+  const injectPath = tteState.injectPath || [];
+
+  // For sessions without path data, show a placeholder
+  if (injectPath.length === 0) {
+    return `<div class="card">
+      <div class="card-title">&#x2694;&#xFE0F; MITRE ATT&CK Path Map</div>
+      <div style="font-size:12px;color:var(--muted);padding:.5rem 0">Path data is not available for this session. Path tracking was added in a later platform version — future sessions will display the full attack chain here.</div>
+    </div>`;
+  }
+
+  // Build the ordered sequence of inject indices the team visited
+  const displayPath = injectPath.map(p => p.index);
+  const lastStep = injectPath[injectPath.length - 1];
+  const lastInj = scenario.injects[lastStep.index];
+  const lastBranch = lastInj && lastInj.branches
+    ? (lastInj.branches.find(b => b.id === lastStep.branchTaken) || lastInj.branches[0])
+    : null;
+  if (lastBranch && lastBranch.next_index != null) displayPath.push(lastBranch.next_index);
+
+  const visitedSet = new Set(displayPath);
+  const branchTakenMap = {};
+  injectPath.forEach(p => { branchTakenMap[p.index] = p.branchTaken; });
+
+  // Avoided: alternative branches from visited injects that pointed to unvisited injects
+  const avoidedSet = new Set();
+  displayPath.forEach(idx => {
+    const inj = scenario.injects[idx];
+    if (!inj || !inj.branches) return;
+    const taken = branchTakenMap[idx];
+    inj.branches.forEach(b => {
+      if (b.id !== taken && b.next_index != null && !visitedSet.has(b.next_index)) avoidedSet.add(b.next_index);
+    });
+  });
+
+  // Unreached: not visited and not an avoided branch target
+  const unreachedIndices = scenario.injects.map((_, i) => i).filter(i => !visitedSet.has(i) && !avoidedSet.has(i));
+
+  function nodeCard(idx, type, stepNum) {
+    const inj = scenario.injects[idx];
+    if (!inj) return '';
+    const mitre = inj.mitre || {};
+    const nist = TT_NIST_PHASES[inj.phaseIdx] || '';
+    const takenBranchId = branchTakenMap[idx];
+    const takenBranch = inj.branches && takenBranchId ? inj.branches.find(b => b.id === takenBranchId) : null;
+
+    if (type === 'taken') {
+      return `<div style="width:185px;background:#eef8ff;border:2px solid var(--cyan);border-radius:10px;padding:.75rem;box-shadow:0 2px 8px rgba(7,180,217,.12);flex-shrink:0">
+        <div style="font-size:10px;font-weight:700;color:var(--cyan);text-transform:uppercase;margin-bottom:.3rem;letter-spacing:.05em">Step ${stepNum} &nbsp;&#x2713; Taken</div>
+        <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:.5rem;line-height:1.35">${inj.title}</div>
+        ${mitre.tactic ? `<div style="font-size:10px;font-weight:700;color:var(--navy);background:rgba(21,33,104,.1);padding:2px 7px;border-radius:4px;margin-bottom:.25rem;display:inline-block">${mitre.tactic}</div>` : ''}
+        ${mitre.technique ? `<div style="font-size:10px;color:var(--muted);margin-top:.2rem;margin-bottom:.35rem">${mitre.technique}</div>` : ''}
+        ${nist ? `<div style="font-size:10px;color:var(--muted);border-top:1px solid rgba(7,180,217,.25);padding-top:.3rem;margin-top:.25rem">NIST: ${nist}</div>` : ''}
+        ${takenBranch && takenBranch.label !== 'Continue →' ? `<div style="font-size:10px;color:var(--cyan);margin-top:.3rem;font-weight:600">&#x2192; ${takenBranch.label}</div>` : ''}
+      </div>`;
+    }
+    if (type === 'avoided') {
+      return `<div style="width:185px;background:var(--card);border:1.5px dashed var(--border);border-radius:10px;padding:.6rem .75rem;opacity:.6;margin-top:.4rem;flex-shrink:0">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:.25rem">&#x2717; Not taken</div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.3;margin-bottom:.3rem">${inj.title}</div>
+        ${mitre.tactic ? `<div style="font-size:10px;color:var(--muted)">${mitre.tactic}</div>` : ''}
+      </div>`;
+    }
+    // unreached
+    return `<div style="width:165px;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:.6rem .75rem;opacity:.45">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:.25rem">&#x2205; Not reached</div>
+      <div style="font-size:11px;color:var(--muted);line-height:1.3;margin-bottom:.3rem">${inj.title}</div>
+      ${mitre.tactic ? `<div style="font-size:10px;color:var(--muted)">${mitre.tactic}</div>` : ''}
+    </div>`;
+  }
+
+  const arrow = `<div style="display:flex;align-items:center;padding:0 .15rem;margin-top:1.25rem;flex-shrink:0">
+    <div style="width:24px;height:2px;background:linear-gradient(90deg,var(--cyan),var(--navy));position:relative">
+      <div style="position:absolute;right:-7px;top:-5px;color:var(--navy);font-size:16px;line-height:1">&#x203A;</div>
+    </div>
+  </div>`;
+
+  // Build columns: taken node + any avoided alternatives stacked below it
+  const columns = displayPath.map((idx, i) => {
+    const inj = scenario.injects[idx];
+    if (!inj) return '';
+    const taken = branchTakenMap[idx];
+    const avoidedFromHere = [];
+    if (inj.branches) {
+      inj.branches.forEach(b => {
+        if (b.id !== taken && b.next_index != null && avoidedSet.has(b.next_index)) avoidedFromHere.push(b.next_index);
+      });
+    }
+    return `<div style="display:flex;flex-direction:column;align-items:flex-start;flex-shrink:0">
+      ${nodeCard(idx, 'taken', i + 1)}
+      ${avoidedFromHere.map(ai => nodeCard(ai, 'avoided', 0)).join('')}
+    </div>`;
+  });
+
+  const pathRow = columns.reduce((acc, col, i) => i === 0 ? col : acc + arrow + col, '');
+
+  const unreachedSection = unreachedIndices.length === 0 ? '' : `
+    <div style="margin-top:1rem;padding-top:.75rem;border-top:1px solid var(--border)">
+      <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:.5rem">&#x26A0;&#xFE0F; Paths Not Explored During This Exercise</div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">${unreachedIndices.map(i => nodeCard(i, 'unreached', 0)).join('')}</div>
+    </div>`;
+
+  return `<div class="card">
+    <div class="card-title">&#x2694;&#xFE0F; MITRE ATT&CK Path Map</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:1rem">
+      Attack chain as it unfolded during this exercise. &nbsp;
+      <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;border:2px solid var(--cyan);background:#eef8ff;display:inline-block"></span> Path taken</span> &nbsp;
+      <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;border:1.5px dashed var(--border);display:inline-block;opacity:.6"></span> Branch avoided</span> &nbsp;
+      <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;border:1.5px solid var(--border);background:var(--bg);display:inline-block;opacity:.45"></span> Not reached</span>
+    </div>
+    <div style="overflow-x:auto;padding-bottom:.5rem;-webkit-overflow-scrolling:touch">
+      <div style="display:flex;align-items:flex-start;gap:0;min-width:max-content">${pathRow}</div>
+    </div>
+    ${unreachedSection}
+  </div>`;
+}
+
 // ---- AAR ----
 function ttRenderAAR() {
   const scenario = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
@@ -1788,6 +1909,8 @@ function ttRenderAAR() {
     <div class="sm-card"><div class="sm-val">${injectsAnswered}/${totalInjects}</div><div class="sm-lbl">Injects answered</div></div>
     <div class="sm-card"><div class="sm-val">${notifChecked}/${TT_NOTIF_ITEMS.length}</div><div class="sm-lbl">Notifs filed</div></div>
   </div>
+
+  ${ttRenderMitrePath()}
 
   <div class="card">
     <div class="card-title">Step 0 — Declaration accuracy</div>

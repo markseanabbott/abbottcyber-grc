@@ -828,6 +828,10 @@ async function slViewAAR(sessionId) {
     });
 
     tteInitEngine(scenario, 'local');
+    // Restore the path the team actually took so the MITRE path map renders correctly
+    if (Array.isArray(session.inject_path) && session.inject_path.length > 0) {
+      tteState.injectPath = session.inject_path;
+    }
 
     activeNav = 'tabletop';
     if (typeof buildNav === 'function') buildNav();

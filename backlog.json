@@ -1713,6 +1713,21 @@
           "done": true
         },
         {
+          "id": "tt_aar_mitre_1",
+          "title": "MITRE ATT&CK path map in AAR",
+          "text": "Static visual rendered at session end showing the full scenario branch tree with the path the team actually took highlighted. Taken nodes in cyan, avoided branches dimmed/dashed, unreached nodes grayed. Built from inject_path on tabletop_sessions and MITRE tactic/technique tags on each inject node.",
+          "done": true,
+          "priority": "High",
+          "notes": "Session 93: ttRenderMitrePath() in js/tabletop.js. Builds displayPath from tteState.injectPath — ordered sequence of inject indices visited, including final inject derived from last branch taken. Classifies each inject as taken/avoided/unreached. Renders horizontal scroll row of node cards (185px each, cyan border for taken, dashed for avoided, gray for unreached), with arrow connectors. Avoided branches stacked below their parent node. Unreached section appended if any nodes were never accessible. slViewAAR() in scenario_library.js updated to restore tteState.injectPath from session.inject_path after tteInitEngine() so readonly AAR shows correct path. Called from ttRenderAAR() after summary metrics."
+        },
+        {
+          "id": "tt_aar_mitre_2",
+          "title": "MITRE ATT&CK path playback",
+          "text": "Step-through replay of the session — each inject lights up on the MITRE tactic timeline in sequence. Facilitator or client steps forward and backward inject by inject during debrief. Shows inject delivered, branch taken, and MITRE technique triggered. Built entirely from existing session data.",
+          "done": false,
+          "priority": "Medium"
+        },
+        {
           "id": "t34a",
           "text": "IR plan comparison — automated: upload ratified IR plan document and auto-compare against exercise event log",
           "done": false,
