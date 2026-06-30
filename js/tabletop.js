@@ -3295,7 +3295,7 @@ function ttRenderAAR() {
       <div class="aar-log-item">
         <div>${new Date(e.ts).toLocaleTimeString()}</div>
         <div style="color:var(--muted);text-transform:uppercase;font-size:10px;letter-spacing:0.06em">${e.type}</div>
-        <div>${typeof e.detail === 'object' ? JSON.stringify(e.detail) : (e.detail || '')}</div>
+        <div>${ttFmtLogDetail(e.type, e.detail)}</div>
       </div>`).join('') : '<div style="font-size:12px;color:var(--muted)">No log entries.</div>'}
   </div>
 
@@ -3491,7 +3491,7 @@ function ttRenderHistoryAAR() {
       // Handle both seed format {time, role, action} and live format {ts, type, detail}
       const timeStr = e.time || (e.ts ? new Date(e.ts).toLocaleTimeString() : '—');
       const roleStr = e.role || e.type || '';
-      const actionStr = e.action || (typeof e.detail === 'object' ? JSON.stringify(e.detail) : (e.detail || ''));
+      const actionStr = e.action || ttFmtLogDetail(e.type || e.role, e.detail);
       return `<div class="aar-log-item">
         <div style="font-weight:600;white-space:nowrap">${timeStr}</div>
         <div style="color:var(--muted);text-transform:uppercase;font-size:10px;letter-spacing:0.06em;white-space:nowrap">${roleStr}</div>
@@ -3501,6 +3501,39 @@ function ttRenderHistoryAAR() {
   </div>
 
   ${ttRenderIrpSection(s.id, s.ir_comparison || null, false)}`;
+}
+
+// ---- Event log formatting ----
+function ttFmtLogDetail(type, detail) {
+  const d = (typeof detail === 'object' && detail !== null) ? detail : {};
+  const NOTIF_LABELS = {
+    carrier:  'Cyber insurance carrier',
+    counsel:  'Outside cyber counsel',
+    irfirm:   'Forensic IR firm',
+    le:       'Law enforcement (FBI / IC3)',
+    opc:      'FTC (federal privacy)',
+    oipc:     'State Attorney General',
+    pci:      'Card networks (PCI DSS)',
+    affected: 'Affected individuals notification',
+  };
+  switch ((type || '').toLowerCase()) {
+    case 'session_created':
+      return `Started — ${d.scenario || ''}${d.facilitator ? ' · Facilitator: ' + d.facilitator : ''}${d.code ? ' · Code: ' + d.code : ''}`;
+    case 'declaration':
+      return `TL called ${d.severity || '—'} · ${d.declare ? 'Recommend Declare' : 'Recommend Monitor'}`;
+    case 'inject_responses_saved':
+      return `Inject ${(d.inject != null ? d.inject : d.inject_index) != null ? (d.inject != null ? d.inject : d.inject_index) + 1 : '—'} responses saved${d.branch ? ' (branch: ' + d.branch + ')' : ''}`;
+    case 'breach_declared':
+      return `Breach declared${d.rationale ? ' — ' + d.rationale : ''}`;
+    case 'notif_toggle':
+      return `${d.checked ? '✓ Filed' : '✗ Unfiled'}: ${NOTIF_LABELS[d.item] || d.item || '—'}`;
+    case 'exercise_complete':
+      return `Exercise completed — ${d.totalInjects || '—'} injects${d.exercise_score != null ? ' · Score: ' + d.exercise_score + '/100' : ''}`;
+    case 'rubric_scored':
+      return `Facilitator rubric scored — ${d.grade || '—'}${d.pct != null ? ' (' + d.pct + '%)' : ''}`;
+    default:
+      return typeof detail === 'object' ? JSON.stringify(detail) : (detail || '');
+  }
 }
 
 // ---- IR Plan Comparison ----
