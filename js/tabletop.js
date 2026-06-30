@@ -2961,11 +2961,12 @@ function ttRenderActionItems() {
   </div>`;
 }
 
-// ---- AAR ----
-function ttRenderAAR() {
+// ---- EXERCISE SCORING ----
+function ttComputeExerciseScore() {
   const scenario = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
-  const totalInjects = scenario.injects.length;
-  const injectsAnswered = Object.keys(ttState.responses).length;
+  if (!scenario) return { total: 0, critScore: 0, declScore: 0, phaseScore: 0, notifScore: 0, critCorrect: 0, critTotal: 0, phasesHit: 0, phasesTotal: 0, notifChecked: 0, notifTotal: TT_NOTIF_ITEMS.length };
+
+  // (1) Criticality accuracy — 35%
   let critTotal = 0, critCorrect = 0;
   scenario.injects.forEach((inj, idx) => {
     const r = ttState.responses[idx] || {};
@@ -2974,21 +2975,73 @@ function ttRenderAAR() {
       if (cr) { critTotal++; if (cr === inj.correctCriticality) critCorrect++; }
     });
   });
-  const critAccPct = critTotal ? Math.round(critCorrect / critTotal * 100) : 0;
+  const critScore = critTotal ? (critCorrect / critTotal) * 100 : 0;
+
+  // (2) Breach declaration quality — 30% (severity 15pt + declare/monitor 15pt)
   const sevMatch = ttState.declaration.severity === scenario.declaration.correctSeverity;
   const declMatch = ttState.declaration.declare === scenario.declaration.correctDeclare;
+  const declScore = ((sevMatch ? 1 : 0) + (declMatch ? 1 : 0)) * 50;
+
+  // (3) IR phase coverage — 20%
+  const phasesInScenario = new Set(scenario.injects.map(inj => inj.phaseIdx));
+  const phasesWithResponses = new Set(
+    scenario.injects
+      .filter((inj, idx) => {
+        const r = ttState.responses[idx] || {};
+        return TT_ROLES.some(role => r[role.id] && (r[role.id].text || r[role.id].criticality));
+      })
+      .map(inj => inj.phaseIdx)
+  );
+  const phaseScore = phasesInScenario.size > 0
+    ? (phasesWithResponses.size / phasesInScenario.size) * 100 : 100;
+
+  // (4) Insurer notification completeness — 15%
   const notifChecked = Object.values(ttState.notifChecks).filter(n => n.checked).length;
-  // Composite score: severity match (25) + declare match (25) + criticality accuracy (50)
-  const score = Math.round((sevMatch ? 25 : 0) + (declMatch ? 25 : 0) + (critAccPct * 0.5));
+  const notifScore = TT_NOTIF_ITEMS.length > 0
+    ? (notifChecked / TT_NOTIF_ITEMS.length) * 100 : 100;
+
+  const total = Math.max(0, Math.min(100, Math.round(
+    critScore * 0.35 + declScore * 0.30 + phaseScore * 0.20 + notifScore * 0.15
+  )));
+  return { total, critScore: Math.round(critScore), declScore: Math.round(declScore), phaseScore: Math.round(phaseScore), notifScore: Math.round(notifScore), critCorrect, critTotal, phasesHit: phasesWithResponses.size, phasesTotal: phasesInScenario.size, notifChecked, notifTotal: TT_NOTIF_ITEMS.length };
+}
+
+function ttScoreColor(score) {
+  return score >= 70 ? '#15803d' : score >= 40 ? '#d97706' : '#dc2626';
+}
+
+// ---- AAR ----
+function ttRenderAAR() {
+  const scenario = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
+  const totalInjects = scenario.injects.length;
+  const injectsAnswered = Object.keys(ttState.responses).length;
+  const sc = ttComputeExerciseScore();
+  const scoreCol = ttScoreColor(sc.total);
   return `${renderTierBanner()}
   ${ttHeaderBar()}
   <div style="font-size:17px;font-weight:700;margin-bottom:0.85rem">&#x1F4C4; After Action Report — ${scenario.title}</div>
+
+  <div class="card" style="margin-bottom:1rem;border-left:4px solid ${scoreCol}">
+    <div style="display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap">
+      <div style="text-align:center;min-width:72px">
+        <div style="font-size:40px;font-weight:800;color:${scoreCol};line-height:1">${sc.total}</div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-top:2px">Exercise score</div>
+      </div>
+      <div style="flex:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">
+        <div style="font-size:12px"><span style="color:var(--muted)">Criticality accuracy</span><br/><b style="color:${ttScoreColor(sc.critScore)}">${sc.critScore}%</b> <span style="color:var(--muted);font-size:10px">(${sc.critCorrect}/${sc.critTotal} ratings)</span> <span style="color:var(--muted);font-size:10px">· 35% weight</span></div>
+        <div style="font-size:12px"><span style="color:var(--muted)">Declaration quality</span><br/><b style="color:${ttScoreColor(sc.declScore)}">${sc.declScore}%</b> <span style="color:var(--muted);font-size:10px">(severity + declare/monitor)</span> <span style="color:var(--muted);font-size:10px">· 30% weight</span></div>
+        <div style="font-size:12px"><span style="color:var(--muted)">IR phase coverage</span><br/><b style="color:${ttScoreColor(sc.phaseScore)}">${sc.phaseScore}%</b> <span style="color:var(--muted);font-size:10px">(${sc.phasesHit}/${sc.phasesTotal} phases)</span> <span style="color:var(--muted);font-size:10px">· 20% weight</span></div>
+        <div style="font-size:12px"><span style="color:var(--muted)">Notification completeness</span><br/><b style="color:${ttScoreColor(sc.notifScore)}">${sc.notifScore}%</b> <span style="color:var(--muted);font-size:10px">(${sc.notifChecked}/${sc.notifTotal} filed)</span> <span style="color:var(--muted);font-size:10px">· 15% weight</span></div>
+      </div>
+    </div>
+  </div>
+
   ${ttRenderRubricCard()}
   <div class="summary-metrics">
-    <div class="sm-card"><div class="sm-val">${score}</div><div class="sm-lbl">Objective score</div></div>
-    <div class="sm-card"><div class="sm-val">${critAccPct}%</div><div class="sm-lbl">Criticality acc.</div></div>
+    <div class="sm-card"><div class="sm-val">${sc.critScore}%</div><div class="sm-lbl">Criticality acc.</div></div>
     <div class="sm-card"><div class="sm-val">${injectsAnswered}/${totalInjects}</div><div class="sm-lbl">Injects answered</div></div>
-    <div class="sm-card"><div class="sm-val">${notifChecked}/${TT_NOTIF_ITEMS.length}</div><div class="sm-lbl">Notifs filed</div></div>
+    <div class="sm-card"><div class="sm-val">${sc.phasesHit}/${sc.phasesTotal}</div><div class="sm-lbl">NIST phases hit</div></div>
+    <div class="sm-card"><div class="sm-val">${sc.notifChecked}/${sc.notifTotal}</div><div class="sm-lbl">Notifs filed</div></div>
   </div>
 
   ${ttRenderMitrePath()}
@@ -3097,13 +3150,15 @@ function ttRenderAAR() {
 async function ttFinalise() {
   if (!ttState || !ttState.sessionId) { toast('No active session', '#dc2626'); return; }
   try {
+    const sc = ttComputeExerciseScore();
     await sb.tt.updateSession(ttState.sessionId, {
       status: 'complete',
       notif_filed: Object.values(ttState.notifChecks).some(n => n.checked),
+      exercise_score: sc.total,
       updated_at: new Date().toISOString(),
     });
-    await ttLog('exercise_complete', { totalInjects: (tteState.scenario || TT_SCENARIOS[ttState.scenarioId]).injects.length });
-    toast('Exercise marked complete', '#15803d');
+    await ttLog('exercise_complete', { totalInjects: (tteState.scenario || TT_SCENARIOS[ttState.scenarioId]).injects.length, exercise_score: sc.total });
+    toast('Exercise marked complete — score: ' + sc.total + '/100', '#15803d');
   } catch (e) { toast('Save failed — ' + e.message, '#dc2626'); }
 }
 
@@ -3132,8 +3187,11 @@ function ttRenderHistoryList() {
         ? `<span class="badge b-red">Breach declared</span>`
         : `<span class="badge b-gray">No breach</span>`;
       const logLen = Array.isArray(s.exercise_log) ? s.exercise_log.length : 0;
+      const hasScore = typeof s.exercise_score === 'number';
+      const scoreCol = hasScore ? ttScoreColor(s.exercise_score) : '#5a6a8a';
       return `<div class="card" style="margin-bottom:0.5rem;padding:0.85rem 1rem">
         <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+          ${hasScore ? `<div style="text-align:center;min-width:52px;padding-top:2px"><div style="font-size:22px;font-weight:800;color:${scoreCol};line-height:1">${s.exercise_score}</div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">score</div></div>` : ''}
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">${s.scenario_title || scenario?.title || s.scenario_id}</div>
             <div style="font-size:11px;color:var(--muted);margin-bottom:6px">${date} · ${s.facilitator_name || '—'} · Code: <code style="font-size:10px;background:#f0f4fa;padding:1px 4px;border-radius:3px">${s.session_code}</code></div>
@@ -3202,6 +3260,7 @@ function ttRenderHistoryAAR() {
   </div>
 
   <div class="summary-metrics" style="margin-bottom:1rem">
+    ${typeof s.exercise_score === 'number' ? `<div class="sm-card"><div class="sm-val" style="color:${ttScoreColor(s.exercise_score)}">${s.exercise_score}</div><div class="sm-lbl">Exercise score</div></div>` : ''}
     <div class="sm-card">
       <div class="sm-val" style="color:${sevColor}">${sev}</div>
       <div class="sm-lbl">Severity called${scenario ? (sevMatch ? ' ✓' : ' ✗') : ''}</div>
