@@ -2370,6 +2370,8 @@ async function ttPushToRiskRegister(id) {
       updated_at:   new Date().toISOString(),
     });
     auditLog('tabletop_action_item_pushed_to_rr', { id, rr_entry_id: rrRow?.id });
+    // Invalidate risk register cache so next visit fetches fresh data
+    if (typeof rrState !== 'undefined') rrState.orgId = null;
     toast('Added to risk register', '#15803d');
     ttState.actionItems = null;
     await ttLoadActionItems();
