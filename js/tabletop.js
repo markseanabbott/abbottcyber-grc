@@ -2538,7 +2538,10 @@ function ttRenderActionItems() {
         <div class="card-title" style="margin-bottom:.15rem">&#x1F4CB; Action Items</div>
         ${items.length ? `<div style="font-size:11px;color:var(--muted)">${openCount} open &bull; ${closedCount} closed</div>` : ''}
       </div>
-      ${!form ? `<button class="btn btn-primary btn-sm" onclick="ttOpenActionForm()">+ Add Action Item</button>` : ''}
+      <div style="display:flex;gap:.4rem;flex-shrink:0">
+        ${items.length ? `<button class="btn btn-outline btn-sm" onclick="ttExportActionItemsXlsx()" title="Export to Excel">&#x1F4C5; Export</button>` : ''}
+        ${!form ? `<button class="btn btn-primary btn-sm" onclick="ttOpenActionForm()">+ Add Action Item</button>` : ''}
+      </div>
     </div>
     ${formHtml}
     ${suggestHtml}
@@ -2861,6 +2864,72 @@ function ttRenderHistoryAAR() {
   </div>`;
 }
 
+// ---- Excel export ----
+function ttLoadXlsxScript(src) {
+  return new Promise((resolve, reject) => {
+    if (typeof XLSX !== 'undefined') { resolve(); return; }
+    const existing = document.querySelector(`script[src="${src}"]`);
+    if (existing) { existing.addEventListener('load', resolve); existing.addEventListener('error', () => reject(new Error('load failed'))); return; }
+    const s = document.createElement('script');
+    s.src = src; s.onload = resolve; s.onerror = () => reject(new Error('load failed'));
+    document.head.appendChild(s);
+  });
+}
+
+async function ttEnsureXLSX() {
+  if (typeof XLSX !== 'undefined') return;
+  for (const url of ['js/xlsx.full.min.js', 'https://cdn.jsdelivr.net/npm/xlsx@0.20.3/dist/xlsx.full.min.js', 'https://unpkg.com/xlsx@0.20.3/dist/xlsx.full.min.js']) {
+    try { await ttLoadXlsxScript(url); if (typeof XLSX !== 'undefined') return; } catch(e) {}
+  }
+  throw new Error('Could not load Excel library — check your internet connection');
+}
+
+async function ttExportActionItemsXlsx() {
+  const items = ttState.actionItems;
+  if (!items || !items.length) { toast('No action items to export', '#ea580c'); return; }
+  const scenario = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
+  const scenarioTitle = (scenario && scenario.title) || 'Tabletop Exercise';
+  const today = new Date().toISOString().split('T')[0];
+  const orgName = (currentOrg && currentOrg.name) || 'Organization';
+  const STAT_LABEL = { open: 'Open', in_progress: 'In Progress', closed: 'Closed' };
+  try {
+    await ttEnsureXLSX();
+    const wb = XLSX.utils.book_new();
+    const aoa = [
+      ['TABLETOP EXERCISE — ACTION ITEMS', '', '', '', '', '', '', ''],
+      ['Organization:', orgName, '', 'Scenario:', scenarioTitle, '', 'Exported:', today],
+      ['Facilitator:', ttState.facilitatorName || '—', '', 'Total Items:', items.length, '', '', ''],
+      [],
+      ['#', 'Description', 'Priority', 'Status', 'Owner', 'Due Date', 'Source Inject', 'In Risk Register'],
+    ];
+    const PRIO_ORDER = { Critical: 0, High: 1, Medium: 2, Low: 3 };
+    const sorted = [...items].sort((a, b) => (PRIO_ORDER[a.priority] ?? 9) - (PRIO_ORDER[b.priority] ?? 9));
+    sorted.forEach((item, i) => {
+      const injectLabel = item.source_inject_idx !== null && item.source_inject_idx !== undefined && scenario
+        ? `Inject ${item.source_inject_idx + 1}: ${scenario.injects[item.source_inject_idx]?.title || ''}`
+        : '';
+      aoa.push([
+        i + 1,
+        item.description,
+        item.priority,
+        STAT_LABEL[item.status] || item.status,
+        item.owner || '',
+        item.due_date || '',
+        injectLabel,
+        item.pushed_to_rr ? 'Yes' : 'No',
+      ]);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [
+      { wch: 4 }, { wch: 52 }, { wch: 10 }, { wch: 14 }, { wch: 22 }, { wch: 12 }, { wch: 38 }, { wch: 16 },
+    ];
+    XLSX.utils.book_append_sheet(wb, ws, 'Action Items');
+    const slug = orgName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    XLSX.writeFile(wb, `ActionItems_${slug}_${today}.xlsx`);
+    toast('Action items exported', '#15803d');
+  } catch(e) { toast('Export failed: ' + e.message, '#dc2626'); }
+}
+
 // ---- Window exports ----
 window.ttPlaybackNext = ttPlaybackNext;
 window.ttPlaybackPrev = ttPlaybackPrev;
@@ -2872,4 +2941,5 @@ window.ttSaveActionItem = ttSaveActionItem;
 window.ttDeleteActionItem = ttDeleteActionItem;
 window.ttCycleActionStatus = ttCycleActionStatus;
 window.ttPushToRiskRegister = ttPushToRiskRegister;
+window.ttExportActionItemsXlsx = ttExportActionItemsXlsx;
 
