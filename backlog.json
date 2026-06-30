@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.6.0",
   "created": "2026-05-14",
-  "updated": "2026-06-29 (session 94)",
+  "updated": "2026-06-29 (session 95)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1814,17 +1814,20 @@
         {
           "id": "mp2",
           "text": "Join link: participants navigate to a URL and enter the session code to join — no account or login required",
-          "done": false
+          "done": true,
+          "notes": "mpShowCodeEntry() added to multiplayer.js — renders when ?join= param is present but empty. mpEnterCode() validates code via sb.tt.getSessionByCode(), updates URL via history.replaceState(), then calls mpShowJoinLobby(). Routed from bootApp() in app.js."
         },
         {
           "id": "mp3",
           "text": "Role selection screen: participant sees available roles for the session, selects one, enters their name — role is locked once taken",
-          "done": false
+          "done": true,
+          "notes": "Already implemented as mpShowJoinLobby() in multiplayer.js — role grid with mpPickRole() selection, name input, and mpDoJoin() claim flow. Confirmed complete."
         },
         {
           "id": "mp4",
           "text": "Role capacity: each role can only be claimed by one participant — late joiners see remaining open roles only",
-          "done": false
+          "done": true,
+          "notes": "Three fixes in multiplayer.js: (1) mpPickRole() now bails early if card has .taken class; (2) session full state added in mpShowJoinLobby() when all TT_ROLES are claimed — disables Join button with message; (3) DB-level UNIQUE constraint on (session_id, role_id) already enforced via PATCH_004."
         },
         {
           "id": "mp5",

@@ -16,6 +16,54 @@ function mpNistBar(activeIdx) {
   return `<div style="display:flex;gap:3px;margin-bottom:0.85rem">${TT_NIST_PHASES.map((s,i)=>`<div title="${s}" style="flex:1;border-radius:4px;height:5px;background:${i===activeIdx?'var(--cyan)':i<activeIdx?'#15803d':'rgba(255,255,255,0.1)'}"></div>`).join('')}</div>`;
 }
 
+function mpShowCodeEntry() {
+  mpHideApp();
+  const wrap = document.createElement('div');
+  wrap.id='mpScreen'; wrap.className='mp-screen';
+  document.body.appendChild(wrap);
+  wrap.innerHTML = mpScreenHTML(`
+    <div class="mp-card" style="text-align:center;padding:2rem 1.5rem">
+      <div style="font-size:36px;margin-bottom:0.75rem">&#127919;</div>
+      <div style="font-size:17px;font-weight:700;color:#fff;margin-bottom:0.5rem">Join a Tabletop Exercise</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.6">Enter the 6-character session code<br>provided by your facilitator</div>
+    </div>
+    <div class="mp-card">
+      <div class="mp-label" style="margin-bottom:8px">Session code</div>
+      <input class="mp-input" id="mpCodeInput" placeholder="e.g. CYBER4" maxlength="6"
+        autocomplete="off" autocapitalize="characters"
+        style="font-size:22px;letter-spacing:0.3em;text-align:center;font-family:monospace;text-transform:uppercase"
+        oninput="this.value=this.value.replace(/[^A-Za-z0-9]/g,'').toUpperCase()"
+        onkeydown="if(event.key==='Enter')mpEnterCode()"/>
+    </div>
+    <button class="mp-btn mp-btn-primary" onclick="mpEnterCode()" style="font-size:15px;padding:14px">Join Session &#8594;</button>
+    <div id="mpCodeErr" style="text-align:center;font-size:12px;color:#fca5a5;margin-top:10px;min-height:16px"></div>`);
+  setTimeout(()=>{ const el=document.getElementById('mpCodeInput'); if(el) el.focus(); },50);
+}
+
+async function mpEnterCode() {
+  const input=document.getElementById('mpCodeInput');
+  const errEl=document.getElementById('mpCodeErr');
+  const btn=document.querySelector('#mpScreen .mp-btn-primary');
+  const code=(input?input.value.trim().toUpperCase():'');
+  if (code.length < 3) { if(errEl) errEl.textContent='Enter your 6-character session code.'; return; }
+  if (btn) { btn.disabled=true; btn.textContent='Looking up session…'; }
+  if (errEl) errEl.textContent='';
+  try {
+    const session = await sb.tt.getSessionByCode(code);
+    if (!session) {
+      if(errEl) errEl.textContent=`Session “${code}” not found. Check the code and try again.`;
+      if(btn) { btn.disabled=false; btn.textContent='Join Session →'; }
+      return;
+    }
+    history.replaceState(null,'','?join='+code);
+    const wrap=document.getElementById('mpScreen');
+    await mpShowJoinLobby(wrap, code);
+  } catch(e) {
+    if(errEl) errEl.textContent='Could not connect: '+e.message;
+    if(btn) { btn.disabled=false; btn.textContent='Join Session →'; }
+  }
+}
+
 async function mpBoot(code) {
   mpHideApp();
   const wrap = document.createElement('div');
@@ -65,14 +113,19 @@ async function mpShowJoinLobby(wrap, code) {
       if (card) card.classList.add('taken');
       if (badge) { badge.classList.remove('avail'); badge.textContent='Taken'; }
     });
+    if (TT_ROLES.every(r => participants.find(p => p.role_id === r.id))) {
+      const btn = document.getElementById('mpJoinBtn');
+      if (btn) { btn.disabled=true; btn.textContent='Session is full — all roles are taken'; btn.style.cssText='opacity:0.45;cursor:default'; }
+    }
   } catch(e) { wrap.innerHTML=mpErrorScreen('Could not load session: '+e.message); }
 }
 
 function mpPickRole(rid) {
+  const card = document.getElementById('mpRole_'+rid);
+  if (card && card.classList.contains('taken')) return;
   mpSelectedRole = rid;
   document.querySelectorAll('.mp-role-card').forEach(el=>el.classList.remove('sel'));
-  const card = document.getElementById('mpRole_'+rid);
-  if (card && !card.classList.contains('taken')) card.classList.add('sel');
+  if (card) card.classList.add('sel');
   const role = TT_ROLES.find(r=>r.id===rid);
   const btn = document.getElementById('mpJoinBtn');
   if (btn && role) { btn.disabled=false; btn.textContent=`Join as ${role.name} →`; }

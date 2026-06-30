@@ -10,6 +10,7 @@ async function loadOrgProfiles() {
 // Called after auth is confirmed (either via stored session or fresh login).
 async function bootApp() {
   // Multiplayer URL routing — intercept before normal app boot
+  if (_MP_PARAMS.has('join') && !_MP_JOIN) { mpShowCodeEntry(); return; }
   if (_MP_JOIN) { mpBoot(_MP_JOIN); return; }
   if (_MP_DISP) { dispBoot(_MP_DISP); return; }
   try {
