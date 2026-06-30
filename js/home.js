@@ -534,13 +534,12 @@ function _widgetLink(def) {
   </div>`;
 }
 
-// Small inline SVG dial for a list-row — colour-banded, score inside
-function _exRowDialSvg(score) {
+// Small inline SVG dial for a list-row — arc fill proportional to score, letter grade as label
+function _exRowDialSvg(score, label, color) {
   const cx = 20, cy = 20, r = 15, sw = 4;
-  const color = score >= 70 ? '#15803d' : score >= 40 ? '#b45309' : '#dc2626';
   const bgPath = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`;
   let fillPath = '';
-  if (score > 0) {
+  if (typeof score === 'number' && score > 0) {
     const endRad = Math.PI * (1 - Math.min(score, 100) / 100);
     const ex = +(cx + r * Math.cos(endRad)).toFixed(2);
     const ey = +(cy - r * Math.sin(endRad)).toFixed(2);
@@ -549,7 +548,7 @@ function _exRowDialSvg(score) {
   return `<svg viewBox="0 0 40 24" width="40" height="24" style="display:block;flex-shrink:0;overflow:visible">
     <path d="${bgPath}" fill="none" stroke="#e5e7eb" stroke-width="${sw}" stroke-linecap="round"/>
     ${fillPath ? `<path d="${fillPath}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round"/>` : ''}
-    <text x="${cx}" y="18" text-anchor="middle" font-size="8" font-weight="800" fill="${color}" font-family="monospace,sans-serif">${score}</text>
+    <text x="${cx}" y="18" text-anchor="middle" font-size="9" font-weight="800" fill="${color}" font-family="Inter,sans-serif">${label}</text>
   </svg>`;
 }
 
@@ -577,8 +576,8 @@ function _widgetTabletop(h) {
     opSessions.forEach(s => {
       const log = Array.isArray(s.exercise_log) ? s.exercise_log : [];
       const row = { type: 'op', title: s.scenario_title || 'Operational', date: s.created_at ? s.created_at.substring(0, 10) : '', injectCount: log.length, discussionCount: null, notifCount: null, breach: s.breach_declared, severity: s.tl_severity || '—', rubric_scores: s.rubric_scores || null };
-      // Prefer the stored 4-dimension exercise_score; fall back to simplified calc for old sessions
-      const score = typeof s.exercise_score === 'number' ? s.exercise_score : exCalcScore(row);
+      // Use stored 4-dimension exercise_score only — null for old sessions (no fake score)
+      const score = typeof s.exercise_score === 'number' ? s.exercise_score : null;
       rows.push({ ...row, score });
     });
   }
@@ -589,14 +588,17 @@ function _widgetTabletop(h) {
 
   const listHtml = hasData
     ? recent.map((r, i) => {
-        const scoreColor = r.score >= 70 ? '#15803d' : r.score >= 40 ? '#b45309' : '#dc2626';
+        const hasScore = typeof r.score === 'number';
+        const grade    = hasScore ? exGrade(r.score) : null;
+        const label    = grade ? grade.letter : '—';
+        const color    = grade ? grade.color  : '#cbd5e1';
         return `<div style="display:flex;align-items:center;gap:.65rem;padding:.4rem .9rem;${i < recent.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
           <div style="flex:1;min-width:0">
             <div style="font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH(r.title)}</div>
             <div style="font-size:10px;color:var(--muted)">${_ttShortDate(r.date)}</div>
           </div>
-          ${_exRowDialSvg(r.score)}
-          <span style="font-size:13px;font-weight:800;color:${scoreColor};min-width:32px;text-align:right">${r.score}%</span>
+          ${_exRowDialSvg(r.score, label, color)}
+          <span style="font-size:16px;font-weight:800;color:${color};min-width:18px;text-align:right">${label}</span>
         </div>`;
       }).join('')
     : `<div style="padding:1.25rem .9rem;text-align:center;color:var(--muted);font-size:12px">No exercises yet</div>`;
