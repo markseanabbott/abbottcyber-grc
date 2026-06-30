@@ -1013,7 +1013,7 @@ const TT_NOTIF_ITEMS = [
 let ttState = null;
 function ttInit() {
   ttState = {
-    view: 'setup',                     // setup | commentary | declaration | inject | breach | notif | aar | history_aar
+    view: 'setup',                     // setup | commentary | declaration | inject | breach | notif | aar | history_aar | mitre_matrix | mitre_playback
     scenarioId: null,
     facilitatorName: '',
     mode: 'local',                     // 'local' (one screen) | 'remote' (session code + participant devices)
@@ -1028,6 +1028,7 @@ function ttInit() {
     exerciseLog: [],
     completedSessions: null,           // null = not yet loaded; [] = loaded, empty
     historicalSession: null,           // set when view = 'history_aar'
+    playbackStep: 0,                   // current step index in mitre_playback view
   };
   tteClearRubric();
   tteLoadDbScenarios();
@@ -1082,8 +1083,9 @@ function renderTabletop() {
     case 'notif':       return ttRenderNotif();
     case 'aar':           return ttRenderAAR();
     case 'history_aar':   return ttRenderHistoryAAR();
-    case 'mitre_matrix':  return ttRenderMitreMatrix();
-    default:              return '<div class="card">Unknown tabletop view.</div>';
+    case 'mitre_matrix':    return ttRenderMitreMatrix();
+    case 'mitre_playback':  return ttRenderMitrePlayback();
+    default:                return '<div class="card">Unknown tabletop view.</div>';
   }
 }
 
@@ -1908,7 +1910,10 @@ function ttRenderMitrePath() {
   return `<div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem">
       <div class="card-title" style="margin-bottom:0">&#x2694;&#xFE0F; MITRE ATT&CK Path Map</div>
-      <button class="btn btn-outline btn-sm" onclick="ttState.view='mitre_matrix';ttRender()" style="font-size:11px">&#x1F5FA;&#xFE0F; View Full Matrix</button>
+      <div style="display:flex;gap:.4rem">
+        <button class="btn btn-outline btn-sm" onclick="ttState.playbackStep=0;ttState.view='mitre_playback';ttRender()" style="font-size:11px">&#x25B6;&#xFE0F; Playback</button>
+        <button class="btn btn-outline btn-sm" onclick="ttState.view='mitre_matrix';ttRender()" style="font-size:11px">&#x1F5FA;&#xFE0F; Full Matrix</button>
+      </div>
     </div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:1rem">
       Attack chain as it unfolded during this exercise. &nbsp;
@@ -1999,7 +2004,8 @@ function ttRenderMitreMatrix() {
   return `${renderTierBanner()}
   <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;flex-wrap:wrap">
     <button class="btn btn-outline btn-sm" onclick="ttState.view='aar';ttRender()">← Back to AAR</button>
-    <div style="font-size:17px;font-weight:700">&#x2694;&#xFE0F; MITRE ATT&CK Matrix — ${title}</div>
+    <div style="font-size:17px;font-weight:700;flex:1">&#x2694;&#xFE0F; MITRE ATT&CK Matrix — ${title}</div>
+    <button class="btn btn-primary btn-sm" onclick="ttState.playbackStep=0;ttState.view='mitre_playback';ttRender()">&#x25B6;&#xFE0F; Step Through</button>
   </div>
   <div class="card" style="padding:.75rem">
     <div style="display:flex;gap:1.5rem;margin-bottom:.75rem;font-size:12px;align-items:center;flex-wrap:wrap">
@@ -2024,6 +2030,188 @@ function ttRenderMitreMatrix() {
     </div>
     <div style="margin-top:.75rem;padding-top:.5rem;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">
       Hover over a cell to see which inject triggered it. Techniques are assigned to all tactics referenced in the same inject.
+    </div>
+  </div>`;
+}
+
+// ---- MITRE Playback ----
+function ttPlaybackNext() {
+  const path = ttGetDisplayPath();
+  ttState.playbackStep = Math.min((ttState.playbackStep || 0) + 1, path.length - 1);
+  ttRender();
+}
+
+function ttPlaybackPrev() {
+  ttState.playbackStep = Math.max((ttState.playbackStep || 0) - 1, 0);
+  ttRender();
+}
+
+function ttRenderMitrePlayback() {
+  const scenario = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
+  if (!scenario) return '';
+  const title = (tteState.scenario || {}).title || (TT_SCENARIOS[ttState.scenarioId] || {}).title || 'Tabletop';
+
+  const displayPath = ttGetDisplayPath();
+  if (displayPath.length === 0) {
+    return `${renderTierBanner()}
+    <div class="card"><div class="card-title">&#x25B6;&#xFE0F; Playback unavailable</div>
+    <div style="font-size:12px;color:var(--muted);padding:.5rem 0">Path data is not available for this session.</div></div>`;
+  }
+
+  const total = displayPath.length;
+  const step = Math.max(0, Math.min(ttState.playbackStep || 0, total - 1));
+  const currentIdx = displayPath[step];
+  const currentInj = scenario.injects[currentIdx];
+
+  // Branch taken at current inject
+  const injectPath = tteState.injectPath || [];
+  const branchTakenMap = {};
+  injectPath.forEach(p => { branchTakenMap[p.index] = p.branchTaken; });
+  const takenBranchId = branchTakenMap[currentIdx];
+  const takenBranch = currentInj && currentInj.branches && takenBranchId
+    ? currentInj.branches.find(b => b.id === takenBranchId)
+    : null;
+
+  // Role responses + criticality accuracy for this inject
+  const responses = (ttState.responses || {})[currentIdx] || {};
+  let critTotal = 0, critCorrect = 0;
+  TT_ROLES.forEach(r => {
+    const cr = responses[r.id] && responses[r.id].criticality;
+    if (cr) { critTotal++; if (cr === (currentInj && currentInj.correctCriticality)) critCorrect++; }
+  });
+  const critAccPct = critTotal ? Math.round(critCorrect / critTotal * 100) : null;
+  const nistLabel = TT_NIST_PHASES[(currentInj && currentInj.phaseIdx)] || '';
+  const currentMitre = ttParseMitreInject(currentInj && currentInj.mitre);
+
+  // Build matrix with 3 states: current | past | future
+  const matrix = {};
+  MITRE_TACTICS_LIST.forEach(t => { matrix[t.id] = { techniques: [] }; });
+  const stateRank = { current: 2, past: 1, future: 0 };
+
+  displayPath.forEach((idx, pos) => {
+    const inj = scenario.injects[idx];
+    if (!inj) return;
+    const techState = pos < step ? 'past' : (pos === step ? 'current' : 'future');
+    const parsed = ttParseMitreInject(inj.mitre);
+    parsed.tactics.forEach(tac => {
+      if (!matrix[tac.id]) matrix[tac.id] = { techniques: [] };
+      parsed.techniques.forEach(tech => {
+        let ex = matrix[tac.id].techniques.find(t => t.id === tech.id);
+        if (!ex) {
+          ex = { id: tech.id, name: tech.name, state: 'future', stepNum: pos + 1 };
+          matrix[tac.id].techniques.push(ex);
+        }
+        if (stateRank[techState] > stateRank[ex.state]) { ex.state = techState; ex.stepNum = pos + 1; }
+      });
+    });
+  });
+
+  // Matrix columns
+  const cols = MITRE_TACTICS_LIST.map(tac => {
+    const techs = matrix[tac.id].techniques;
+    const hasCur = techs.some(t => t.state === 'current');
+    const hasPast = techs.some(t => t.state === 'past');
+    const hasAny = techs.length > 0;
+    const hdrBg = hasCur ? 'var(--cyan)' : (hasPast ? 'var(--navy)' : (hasAny ? '#6b7280' : '#d1d5db'));
+    return `<div style="flex-shrink:0;width:128px">
+      <div style="font-size:9px;font-weight:700;text-align:center;padding:.4rem .3rem;border-radius:6px 6px 0 0;background:${hdrBg};color:#fff;text-transform:uppercase;letter-spacing:.05em;line-height:1.3;min-height:2.6rem;display:flex;align-items:center;justify-content:center">
+        ${tac.name}${hasCur ? '<br/><span style="font-size:8px;opacity:.9;font-weight:400">▲ triggered now</span>' : ''}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px;margin-top:2px;min-height:28px">
+        ${techs.length === 0
+          ? `<div style="font-size:10px;color:var(--border);text-align:center;padding:.5rem .25rem;border:1px solid var(--border);border-radius:4px;margin-top:2px">—</div>`
+          : techs.map(tech => {
+              const cur = tech.state === 'current';
+              const past = tech.state === 'past';
+              return `<div style="font-size:10px;padding:.3rem .4rem;border-radius:4px;line-height:1.3;
+                background:${cur ? 'var(--cyan)' : (past ? 'var(--navy)' : 'var(--bg)')};
+                color:${(cur || past) ? '#fff' : 'var(--muted)'};
+                border:1px solid ${cur ? 'var(--cyan)' : (past ? 'var(--navy)' : 'var(--border)')};
+                border-left:${cur ? '3px solid #fff' : (past ? '3px solid var(--cyan)' : '1px solid var(--border)')};
+                font-weight:${(cur || past) ? '600' : '400'};
+                opacity:${tech.state === 'future' ? '.35' : '1'};
+                ${cur ? 'box-shadow:0 0 10px rgba(7,180,217,.5);' : ''}
+              " title="Step ${tech.stepNum}">
+                <div style="font-size:8px;opacity:.8;margin-bottom:1px">${tech.id}</div>
+                ${tech.name}
+                ${tech.state === 'future' ? '<div style="font-size:8px;opacity:.5;margin-top:1px">upcoming</div>' : ''}
+              </div>`;
+            }).join('')
+        }
+      </div>
+    </div>`;
+  }).join('<div style="flex-shrink:0;width:3px;background:var(--border);border-radius:2px;margin:0 1px"></div>');
+
+  // Inject detail: MITRE badges
+  const mitreBadges = [
+    ...currentMitre.tactics.map(t => `<span style="font-size:10px;font-weight:700;background:rgba(7,180,217,.15);color:var(--navy);padding:2px 8px;border-radius:4px;border:1px solid rgba(7,180,217,.35)">${t.id} ${t.name}</span>`),
+    ...currentMitre.techniques.map(t => `<span style="font-size:10px;color:var(--muted);padding:2px 6px;border-radius:4px;border:1px solid var(--border)">${t.id} ${t.name}</span>`),
+  ].join('');
+
+  // Role response rows
+  const roleRows = TT_ROLES.map(r => {
+    const rr = responses[r.id];
+    if (!rr || (!rr.text && !rr.criticality)) return '';
+    const cr = rr.criticality || '';
+    const ok = cr && cr === (currentInj && currentInj.correctCriticality);
+    return `<div style="display:flex;align-items:flex-start;gap:6px;font-size:11px;padding:.25rem 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:13px;flex-shrink:0">${r.icon}</span>
+      <span style="font-weight:600;min-width:28px;color:var(--text);flex-shrink:0">${r.id.toUpperCase()}</span>
+      ${cr ? `<span class="badge ${ok ? 'b-green' : 'b-red'}" style="font-size:10px;flex-shrink:0">${cr}${ok ? ' ✓' : ' ✗'}</span>` : ''}
+      ${rr.text ? `<span style="color:var(--muted);font-size:10px;line-height:1.4">${rr.text.substring(0, 100)}${rr.text.length > 100 ? '…' : ''}</span>` : ''}
+    </div>`;
+  }).filter(Boolean).join('');
+
+  // Dot progress strip
+  const dots = displayPath.map((_, i) =>
+    `<span style="display:inline-block;width:${i === step ? 14 : 10}px;height:${i === step ? 14 : 10}px;border-radius:50%;margin:0 2px;vertical-align:middle;background:${i < step ? 'var(--navy)' : (i === step ? 'var(--cyan)' : 'var(--border)')};transition:all .2s"></span>`
+  ).join('');
+
+  return `${renderTierBanner()}
+  <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap">
+    <button class="btn btn-outline btn-sm" onclick="ttState.view='aar';ttRender()">← Back to AAR</button>
+    <div style="font-size:15px;font-weight:700;flex:1">&#x25B6;&#xFE0F; MITRE Playback — ${title}</div>
+    <button class="btn btn-outline btn-sm" onclick="ttState.view='mitre_matrix';ttRender()" style="font-size:11px">&#x1F5FA;&#xFE0F; Full Matrix</button>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.65rem 1rem;gap:.5rem">
+    <button class="btn btn-outline btn-sm" onclick="ttPlaybackPrev()" ${step === 0 ? 'disabled' : ''} style="min-width:90px">◄ Previous</button>
+    <div style="text-align:center">
+      <div style="font-size:22px;font-weight:700;color:var(--navy);line-height:1">
+        Step ${step + 1} <span style="font-size:13px;color:var(--muted);font-weight:400">of ${total}</span>
+      </div>
+      <div style="margin-top:.3rem">${dots}</div>
+    </div>
+    <button class="btn ${step === total - 1 ? 'btn-outline' : 'btn-primary'} btn-sm" onclick="ttPlaybackNext()" ${step === total - 1 ? 'disabled' : ''} style="min-width:90px">Next ►</button>
+  </div>
+
+  <div class="card" style="border-left:4px solid var(--cyan);margin-bottom:1rem">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem">
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.2rem">Inject ${step + 1}${nistLabel ? ' · ' + nistLabel : ''}</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);line-height:1.3">${currentInj ? currentInj.title : '—'}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        ${currentInj && currentInj.correctCriticality ? `<span class="badge b-navy" style="font-size:10px">${currentInj.correctCriticality}</span>` : ''}
+        ${critAccPct !== null ? `<div style="font-size:11px;color:${critAccPct >= 70 ? 'var(--green)' : 'var(--red)'};margin-top:.3rem;font-weight:700">${critAccPct}% accuracy</div>` : ''}
+      </div>
+    </div>
+    ${mitreBadges ? `<div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.5rem">${mitreBadges}</div>` : ''}
+    ${takenBranch && takenBranch.label !== 'Continue →' ? `<div style="font-size:11px;color:var(--cyan);font-weight:600;margin-bottom:.5rem">&#x2192; Branch: ${takenBranch.label}</div>` : ''}
+    ${roleRows
+      ? `<div style="margin-top:.35rem">${roleRows}</div>`
+      : `<div style="font-size:11px;color:var(--muted);font-style:italic;margin-top:.35rem">No responses recorded for this inject.</div>`}
+  </div>
+
+  <div class="card" style="padding:.75rem">
+    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:.6rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+      MITRE ATT&CK
+      <span style="display:inline-flex;align-items:center;gap:4px;font-weight:400;font-size:11px"><span style="width:12px;height:12px;background:var(--cyan);border-radius:3px;display:inline-block"></span> Triggered this step</span>
+      <span style="display:inline-flex;align-items:center;gap:4px;font-weight:400;font-size:11px"><span style="width:12px;height:12px;background:var(--navy);border-radius:3px;display:inline-block"></span> Already triggered</span>
+      <span style="display:inline-flex;align-items:center;gap:4px;font-weight:400;font-size:11px"><span style="width:12px;height:12px;background:var(--bg);border:1px solid var(--border);border-radius:3px;display:inline-block;opacity:.35"></span> Upcoming</span>
+    </div>
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:.5rem">
+      <div style="display:flex;align-items:flex-start;gap:0;min-width:max-content">${cols}</div>
     </div>
   </div>`;
 }
@@ -2340,4 +2528,8 @@ function ttRenderHistoryAAR() {
     }).join('') : '<div style="font-size:12px;color:var(--muted)">No log entries recorded.</div>'}
   </div>`;
 }
+
+// ---- Window exports ----
+window.ttPlaybackNext = ttPlaybackNext;
+window.ttPlaybackPrev = ttPlaybackPrev;
 
