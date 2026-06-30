@@ -212,6 +212,13 @@ sb.riskRegister = {
     p_assessment_id: assessmentId,
     p_items:         items,
   }),
+  // Fetch multiple entries by id list
+  getByIds: async (ids) => {
+    if (!ids || !ids.length) return [];
+    const filter = ids.map(id => `id.eq.${id}`).join(',');
+    const r = await sbFetch(`risk_register?or=(${filter})`);
+    return r || [];
+  },
   // Add a manual risk entry
   add: (row) => sbFetch('risk_register', 'POST', row, { Prefer: 'return=representation' }),
   // Update editable fields (residual rating, owner, notes, due date, acceptance fields)

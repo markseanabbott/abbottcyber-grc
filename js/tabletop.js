@@ -2219,10 +2219,41 @@ function ttRenderMitrePlayback() {
 }
 
 // ---- Action Items ----
+const TT_STATUS_TO_RR = { open: 'Open', in_progress: 'In Progress', closed: 'Closed' };
+const TT_STATUS_FROM_RR = { 'Open': 'open', 'In Progress': 'in_progress', 'Accepted': 'closed', 'Closed': 'closed', 'Transferred': 'closed' };
+
 async function ttLoadActionItems() {
   if (!ttState || !ttState.sessionId) return;
   try {
-    ttState.actionItems = await sb.tt.listActionItems(ttState.sessionId);
+    const items = await sb.tt.listActionItems(ttState.sessionId);
+    // Sync from linked RR entries — pull current RR state back into action items
+    const pushed = items.filter(i => i.pushed_to_rr && i.rr_entry_id);
+    if (pushed.length) {
+      const rrRows = await sb.riskRegister.getByIds(pushed.map(i => i.rr_entry_id));
+      for (const item of pushed) {
+        const rr = rrRows.find(r => r.id === item.rr_entry_id);
+        if (!rr) {
+          // RR entry deleted — heal: reset push state
+          await sb.tt.updateActionItem(item.id, { pushed_to_rr: false, rr_entry_id: null, updated_at: new Date().toISOString() });
+          item.pushed_to_rr = false;
+          item.rr_entry_id  = null;
+        } else {
+          // Sync RR fields back to action item
+          const rrStatus = TT_STATUS_FROM_RR[rr.risk_status] || item.status;
+          const patch = {};
+          if (rrStatus       !== item.status)   patch.status   = rrStatus;
+          if ((rr.risk_owner || '') !== (item.owner || ''))     patch.owner    = rr.risk_owner || '';
+          if ((rr.due_date   || '') !== (item.due_date || ''))  patch.due_date = rr.due_date   || null;
+          if ((rr.inherent_risk_rating || '') !== (item.priority || '')) patch.priority = rr.inherent_risk_rating || item.priority;
+          if (Object.keys(patch).length) {
+            patch.updated_at = new Date().toISOString();
+            await sb.tt.updateActionItem(item.id, patch);
+            Object.assign(item, patch);
+          }
+        }
+      }
+    }
+    ttState.actionItems = items;
   } catch(e) {
     ttState.actionItems = [];
   }
@@ -2270,6 +2301,18 @@ async function ttSaveActionItem() {
         source_inject_idx: srcIdx,
         notes: notes.trim(), updated_at: new Date().toISOString(),
       });
+      // Sync to linked RR entry if one exists
+      if (form.pushed_to_rr && form.rr_entry_id) {
+        try {
+          await sb.riskRegister.update(form.rr_entry_id, {
+            risk_title:           desc.trim(),
+            inherent_risk_rating: priority,
+            risk_owner:           owner.trim() || null,
+            due_date:             due || null,
+            treatment_notes:      notes.trim() || null,
+          });
+        } catch(rrErr) { console.warn('RR sync on edit failed:', rrErr); }
+      }
       auditLog('tabletop_action_item_update', { id: form.id });
       toast('Action item updated', '#15803d');
     } else {
@@ -2337,6 +2380,13 @@ async function ttCycleActionStatus(id, current) {
   const next = { open: 'in_progress', in_progress: 'closed', closed: 'open' }[current] || 'open';
   try {
     await sb.tt.updateActionItem(id, { status: next, updated_at: new Date().toISOString() });
+    // Sync status to linked RR entry
+    const item = (ttState.actionItems || []).find(i => i.id === id);
+    if (item && item.pushed_to_rr && item.rr_entry_id) {
+      try {
+        await sb.riskRegister.update(item.rr_entry_id, { risk_status: TT_STATUS_TO_RR[next] || 'Open' });
+      } catch(rrErr) { console.warn('RR status sync failed:', rrErr); }
+    }
     auditLog('tabletop_action_item_status', { id, status: next });
     ttState.actionItems = null;
     await ttLoadActionItems();
@@ -2454,29 +2504,24 @@ function ttRenderActionItems() {
     const injectLabel = item.source_inject_idx !== null && item.source_inject_idx !== undefined && scenario
       ? ` <span style="color:var(--muted);font-weight:400"> — Inject ${item.source_inject_idx + 1}</span>` : '';
     const dueDate = item.due_date ? new Date(item.due_date + 'T00:00:00').toLocaleDateString() : null;
-    const overdue = !pushed && item.due_date && item.status !== 'closed' && new Date(item.due_date + 'T00:00:00') < new Date();
-    const borderColor = pushed ? '#d1d5db' : (PRIO_COLOR[item.priority] || 'var(--muted)');
-    return `<div style="border:1px solid var(--border);border-left:4px solid ${borderColor};border-radius:6px;padding:.65rem .75rem;margin-bottom:.4rem;${pushed ? 'opacity:.45;' : ''}">
+    const overdue = item.due_date && item.status !== 'closed' && new Date(item.due_date + 'T00:00:00') < new Date();
+    return `<div style="border:1px solid var(--border);border-left:4px solid ${PRIO_COLOR[item.priority] || 'var(--muted)'};border-radius:6px;padding:.65rem .75rem;margin-bottom:.4rem">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem">
         <div style="flex:1;min-width:0">
           <div style="font-size:12px;font-weight:600;color:var(--text);line-height:1.4;margin-bottom:.3rem">${item.description}${injectLabel}</div>
           <div style="display:flex;flex-wrap:wrap;gap:.3rem;align-items:center">
-            ${pushed
-              ? `<span style="font-size:10px;font-weight:700;color:#15803d;padding:1px 8px;border:1px solid #15803d;border-radius:4px;background:#dcfce7">&#x2713; In Risk Register</span>`
-              : `<span style="font-size:10px;font-weight:700;color:${PRIO_COLOR[item.priority]};padding:1px 7px;border:1px solid ${PRIO_COLOR[item.priority]};border-radius:4px">${item.priority}</span>
-                 <button onclick="ttCycleActionStatus('${item.id}','${item.status}')" style="font-size:10px;font-weight:600;color:${STAT_COLOR[item.status]};padding:1px 7px;border:1px solid ${STAT_COLOR[item.status]};border-radius:4px;background:none;cursor:pointer;font-family:inherit">${STAT_LABEL[item.status]} ↻</button>`
-            }
+            <span style="font-size:10px;font-weight:700;color:${PRIO_COLOR[item.priority]};padding:1px 7px;border:1px solid ${PRIO_COLOR[item.priority]};border-radius:4px">${item.priority}</span>
+            <button onclick="ttCycleActionStatus('${item.id}','${item.status}')" style="font-size:10px;font-weight:600;color:${STAT_COLOR[item.status]};padding:1px 7px;border:1px solid ${STAT_COLOR[item.status]};border-radius:4px;background:none;cursor:pointer;font-family:inherit">${STAT_LABEL[item.status]} ↻</button>
+            ${pushed ? `<span style="font-size:10px;font-weight:700;color:#15803d;padding:1px 8px;border:1px solid #15803d;border-radius:4px;background:#dcfce7">&#x2713; Risk Register</span>` : ''}
             ${item.owner ? `<span style="font-size:10px;color:var(--muted)">&#x1F464; ${item.owner}</span>` : ''}
             ${dueDate ? `<span style="font-size:10px;color:${overdue ? '#dc2626' : 'var(--muted)'}">&#x1F4C5; ${dueDate}${overdue ? ' — Overdue' : ''}</span>` : ''}
           </div>
           ${item.notes ? `<div style="font-size:11px;color:var(--muted);margin-top:.3rem;font-style:italic">${item.notes}</div>` : ''}
         </div>
         <div style="display:flex;gap:.3rem;flex-shrink:0">
-          ${pushed ? '' : `
-            <button class="btn btn-cyan btn-sm" onclick="ttPushToRiskRegister('${item.id}')" style="font-size:11px;padding:.2rem .6rem" title="Add to risk register">&#x2192; Risk Register</button>
-            <button class="btn btn-outline btn-sm" onclick="ttEditActionItem('${item.id}')" style="font-size:11px;padding:.2rem .5rem">Edit</button>
-            <button class="btn btn-red btn-sm" onclick="ttDeleteActionItem('${item.id}')" style="font-size:11px;padding:.2rem .5rem">&#x1F5D1;</button>
-          `}
+          ${!pushed ? `<button class="btn btn-cyan btn-sm" onclick="ttPushToRiskRegister('${item.id}')" style="font-size:11px;padding:.2rem .6rem">&#x2192; Risk Register</button>` : ''}
+          <button class="btn btn-outline btn-sm" onclick="ttEditActionItem('${item.id}')" style="font-size:11px;padding:.2rem .5rem">Edit</button>
+          <button class="btn btn-red btn-sm" onclick="ttDeleteActionItem('${item.id}')" style="font-size:11px;padding:.2rem .5rem">&#x1F5D1;</button>
         </div>
       </div>
     </div>`;
