@@ -3338,6 +3338,64 @@ function cisGapCopyPrompt() {
 
 // ── EXECUTIVE REPORT ──────────────────────────────────────────────────────────
 
+// Shared commentary formatter — handles KEY FINDINGS (bullet table),
+// PRIORITY RECOMMENDATIONS (numbered table), ALL-CAPS subheaders, and prose.
+// Used by renderCISReport (display) and cisExportReportWord (Word export).
+function fmtCommentary(text, placeholder) {
+  if (!text) return placeholder
+    ? `<p style="color:#94a3b8;font-style:italic;font-size:10pt;margin:0 0 10pt 0">${placeholder}</p>`
+    : '';
+
+  const BULLET_TBL = items => '<table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">' +
+    items.map(l => `<tr>
+      <td style="width:14pt;vertical-align:top;padding:4pt 8pt 4pt 0;color:#152168;font-size:14pt;line-height:1">&#8226;</td>
+      <td style="font-size:11pt;line-height:1.65;padding:4pt 0;vertical-align:top;border-bottom:1pt solid #f1f5f9">${escH(l)}</td>
+    </tr>`).join('') + '</table>';
+
+  const NUM_TBL = items => '<table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">' +
+    items.map((l, i) => `<tr>
+      <td style="background:#152168;color:#fff;width:24pt;text-align:center;font-size:11pt;font-weight:bold;vertical-align:top;padding:7pt 4pt;border-bottom:1pt solid #1e3080">${i + 1}</td>
+      <td style="padding:7pt 10pt;border-bottom:1pt solid #e8ecf4;font-size:11pt;line-height:1.65;vertical-align:top">${escH(l)}</td>
+    </tr>`).join('') + '</table>';
+
+  const SUBHEAD = label => `<div style="font-size:9.5pt;color:#152168;font-weight:bold;text-transform:uppercase;letter-spacing:.5pt;margin:14pt 0 5pt 0;padding-bottom:3pt;border-bottom:1.5pt solid #152168">${label}</div>`;
+
+  let html = '';
+  let mode = 'prose';
+  let items = [];
+
+  function flushItems() {
+    if (!items.length) return;
+    if (mode === 'findings' || mode === 'bullets') html += BULLET_TBL(items);
+    else if (mode === 'recommendations' || mode === 'numbered') html += NUM_TBL(items);
+    items = [];
+  }
+
+  text.split('\n').map(l => l.trim()).forEach(line => {
+    if (!line) {
+      if (mode === 'findings' || mode === 'recommendations' || mode === 'bullets' || mode === 'numbered') return;
+      flushItems(); mode = 'prose'; return;
+    }
+    if (/^KEY FINDINGS$/i.test(line)) { flushItems(); html += SUBHEAD('Key Findings'); mode = 'findings'; return; }
+    if (/^PRIORITY RECOMMENDATIONS?$/i.test(line)) { flushItems(); html += SUBHEAD('Priority Recommendations'); mode = 'recommendations'; return; }
+    if (/^EXECUTIVE SUMMARY$/i.test(line)) { flushItems(); html += SUBHEAD('Executive Summary'); mode = 'prose'; return; }
+    if (/^[A-Z][A-Z\s\(\)\-\/&0-9\.]+$/.test(line) && line.length > 3 && !/^\d/.test(line)) {
+      flushItems(); html += SUBHEAD(line.charAt(0) + line.slice(1).toLowerCase()); mode = 'prose'; return;
+    }
+    if (mode === 'findings' || mode === 'bullets') { items.push(line.replace(/^[•\-\*]\s*/, '')); return; }
+    if (mode === 'recommendations' || mode === 'numbered') {
+      items.push(line.replace(/^[•\-\*]\s*/, '').replace(/^\d+[\.\)]\s*/, '')); return;
+    }
+    if (/^[•\-\*]\s/.test(line)) { if (mode !== 'bullets') { flushItems(); mode = 'bullets'; } items.push(line.replace(/^[•\-\*]\s*/, '')); return; }
+    if (/^\d+[\.\)]\s/.test(line)) { if (mode !== 'numbered') { flushItems(); mode = 'numbered'; } items.push(line.replace(/^\d+[\.\)]\s*/, '')); return; }
+    flushItems(); mode = 'prose';
+    html += `<p style="font-size:11pt;line-height:1.75;margin:0 0 8pt 0">${escH(line)}</p>`;
+  });
+
+  flushItems();
+  return html;
+}
+
 function cisOpenReport(idx) {
   const runs = (orgAssessments[currentOrg?.id] || {})['cis'] || [];
   const run = runs[idx];
@@ -4442,65 +4500,7 @@ function cisExportReportWord() {
     _cMap[_cParts[i]] = (_cParts[i + 1] || '').trim();
   }
 
-  // Commentary formatter — handles KEY FINDINGS (bullet table), PRIORITY RECOMMENDATIONS
-  // (numbered table), ALL-CAPS subheaders, prose bullet lines, and numbered prose items.
-  function fmtCommentary(text, placeholder) {
-    if (!text) return placeholder
-      ? `<p style="color:#94a3b8;font-style:italic;font-size:10pt;margin:0 0 10pt 0">${placeholder}</p>`
-      : '';
-
-    const BULLET_TBL = items => '<table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">' +
-      items.map(l => `<tr>
-        <td style="width:14pt;vertical-align:top;padding:4pt 8pt 4pt 0;color:#152168;font-size:14pt;line-height:1">&#8226;</td>
-        <td style="font-size:11pt;line-height:1.65;padding:4pt 0;vertical-align:top;border-bottom:1pt solid #f1f5f9">${escH(l)}</td>
-      </tr>`).join('') + '</table>';
-
-    const NUM_TBL = items => '<table style="width:100%;border-collapse:collapse;margin:0 0 10pt 0">' +
-      items.map((l, i) => `<tr>
-        <td style="background:#152168;color:#fff;width:24pt;text-align:center;font-size:11pt;font-weight:bold;vertical-align:top;padding:7pt 4pt;border-bottom:1pt solid #1e3080">${i + 1}</td>
-        <td style="padding:7pt 10pt;border-bottom:1pt solid #e8ecf4;font-size:11pt;line-height:1.65;vertical-align:top">${escH(l)}</td>
-      </tr>`).join('') + '</table>';
-
-    const SUBHEAD = label => `<div style="font-size:9.5pt;color:#152168;font-weight:bold;text-transform:uppercase;letter-spacing:.5pt;margin:14pt 0 5pt 0;padding-bottom:3pt;border-bottom:1.5pt solid #152168">${label}</div>`;
-
-    let html = '';
-    let mode = 'prose'; // prose | findings | recommendations | bullets | numbered
-    let items = [];
-
-    function flushItems() {
-      if (!items.length) return;
-      if (mode === 'findings' || mode === 'bullets') html += BULLET_TBL(items);
-      else if (mode === 'recommendations' || mode === 'numbered') html += NUM_TBL(items);
-      items = [];
-    }
-
-    text.split('\n').map(l => l.trim()).forEach(line => {
-      if (!line) {
-        // Don't exit structured modes on blank lines — AI often puts a blank after the section header
-        if (mode === 'findings' || mode === 'recommendations' || mode === 'bullets' || mode === 'numbered') return;
-        flushItems(); mode = 'prose'; return;
-      }
-      if (/^KEY FINDINGS$/i.test(line)) { flushItems(); html += SUBHEAD('Key Findings'); mode = 'findings'; return; }
-      if (/^PRIORITY RECOMMENDATIONS?$/i.test(line)) { flushItems(); html += SUBHEAD('Priority Recommendations'); mode = 'recommendations'; return; }
-      if (/^EXECUTIVE SUMMARY$/i.test(line)) { flushItems(); html += SUBHEAD('Executive Summary'); mode = 'prose'; return; }
-      // ANY other ALL-CAPS-only line → styled subheader
-      if (/^[A-Z][A-Z\s\(\)\-\/&0-9\.]+$/.test(line) && line.length > 3 && !/^\d/.test(line)) {
-        flushItems(); html += SUBHEAD(line.charAt(0) + line.slice(1).toLowerCase()); mode = 'prose'; return;
-      }
-      if (mode === 'findings' || mode === 'bullets') { items.push(line.replace(/^[•\-\*]\s*/, '')); return; }
-      if (mode === 'recommendations' || mode === 'numbered') {
-        items.push(line.replace(/^[•\-\*]\s*/, '').replace(/^\d+[\.\)]\s*/, '')); return;
-      }
-      // Prose: detect bullet or numbered lines
-      if (/^[•\-\*]\s/.test(line)) { if (mode !== 'bullets') { flushItems(); mode = 'bullets'; } items.push(line.replace(/^[•\-\*]\s*/, '')); return; }
-      if (/^\d+[\.\)]\s/.test(line)) { if (mode !== 'numbered') { flushItems(); mode = 'numbered'; } items.push(line.replace(/^\d+[\.\)]\s*/, '')); return; }
-      flushItems(); mode = 'prose';
-      html += `<p style="font-size:11pt;line-height:1.75;margin:0 0 8pt 0">${escH(line)}</p>`;
-    });
-
-    flushItems();
-    return html;
-  }
+  // fmtCommentary is defined at module level above cisOpenReport — shared with renderCISReport
 
   // ── Gauge — speedometer drawn on canvas → PNG (SVG gradients don't render in Word) ──
   let gaugeImg = null;
