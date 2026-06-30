@@ -171,10 +171,13 @@ function rrRow(r) {
   const idx        = rrState.rows.findIndex(x => x.id === r.id);
   const isEditing  = rrState.editingId === r.id;
 
+  const isTabletop  = r.source === 'tabletop';
   const sourceBadge = isPoam
     ? `<span class="badge b-navy" style="font-size:10px;padding:2px 7px">CIS POAM</span>`
     : isAiPoam
     ? `<span class="badge b-cyan" style="font-size:10px;padding:2px 7px">AI Gov</span>`
+    : isTabletop
+    ? `<span class="badge" style="font-size:10px;padding:2px 7px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d">Tabletop AAR</span>`
     : `<span class="badge" style="font-size:10px;padding:2px 7px;background:#f3f4f6;color:#374151">Manual</span>`;
 
   const refVal = r.safeguard_id || (r.control_number ? 'CIS ' + r.control_number : null);
