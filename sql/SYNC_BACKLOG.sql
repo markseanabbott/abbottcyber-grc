@@ -1,4 +1,4 @@
--- SYNC_BACKLOG.sql -- generated 2026-06-30 (396 items)
+-- SYNC_BACKLOG.sql -- generated 2026-06-30 (397 items)
 -- Safe to re-run (ON CONFLICT DO UPDATE).
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
 VALUES ('s1', 'core', 'Core Concept', 1, 0, 'Security posture scoring for organisations / clients', true, NULL, NULL, '[]', 'completed')
@@ -4021,7 +4021,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('t34a', 'tabletop_aar', 'Tabletop â€” After Action & Reporting', 3, 4, 'IR plan comparison â€” automated: upload ratified IR plan document and auto-compare against exercise event log', false, 'Critical', NULL, '[]', 'add')
+VALUES ('t34a', 'tabletop_aar', 'Tabletop â€” After Action & Reporting', 3, 4, 'IR plan comparison â€” automated: upload ratified IR plan document and auto-compare against exercise event log', true, 'Critical', 'tabletop.js: ttRenderIrpSection() renders the card in both live AAR (ttRenderAAR) and history AAR (ttRenderHistoryAAR). ttBuildIrpPrompt() / ttBuildIrpPromptFromSession() build the Claude prompt from session data. ttCopyIrpPrompt() copies to clipboard. ttSaveIrComparison() parses JSON response and saves to tabletop_sessions.ir_comparison (PATCH_060). ttIrpClearResult() clears for re-paste. Shows two scores (follows own plan + NIST 800-61 alignment) with strengths and gaps list.', '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
@@ -4577,6 +4577,21 @@ ON CONFLICT (id) DO UPDATE SET
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
 VALUES ('ata_ai_7', 'tt_autonomous', 'Tabletop â€” Autonomous Mode (Jackbox-style, no facilitator)', 3, 10, 'Critical miss consequence screen: when Haiku detects a major eradication or remediation failure (e.g. network not isolated, MFA not reset, backups not verified before restore), interrupt the inject flow with a full-screen red CONSEQUENCE ACTIVATED card before the next inject loads. Shows: what was missed, which role owned it, and the resulting escalation narrated in plain language. Holds 8â€“10 seconds or until dismissed. Designed to be uncomfortable.', false, 'High', NULL, '[]', 'add')
+ON CONFLICT (id) DO UPDATE SET
+  section_id    = EXCLUDED.section_id,
+  section_title = EXCLUDED.section_title,
+  section_phase = EXCLUDED.section_phase,
+  sort_order    = EXCLUDED.sort_order,
+  "text"        = EXCLUDED."text",
+  done          = EXCLUDED.done,
+  priority      = EXCLUDED.priority,
+  notes         = EXCLUDED.notes,
+  dependencies  = EXCLUDED.dependencies,
+  status        = EXCLUDED.status,
+  updated_at    = now();
+
+INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
+VALUES ('tt_irp_auto_1', 'tt_autonomous', 'Tabletop â€” Autonomous Mode (Jackbox-style, no facilitator)', 3, 11, 'IR plan comparison — autonomous: direct Claude API call from the app. User uploads IR plan document; app sends exercise data + plan to Claude Sonnet and receives structured JSON comparison result without copy-paste workflow. Requires API key management and premium tier gate.', false, 'High', NULL, '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,

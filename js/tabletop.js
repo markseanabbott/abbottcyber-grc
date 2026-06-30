@@ -1446,6 +1446,7 @@ function ttInit() {
     playbackStep: 0,                   // current step index in mitre_playback view
     actionItems: null,                 // null = not yet loaded; [] = empty; [...] = loaded
     actionItemForm: null,              // null = hidden; {} = new; {id,...} = edit
+    irComparison: null,               // saved IR plan comparison result (jsonb from DB)
   };
   tteClearRubric();
   tteLoadDbScenarios();
@@ -3298,12 +3299,7 @@ function ttRenderAAR() {
       </div>`).join('') : '<div style="font-size:12px;color:var(--muted)">No log entries.</div>'}
   </div>
 
-  <div class="card">
-    <div class="card-title">IR plan comparison</div>
-    <div style="font-size:12px;color:var(--muted);line-height:1.6">
-      Upload your ratified IR plan to auto-compare against this exercise's event log. The automated comparison is on the backlog (item t34a). For now, the facilitator reviews the timeline above against the plan manually and notes where decisions diverged from documented procedure or where the plan was silent.
-    </div>
-  </div>
+  ${ttRenderIrpSection(ttState.sessionId, ttState.irComparison, true)}
 
   ${ttRenderActionItems()}
 
@@ -3502,7 +3498,239 @@ function ttRenderHistoryAAR() {
         <div style="font-size:12px">${actionStr}</div>
       </div>`;
     }).join('') : '<div style="font-size:12px;color:var(--muted)">No log entries recorded.</div>'}
+  </div>
+
+  ${ttRenderIrpSection(s.id, s.ir_comparison || null, false)}`;
+}
+
+// ---- IR Plan Comparison ----
+
+function ttBuildIrpPrompt() {
+  const scenario = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
+  if (!scenario) return '';
+  const sc = ttComputeExerciseScore();
+  const logText = ttState.exerciseLog.length
+    ? ttState.exerciseLog.map(e => {
+        const t = new Date(e.ts).toLocaleTimeString();
+        const d = typeof e.detail === 'object' ? JSON.stringify(e.detail) : (e.detail || '');
+        return `[${t}] ${e.type}: ${d}`;
+      }).join('\n')
+    : 'No log entries recorded.';
+  const breachText = ttState.breach.declared
+    ? `Breach declared at ${new Date(ttState.notifStartTime).toLocaleString()}. Rationale: ${ttState.breach.rationale}`
+    : 'No breach declared during this exercise.';
+  const notifText = TT_NOTIF_ITEMS.map(it => {
+    const c = ttState.notifChecks[it.id];
+    return `${c && c.checked ? '✓' : '✗'} ${it.label}`;
+  }).join('\n');
+  return ttBuildIrpPromptText({
+    scenarioTitle: scenario.title,
+    scenarioSummary: scenario.summary,
+    date: new Date().toLocaleDateString('en-CA'),
+    score: `${sc.total}/100\n- Criticality accuracy: ${sc.critScore}% (${sc.critCorrect}/${sc.critTotal} ratings correct, 35% weight)\n- Declaration quality: ${sc.declScore}% (30% weight)\n- IR phase coverage: ${sc.phaseScore}% (${sc.phasesHit}/${sc.phasesTotal} phases, 20% weight)\n- Notification completeness: ${sc.notifScore}% (${sc.notifChecked}/${sc.notifTotal} items, 15% weight)`,
+    severity: `${ttState.declaration.severity || 'not set'} (correct: ${scenario.declaration.correctSeverity} — ${sc.sevMatch ? 'correct' : 'incorrect'})`,
+    decision: `${ttState.declaration.declare === null ? 'not set' : (ttState.declaration.declare ? 'Declare' : 'Monitor')} (correct: ${scenario.declaration.correctDeclare ? 'Declare' : 'Monitor'} — ${sc.declMatch ? 'correct' : 'incorrect'})`,
+    assessment: ttState.declaration.assessment || 'none provided',
+    breach: breachText,
+    notif: notifText,
+    log: logText,
+  });
+}
+
+function ttBuildIrpPromptFromSession(s) {
+  const scenario = TT_SCENARIOS[s.scenario_id];
+  const log = Array.isArray(s.exercise_log) ? s.exercise_log : [];
+  const logText = log.length
+    ? log.map(e => {
+        const t = e.time || (e.ts ? new Date(e.ts).toLocaleTimeString() : '—');
+        const role = e.role || e.type || '';
+        const action = e.action || (typeof e.detail === 'object' ? JSON.stringify(e.detail) : (e.detail || ''));
+        return `[${t}] ${role}: ${action}`;
+      }).join('\n')
+    : 'No log entries recorded.';
+  const breachText = s.breach_declared
+    ? `Breach declared${s.breach_timestamp ? ' at ' + new Date(s.breach_timestamp).toLocaleString() : ''}${s.breach_rationale ? '. Rationale: ' + s.breach_rationale : ''}`
+    : 'No breach declared during this exercise.';
+  const sevMatch = scenario && s.tl_severity === scenario.declaration?.correctSeverity;
+  const declMatch = scenario && s.tl_declare === scenario.declaration?.correctDeclare;
+  return ttBuildIrpPromptText({
+    scenarioTitle: scenario?.title || s.scenario_title || s.scenario_id,
+    scenarioSummary: scenario?.summary || '',
+    date: s.created_at ? new Date(s.created_at).toLocaleDateString('en-CA') : '—',
+    score: typeof s.exercise_score === 'number' ? `${s.exercise_score}/100` : 'not recorded',
+    severity: `${s.tl_severity || 'not recorded'}${scenario ? ` (correct: ${scenario.declaration.correctSeverity} — ${sevMatch ? 'correct' : 'incorrect'})` : ''}`,
+    decision: `${s.tl_declare == null ? 'not recorded' : (s.tl_declare ? 'Declare' : 'Monitor')}${scenario ? ` (correct: ${scenario.declaration.correctDeclare ? 'Declare' : 'Monitor'} — ${declMatch ? 'correct' : 'incorrect'})` : ''}`,
+    assessment: s.tl_assessment || 'none provided',
+    breach: breachText,
+    notif: 'Notification checklist data not available in historical view.',
+    log: logText,
+  });
+}
+
+function ttBuildIrpPromptText(d) {
+  return `You are a senior cybersecurity consultant and vCISO providing post-exercise analysis for a client's incident response capability.
+
+Below is the output from a tabletop exercise conducted through Abbott Cyber GRC. Following the exercise data, you will find the client's documented Incident Response Plan.
+
+Your task is to evaluate two things:
+A) How closely did the team follow their own documented IR plan during the exercise?
+B) How well does the IR plan itself align with NIST SP 800-61 Rev 2 (Computer Security Incident Handling Guide)?
+
+Be balanced and constructive. The goal is not to score the team harshly — it is to identify whether the plan was useful, whether it was followed, and where it needs strengthening.
+
+## Exercise Data
+
+**Scenario:** ${d.scenarioTitle}
+${d.scenarioSummary}
+
+**Date:** ${d.date}
+**Exercise Score:** ${d.score}
+
+**Step 0 — Technical Lead Declaration**
+- Severity assigned: ${d.severity}
+- Decision: ${d.decision}
+- Written assessment: ${d.assessment}
+
+**Breach Declaration**
+${d.breach}
+
+**Insurer/Regulatory Notifications**
+${d.notif}
+
+**Exercise Event Log**
+${d.log}
+
+---
+
+## Response Format
+
+Return ONLY a valid JSON object. No markdown fences, no prose, no explanation — just the raw JSON:
+
+{
+  "follows_plan_score": <integer 0-100>,
+  "follows_plan_summary": "<2-3 sentences on how well the team followed their documented plan, noting where they diverged or where the plan was silent>",
+  "nist_alignment_score": <integer 0-100>,
+  "nist_alignment_summary": "<2-3 sentences on how well the IR plan aligns to NIST SP 800-61 phases: Preparation, Detection & Analysis, Containment/Eradication/Recovery, Post-Incident Activity>",
+  "strengths": ["<observed strength>", ...],
+  "gaps": ["<gap or improvement area>", ...]
+}
+
+---
+
+## Client Incident Response Plan
+
+[PASTE YOUR IR PLAN BELOW THIS LINE]
+`;
+}
+
+function ttRenderIrpSection(sessionId, saved, isLive) {
+  if (!sessionId) return '';
+
+  if (saved && typeof saved === 'object') {
+    const fpScore  = saved.follows_plan_score    ?? 0;
+    const nistScore = saved.nist_alignment_score ?? 0;
+    const fpCol    = ttScoreColor(fpScore);
+    const nistCol  = ttScoreColor(nistScore);
+    const strengthsHtml = Array.isArray(saved.strengths) && saved.strengths.length
+      ? saved.strengths.map(s => `<div style="display:flex;gap:6px;font-size:12px;margin-bottom:5px"><span style="color:#15803d;flex-shrink:0;margin-top:1px">&#x2713;</span><span>${escH(s)}</span></div>`).join('')
+      : '<div style="font-size:12px;color:var(--muted)">None noted.</div>';
+    const gapsHtml = Array.isArray(saved.gaps) && saved.gaps.length
+      ? saved.gaps.map(g => `<div style="display:flex;gap:6px;font-size:12px;margin-bottom:5px"><span style="color:#d97706;flex-shrink:0;margin-top:1px">&#x26A0;</span><span>${escH(g)}</span></div>`).join('')
+      : '<div style="font-size:12px;color:var(--muted)">None noted.</div>';
+    return `<div class="card" style="margin-bottom:0.75rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <div class="card-title" style="margin:0">&#x1F4CB; IR Plan Comparison</div>
+        <button class="btn btn-outline btn-sm" onclick="ttIrpClearResult('${sessionId}',${isLive})">Re-paste &#x21BA;</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div style="padding:0.85rem;background:var(--bg);border-radius:8px;text-align:center">
+          <div style="font-size:30px;font-weight:800;color:${fpCol};line-height:1">${fpScore}</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin:4px 0 8px">Follows own plan</div>
+          <div style="font-size:11px;color:var(--muted);line-height:1.55;text-align:left">${escH(saved.follows_plan_summary || '')}</div>
+        </div>
+        <div style="padding:0.85rem;background:var(--bg);border-radius:8px;text-align:center">
+          <div style="font-size:30px;font-weight:800;color:${nistCol};line-height:1">${nistScore}</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin:4px 0 8px">NIST 800-61 alignment</div>
+          <div style="font-size:11px;color:var(--muted);line-height:1.55;text-align:left">${escH(saved.nist_alignment_summary || '')}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Strengths</div>
+          ${strengthsHtml}
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Gaps</div>
+          ${gapsHtml}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  return `<div class="card" style="margin-bottom:0.75rem">
+    <div class="card-title">&#x1F4CB; IR Plan Comparison</div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:0.85rem">Compare this exercise against the client's documented IR plan and NIST SP 800-61. Copy the prompt, take it to Claude with the IR plan pasted below it, then paste the JSON response back here.</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:0.85rem">
+      <button class="btn btn-cyan btn-sm" onclick="ttCopyIrpPrompt(${isLive})">&#x1F4CB; Copy Prompt for Claude</button>
+      <span style="font-size:11px;color:var(--muted)">1. Copy prompt &rarr; 2. Paste into Claude with your IR plan &rarr; 3. Paste JSON response below</span>
+    </div>
+    <textarea id="irpPasteArea" placeholder="Paste Claude's JSON response here&hellip;" rows="6"
+      style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-family:monospace;color:var(--text);resize:vertical;outline:none"
+      onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+    <div style="display:flex;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-primary btn-sm" onclick="ttSaveIrComparison('${sessionId}',${isLive})">Save Comparison</button>
+    </div>
   </div>`;
+}
+
+function ttCopyIrpPrompt(isLive) {
+  const prompt = isLive ? ttBuildIrpPrompt() : ttBuildIrpPromptFromSession(ttState.historicalSession);
+  if (!prompt) { toast('Could not build prompt — session data missing', '#dc2626'); return; }
+  navigator.clipboard.writeText(prompt)
+    .then(() => toast('Prompt copied to clipboard', '#15803d'))
+    .catch(() => toast('Copy failed — please select the prompt text manually', '#dc2626'));
+}
+
+async function ttSaveIrComparison(sessionId, isLive) {
+  const el = document.getElementById('irpPasteArea');
+  if (!el || !el.value.trim()) { toast('Paste the Claude JSON response first', '#d97706'); return; }
+  let parsed;
+  try {
+    let raw = el.value.trim();
+    const fence = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (fence) raw = fence[1].trim();
+    parsed = JSON.parse(raw);
+  } catch(e) {
+    toast('Invalid JSON — check the pasted response and try again', '#dc2626');
+    return;
+  }
+  try {
+    await sb.tt.updateSession(sessionId, { ir_comparison: parsed });
+    if (isLive) {
+      ttState.irComparison = parsed;
+    } else {
+      if (ttState.historicalSession) ttState.historicalSession.ir_comparison = parsed;
+    }
+    ttRender();
+    toast('IR plan comparison saved', '#15803d');
+    await auditLog('tabletop_ir_comparison_saved', { session_id: sessionId });
+  } catch(e) {
+    toast('Save failed — ' + e.message, '#dc2626');
+  }
+}
+
+async function ttIrpClearResult(sessionId, isLive) {
+  try {
+    await sb.tt.updateSession(sessionId, { ir_comparison: null });
+    if (isLive) {
+      ttState.irComparison = null;
+    } else {
+      if (ttState.historicalSession) ttState.historicalSession.ir_comparison = null;
+    }
+    ttRender();
+  } catch(e) {
+    toast('Could not clear — ' + e.message, '#dc2626');
+  }
 }
 
 // ---- Excel export ----
@@ -3588,4 +3816,7 @@ window.ttSetInjectTimer = ttSetInjectTimer;
 window.ttSetTimerMult = ttSetTimerMult;
 window.ttAutoLaunchNow = ttAutoLaunchNow;
 window.ttGoHome = ttGoHome;
+window.ttCopyIrpPrompt = ttCopyIrpPrompt;
+window.ttSaveIrComparison = ttSaveIrComparison;
+window.ttIrpClearResult = ttIrpClearResult;
 
