@@ -9,10 +9,7 @@ async function loadOrgProfiles() {
 // bootApp — loads data and renders the app shell.
 // Called after auth is confirmed (either via stored session or fresh login).
 async function bootApp() {
-  // Multiplayer URL routing — intercept before normal app boot
-  if (_MP_PARAMS.has('join') && !_MP_JOIN) { mpShowCodeEntry(); return; }
-  if (_MP_JOIN) { mpBoot(_MP_JOIN); return; }
-  if (_MP_DISP) { dispBoot(_MP_DISP); return; }
+  // Multiplayer URL routing — handled in startApp() before auth check
   try {
     allOrgs = await sb.orgs();
 
@@ -51,6 +48,9 @@ async function bootApp() {
 // startApp — entry point. Checks auth, shows login screen or boots app.
 async function startApp() {
   if (_SUBMIT_TOKEN) { bootSubmissionPortal(_SUBMIT_TOKEN); return; }
+  if (_MP_PARAMS.has('join') && !_MP_JOIN) { mpShowCodeEntry(); return; }
+  if (_MP_JOIN) { mpBoot(_MP_JOIN); return; }
+  if (_MP_DISP) { dispBoot(_MP_DISP); return; }
   document.getElementById('appShell').style.display = 'none';
   const authed = await authBootstrap();
   if (!authed) {
