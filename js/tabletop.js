@@ -1428,7 +1428,10 @@ function ttInit() {
     view: 'setup',                     // setup | commentary | declaration | inject | breach | notif | aar | history_aar | mitre_matrix | mitre_playback
     scenarioId: null,
     facilitatorName: '',
-    mode: 'local',                     // 'local' (one screen) | 'remote' (session code + participant devices)
+    mode: 'local',                     // 'local' | 'remote' | 'autonomous'
+    lobbyTimerMinutes: 10,
+    injectTimerMinutes: 10,
+    timerMultiplier: 1,
     sessionId: null,
     sessionCode: null,
     currentInject: 0,
@@ -1489,8 +1492,9 @@ async function ttLog(type, detail) {
 function renderTabletop() {
   if (!ttState) ttInit();
   switch (ttState.view) {
-    case 'setup':       return ttRenderSetup();
-    case 'commentary':  return ttRenderCommentary();
+    case 'setup':             return ttRenderSetup();
+    case 'auto_lobby_monitor': return ttRenderAutoLobbyMonitor();
+    case 'commentary':        return ttRenderCommentary();
     case 'declaration': return ttRenderDeclaration();
     case 'inject':      return ttRenderInject();
     case 'breach':      return ttRenderBreachGate();
@@ -1548,7 +1552,7 @@ function ttRenderSetup() {
         <input type="text" id="ttFacName" placeholder="e.g. Mark Abbott" value="${ttState.facilitatorName || ''}"/></div>
     </div>
     <div class="field-lbl" style="margin-bottom:5px">Session mode</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
       <div class="mini-opt${ttState.mode === 'local' ? ' sel' : ''}" onclick="ttSetMode('local')" style="align-items:flex-start;padding:10px 12px;cursor:pointer">
         <div style="flex:1">
           <div style="font-size:13px;font-weight:700;color:var(--text)">&#x1F4BB; Local (Facilitated)</div>
@@ -1562,6 +1566,38 @@ function ttRenderSetup() {
         </div>
       </div>
     </div>
+    <div class="mini-opt${ttState.mode === 'autonomous' ? ' sel' : ''}" onclick="ttSetMode('autonomous')" style="align-items:center;padding:10px 14px;cursor:pointer;margin-bottom:${ttState.mode === 'autonomous' ? '8px' : '12px'}">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700;color:var(--text)">&#x1F916; Autonomous (Jackbox-style)</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">No facilitator needed. Participants self-run. Set timers and share the code.</div>
+      </div>
+      <span class="badge b-cyan" style="font-size:9px;white-space:nowrap;margin-left:8px">New</span>
+    </div>
+    ${ttState.mode === 'autonomous' ? `
+    <div style="background:rgba(7,180,217,0.06);border:1px solid rgba(7,180,217,0.18);border-radius:10px;padding:12px 14px;margin-bottom:12px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--cyan);margin-bottom:10px">Autonomous settings</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div>
+          <div class="field-lbl" style="margin-bottom:5px">Lobby wait</div>
+          <div style="display:flex;gap:4px">
+            ${[5,10,15].map(n=>`<button class="btn btn-sm ${ttState.lobbyTimerMinutes===n?'btn-cyan':'btn-outline'}" onclick="ttSetLobbyTimer(${n})">${n}m</button>`).join('')}
+          </div>
+        </div>
+        <div>
+          <div class="field-lbl" style="margin-bottom:5px">Inject timer</div>
+          <div style="display:flex;gap:4px">
+            ${[5,10,15].map(n=>`<button class="btn btn-sm ${ttState.injectTimerMinutes===n?'btn-cyan':'btn-outline'}" onclick="ttSetInjectTimer(${n})">${n}m</button>`).join('')}
+          </div>
+        </div>
+        <div>
+          <div class="field-lbl" style="margin-bottom:5px">Speed</div>
+          <div style="display:flex;gap:4px">
+            ${[1,2,5].map(n=>`<button class="btn btn-sm ${ttState.timerMultiplier===n?'btn-cyan':'btn-outline'}" onclick="ttSetTimerMult(${n})">${n}x</button>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:8px">&#x23F1; Each inject: <strong>${Math.round(ttState.injectTimerMinutes * 60 / ttState.timerMultiplier / 60 * 10) / 10} min</strong> at ${ttState.timerMultiplier}x speed &mdash; lobby auto-launches after ${ttState.lobbyTimerMinutes} min or all roles filled.</div>
+    </div>` : ''}
     <div class="field-lbl" style="margin-bottom:5px">Scenario</div>
     ${(() => {
       const dbScens = (tteState.dbScenarios || []).filter(s => (s.track || 'operational') === 'operational');
@@ -1591,12 +1627,131 @@ function ttRenderSetup() {
 
 function ttPickScenario(id) { ttSnapshot(); ttState.scenarioId = id; ttRender(); }
 function ttSetMode(m) { ttSnapshot(); ttState.mode = m; ttRender(); }
+function ttSetLobbyTimer(n) { ttSnapshot(); ttState.lobbyTimerMinutes = n; ttRender(); }
+function ttSetInjectTimer(n) { ttSnapshot(); ttState.injectTimerMinutes = n; ttRender(); }
+function ttSetTimerMult(n) { ttSnapshot(); ttState.timerMultiplier = n; ttRender(); }
+
+function _ttFmtTime(secs) {
+  const m = Math.floor(Math.max(0,secs) / 60);
+  const s = Math.max(0,secs) % 60;
+  return m + ':' + String(s).padStart(2, '0');
+}
+
+// ---- AUTO LOBBY MONITOR (vCISO view for autonomous sessions) ----
+function ttRenderAutoLobbyMonitor() {
+  const scenario = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
+  const code = ttState.sessionCode || '------';
+  const joinUrl = window.location.origin + window.location.pathname + '?join=' + code;
+  const lobbyMs = ttState.lobbyTimerMinutes * 60 * 1000;
+  const lobbyEnd = (ttState._lobbyStartedAt || Date.now()) + lobbyMs;
+  const effectiveMins = Math.round((ttState.injectTimerMinutes * 60 / ttState.timerMultiplier) / 60 * 10) / 10;
+
+  // Start/restart the monitor interval
+  if (window._ttAutoMonitorInterval) clearInterval(window._ttAutoMonitorInterval);
+  setTimeout(async () => {
+    let pollCount = 0;
+    async function tick() {
+      // Update countdown
+      const secsLeft = Math.max(0, Math.round((lobbyEnd - Date.now()) / 1000));
+      const cdEl = document.getElementById('ttAutoLobbyCountdown');
+      if (cdEl) { cdEl.textContent = _ttFmtTime(secsLeft); if (secsLeft===0) cdEl.style.color='#f87171'; }
+      // Refresh roster every 4 ticks (~4s)
+      if (pollCount % 4 === 0) {
+        try {
+          const parts = await sb.tt.getParticipants(ttState.sessionId);
+          const rosterEl = document.getElementById('ttAutoMonitorRoster');
+          if (rosterEl) {
+            rosterEl.innerHTML = TT_ROLES.map(role => {
+              const p = parts.find(x => x.role_id === role.id);
+              return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+                <span style="font-size:16px">${role.icon}</span>
+                <div style="flex:1;font-size:12px;font-weight:${p?'700':'400'};color:${p?'var(--navy)':'var(--muted)'}">${p?p.player_name:'Open seat'}</div>
+                <span style="font-size:10px;font-weight:700;color:${p?'#15803d':'var(--muted)'}">${p?'&#10003; '+role.name:role.name}</span>
+              </div>`;
+            }).join('');
+            const count = parts.length;
+            const countEl = document.getElementById('ttAutoMonitorCount');
+            if (countEl) countEl.textContent = count + ' / ' + TT_ROLES.length + ' joined';
+          }
+          // Check if session launched (declaration_logged set by participant clients)
+          const sess = await sb.tt.getSession(ttState.sessionId);
+          if (sess && sess.declaration_logged) {
+            clearInterval(window._ttAutoMonitorInterval);
+            const statusEl = document.getElementById('ttAutoMonitorStatus');
+            if (statusEl) statusEl.innerHTML = '<div style="color:#15803d;font-weight:700;font-size:13px">&#10003; Session launched — participants are running the exercise</div>';
+          }
+        } catch {}
+      }
+      pollCount++;
+    }
+    tick(); // immediate first tick
+    window._ttAutoMonitorInterval = setInterval(tick, 1000);
+  }, 50);
+
+  return `${renderTierBanner()}
+  <div class="card" style="border:2px solid var(--cyan);background:rgba(7,180,217,0.04)">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <div style="font-size:28px">&#x1F916;</div>
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--cyan);margin-bottom:2px">Autonomous Exercise — Lobby Open</div>
+        <div style="font-size:16px;font-weight:700;color:var(--navy)">${scenario ? scenario.title : 'Tabletop Exercise'}</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px">Session code</div>
+        <div style="font-size:26px;font-weight:700;letter-spacing:0.2em;color:var(--navy);font-family:monospace">${code}</div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px">Auto-launch in</div>
+        <div id="ttAutoLobbyCountdown" style="font-size:26px;font-weight:700;color:var(--cyan)">—</div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px">Participants</div>
+        <div id="ttAutoMonitorCount" style="font-size:18px;font-weight:700;color:var(--text)">— / ${TT_ROLES.length}</div>
+      </div>
+    </div>
+    <div id="ttAutoMonitorStatus" style="min-height:18px;margin-bottom:12px"></div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px">&#x23F1; Each inject: <strong>${effectiveMins} min</strong> at ${ttState.timerMultiplier}x speed &mdash; launches when all ${TT_ROLES.length} roles fill or timer expires.</div>
+    <div id="ttAutoMonitorRoster" style="margin-bottom:14px"><div style="font-size:11px;color:var(--muted)">Loading participants…</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary btn-sm" onclick="ttAutoLaunchNow()">Launch now</button>
+      <button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText('${joinUrl}').then(()=>toast('Join link copied','#15803d'))">Copy join link</button>
+      <button class="btn btn-outline btn-sm" onclick="ttGoHome()">Back to setup</button>
+    </div>
+  </div>`;
+}
+
+async function ttAutoLaunchNow() {
+  const btn = document.querySelector('[onclick="ttAutoLaunchNow()"]');
+  if (btn) { btn.disabled=true; btn.textContent='Launching…'; }
+  try {
+    await sb.tt.updateSession(ttState.sessionId, {
+      declaration_logged: true,
+      inject_started_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+    const statusEl = document.getElementById('ttAutoMonitorStatus');
+    if (statusEl) statusEl.innerHTML = '<div style="color:#15803d;font-weight:700;font-size:13px">&#10003; Session launched</div>';
+    if (window._ttAutoMonitorInterval) { clearInterval(window._ttAutoMonitorInterval); window._ttAutoMonitorInterval = null; }
+    toast('Exercise launched — participants are now running the exercise', '#15803d');
+  } catch(e) {
+    if (btn) { btn.disabled=false; btn.textContent='Launch now'; }
+    toast('Launch failed: ' + e.message, '#dc2626');
+  }
+}
+
+function ttGoHome() {
+  if (window._ttAutoMonitorInterval) { clearInterval(window._ttAutoMonitorInterval); window._ttAutoMonitorInterval = null; }
+  ttState.view = 'setup';
+  ttRender();
+}
 
 async function ttLaunchSession() {
   ttSnapshot();
   if (!currentOrg) { toast('Select an organization first', '#dc2626'); return; }
   if (!ttState.scenarioId) { toast('Pick a scenario', '#dc2626'); return; }
-  if (!ttState.facilitatorName.trim()) { toast('Enter facilitator name', '#dc2626'); return; }
+  if (ttState.mode !== 'autonomous' && !ttState.facilitatorName.trim()) { toast('Enter facilitator name', '#dc2626'); return; }
   // Load scenario through engine (DB first, then built-in fallback)
   const scenario = await tteLoadScenario(ttState.scenarioId) || TT_SCENARIOS[ttState.scenarioId];
   if (!scenario) { toast('Scenario not found', '#dc2626'); return; }
@@ -1604,25 +1759,40 @@ async function ttLaunchSession() {
   try {
     const code = await sb.tt.newCode();
     if (!code) throw new Error('Session code RPC returned empty');
-    const created = await sb.tt.createSession({
+    const sessionBody = {
       org_id: currentOrg.id,
       scenario_id: scenario.id,
       scenario_title: scenario.title,
       session_code: code,
       status: 'active',
-      facilitator_name: ttState.facilitatorName.trim(),
+      facilitator_name: ttState.facilitatorName.trim() || 'Autonomous',
       current_inject: 0,
       exercise_log: [],
       mode: ttState.mode,
       inject_path: [],
-    });
-    ttState.sessionId = created.id;
+    };
+    if (ttState.mode === 'autonomous') {
+      sessionBody.lobby_timer_minutes  = ttState.lobbyTimerMinutes;
+      sessionBody.lobby_started_at     = new Date().toISOString();
+      sessionBody.inject_timer_minutes = ttState.injectTimerMinutes;
+      sessionBody.timer_multiplier     = ttState.timerMultiplier;
+    }
+    const created = await sb.tt.createSession(sessionBody);
+    ttState.sessionId   = created.id;
     ttState.sessionCode = created.session_code;
-    ttState.view = 'commentary';
-    await ttLog('session_created', { code: created.session_code, scenario: scenario.title, facilitator: ttState.facilitatorName });
-    toast('Session ' + created.session_code + ' created', '#15803d');
-    ttStartFacPoll();
-    ttRender();
+    if (ttState.mode === 'autonomous') {
+      ttState._lobbyStartedAt = new Date(created.lobby_started_at || sessionBody.lobby_started_at).getTime();
+      ttState.view = 'auto_lobby_monitor';
+      await ttLog('session_created', { code: created.session_code, scenario: scenario.title, mode: 'autonomous', lobbyTimer: ttState.lobbyTimerMinutes, injectTimer: ttState.injectTimerMinutes, speed: ttState.timerMultiplier });
+      toast('Autonomous session ' + created.session_code + ' created', '#15803d');
+      ttRender();
+    } else {
+      ttState.view = 'commentary';
+      await ttLog('session_created', { code: created.session_code, scenario: scenario.title, facilitator: ttState.facilitatorName });
+      toast('Session ' + created.session_code + ' created', '#15803d');
+      ttStartFacPoll();
+      ttRender();
+    }
   } catch (e) {
     toast('Could not create session — ' + e.message, '#dc2626');
     console.error(e);
@@ -3413,4 +3583,9 @@ window.ttDeleteActionItem = ttDeleteActionItem;
 window.ttCycleActionStatus = ttCycleActionStatus;
 window.ttPushToRiskRegister = ttPushToRiskRegister;
 window.ttExportActionItemsXlsx = ttExportActionItemsXlsx;
+window.ttSetLobbyTimer = ttSetLobbyTimer;
+window.ttSetInjectTimer = ttSetInjectTimer;
+window.ttSetTimerMult = ttSetTimerMult;
+window.ttAutoLaunchNow = ttAutoLaunchNow;
+window.ttGoHome = ttGoHome;
 

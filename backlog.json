@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.6.0",
   "created": "2026-05-14",
-  "updated": "2026-06-29 (session 96)",
+  "updated": "2026-06-29 (session 97)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -1896,12 +1896,14 @@
         {
           "id": "tt_auto_1",
           "text": "Session creation: vCISO creates an autonomous session (mode = 'autonomous'), selects scenario and optional timer settings, shares the 6-character code — no facilitator role required",
-          "done": false
+          "done": true,
+          "notes": "Minimal build: 'Autonomous (Jackbox-style)' option added to mode selector in ttRenderSetup(). When selected, shows autonomous settings panel with lobby timer (5/10/15m), inject timer (5/10/15m), speed multiplier (1x/2x/5x). Setters: ttSetLobbyTimer(), ttSetInjectTimer(), ttSetTimerMult(). ttLaunchSession() skips facilitator name validation for autonomous mode, writes lobby_timer_minutes, lobby_started_at, inject_timer_minutes, timer_multiplier to session. Routes to auto_lobby_monitor view. SQL: PATCH_058."
         },
         {
           "id": "tt_auto_2",
           "text": "Auto-lobby: waiting room shows connected participants and role fill status; game auto-launches after all critical roles filled OR a countdown timer expires (configurable: 5/10/15 min)",
-          "done": false
+          "done": true,
+          "notes": "mpRenderAutoLobby() in multiplayer.js — async function renders all 5 role cards showing fill status + player names. Countdown timer pulls from session.lobby_started_at + lobby_timer_minutes. setInterval ticks the mpLobbyCountdown element every second. mpStartPoll() detects auto_lobby phase and calls mpUpdateAutoLobbyRoles() + checks launch conditions every 4s. Auto-launch fires when all roles filled OR timer expired: patches declaration_logged=true, inject_started_at=now. _mpAutoLaunching guard prevents double-fire. vCISO sees ttRenderAutoLobbyMonitor() with session code, live roster, countdown, Launch Now button, Copy Join Link button. PATCH_058."
         },
         {
           "id": "tt_auto_3",
@@ -1911,7 +1913,8 @@
         {
           "id": "tt_auto_4",
           "text": "Response timer per inject: optional per-inject countdown (e.g. 10 min); when timer expires the system advances regardless of pending responses — unanswered roles flagged in AAR",
-          "done": false
+          "done": true,
+          "notes": "Timer bar injected in mpRenderInjectView() when session.mode==='autonomous' and inject_timer_minutes>0. Computes injectSecsTotal = inject_timer_minutes*60/timer_multiplier (5x speed = 2min for 10min window). mpTimerBar HTML with mpInjectCountdown countdown and mpTimerFill progress bar. setInterval ticks every 1s, color-codes to amber at 60s and red at 30s. At 0: calls mpAutoAdvanceInject(session, idx) which patches current_inject+1 + inject_started_at=now. Last inject: patches status=complete. _mpAutoAdvancing guard prevents double-fire. mpStartPoll detects inject_started_at change (autonomous mode) to reset timer on auto-advance. PATCH_058."
         },
         {
           "id": "tt_auto_5",

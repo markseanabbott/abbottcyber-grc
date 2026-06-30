@@ -83,6 +83,17 @@ async function mpResume(wrap, saved) {
 }
 
 let mpSelectedRole = null;
+let _mpCountdownTimer = null;
+let _mpAutoLaunching = false;
+let _mpAutoAdvancing = false;
+
+function _mpClearCountdown() {
+  if (_mpCountdownTimer) { clearInterval(_mpCountdownTimer); _mpCountdownTimer = null; }
+}
+function _mpFmtTime(secs) {
+  const s = Math.max(0, Math.round(secs));
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
 
 async function mpShowJoinLobby(wrap, code) {
   wrap.innerHTML = mpScreenHTML(`
@@ -169,12 +180,18 @@ async function mpDoJoin(code) {
 }
 
 function mpRenderFull(wrap, session, playerState) {
+  _mpClearCountdown();
+  _mpAutoAdvancing = false;
   const scenario = TT_SCENARIOS[session.scenario_id];
   if (session.status==='complete') {
-    wrap.innerHTML=mpScreenHTML(`<div style="text-align:center;padding:3rem 1rem"><div style="font-size:40px;margin-bottom:0.75rem">&#10003;</div><div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:0.5rem">Exercise complete</div><div style="font-size:13px;color:rgba(255,255,255,0.55)">The facilitator is reviewing the After Action Report. Well done, ${playerState.playerName}.</div></div>`);
+    wrap.innerHTML=mpScreenHTML(`<div style="text-align:center;padding:3rem 1rem"><div style="font-size:40px;margin-bottom:0.75rem">&#10003;</div><div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:0.5rem">Exercise complete</div><div style="font-size:13px;color:rgba(255,255,255,0.55)">Well done, ${playerState.playerName}. The After Action Report is being prepared.</div></div>`);
     return;
   }
   if (!session.declaration_logged) {
+    if (session.mode === 'autonomous') {
+      mpRenderAutoLobby(wrap, session, playerState);
+      return;
+    }
     const isIC = playerState.roleId==='ic';
     wrap.innerHTML=mpScreenHTML(`
       <div class="mp-card"><div class="mp-label">Waiting for the exercise to begin</div>
@@ -255,8 +272,29 @@ async function mpRenderInjectView(wrap, session, playerState) {
     <div class="mp-label" style="margin-bottom:6px">Your response</div>
     <textarea class="mp-input" id="mpRespText" placeholder="What are you doing / deciding?" style="min-height:80px;resize:vertical;line-height:1.5">${savedText}</textarea>`;
 
+  // Inject timer (autonomous mode only)
+  const hasTimer = session.mode === 'autonomous' && (session.inject_timer_minutes || 0) > 0;
+  let injectSecsTotal = 0, injectSecsLeft = 0;
+  if (hasTimer) {
+    const mult = session.timer_multiplier || 1;
+    injectSecsTotal = Math.round((session.inject_timer_minutes * 60) / mult);
+    const startMs = session.inject_started_at ? new Date(session.inject_started_at).getTime() : Date.now();
+    injectSecsLeft = Math.max(0, injectSecsTotal - Math.round((Date.now() - startMs) / 1000));
+  }
+  const timerBar = hasTimer ? `
+    <div id="mpTimerBar" style="background:rgba(255,255,255,0.06);border-radius:10px;padding:9px 12px;margin-bottom:0.75rem;border:1px solid rgba(255,255,255,0.1)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.38)">Response window</div>
+        <div id="mpInjectCountdown" style="font-size:13px;font-weight:700;color:var(--cyan2)">${_mpFmtTime(injectSecsLeft)}</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.1);border-radius:4px;height:4px;overflow:hidden">
+        <div id="mpTimerFill" style="height:100%;background:var(--cyan);border-radius:4px;width:${injectSecsTotal>0?Math.round((injectSecsLeft/injectSecsTotal)*100):0}%;transition:width 1s linear"></div>
+      </div>
+    </div>` : '';
+
   wrap.innerHTML=mpScreenHTML(`
     ${mpNistBar(inj.phaseIdx)}
+    ${timerBar}
     <div class="mp-card" style="padding:0.75rem 1rem;display:flex;align-items:center;gap:10px;margin-bottom:0.75rem">
       <span style="font-size:22px">${playerState.roleIcon}</span>
       <div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">${playerState.roleName}</div><div style="font-size:10px;color:rgba(255,255,255,0.45)">${playerState.playerName}</div></div>
@@ -284,6 +322,21 @@ async function mpRenderInjectView(wrap, session, playerState) {
         ${savedResp?'Response saved — waiting for facilitator to advance.':''}</div>
     </div>`);
   wrap.dataset.injectIdx=idx;
+  // Start inject countdown interval for autonomous mode
+  if (hasTimer) {
+    const _startMs = session.inject_started_at ? new Date(session.inject_started_at).getTime() : Date.now();
+    _mpCountdownTimer = setInterval(() => {
+      const cdEl = document.getElementById('mpInjectCountdown');
+      const fillEl = document.getElementById('mpTimerFill');
+      if (!cdEl) { _mpClearCountdown(); return; }
+      const secs = Math.max(0, injectSecsTotal - Math.round((Date.now() - _startMs) / 1000));
+      cdEl.textContent = _mpFmtTime(secs);
+      if (fillEl) fillEl.style.width = (injectSecsTotal>0 ? Math.round((secs/injectSecsTotal)*100) : 0)+'%';
+      if (secs <= 30) { cdEl.style.color='#f87171'; if(fillEl) fillEl.style.background='#f87171'; }
+      else if (secs <= 60) { cdEl.style.color='#fb923c'; if(fillEl) fillEl.style.background='#fb923c'; }
+      if (secs === 0) { _mpClearCountdown(); mpAutoAdvanceInject(session, idx); }
+    }, 1000);
+  }
   // If we have saved state, re-enable the button
   if (savedResp) { checkMpReady(); }
 }
@@ -370,9 +423,36 @@ function mpStartPoll(wrap, playerState) {
       const prevDecl=wrap.dataset.declared;
       const nowDecl=String(session.declaration_logged); const nowInject=String(session.current_inject);
       const nowComplete=session.status==='complete';
+
+      // Auto-lobby phase: update roster + check auto-launch conditions
+      if (prevPhase==='auto_lobby') {
+        try {
+          const parts = await sb.tt.getParticipants(session.id);
+          mpUpdateAutoLobbyRoles(parts, playerState);
+          const lobbyEnd = session.lobby_started_at
+            ? new Date(session.lobby_started_at).getTime() + (session.lobby_timer_minutes||10)*60000
+            : 0;
+          const allFilled = TT_ROLES.every(r => parts.find(p => p.role_id === r.id));
+          if ((allFilled || (lobbyEnd > 0 && Date.now() >= lobbyEnd)) && !_mpAutoLaunching) {
+            _mpAutoLaunching = true;
+            await mpAutoLaunch(session.id);
+          }
+        } catch {}
+        // If launched, fall through to re-render
+        if (nowDecl !== prevDecl) {
+          wrap.dataset.declared=nowDecl; _mpAutoLaunching=false; _mpCrit=null;
+          mpRenderFull(wrap,session,playerState);
+        }
+        return;
+      }
+
       if (prevPhase==='waiting') mpRefreshRoster(session.id);
-      if (nowDecl!==prevDecl||nowInject!==prevInject||nowComplete) {
-        wrap.dataset.declared=nowDecl; wrap.dataset.injectIdx=nowInject; _mpCrit=null;
+
+      // Detect inject_started_at change (autonomous auto-advance resets timer)
+      const nowStart = session.inject_started_at || '';
+      const prevStart = wrap.dataset.injectStart || '';
+      if (nowDecl!==prevDecl||nowInject!==prevInject||nowComplete||(session.mode==='autonomous'&&nowStart!==prevStart)) {
+        wrap.dataset.declared=nowDecl; wrap.dataset.injectIdx=nowInject; wrap.dataset.injectStart=nowStart; _mpCrit=null;
         mpRenderFull(wrap,session,playerState);
       }
     } catch {}
@@ -390,6 +470,134 @@ async function mpRefreshRoster(sessionId) {
       return `<div class="mp-roster-item"><span class="mp-roster-icon">${role?role.icon:'?'}</span><div><div class="mp-roster-name">${p.player_name}</div><div class="mp-roster-role">${p.role_name}</div></div></div>`;
     }).join('');
   } catch {}
+}
+
+// ============================================================
+// AUTONOMOUS MODE — Lobby + Inject Timer
+// ============================================================
+
+async function mpRenderAutoLobby(wrap, session, playerState) {
+  let participants = [];
+  try { participants = await sb.tt.getParticipants(session.id); } catch {}
+
+  const lobbyMs  = (session.lobby_timer_minutes || 10) * 60 * 1000;
+  const lobbyStart = session.lobby_started_at ? new Date(session.lobby_started_at).getTime() : Date.now();
+  const lobbyEnd   = lobbyStart + lobbyMs;
+  const secsLeft   = Math.max(0, Math.round((lobbyEnd - Date.now()) / 1000));
+  const allFilled  = TT_ROLES.every(r => participants.find(p => p.role_id === r.id));
+
+  // Auto-launch if all roles filled or timer expired
+  if ((allFilled || secsLeft <= 0) && !_mpAutoLaunching) {
+    _mpAutoLaunching = true;
+    try {
+      await sb.tt.updateSession(session.id, {
+        declaration_logged: true,
+        inject_started_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    } catch { _mpAutoLaunching = false; }
+    return; // poll will detect declaration_logged change and re-render
+  }
+
+  const scenario = TT_SCENARIOS[session.scenario_id];
+  const mult = session.timer_multiplier || 1;
+  const effectiveMins = session.inject_timer_minutes
+    ? Math.round((session.inject_timer_minutes * 60 / mult) / 60 * 10) / 10 : null;
+
+  wrap.innerHTML = mpScreenHTML(`
+    <div class="mp-card">
+      <div class="mp-label">Autonomous Exercise &mdash; Lobby</div>
+      <div style="font-size:15px;font-weight:700;color:#fff;margin:6px 0">${scenario ? scenario.title : 'Tabletop Exercise'}</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.4)">Session <span style="color:var(--cyan2);font-weight:700;letter-spacing:0.08em">${session.session_code}</span></div>
+    </div>
+    <div class="mp-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="mp-label">Participants (${participants.length} / ${TT_ROLES.length})</div>
+        <div style="text-align:right">
+          <div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em">Auto-launch</div>
+          <div id="mpLobbyCountdown" style="font-size:15px;font-weight:700;color:var(--cyan2)">${_mpFmtTime(secsLeft)}</div>
+        </div>
+      </div>
+      <div id="mpAutoLobbyRoles">${_mpBuildRoleCards(participants, playerState)}</div>
+      ${allFilled ? '<div style="text-align:center;padding:6px 0;font-size:12px;color:#4ade80;font-weight:700">All roles filled &mdash; launching&hellip;</div>' : ''}
+    </div>
+    ${effectiveMins ? `<div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:8px 12px;font-size:11px;color:rgba(255,255,255,0.4);text-align:center">Each inject: ${effectiveMins} min${mult>1?' at '+mult+'x speed':''}</div>` : ''}
+    <div style="text-align:center;margin-top:1rem">
+      <div class="mp-spinner"></div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.4)">Waiting for all participants to join&hellip;</div>
+    </div>
+    <div style="margin-top:1.25rem;background:rgba(0,0,0,0.2);border-radius:8px;padding:0.75rem 1rem;border:1px solid rgba(255,255,255,0.06)">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.32);margin-bottom:5px">&#128274; Rejoin code</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.55)">Session <span style="color:var(--cyan2);font-weight:700;letter-spacing:0.08em">${session.session_code}</span> &mdash; rejoin as <span style="color:var(--cyan2);font-weight:700">${playerState.playerName}</span> &rarr; <span style="color:var(--cyan2)">${playerState.roleName}</span></div>
+    </div>`);
+
+  wrap.dataset.phase = 'auto_lobby';
+
+  // Countdown tick (visual only — auto-launch check happens in poll)
+  _mpCountdownTimer = setInterval(() => {
+    const el = document.getElementById('mpLobbyCountdown');
+    if (!el) { _mpClearCountdown(); return; }
+    const left = Math.max(0, Math.round((lobbyEnd - Date.now()) / 1000));
+    el.textContent = _mpFmtTime(left);
+    if (left === 0) el.style.color = '#f87171';
+  }, 1000);
+}
+
+function _mpBuildRoleCards(participants, playerState) {
+  return TT_ROLES.map(role => {
+    const p = participants.find(x => x.role_id === role.id);
+    const isMe = playerState && playerState.roleId === role.id;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:${p?'rgba(7,180,217,0.1)':'rgba(255,255,255,0.03)'};border-radius:8px;border:1px solid ${p?'rgba(7,180,217,0.25)':'rgba(255,255,255,0.07)'};margin-bottom:5px">
+      <span style="font-size:20px">${role.icon}</span>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:700;color:${p?'#e2f3f8':'rgba(255,255,255,0.35)'}">
+          ${role.name}${isMe?' <span style="color:var(--cyan);font-size:10px">(you)</span>':''}
+        </div>
+        <div style="font-size:11px;color:${p?'rgba(255,255,255,0.6)':'rgba(255,255,255,0.25)'}">${p?p.player_name:'Waiting&hellip;'}</div>
+      </div>
+      <span style="font-size:16px">${p?'&#10003;':'&#9675;'}</span>
+    </div>`;
+  }).join('');
+}
+
+function mpUpdateAutoLobbyRoles(participants, playerState) {
+  const el = document.getElementById('mpAutoLobbyRoles');
+  if (el) el.innerHTML = _mpBuildRoleCards(participants, playerState);
+}
+
+async function mpAutoLaunch(sessionId) {
+  try {
+    await sb.tt.updateSession(sessionId, {
+      declaration_logged: true,
+      inject_started_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+  } catch { _mpAutoLaunching = false; }
+}
+
+async function mpAutoAdvanceInject(session, idx) {
+  if (_mpAutoAdvancing) return;
+  _mpAutoAdvancing = true;
+  const scenario = TT_SCENARIOS[session.scenario_id];
+  const nextIdx = idx + 1;
+  const isLast = !scenario || nextIdx >= scenario.injects.length;
+  try {
+    if (isLast) {
+      await sb.tt.updateSession(session.id, {
+        status: 'complete',
+        current_inject: nextIdx,
+        updated_at: new Date().toISOString(),
+      });
+    } else {
+      await sb.tt.updateSession(session.id, {
+        current_inject: nextIdx,
+        inject_started_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    }
+  } catch { _mpAutoAdvancing = false; }
+  // Reset after 8s to unblock other clients if needed
+  setTimeout(() => { _mpAutoAdvancing = false; }, 8000);
 }
 
 // ============================================================
@@ -650,5 +858,9 @@ const TT_OPTIONS = {
     ]}
   ]
 };
+
+window.mpAutoLaunch = mpAutoLaunch;
+window.mpAutoAdvanceInject = mpAutoAdvanceInject;
+window.mpUpdateAutoLobbyRoles = mpUpdateAutoLobbyRoles;
 
 
