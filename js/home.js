@@ -577,7 +577,9 @@ function _widgetTabletop(h) {
     opSessions.forEach(s => {
       const log = Array.isArray(s.exercise_log) ? s.exercise_log : [];
       const row = { type: 'op', title: s.scenario_title || 'Operational', date: s.created_at ? s.created_at.substring(0, 10) : '', injectCount: log.length, discussionCount: null, notifCount: null, breach: s.breach_declared, severity: s.tl_severity || '—', rubric_scores: s.rubric_scores || null };
-      rows.push({ ...row, score: exCalcScore(row) });
+      // Prefer the stored 4-dimension exercise_score; fall back to simplified calc for old sessions
+      const score = typeof s.exercise_score === 'number' ? s.exercise_score : exCalcScore(row);
+      rows.push({ ...row, score });
     });
   }
   rows.sort((a, b) => b.date.localeCompare(a.date)); // newest first
