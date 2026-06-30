@@ -1029,6 +1029,8 @@ function ttInit() {
     completedSessions: null,           // null = not yet loaded; [] = loaded, empty
     historicalSession: null,           // set when view = 'history_aar'
     playbackStep: 0,                   // current step index in mitre_playback view
+    actionItems: null,                 // null = not yet loaded; [] = empty; [...] = loaded
+    actionItemForm: null,              // null = hidden; {} = new; {id,...} = edit
   };
   tteClearRubric();
   tteLoadDbScenarios();
@@ -2216,6 +2218,245 @@ function ttRenderMitrePlayback() {
   </div>`;
 }
 
+// ---- Action Items ----
+async function ttLoadActionItems() {
+  if (!ttState || !ttState.sessionId) return;
+  try {
+    ttState.actionItems = await sb.tt.listActionItems(ttState.sessionId);
+  } catch(e) {
+    ttState.actionItems = [];
+  }
+  ttRender();
+}
+
+function ttOpenActionForm() {
+  ttState.actionItemForm = { description: '', owner: '', due_date: '', priority: 'High', source_inject_idx: null, notes: '' };
+  ttRender();
+}
+
+function ttOpenActionFormSuggested(desc) {
+  ttState.actionItemForm = { description: desc, owner: '', due_date: '', priority: 'High', source_inject_idx: null, notes: '' };
+  ttRender();
+}
+
+function ttCancelActionForm() {
+  ttState.actionItemForm = null;
+  ttRender();
+}
+
+function ttEditActionItem(id) {
+  const item = (ttState.actionItems || []).find(i => i.id === id);
+  if (!item) return;
+  ttState.actionItemForm = { ...item };
+  ttRender();
+}
+
+async function ttSaveActionItem() {
+  if (!ttState || !ttState.actionItemForm) return;
+  const form = ttState.actionItemForm;
+  const desc     = (document.getElementById('ttAiDesc')     || {}).value || '';
+  const owner    = (document.getElementById('ttAiOwner')    || {}).value || '';
+  const due      = (document.getElementById('ttAiDue')      || {}).value || null;
+  const priority = (document.getElementById('ttAiPriority') || {}).value || 'High';
+  const srcRaw   = (document.getElementById('ttAiInject')   || {}).value;
+  const notes    = (document.getElementById('ttAiNotes')    || {}).value || '';
+  const srcIdx   = srcRaw !== '' && srcRaw !== undefined ? parseInt(srcRaw) : null;
+  if (!desc.trim()) { toast('Description is required', '#dc2626'); return; }
+  try {
+    if (form.id) {
+      await sb.tt.updateActionItem(form.id, {
+        description: desc.trim(), owner: owner.trim(),
+        due_date: due || null, priority,
+        source_inject_idx: srcIdx,
+        notes: notes.trim(), updated_at: new Date().toISOString(),
+      });
+      auditLog('tabletop_action_item_update', { id: form.id });
+      toast('Action item updated', '#15803d');
+    } else {
+      await sb.tt.createActionItem({
+        session_id: ttState.sessionId, org_id: currentOrg.id,
+        description: desc.trim(), owner: owner.trim(),
+        due_date: due || null, priority,
+        source_inject_idx: srcIdx, notes: notes.trim(),
+      });
+      auditLog('tabletop_action_item_create', { session_id: ttState.sessionId });
+      toast('Action item added', '#15803d');
+    }
+    ttState.actionItemForm = null;
+    ttState.actionItems = null;
+    await ttLoadActionItems();
+  } catch(e) { toast('Save failed — ' + e.message, '#dc2626'); }
+}
+
+async function ttDeleteActionItem(id) {
+  if (!confirm('Delete this action item?')) return;
+  try {
+    await sb.tt.deleteActionItem(id);
+    auditLog('tabletop_action_item_delete', { id });
+    toast('Deleted', '#dc2626');
+    ttState.actionItems = null;
+    await ttLoadActionItems();
+  } catch(e) { toast('Delete failed — ' + e.message, '#dc2626'); }
+}
+
+async function ttCycleActionStatus(id, current) {
+  const next = { open: 'in_progress', in_progress: 'closed', closed: 'open' }[current] || 'open';
+  try {
+    await sb.tt.updateActionItem(id, { status: next, updated_at: new Date().toISOString() });
+    auditLog('tabletop_action_item_status', { id, status: next });
+    ttState.actionItems = null;
+    await ttLoadActionItems();
+  } catch(e) { toast('Update failed', '#dc2626'); }
+}
+
+function ttRenderActionItems() {
+  if (!ttState.sessionId) return '';
+  if (ttState.actionItems === null) {
+    ttLoadActionItems();
+    return `<div class="card" style="margin-bottom:.75rem"><div style="font-size:12px;color:var(--muted)">Loading action items…</div></div>`;
+  }
+
+  const scenario = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
+  const items    = ttState.actionItems;
+  const form     = ttState.actionItemForm;
+
+  const PRIO_ORDER  = { Critical: 0, High: 1, Medium: 2, Low: 3 };
+  const PRIO_COLOR  = { Critical: '#dc2626', High: '#ea580c', Medium: '#d97706', Low: '#6b7280' };
+  const STAT_LABEL  = { open: 'Open', in_progress: 'In Progress', closed: 'Closed' };
+  const STAT_COLOR  = { open: '#d97706', in_progress: 'var(--cyan)', closed: '#15803d' };
+
+  const sorted = [...items].sort((a, b) => {
+    const pd = PRIO_ORDER[a.priority] - PRIO_ORDER[b.priority];
+    return pd !== 0 ? pd : new Date(a.created_at) - new Date(b.created_at);
+  });
+
+  // Suggested gaps from exercise data
+  const suggestions = [];
+  if (scenario) {
+    scenario.injects.forEach((inj, i) => {
+      const r = ttState.responses[i] || {};
+      const misses = TT_ROLES.filter(role => {
+        const cr = r[role.id] && r[role.id].criticality;
+        return cr && cr !== inj.correctCriticality;
+      });
+      if (misses.length) suggestions.push(`Improve criticality classification — Inject ${i+1}: ${inj.title} (${misses.length} role${misses.length > 1 ? 's' : ''} miscategorized)`);
+    });
+    TT_NOTIF_ITEMS.forEach(it => {
+      const c = ttState.notifChecks[it.id];
+      if (!c || !c.checked) suggestions.push(`Establish procedure: ${it.label}`);
+    });
+    const sevMatch  = ttState.declaration.severity === scenario.declaration.correctSeverity;
+    const declMatch = ttState.declaration.declare  === scenario.declaration.correctDeclare;
+    if (!sevMatch || !declMatch) suggestions.push('Review and document severity classification and breach declaration criteria');
+  }
+  const existingDescs   = new Set(items.map(i => i.description.toLowerCase().trim()));
+  const freshSuggestions = suggestions.filter(s => !existingDescs.has(s.toLowerCase().trim())).slice(0, 6);
+
+  // Inject source options
+  const injectOpts = scenario
+    ? scenario.injects.map((inj, i) => `<option value="${i}" ${form && form.source_inject_idx === i ? 'selected' : ''}>Inject ${i+1} — ${inj.title}</option>`).join('')
+    : '';
+
+  // Inline form
+  const formHtml = form ? `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:.75rem">
+      <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:.65rem">${form.id ? 'Edit Action Item' : 'New Action Item'}</div>
+      <div style="display:flex;flex-direction:column;gap:.5rem">
+        <div>
+          <label style="font-size:11px;font-weight:600;color:var(--muted)">Gap / Action Description *</label>
+          <textarea id="ttAiDesc" rows="2" style="width:100%;padding:.4rem .6rem;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;resize:vertical;margin-top:2px;box-sizing:border-box">${form.description || ''}</textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--muted)">Owner</label>
+            <input id="ttAiOwner" type="text" value="${(form.owner || '').replace(/"/g,'&quot;')}" placeholder="Name or role" style="width:100%;padding:.35rem .6rem;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-top:2px;box-sizing:border-box">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--muted)">Due Date</label>
+            <input id="ttAiDue" type="date" value="${form.due_date || ''}" style="width:100%;padding:.35rem .6rem;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-top:2px;box-sizing:border-box">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--muted)">Priority</label>
+            <select id="ttAiPriority" style="width:100%;padding:.35rem .6rem;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-top:2px;box-sizing:border-box">
+              ${['Critical','High','Medium','Low'].map(p => `<option value="${p}" ${(form.priority || 'High') === p ? 'selected' : ''}>${p}</option>`).join('')}
+            </select>
+          </div>
+          ${injectOpts ? `<div>
+            <label style="font-size:11px;font-weight:600;color:var(--muted)">Source Inject</label>
+            <select id="ttAiInject" style="width:100%;padding:.35rem .6rem;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-top:2px;box-sizing:border-box">
+              <option value="">— Not linked —</option>
+              ${injectOpts}
+            </select>
+          </div>` : ''}
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:600;color:var(--muted)">Notes</label>
+          <textarea id="ttAiNotes" rows="1" placeholder="Optional context or remediation steps" style="width:100%;padding:.4rem .6rem;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;resize:vertical;margin-top:2px;box-sizing:border-box">${form.notes || ''}</textarea>
+        </div>
+      </div>
+      <div style="display:flex;gap:.5rem;margin-top:.65rem;justify-content:flex-end">
+        <button class="btn btn-outline btn-sm" onclick="ttCancelActionForm()">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="ttSaveActionItem()">Save</button>
+      </div>
+    </div>` : '';
+
+  // Suggestion chips
+  const suggestHtml = (!form && freshSuggestions.length) ? `
+    <div style="margin-bottom:.75rem">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem">Suggested from exercise gaps</div>
+      <div style="display:flex;flex-direction:column;gap:.3rem">
+        ${freshSuggestions.map(s => `
+          <button onclick="ttOpenActionFormSuggested(${JSON.stringify(s).replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')})" style="text-align:left;font-size:11px;color:var(--navy);padding:.3rem .65rem;border:1px dashed var(--cyan);border-radius:6px;background:rgba(7,180,217,.05);cursor:pointer;font-family:inherit;line-height:1.4;white-space:normal">
+            <span style="color:var(--cyan);font-weight:700;margin-right:4px">+ Add:</span>${s}
+          </button>`).join('')}
+      </div>
+    </div>` : '';
+
+  // Item rows
+  const itemRowsHtml = sorted.length ? sorted.map(item => {
+    const injectLabel = item.source_inject_idx !== null && item.source_inject_idx !== undefined && scenario
+      ? ` <span style="color:var(--muted);font-weight:400"> — Inject ${item.source_inject_idx + 1}</span>` : '';
+    const dueDate = item.due_date ? new Date(item.due_date + 'T00:00:00').toLocaleDateString() : null;
+    const overdue = item.due_date && item.status !== 'closed' && new Date(item.due_date + 'T00:00:00') < new Date();
+    return `<div style="border:1px solid var(--border);border-left:4px solid ${PRIO_COLOR[item.priority] || 'var(--muted)'};border-radius:6px;padding:.65rem .75rem;margin-bottom:.4rem">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:600;color:var(--text);line-height:1.4;margin-bottom:.3rem">${item.description}${injectLabel}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:.3rem;align-items:center">
+            <span style="font-size:10px;font-weight:700;color:${PRIO_COLOR[item.priority]};padding:1px 7px;border:1px solid ${PRIO_COLOR[item.priority]};border-radius:4px">${item.priority}</span>
+            <button onclick="ttCycleActionStatus('${item.id}','${item.status}')" style="font-size:10px;font-weight:600;color:${STAT_COLOR[item.status]};padding:1px 7px;border:1px solid ${STAT_COLOR[item.status]};border-radius:4px;background:none;cursor:pointer;font-family:inherit">${STAT_LABEL[item.status]} ↻</button>
+            ${item.owner ? `<span style="font-size:10px;color:var(--muted)">&#x1F464; ${item.owner}</span>` : ''}
+            ${dueDate ? `<span style="font-size:10px;color:${overdue ? '#dc2626' : 'var(--muted)'}">&#x1F4C5; ${dueDate}${overdue ? ' — Overdue' : ''}</span>` : ''}
+          </div>
+          ${item.notes ? `<div style="font-size:11px;color:var(--muted);margin-top:.3rem;font-style:italic">${item.notes}</div>` : ''}
+        </div>
+        <div style="display:flex;gap:.3rem;flex-shrink:0">
+          <button class="btn btn-outline btn-sm" onclick="ttEditActionItem('${item.id}')" style="font-size:11px;padding:.2rem .5rem">Edit</button>
+          <button class="btn btn-red btn-sm" onclick="ttDeleteActionItem('${item.id}')" style="font-size:11px;padding:.2rem .5rem">&#x1F5D1;</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('') : (!form ? `<div style="font-size:12px;color:var(--muted);font-style:italic;padding:.25rem 0">No action items yet — add items from the suggestions above or click the button.</div>` : '');
+
+  const openCount   = items.filter(i => i.status !== 'closed').length;
+  const closedCount = items.filter(i => i.status === 'closed').length;
+
+  return `<div class="card" style="margin-bottom:.75rem">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem">
+      <div>
+        <div class="card-title" style="margin-bottom:.15rem">&#x1F4CB; Action Items</div>
+        ${items.length ? `<div style="font-size:11px;color:var(--muted)">${openCount} open &bull; ${closedCount} closed</div>` : ''}
+      </div>
+      ${!form ? `<button class="btn btn-primary btn-sm" onclick="ttOpenActionForm()">+ Add Action Item</button>` : ''}
+    </div>
+    ${formHtml}
+    ${suggestHtml}
+    ${itemRowsHtml}
+  </div>`;
+}
+
 // ---- AAR ----
 function ttRenderAAR() {
   const scenario = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
@@ -2336,6 +2577,8 @@ function ttRenderAAR() {
       Upload your ratified IR plan to auto-compare against this exercise's event log. The automated comparison is on the backlog (item t34a). For now, the facilitator reviews the timeline above against the plan manually and notes where decisions diverged from documented procedure or where the plan was silent.
     </div>
   </div>
+
+  ${ttRenderActionItems()}
 
   ${ttState.readonly ? `
   <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
@@ -2532,4 +2775,11 @@ function ttRenderHistoryAAR() {
 // ---- Window exports ----
 window.ttPlaybackNext = ttPlaybackNext;
 window.ttPlaybackPrev = ttPlaybackPrev;
+window.ttOpenActionForm = ttOpenActionForm;
+window.ttOpenActionFormSuggested = ttOpenActionFormSuggested;
+window.ttCancelActionForm = ttCancelActionForm;
+window.ttEditActionItem = ttEditActionItem;
+window.ttSaveActionItem = ttSaveActionItem;
+window.ttDeleteActionItem = ttDeleteActionItem;
+window.ttCycleActionStatus = ttCycleActionStatus;
 

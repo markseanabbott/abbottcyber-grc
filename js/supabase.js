@@ -292,4 +292,15 @@ sb.tt = {
     const r = await sbFetch(`tabletop_sessions?org_id=eq.${orgId}&status=eq.complete&order=created_at.desc`);
     return r || [];
   },
+  // Action items (PATCH_055)
+  listActionItems: async (sessionId) => {
+    const r = await sbFetch(`tabletop_action_items?session_id=eq.${sessionId}&order=created_at.asc`);
+    return r || [];
+  },
+  createActionItem: async (row) => {
+    const r = await sbFetch('tabletop_action_items', 'POST', row, { Prefer: 'return=representation' });
+    return Array.isArray(r) ? r[0] : r;
+  },
+  updateActionItem: (id, patch) => sbFetch(`tabletop_action_items?id=eq.${id}`, 'PATCH', patch, { Prefer: 'return=representation' }),
+  deleteActionItem: (id) => sbFetch(`tabletop_action_items?id=eq.${id}`, 'DELETE'),
 };
