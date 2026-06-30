@@ -1166,7 +1166,7 @@ async function ttLaunchSession() {
 
 // ---- COMMENTARY ----
 function ttRenderCommentary() {
-  const scenario = TT_SCENARIOS[ttState.scenarioId];
+  const scenario = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
   return `${renderTierBanner()}
   ${ttHeaderBar()}
   <div class="commentary-card">
@@ -1195,7 +1195,7 @@ function ttRenderCommentary() {
 
 // ---- DECLARATION (Step 0) ----
 function ttRenderDeclaration() {
-  const scenario = TT_SCENARIOS[ttState.scenarioId];
+  const scenario = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
   const d = scenario.declaration;
   const tlSev = ttState.declaration.severity;
   const tlDec = ttState.declaration.declare;
@@ -1624,7 +1624,7 @@ function ttRenderNotif() {
 
 function ttBackToLastInject() {
   ttSnapshot();
-  const scenario = TT_SCENARIOS[ttState.scenarioId];
+  const scenario = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
   ttState.currentInject = Math.min(ttState.currentInject, scenario.injects.length - 1);
   ttState.view = 'inject';
   ttRender();
@@ -1761,7 +1761,7 @@ async function ttSaveRubric() {
 
 // ---- AAR ----
 function ttRenderAAR() {
-  const scenario = TT_SCENARIOS[ttState.scenarioId];
+  const scenario = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
   const totalInjects = scenario.injects.length;
   const injectsAnswered = Object.keys(ttState.responses).length;
   let critTotal = 0, critCorrect = 0;
@@ -1892,7 +1892,7 @@ async function ttFinalise() {
       notif_filed: Object.values(ttState.notifChecks).some(n => n.checked),
       updated_at: new Date().toISOString(),
     });
-    await ttLog('exercise_complete', { totalInjects: TT_SCENARIOS[ttState.scenarioId].injects.length });
+    await ttLog('exercise_complete', { totalInjects: (tteState.scenario || TT_SCENARIOS[ttState.scenarioId]).injects.length });
     toast('Exercise marked complete', '#15803d');
   } catch (e) { toast('Save failed — ' + e.message, '#dc2626'); }
 }
