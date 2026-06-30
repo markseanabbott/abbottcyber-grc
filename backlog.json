@@ -2,7 +2,7 @@
   "project": "Abbott Cyber Consulting — GRC Security Scorecard",
   "version": "1.6.0",
   "created": "2026-05-14",
-  "updated": "2026-06-30 (session 101)",
+  "updated": "2026-06-30 (session 102)",
   "description": "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
   "build_approach": "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
   "sections": [
@@ -2429,9 +2429,10 @@
         {
           "id": "aig4",
           "text": "AI Risk Register auto-population from AI Assessment POAM — same pattern as CIS POAM feeding main risk register. Source = 'ai_assessment'. Sync button on AI Risk Register or auto-runs on AI Assessment completion.",
-          "done": false,
+          "done": true,
           "priority": "Medium",
-          "phase": 2
+          "phase": 2,
+          "notes": "All logic was pre-built: rrSyncFromAiPoam() in risk_register.js (reads ai_unified POAM from orgAssessments, calls sb.riskRegister.syncAi()), sb.riskRegister.syncAi() in supabase.js (calls RPC sync_ai_poam_to_risk_register), _aiuBuildRrItems() in ai_unified.js (builds row objects from POAM items), auto-sync wired in aiuSavePoam() fire-and-forget. SUPABASE_PATCH_020.sql adds the RPC + partial unique index (source=ai_poam). Only missing piece was the rendered button — added '↻ AI Gov' button to risk_register.js module header alongside existing '↻ CIS POAM'. Source field = 'ai_poam'."
         },
         {
           "id": "aig5",

@@ -5626,7 +5626,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('aig4', 'ai_governance', 'AI Governance', 1, 3, 'AI Risk Register auto-population from AI Assessment POAM â€” same pattern as CIS POAM feeding main risk register. Source = ''ai_assessment''. Sync button on AI Risk Register or auto-runs on AI Assessment completion.', false, 'Medium', NULL, '[]', 'add')
+VALUES ('aig4', 'ai_governance', 'AI Governance', 1, 3, 'AI Risk Register auto-population from AI Assessment POAM â€” same pattern as CIS POAM feeding main risk register. Source = ''ai_assessment''. Sync button on AI Risk Register or auto-runs on AI Assessment completion.', true, 'Medium', 'All logic was pre-built: rrSyncFromAiPoam() in risk_register.js (reads ai_unified POAM from orgAssessments, calls sb.riskRegister.syncAi()), sb.riskRegister.syncAi() in supabase.js (calls RPC sync_ai_poam_to_risk_register), _aiuBuildRrItems() in ai_unified.js (builds row objects from POAM items), auto-sync wired in aiuSavePoam() fire-and-forget. SUPABASE_PATCH_020.sql adds the RPC + partial unique index (source=ai_poam). Only missing piece was the rendered button â€” added ''â†» AI Gov'' button to risk_register.js module header alongside existing ''â†» CIS POAM''. Source field = ''ai_poam''.', '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,

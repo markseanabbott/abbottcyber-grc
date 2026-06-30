@@ -49,6 +49,7 @@ function renderRiskRegister() {
     </div>
     <div style="display:flex;gap:.5rem;flex-wrap:wrap">
       <button class="btn btn-outline btn-sm" onclick="rrSyncFromPoam()" title="Pull latest CIS POAM gaps into the register">↻ CIS POAM</button>
+      <button class="btn btn-outline btn-sm" onclick="rrSyncFromAiPoam()" title="Pull latest AI Governance POAM into the register">↻ AI Gov</button>
       <button class="btn btn-outline btn-sm" onclick="rrExportExcel()">↓ Excel</button>
       <button class="btn btn-cyan btn-sm" onclick="rrOpenAdd()">+ Add Risk</button>
     </div>
