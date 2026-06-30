@@ -3173,7 +3173,7 @@ function ttComputeExerciseScore() {
   const total = Math.max(0, Math.min(100, Math.round(
     critScore * 0.35 + declScore * 0.30 + phaseScore * 0.20 + notifScore * 0.15
   )));
-  return { total, critScore: Math.round(critScore), declScore: Math.round(declScore), phaseScore: Math.round(phaseScore), notifScore: Math.round(notifScore), critCorrect, critTotal, phasesHit: phasesWithResponses.size, phasesTotal: phasesInScenario.size, notifChecked, notifTotal: TT_NOTIF_ITEMS.length };
+  return { total, critScore: Math.round(critScore), declScore: Math.round(declScore), phaseScore: Math.round(phaseScore), notifScore: Math.round(notifScore), critCorrect, critTotal, phasesHit: phasesWithResponses.size, phasesTotal: phasesInScenario.size, notifChecked, notifTotal: TT_NOTIF_ITEMS.length, sevMatch, declMatch };
 }
 
 function ttScoreColor(score) {
@@ -3222,13 +3222,13 @@ function ttRenderAAR() {
       <div>
         <div style="font-size:11px;color:var(--muted)">TL severity called</div>
         <div style="font-size:14px;font-weight:700">${ttState.declaration.severity || '—'}
-          <span style="font-size:11px;color:${sevMatch ? 'var(--green)' : 'var(--red)'};font-weight:700">${sevMatch ? '&#x2713; matches' : '&#x2717; correct was ' + scenario.declaration.correctSeverity}</span>
+          <span style="font-size:11px;color:${sc.sevMatch ? 'var(--green)' : 'var(--red)'};font-weight:700">${sc.sevMatch ? '&#x2713; matches' : '&#x2717; correct was ' + scenario.declaration.correctSeverity}</span>
         </div>
       </div>
       <div>
         <div style="font-size:11px;color:var(--muted)">TL recommendation</div>
         <div style="font-size:14px;font-weight:700">${ttState.declaration.declare === null ? '—' : (ttState.declaration.declare ? 'Declare' : 'Monitor')}
-          <span style="font-size:11px;color:${declMatch ? 'var(--green)' : 'var(--red)'};font-weight:700">${declMatch ? '&#x2713; matches' : '&#x2717; correct was ' + (scenario.declaration.correctDeclare ? 'Declare' : 'Monitor')}</span>
+          <span style="font-size:11px;color:${sc.declMatch ? 'var(--green)' : 'var(--red)'};font-weight:700">${sc.declMatch ? '&#x2713; matches' : '&#x2717; correct was ' + (scenario.declaration.correctDeclare ? 'Declare' : 'Monitor')}</span>
         </div>
       </div>
     </div>
