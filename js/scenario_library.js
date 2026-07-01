@@ -816,6 +816,13 @@ async function slViewAAR(sessionId) {
     ttState.notifStartTime  = session.breach_timestamp || null;
     ttState.exerciseLog     = Array.isArray(session.exercise_log) ? session.exercise_log : [];
     ttState.irComparison    = session.ir_comparison || null;
+    // Restore rubric scores into engine state so the card renders correctly
+    tteClearRubric();
+    if (session.rubric_scores && typeof session.rubric_scores === 'object') {
+      Object.entries(session.rubric_scores).forEach(([dimId, data]) => {
+        if (data && data.score) tteSetRubricScore(dimId, data.score, data.notes || '');
+      });
+    }
 
     ttState.responses = {};
     (responses || []).forEach(r => {

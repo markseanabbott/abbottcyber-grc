@@ -3306,11 +3306,59 @@ function ttRenderAAR() {
   ${ttState.readonly ? `
   <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
     <button class="btn btn-outline" onclick="setNav('scenario_library')">← Back to Exercises</button>
+    <button class="btn btn-primary" onclick="ttSaveAAR()">&#x1F4BE; Save AAR</button>
   </div>` : `
   <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
     <button class="btn btn-outline" onclick="ttFinalise()">Mark exercise complete</button>
-    <button class="btn btn-primary" onclick="ttRestart()">Start new exercise</button>
+    <button class="btn btn-primary" onclick="ttSaveAAR()">&#x1F4BE; Save AAR</button>
+    <button class="btn btn-cyan" onclick="ttRestart()">Start new exercise</button>
   </div>`}`;
+}
+
+async function ttSaveAAR() {
+  const sessionId = ttState.sessionId;
+  if (!sessionId) { toast('No session to save to', '#dc2626'); return; }
+  const patch = { updated_at: new Date().toISOString() };
+
+  // Capture rubric if complete
+  tteRubricDimensions().forEach(d => {
+    const el = document.getElementById('ttRubric_' + d.id);
+    const existing = tteGetRubric()[d.id];
+    if (el && existing && existing.score) tteSetRubricScore(d.id, existing.score, el.value);
+  });
+  if (tteRubricComplete()) {
+    patch.rubric_scores = tteGetRubric();
+  }
+
+  // Capture IR comparison paste if present
+  const irEl = document.getElementById('irpPasteArea');
+  if (irEl && irEl.value.trim()) {
+    try {
+      let raw = irEl.value.trim();
+      const fence = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (fence) raw = fence[1].trim();
+      patch.ir_comparison = JSON.parse(raw);
+    } catch(e) {
+      toast('IR comparison JSON is invalid — fix it or clear the field before saving', '#dc2626');
+      return;
+    }
+  }
+
+  try {
+    await sb.tt.updateSession(sessionId, patch);
+    if (patch.rubric_scores) {
+      ttState.irComparison = patch.ir_comparison ?? ttState.irComparison;
+    }
+    if (patch.ir_comparison) {
+      ttState.irComparison = patch.ir_comparison;
+    }
+    ttState._rubricEditing = false;
+    ttRender();
+    toast('AAR saved', '#15803d');
+    await auditLog('tabletop_aar_saved', { session_id: sessionId, rubric: !!patch.rubric_scores, ir_comparison: !!patch.ir_comparison });
+  } catch(e) {
+    toast('Save failed — ' + e.message, '#dc2626');
+  }
 }
 
 async function ttFinalise() {
@@ -3849,6 +3897,7 @@ window.ttSetInjectTimer = ttSetInjectTimer;
 window.ttSetTimerMult = ttSetTimerMult;
 window.ttAutoLaunchNow = ttAutoLaunchNow;
 window.ttGoHome = ttGoHome;
+window.ttSaveAAR = ttSaveAAR;
 window.ttCopyIrpPrompt = ttCopyIrpPrompt;
 window.ttSaveIrComparison = ttSaveIrComparison;
 window.ttIrpClearResult = ttIrpClearResult;
