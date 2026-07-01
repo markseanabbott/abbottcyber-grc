@@ -3181,6 +3181,24 @@ function ttScoreColor(score) {
   return score >= 70 ? '#15803d' : score >= 40 ? '#d97706' : '#dc2626';
 }
 
+// Semicircle dial for IRP section — larger than the home widget version
+function _irpDialSvg(score, label, color) {
+  const cx = 40, cy = 38, r = 28, sw = 7;
+  const bgPath = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`;
+  let fillPath = '';
+  if (typeof score === 'number' && score > 0) {
+    const endRad = Math.PI * (1 - Math.min(score, 100) / 100);
+    const ex = +(cx + r * Math.cos(endRad)).toFixed(2);
+    const ey = +(cy - r * Math.sin(endRad)).toFixed(2);
+    fillPath = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${ex} ${ey}`;
+  }
+  return `<svg viewBox="0 0 80 44" width="80" height="44" style="display:block;overflow:visible;flex-shrink:0">
+    <path d="${bgPath}" fill="none" stroke="#e5e7eb" stroke-width="${sw}" stroke-linecap="round"/>
+    ${fillPath ? `<path d="${fillPath}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round"/>` : ''}
+    <text x="${cx}" y="36" text-anchor="middle" font-size="16" font-weight="800" fill="${color}" font-family="Inter,sans-serif">${label}</text>
+  </svg>`;
+}
+
 // ---- AAR ----
 function ttRenderAAR() {
   const scenario = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
@@ -3708,10 +3726,10 @@ function ttRenderIrpSection(sessionId, saved, isLive) {
   if (!sessionId) return '';
 
   if (saved && typeof saved === 'object') {
-    const fpScore  = saved.follows_plan_score    ?? 0;
-    const nistScore = saved.nist_alignment_score ?? 0;
-    const fpCol    = ttScoreColor(fpScore);
-    const nistCol  = ttScoreColor(nistScore);
+    const fpScore   = saved.follows_plan_score    ?? 0;
+    const nistScore = saved.nist_alignment_score  ?? 0;
+    const fpGrade   = exGrade(fpScore);
+    const nistGrade = exGrade(nistScore);
     const strengthsHtml = Array.isArray(saved.strengths) && saved.strengths.length
       ? saved.strengths.map(s => `<div style="display:flex;gap:6px;font-size:12px;margin-bottom:5px"><span style="color:#15803d;flex-shrink:0;margin-top:1px">&#x2713;</span><span>${escH(s)}</span></div>`).join('')
       : '<div style="font-size:12px;color:var(--muted)">None noted.</div>';
@@ -3724,15 +3742,21 @@ function ttRenderIrpSection(sessionId, saved, isLive) {
         <button class="btn btn-outline btn-sm" onclick="ttIrpClearResult('${sessionId}',${isLive})">Re-paste &#x21BA;</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
-        <div style="padding:0.85rem;background:var(--bg);border-radius:8px;text-align:center">
-          <div style="font-size:30px;font-weight:800;color:${fpCol};line-height:1">${fpScore}</div>
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin:4px 0 8px">Follows own plan</div>
-          <div style="font-size:11px;color:var(--muted);line-height:1.55;text-align:left">${escH(saved.follows_plan_summary || '')}</div>
+        <div style="padding:0.85rem;background:var(--bg);border-radius:8px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:10px">Follows Own Plan</div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+            ${_irpDialSvg(fpScore, fpGrade.letter, fpGrade.color)}
+            <div style="line-height:1"><span style="font-size:24px;font-weight:800;color:${fpGrade.color}">${fpScore}</span><span style="font-size:13px;font-weight:600;color:var(--muted)">/100</span></div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);line-height:1.55">${escH(saved.follows_plan_summary || '')}</div>
         </div>
-        <div style="padding:0.85rem;background:var(--bg);border-radius:8px;text-align:center">
-          <div style="font-size:30px;font-weight:800;color:${nistCol};line-height:1">${nistScore}</div>
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin:4px 0 8px">NIST 800-61 alignment</div>
-          <div style="font-size:11px;color:var(--muted);line-height:1.55;text-align:left">${escH(saved.nist_alignment_summary || '')}</div>
+        <div style="padding:0.85rem;background:var(--bg);border-radius:8px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:10px">NIST 800-61 Alignment</div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+            ${_irpDialSvg(nistScore, nistGrade.letter, nistGrade.color)}
+            <div style="line-height:1"><span style="font-size:24px;font-weight:800;color:${nistGrade.color}">${nistScore}</span><span style="font-size:13px;font-weight:600;color:var(--muted)">/100</span></div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);line-height:1.55">${escH(saved.nist_alignment_summary || '')}</div>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
