@@ -4681,7 +4681,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('tb3', 'tabletop_bcdr', 'Tabletop ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â BCDR Track', 3, 2, 'Business impact analysis prompts: which processes fail first, what is the revenue/ops impact per hour of downtime', false, NULL, NULL, '[]', 'add')
+VALUES ('tb3', 'tabletop_bcdr', 'Tabletop ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â BCDR Track', 3, 2, 'Business impact analysis prompts: which processes fail first, what is the revenue/ops impact per hour of downtime', true, NULL, 'tabletop.js: added one BIA inject to each of the 5 BCDR scenarios as the 3rd inject (after initial assessment and RTO/RPO injects). phaseIdx 1, correctCriticality Critical, mitre NIST SP 800-34 Rev.1 Section 2.3. Titles: Business impact cascade -- what fails first and what does it cost (dc_outage) / Revenue impact per hour -- what is this outage actually costing (power_failure) / Client impact quantification -- what is this access gap costing per hour (keyman) / Financial exposure -- what does each hour of this disruption cost (supplier) / Operational impact map -- which processes are failing and what is the daily cost (site_loss). Each inject forces the team to sequence process failures by hour and quantify direct + indirect cost. All 5 roles prompted from their own financial lens. No UI, no SQL.', '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
@@ -4696,7 +4696,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('tb4', 'tabletop_bcdr', 'Tabletop ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â BCDR Track', 3, 3, 'Activation decision: when does the BC Plan formally activate and who has authority', false, NULL, NULL, '[]', 'add')
+VALUES ('tb4', 'tabletop_bcdr', 'Tabletop ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â BCDR Track', 3, 3, 'Activation decision: when does the BC Plan formally activate and who has authority', true, 'High', 'One inject per BCDR scenario (5 total) inserted as inject[1] â€” between the assessment inject (tb1) and RTO/RPO inject (tb2). Each titled "BC Plan formal activation â€” [scenario framing]". Teaches: documented trigger criteria, named IC+ES co-authority, emergency spend unlock, BC vendor invocation authority, comms authority, and BI insurance precondition. NIST SP 800-34 Rev.1 Section 4.2. tabletop.js.', '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,

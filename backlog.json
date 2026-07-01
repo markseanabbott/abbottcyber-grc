@@ -2,7 +2,7 @@
     "project":  "Abbott Cyber Consulting Ã¢â‚¬â€ GRC Security Scorecard",
     "version":  "1.6.1",
     "created":  "2026-05-14",
-    "updated":  "2026-07-01 (session 106)",
+    "updated":  "2026-07-01 (session 107)",
     "description":  "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
     "build_approach":  "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
     "sections":  [
@@ -2020,7 +2020,9 @@
                                        {
                                            "id":  "tb4",
                                            "text":  "Activation decision: when does the BC Plan formally activate and who has authority",
-                                           "done":  false
+                                           "done":  true,
+                                           "priority":  "High",
+                                           "notes":  "One inject per BCDR scenario (5 total) inserted as inject[1] — between the assessment inject (tb1) and RTO/RPO inject (tb2). Each titled \"BC Plan formal activation — [scenario framing]\". Teaches: documented trigger criteria, named IC+ES co-authority, emergency spend unlock, BC vendor invocation authority, comms authority, and BI insurance precondition. NIST SP 800-34 Rev.1 Section 4.2. tabletop.js."
                                        },
                                        {
                                            "id":  "tb5",
