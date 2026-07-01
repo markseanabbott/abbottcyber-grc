@@ -2008,7 +2008,8 @@
                                        {
                                            "id":  "tb2",
                                            "text":  "RTO/RPO awareness injects: team must identify recovery time and recovery point objectives per affected system",
-                                           "done":  false
+                                           "done":  true,
+                                           "notes":  "tabletop.js: added one dedicated RTO/RPO inject to each of the 5 BCDR scenarios (bcdr_dc_outage, bcdr_power_failure, bcdr_keyman, bcdr_supplier, bcdr_site_loss). Each inject is positioned as the 2nd inject (after initial assessment, before recovery actions), phaseIdx 1, correctCriticality Critical, mitre NIST SP 800-34 Rev.1 Section 3 (BIA). Titles: RTO/RPO alignment required before DR activation / Critical systems RTO -- restoration priority sequence / Service continuity objectives -- client RTO exposure / Recovery sequence -- RTO/RPO governs evacuation priority / Alternate operations RTO -- what must be running and when. All 5 roles get scenario-specific prompts: IC owns business RTO decisions, TL maps technical gap vs objective, CL owns client-facing exposure, LC owns contractual/regulatory RTO obligations, ES approves RTOs as formal commitments. No UI changes, no SQL, pure content addition."
                                        },
                                        {
                                            "id":  "tb3",
