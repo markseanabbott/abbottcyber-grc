@@ -2014,7 +2014,8 @@
                                        {
                                            "id":  "tb3",
                                            "text":  "Business impact analysis prompts: which processes fail first, what is the revenue/ops impact per hour of downtime",
-                                           "done":  false
+                                           "done":  true,
+                                           "notes":  "tabletop.js: added one BIA inject to each of the 5 BCDR scenarios as the 3rd inject (after initial assessment and RTO/RPO injects). phaseIdx 1, correctCriticality Critical, mitre NIST SP 800-34 Rev.1 Section 2.3. Titles: Business impact cascade -- what fails first and what does it cost (dc_outage) / Revenue impact per hour -- what is this outage actually costing (power_failure) / Client impact quantification -- what is this access gap costing per hour (keyman) / Financial exposure -- what does each hour of this disruption cost (supplier) / Operational impact map -- which processes are failing and what is the daily cost (site_loss). Each inject forces the team to sequence process failures by hour and quantify direct + indirect cost. All 5 roles prompted from their own financial lens. No UI, no SQL."
                                        },
                                        {
                                            "id":  "tb4",
