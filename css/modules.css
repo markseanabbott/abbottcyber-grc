@@ -35,7 +35,7 @@
 .sm-card{background:var(--bg);border-radius:8px;padding:0.7rem 0.85rem;text-align:center}
 .sm-val{font-size:20px;font-weight:700;color:var(--navy)}
 .sm-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px}
-.aar-log-item{display:grid;grid-template-columns:60px 80px 1fr;gap:8px;align-items:start;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px}
+.aar-log-item{display:grid;grid-template-columns:65px 145px 1fr;gap:8px;align-items:start;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px}
 .aar-log-item:last-child{border-bottom:none}
 
 /* TECH STACK SURVEY */
