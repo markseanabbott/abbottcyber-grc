@@ -1,4 +1,4 @@
--- SYNC_BACKLOG.sql -- generated 2026-06-30 (398 items)
+-- SYNC_BACKLOG.sql -- generated 2026-07-01 (398 items)
 -- Safe to re-run (ON CONFLICT DO UPDATE).
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
 VALUES ('s1', 'core', 'Core Concept', 1, 0, 'Security posture scoring for organisations / clients', true, NULL, NULL, '[]', 'completed')
@@ -4666,7 +4666,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('tb2', 'tabletop_bcdr', 'Tabletop ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â BCDR Track', 3, 1, 'RTO/RPO awareness injects: team must identify recovery time and recovery point objectives per affected system', false, NULL, NULL, '[]', 'add')
+VALUES ('tb2', 'tabletop_bcdr', 'Tabletop ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â BCDR Track', 3, 1, 'RTO/RPO awareness injects: team must identify recovery time and recovery point objectives per affected system', true, NULL, 'tabletop.js: added one dedicated RTO/RPO inject to each of the 5 BCDR scenarios (bcdr_dc_outage, bcdr_power_failure, bcdr_keyman, bcdr_supplier, bcdr_site_loss). Each inject is positioned as the 2nd inject (after initial assessment, before recovery actions), phaseIdx 1, correctCriticality Critical, mitre NIST SP 800-34 Rev.1 Section 3 (BIA). Titles: RTO/RPO alignment required before DR activation / Critical systems RTO -- restoration priority sequence / Service continuity objectives -- client RTO exposure / Recovery sequence -- RTO/RPO governs evacuation priority / Alternate operations RTO -- what must be running and when. All 5 roles get scenario-specific prompts: IC owns business RTO decisions, TL maps technical gap vs objective, CL owns client-facing exposure, LC owns contractual/regulatory RTO obligations, ES approves RTOs as formal commitments. No UI changes, no SQL, pure content addition.', '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
