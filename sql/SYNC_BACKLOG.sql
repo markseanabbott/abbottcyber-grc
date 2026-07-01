@@ -4726,7 +4726,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('tb6', 'tabletop_bcdr', 'Tabletop ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â BCDR Track', 3, 5, 'Alternate site / failover exercise: where do staff go, what systems are available', false, NULL, NULL, '[]', 'add')
+VALUES ('tb6', 'tabletop_bcdr', 'Tabletop ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â BCDR Track', 3, 5, 'Alternate site / failover exercise: where do staff go, what systems are available', true, 'High', 'One inject per BCDR scenario (5 total) inserted at inject[5], after tb5 comms tree and before first scenario-specific operational inject. Teaches alternate capability mapping (keyman), manual operations model (power_failure), DR site failover readiness (dc_outage), AWS environment readiness (supplier), and multi-option alternate site decision (site_loss). phaseIdx:2, correctCriticality:High, mitre: NIST SP 800-34 Rev.1 Section 5 + ISO 22301:2019 Section 8.3. All rolePrompts include IC authority, TL connectivity/technical readiness, CL client comms, LC insurance/legal exposure, ES board briefing and spend authorisation.', '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,

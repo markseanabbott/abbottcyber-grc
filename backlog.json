@@ -2,7 +2,7 @@
     "project":  "Abbott Cyber Consulting Ã¢â‚¬â€ GRC Security Scorecard",
     "version":  "1.6.1",
     "created":  "2026-05-14",
-    "updated":  "2026-07-01 (session 108)",
+    "updated":  "2026-07-01 (session 109)",
     "description":  "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
     "build_approach":  "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
     "sections":  [
@@ -2034,7 +2034,9 @@
                                        {
                                            "id":  "tb6",
                                            "text":  "Alternate site / failover exercise: where do staff go, what systems are available",
-                                           "done":  false
+                                           "done":  true,
+                                           "priority":  "High",
+                                           "notes":  "One inject per BCDR scenario (5 total) inserted at inject[5], after tb5 comms tree and before first scenario-specific operational inject. Teaches alternate capability mapping (keyman), manual operations model (power_failure), DR site failover readiness (dc_outage), AWS environment readiness (supplier), and multi-option alternate site decision (site_loss). phaseIdx:2, correctCriticality:High, mitre: NIST SP 800-34 Rev.1 Section 5 + ISO 22301:2019 Section 8.3. All rolePrompts include IC authority, TL connectivity/technical readiness, CL client comms, LC insurance/legal exposure, ES board briefing and spend authorisation."
                                        },
                                        {
                                            "id":  "tb7",
