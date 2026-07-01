@@ -4711,7 +4711,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('tb5', 'tabletop_bcdr', 'Tabletop ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â BCDR Track', 3, 4, 'Communication tree drill: staff, customers, regulators, insurers ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â who is notified and in what order', false, NULL, NULL, '[]', 'add')
+VALUES ('tb5', 'tabletop_bcdr', 'Tabletop ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â BCDR Track', 3, 4, 'Communication tree drill: staff, customers, regulators, insurers ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â who is notified and in what order', true, 'High', 'One inject per BCDR scenario (5 total) inserted as inject[4] â€” after the BIA inject (tb3) and before the first scenario-specific operational inject. Titles vary by scenario (staff/OTA/James/receiver/landlord framing). Teaches: the 4-tier stakeholder notification tree (staff, operational, financial-legal, regulatory), contact list availability gap, IC comms authority, BI insurance notification window, and per-role notification obligations. phaseIdx 2, correctCriticality High, NIST SP 800-34 Rev.1 Section 4.4. tabletop.js.', '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,

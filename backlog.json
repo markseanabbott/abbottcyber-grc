@@ -2,7 +2,7 @@
     "project":  "Abbott Cyber Consulting Ã¢â‚¬â€ GRC Security Scorecard",
     "version":  "1.6.1",
     "created":  "2026-05-14",
-    "updated":  "2026-07-01 (session 107)",
+    "updated":  "2026-07-01 (session 108)",
     "description":  "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
     "build_approach":  "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
     "sections":  [
@@ -2027,7 +2027,9 @@
                                        {
                                            "id":  "tb5",
                                            "text":  "Communication tree drill: staff, customers, regulators, insurers Ã¢â‚¬â€ who is notified and in what order",
-                                           "done":  false
+                                           "done":  true,
+                                           "priority":  "High",
+                                           "notes":  "One inject per BCDR scenario (5 total) inserted as inject[4] — after the BIA inject (tb3) and before the first scenario-specific operational inject. Titles vary by scenario (staff/OTA/James/receiver/landlord framing). Teaches: the 4-tier stakeholder notification tree (staff, operational, financial-legal, regulatory), contact list availability gap, IC comms authority, BI insurance notification window, and per-role notification obligations. phaseIdx 2, correctCriticality High, NIST SP 800-34 Rev.1 Section 4.4. tabletop.js."
                                        },
                                        {
                                            "id":  "tb6",
