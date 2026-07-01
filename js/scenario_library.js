@@ -815,6 +815,7 @@ async function slViewAAR(sessionId) {
     ttState.breach          = { declared: session.breach_declared || false, rationale: session.breach_rationale || '', ic_sign_time: session.ic_sign_time || null, es_sign_time: session.es_sign_time || null };
     ttState.notifStartTime  = session.breach_timestamp || null;
     ttState.exerciseLog     = Array.isArray(session.exercise_log) ? session.exercise_log : [];
+    ttState.irComparison    = session.ir_comparison || null;
 
     ttState.responses = {};
     (responses || []).forEach(r => {
