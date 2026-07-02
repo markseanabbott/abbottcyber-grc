@@ -1968,6 +1968,20 @@
                                            "text":  "IR plan comparison â€” autonomous: direct Claude API call from the app. User uploads IR plan document; app sends exercise data + plan to Claude Sonnet and receives structured JSON comparison result without copy-paste workflow. Requires API key management and premium tier gate.",
                                            "done":  false,
                                            "priority":  "High"
+                                       },
+                                       {
+                                           "id":  "tt_cards_1",
+                                           "text":  "Role-based response card hand: instead of free-text only, each player is dealt a hand of playable response cards scoped to their role and the current NIST IR phase (Detect/Analyze, Contain, Eradicate, Recover). Player clicks the card(s) they would play and adds a comment. Hand includes plausible-but-wrong distractor cards (e.g. endpoint isolation offered during a BEC) so the choice is a real decision test, not a checklist. Role-scoping preserves the fog of war (no single player sees the whole board).",
+                                           "done":  false,
+                                           "priority":  "High",
+                                           "notes":  "Design decision (2 Jul 2026): cards are pre-authored, not generated at play time, to minimize tokens and guarantee technical correctness for a client-facing deliverable. Needs a card catalog keyed by (role_id x nist_phase) plus an appropriateness matrix keyed by (card x scenario x phase) resolving to correct / defensible-partial / inappropriate / not-applicable. Grading is not binary: some cards are always-reasonable (preserve logs, notify IC), some are scenario-wrong (isolate host on BEC), some are scenario-right (revoke tokens + force MFA reset + recall wire on BEC). Play action persists like tabletop_responses; AAR extends existing criticality-accuracy scoring to grade card choices. Bigger authoring lift than code lift; fits existing single-file architecture. New SQL patch needed for a card catalog + played-cards table."
+                                       },
+                                       {
+                                           "id":  "tt_cards_2",
+                                           "text":  "Pre-authored inject deck with precedence engine: build a curated card pool per scenario archetype (ransomware, BEC, insider, vendor compromise) rather than generating injects live. Each card carries tactic/kill-chain stage (provides natural ordering), requires-tags (game state that must be true first), grants-tags (state it sets), and scenario applicability. Random selection = filter pool to cards whose prerequisites are met and scenario matches, then pick weighted by role/random. This gives replay variation without live LLM tokens and solves the 'some cards do not flow into others' precedence problem via a lightweight state machine.",
+                                           "done":  false,
+                                           "priority":  "Medium",
+                                           "notes":  "Recommended path over Haiku-per-card generation for now: zero gameplay tokens, deterministic, defensible. Reserve full generative mode (Haiku creates cards live) as an optional future 'endless mode'. Sonnet stays for AAR only. You do NOT need 5 cards for the whole ATT&CK matrix (~200 techniques) - author only the techniques that appear in the scenario kill chains you actually run."
                                        }
                                    ]
                      },
