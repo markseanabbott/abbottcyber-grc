@@ -1,4 +1,4 @@
--- SYNC_BACKLOG.sql -- generated 2026-07-02 (400 items)
+-- SYNC_BACKLOG.sql -- generated 2026-07-02 (411 items)
 -- Safe to re-run (ON CONFLICT DO UPDATE).
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
 VALUES ('s1', 'core', 'Core Concept', 1, 0, 'Security posture scoring for organisations / clients', true, NULL, NULL, '[]', 'completed')
@@ -4621,36 +4621,6 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('tt_cards_1', 'tt_autonomous', 'Tabletop ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Autonomous Mode (Jackbox-style, no facilitator)', 3, 12, 'Role-based response card hand: instead of free-text only, each player is dealt a hand of playable response cards scoped to their role and the current NIST IR phase (Detect/Analyze, Contain, Eradicate, Recover). Player clicks the card(s) they would play and adds a comment. Hand includes plausible-but-wrong distractor cards (e.g. endpoint isolation offered during a BEC) so the choice is a real decision test, not a checklist. Role-scoping preserves the fog of war (no single player sees the whole board).', false, 'High', 'Design decision (2 Jul 2026): cards are pre-authored, not generated at play time, to minimize tokens and guarantee technical correctness for a client-facing deliverable. Needs a card catalog keyed by (role_id x nist_phase) plus an appropriateness matrix keyed by (card x scenario x phase) resolving to correct / defensible-partial / inappropriate / not-applicable. Grading is not binary: some cards are always-reasonable (preserve logs, notify IC), some are scenario-wrong (isolate host on BEC), some are scenario-right (revoke tokens + force MFA reset + recall wire on BEC). Play action persists like tabletop_responses; AAR extends existing criticality-accuracy scoring to grade card choices. Bigger authoring lift than code lift; fits existing single-file architecture. New SQL patch needed for a card catalog + played-cards table.', '[]', 'add')
-ON CONFLICT (id) DO UPDATE SET
-  section_id    = EXCLUDED.section_id,
-  section_title = EXCLUDED.section_title,
-  section_phase = EXCLUDED.section_phase,
-  sort_order    = EXCLUDED.sort_order,
-  "text"        = EXCLUDED."text",
-  done          = EXCLUDED.done,
-  priority      = EXCLUDED.priority,
-  notes         = EXCLUDED.notes,
-  dependencies  = EXCLUDED.dependencies,
-  status        = EXCLUDED.status,
-  updated_at    = now();
-
-INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('tt_cards_2', 'tt_autonomous', 'Tabletop ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Autonomous Mode (Jackbox-style, no facilitator)', 3, 13, 'Curated inject deck, Haiku-authored offline: for each scenario archetype (ransomware, BEC, insider, vendor compromise) define 3-5 pre-ordered MITRE kill chain sequences, then use Haiku OFFLINE to bulk-generate candidate inject bodies + rolePrompts along each chain. Mark reviews/curates the output into a static deck. Play from the curated deck deterministically. Each card carries tactic/kill-chain stage (ordering), requires-tags (state that must be true first), grants-tags (state it sets), and scenario applicability; selection = filter to cards whose prerequisites are met + scenario matches, then pick weighted by role/random.', false, 'Medium', 'Decision reconciled 2 Jul 2026 after comparing against a live-generation plan. Token cost is NOT the deciding factor (both approaches are ~$0.002/session, negligible). The deciding factors are: (1) reviewed correctness - every inject shown to a paying client has been human-checked; (2) cross-inject consistency within a session - static deck guarantees inject 3 stays consistent with inject 1; (3) no live API latency/failure mid-exercise. So use Haiku as an authoring accelerator, NOT a live game engine. This captures the upside of a live-gen plan (Haiku kills the authoring burden, near-infinite raw variation) without the client-facing risk. Reserve true live generation as an optional future ''endless mode'' once the curated format is proven. Sonnet stays for AAR only. Do NOT author 5 cards for the whole ATT&CK matrix - only techniques that appear in the kill chains you run.', '[]', 'add')
-ON CONFLICT (id) DO UPDATE SET
-  section_id    = EXCLUDED.section_id,
-  section_title = EXCLUDED.section_title,
-  section_phase = EXCLUDED.section_phase,
-  sort_order    = EXCLUDED.sort_order,
-  "text"        = EXCLUDED."text",
-  done          = EXCLUDED.done,
-  priority      = EXCLUDED.priority,
-  notes         = EXCLUDED.notes,
-  dependencies  = EXCLUDED.dependencies,
-  status        = EXCLUDED.status,
-  updated_at    = now();
-
-INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
 VALUES ('ai1', 'ai_tools', 'AI Tools', 1, 0, 'AI Assessment tool ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â assess an organisation''s use of AI tools against risk, governance, and compliance criteria', false, NULL, 'In backlog, no timeline', '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
@@ -4772,6 +4742,201 @@ ON CONFLICT (id) DO UPDATE SET
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
 VALUES ('tb7', 'tabletop_bcdr', 'Tabletop ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â BCDR Track', 3, 6, 'AAR maps to BC Plan gaps same as cyber tabletop', true, 'High', 'BCDR track AAR now shows a BC Plan Comparison section (ttRenderBcpSection) instead of IR Plan Comparison (ttRenderIrpSection). Detected via scenario.track === bcdr. New functions: ttBuildBcpPrompt (live), ttBuildBcpPromptFromSession (historical), ttBuildBcpPromptText (NIST SP 800-34 Rev.1 / ISO 22301 prompt), ttRenderBcpSection (UI), ttCopyBcpPrompt, ttSaveBcpComparison, ttBcpClearResult. JSON shape identical to IRP (follows_plan_score, nist_alignment_score, strengths, gaps) â€” reuses ir_comparison DB column. BCDR AAR also hides breach and notification cards, relabels MITRE mapping to Framework mapping. All in js/tabletop.js.', '[]', 'completed')
+ON CONFLICT (id) DO UPDATE SET
+  section_id    = EXCLUDED.section_id,
+  section_title = EXCLUDED.section_title,
+  section_phase = EXCLUDED.section_phase,
+  sort_order    = EXCLUDED.sort_order,
+  "text"        = EXCLUDED."text",
+  done          = EXCLUDED.done,
+  priority      = EXCLUDED.priority,
+  notes         = EXCLUDED.notes,
+  dependencies  = EXCLUDED.dependencies,
+  status        = EXCLUDED.status,
+  updated_at    = now();
+
+INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
+VALUES ('TB1', 'tb_storyboard', 'Tabletop â€” Story Board', 3, 0, 'Precedence data model and database schema: add chainStage, requires, grants, scenarioTypes, track fields to the inject object; create tt_stories, tt_inject_cards, tt_response_cards, tabletop_card_plays tables as a numbered SQL patch. Foundation â€” every later item depends on this.', false, 'Critical', NULL, '[]', 'add')
+ON CONFLICT (id) DO UPDATE SET
+  section_id    = EXCLUDED.section_id,
+  section_title = EXCLUDED.section_title,
+  section_phase = EXCLUDED.section_phase,
+  sort_order    = EXCLUDED.sort_order,
+  "text"        = EXCLUDED."text",
+  done          = EXCLUDED.done,
+  priority      = EXCLUDED.priority,
+  notes         = EXCLUDED.notes,
+  dependencies  = EXCLUDED.dependencies,
+  status        = EXCLUDED.status,
+  updated_at    = now();
+
+INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
+VALUES ('TB2', 'tb_storyboard', 'Tabletop â€” Story Board', 3, 1, 'Kill chain sequences per archetype: define 3 to 5 fixed ATT&CK-ordered chains each for ransomware, BEC, insider, and vendor compromise. chain_stage values plus requires/grants tags form the branching backbone that produces the semi-random effect.', false, 'High', 'Depends on TB1.', '[]', 'add')
+ON CONFLICT (id) DO UPDATE SET
+  section_id    = EXCLUDED.section_id,
+  section_title = EXCLUDED.section_title,
+  section_phase = EXCLUDED.section_phase,
+  sort_order    = EXCLUDED.sort_order,
+  "text"        = EXCLUDED."text",
+  done          = EXCLUDED.done,
+  priority      = EXCLUDED.priority,
+  notes         = EXCLUDED.notes,
+  dependencies  = EXCLUDED.dependencies,
+  status        = EXCLUDED.status,
+  updated_at    = now();
+
+INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
+VALUES ('TB3', 'tb_storyboard', 'Tabletop â€” Story Board', 3, 2, 'Kickoff story pool: author 3 to 5 opener stories per archetype into tt_stories (initial access vector plus business framing). Launch with ransomware, BEC, and one more = 6 to 9 stories. Industry flavor is parameterization, not extra stories.', false, 'High', 'Depends on TB1. Can be authored in parallel with TB2.', '[]', 'add')
+ON CONFLICT (id) DO UPDATE SET
+  section_id    = EXCLUDED.section_id,
+  section_title = EXCLUDED.section_title,
+  section_phase = EXCLUDED.section_phase,
+  sort_order    = EXCLUDED.sort_order,
+  "text"        = EXCLUDED."text",
+  done          = EXCLUDED.done,
+  priority      = EXCLUDED.priority,
+  notes         = EXCLUDED.notes,
+  dependencies  = EXCLUDED.dependencies,
+  status        = EXCLUDED.status,
+  updated_at    = now();
+
+INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
+VALUES ('TB4', 'tb_storyboard', 'Tabletop â€” Story Board', 3, 3, 'Haiku offline authoring and curation: use Haiku to bulk-draft inject bodies and role_prompts along each kill chain. Mark reviews and curates; curated rows go into tt_inject_cards. Nothing unreviewed reaches a client.', false, 'High', 'Depends on TB2, TB3.', '[]', 'add')
+ON CONFLICT (id) DO UPDATE SET
+  section_id    = EXCLUDED.section_id,
+  section_title = EXCLUDED.section_title,
+  section_phase = EXCLUDED.section_phase,
+  sort_order    = EXCLUDED.sort_order,
+  "text"        = EXCLUDED."text",
+  done          = EXCLUDED.done,
+  priority      = EXCLUDED.priority,
+  notes         = EXCLUDED.notes,
+  dependencies  = EXCLUDED.dependencies,
+  status        = EXCLUDED.status,
+  updated_at    = now();
+
+INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
+VALUES ('TB5', 'tb_storyboard', 'Tabletop â€” Story Board', 3, 4, 'Precedence selection engine: at runtime read tt_inject_cards, filter to next-stage cards whose requires-tags are met and scenario/archetype matches, then pick weighted by the weight column. Lightweight state machine, no live AI.', false, 'High', 'Depends on TB1, TB4.', '[]', 'add')
+ON CONFLICT (id) DO UPDATE SET
+  section_id    = EXCLUDED.section_id,
+  section_title = EXCLUDED.section_title,
+  section_phase = EXCLUDED.section_phase,
+  sort_order    = EXCLUDED.sort_order,
+  "text"        = EXCLUDED."text",
+  done          = EXCLUDED.done,
+  priority      = EXCLUDED.priority,
+  notes         = EXCLUDED.notes,
+  dependencies  = EXCLUDED.dependencies,
+  status        = EXCLUDED.status,
+  updated_at    = now();
+
+INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
+VALUES ('TB6', 'tb_storyboard', 'Tabletop â€” Story Board', 3, 5, 'Response card library: author action cards into tt_response_cards, scoped by role x NIST phase x scenario type, roughly 8 to 12 per role per phase. Include plausible-but-wrong distractor cards â€” they are the assessment signal.', false, 'High', 'Depends on TB1. Can run in parallel with inject deck work (TB2-TB5).', '[]', 'add')
+ON CONFLICT (id) DO UPDATE SET
+  section_id    = EXCLUDED.section_id,
+  section_title = EXCLUDED.section_title,
+  section_phase = EXCLUDED.section_phase,
+  sort_order    = EXCLUDED.sort_order,
+  "text"        = EXCLUDED."text",
+  done          = EXCLUDED.done,
+  priority      = EXCLUDED.priority,
+  notes         = EXCLUDED.notes,
+  dependencies  = EXCLUDED.dependencies,
+  status        = EXCLUDED.status,
+  updated_at    = now();
+
+INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
+VALUES ('TB7', 'tb_storyboard', 'Tabletop â€” Story Board', 3, 6, 'Appropriateness matrix: fill the appropriateness column on each response card â€” correct / defensible-partial / inappropriate / not-applicable, keyed by scenario and phase. Encodes rules like BEC does not need endpoint isolation.', false, 'High', 'Depends on TB6.', '[]', 'add')
+ON CONFLICT (id) DO UPDATE SET
+  section_id    = EXCLUDED.section_id,
+  section_title = EXCLUDED.section_title,
+  section_phase = EXCLUDED.section_phase,
+  sort_order    = EXCLUDED.sort_order,
+  "text"        = EXCLUDED."text",
+  done          = EXCLUDED.done,
+  priority      = EXCLUDED.priority,
+  notes         = EXCLUDED.notes,
+  dependencies  = EXCLUDED.dependencies,
+  status        = EXCLUDED.status,
+  updated_at    = now();
+
+INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
+VALUES ('TB8', 'tb_storyboard', 'Tabletop â€” Story Board', 3, 7, 'Card play persistence: wire the tabletop_card_plays table into the app so player card choices and grades are saved, following the tabletop_responses pattern.', false, 'High', 'Depends on TB6.', '[]', 'add')
+ON CONFLICT (id) DO UPDATE SET
+  section_id    = EXCLUDED.section_id,
+  section_title = EXCLUDED.section_title,
+  section_phase = EXCLUDED.section_phase,
+  sort_order    = EXCLUDED.sort_order,
+  "text"        = EXCLUDED."text",
+  done          = EXCLUDED.done,
+  priority      = EXCLUDED.priority,
+  notes         = EXCLUDED.notes,
+  dependencies  = EXCLUDED.dependencies,
+  status        = EXCLUDED.status,
+  updated_at    = now();
+
+INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
+VALUES ('TB9', 'tb_storyboard', 'Tabletop â€” Story Board', 3, 8, 'Card hand UI: in the inject view, deal the role/phase/scenario-filtered hand from tt_response_cards, let the player select cards, add a comment, and submit. Role-scoping preserves the fog of war.', false, 'High', 'Depends on TB6, TB8.', '[]', 'add')
+ON CONFLICT (id) DO UPDATE SET
+  section_id    = EXCLUDED.section_id,
+  section_title = EXCLUDED.section_title,
+  section_phase = EXCLUDED.section_phase,
+  sort_order    = EXCLUDED.sort_order,
+  "text"        = EXCLUDED."text",
+  done          = EXCLUDED.done,
+  priority      = EXCLUDED.priority,
+  notes         = EXCLUDED.notes,
+  dependencies  = EXCLUDED.dependencies,
+  status        = EXCLUDED.status,
+  updated_at    = now();
+
+INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
+VALUES ('TB10', 'tb_storyboard', 'Tabletop â€” Story Board', 3, 9, 'Scoring and AAR integration: grade the played hand against the appropriateness data (correct +, critical missed -, inappropriate -, partial credit for defensible-but-not-optimal) and feed results into the existing rubric and AAR.', false, 'High', 'Depends on TB7, TB9.', '[]', 'add')
+ON CONFLICT (id) DO UPDATE SET
+  section_id    = EXCLUDED.section_id,
+  section_title = EXCLUDED.section_title,
+  section_phase = EXCLUDED.section_phase,
+  sort_order    = EXCLUDED.sort_order,
+  "text"        = EXCLUDED."text",
+  done          = EXCLUDED.done,
+  priority      = EXCLUDED.priority,
+  notes         = EXCLUDED.notes,
+  dependencies  = EXCLUDED.dependencies,
+  status        = EXCLUDED.status,
+  updated_at    = now();
+
+INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
+VALUES ('TB11', 'tb_storyboard', 'Tabletop â€” Story Board', 3, 10, 'Randomized run mode (facilitated): facilitator picks the archetype, system randomizes which story and which chain within that archetype. Full randomness without a facilitator is reserved for TB13.', false, 'Medium', 'Depends on TB3, TB5.', '[]', 'add')
+ON CONFLICT (id) DO UPDATE SET
+  section_id    = EXCLUDED.section_id,
+  section_title = EXCLUDED.section_title,
+  section_phase = EXCLUDED.section_phase,
+  sort_order    = EXCLUDED.sort_order,
+  "text"        = EXCLUDED."text",
+  done          = EXCLUDED.done,
+  priority      = EXCLUDED.priority,
+  notes         = EXCLUDED.notes,
+  dependencies  = EXCLUDED.dependencies,
+  status        = EXCLUDED.status,
+  updated_at    = now();
+
+INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
+VALUES ('TB12', 'tb_storyboard', 'Tabletop â€” Story Board', 3, 11, 'BCDR track generalization: use the track field to add BCDR content â€” a BCDR sequence (Impact, Assess, Activate BCP, Failover/DR, Recover, Resume, Review), BCDR response cards, and BCDR appropriateness rows. Same engine and tables, different content.', false, 'Medium', 'Depends on TB1, TB6, TB7.', '[]', 'add')
+ON CONFLICT (id) DO UPDATE SET
+  section_id    = EXCLUDED.section_id,
+  section_title = EXCLUDED.section_title,
+  section_phase = EXCLUDED.section_phase,
+  sort_order    = EXCLUDED.sort_order,
+  "text"        = EXCLUDED."text",
+  done          = EXCLUDED.done,
+  priority      = EXCLUDED.priority,
+  notes         = EXCLUDED.notes,
+  dependencies  = EXCLUDED.dependencies,
+  status        = EXCLUDED.status,
+  updated_at    = now();
+
+INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
+VALUES ('TB13', 'tb_storyboard', 'Tabletop â€” Story Board', 3, 12, 'Fully autonomous mode (future state): no facilitator, live inject delivery, auto-scoring, auto-AAR. Build only once clients are running tabletops several times per year. The curated deck format must be proven first.', false, 'Low', 'Depends on TB5, TB10.', '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,

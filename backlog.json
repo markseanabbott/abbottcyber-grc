@@ -1968,20 +1968,6 @@
                                            "text":  "IR plan comparison â€” autonomous: direct Claude API call from the app. User uploads IR plan document; app sends exercise data + plan to Claude Sonnet and receives structured JSON comparison result without copy-paste workflow. Requires API key management and premium tier gate.",
                                            "done":  false,
                                            "priority":  "High"
-                                       },
-                                       {
-                                           "id":  "tt_cards_1",
-                                           "text":  "Role-based response card hand: instead of free-text only, each player is dealt a hand of playable response cards scoped to their role and the current NIST IR phase (Detect/Analyze, Contain, Eradicate, Recover). Player clicks the card(s) they would play and adds a comment. Hand includes plausible-but-wrong distractor cards (e.g. endpoint isolation offered during a BEC) so the choice is a real decision test, not a checklist. Role-scoping preserves the fog of war (no single player sees the whole board).",
-                                           "done":  false,
-                                           "priority":  "High",
-                                           "notes":  "Design decision (2 Jul 2026): cards are pre-authored, not generated at play time, to minimize tokens and guarantee technical correctness for a client-facing deliverable. Needs a card catalog keyed by (role_id x nist_phase) plus an appropriateness matrix keyed by (card x scenario x phase) resolving to correct / defensible-partial / inappropriate / not-applicable. Grading is not binary: some cards are always-reasonable (preserve logs, notify IC), some are scenario-wrong (isolate host on BEC), some are scenario-right (revoke tokens + force MFA reset + recall wire on BEC). Play action persists like tabletop_responses; AAR extends existing criticality-accuracy scoring to grade card choices. Bigger authoring lift than code lift; fits existing single-file architecture. New SQL patch needed for a card catalog + played-cards table."
-                                       },
-                                       {
-                                           "id":  "tt_cards_2",
-                                           "text":  "Curated inject deck, Haiku-authored offline: for each scenario archetype (ransomware, BEC, insider, vendor compromise) define 3-5 pre-ordered MITRE kill chain sequences, then use Haiku OFFLINE to bulk-generate candidate inject bodies + rolePrompts along each chain. Mark reviews/curates the output into a static deck. Play from the curated deck deterministically. Each card carries tactic/kill-chain stage (ordering), requires-tags (state that must be true first), grants-tags (state it sets), and scenario applicability; selection = filter to cards whose prerequisites are met + scenario matches, then pick weighted by role/random.",
-                                           "done":  false,
-                                           "priority":  "Medium",
-                                           "notes":  "Decision reconciled 2 Jul 2026 after comparing against a live-generation plan. Token cost is NOT the deciding factor (both approaches are ~$0.002/session, negligible). The deciding factors are: (1) reviewed correctness - every inject shown to a paying client has been human-checked; (2) cross-inject consistency within a session - static deck guarantees inject 3 stays consistent with inject 1; (3) no live API latency/failure mid-exercise. So use Haiku as an authoring accelerator, NOT a live game engine. This captures the upside of a live-gen plan (Haiku kills the authoring burden, near-infinite raw variation) without the client-facing risk. Reserve true live generation as an optional future 'endless mode' once the curated format is proven. Sonnet stays for AAR only. Do NOT author 5 cards for the whole ATT&CK matrix - only techniques that appear in the kill chains you run."
                                        }
                                    ]
                      },
@@ -2058,6 +2044,104 @@
                                            "done":  true,
                                            "priority":  "High",
                                            "notes":  "BCDR track AAR now shows a BC Plan Comparison section (ttRenderBcpSection) instead of IR Plan Comparison (ttRenderIrpSection). Detected via scenario.track === bcdr. New functions: ttBuildBcpPrompt (live), ttBuildBcpPromptFromSession (historical), ttBuildBcpPromptText (NIST SP 800-34 Rev.1 / ISO 22301 prompt), ttRenderBcpSection (UI), ttCopyBcpPrompt, ttSaveBcpComparison, ttBcpClearResult. JSON shape identical to IRP (follows_plan_score, nist_alignment_score, strengths, gaps) — reuses ir_comparison DB column. BCDR AAR also hides breach and notification cards, relabels MITRE mapping to Framework mapping. All in js/tabletop.js."
+                                       }
+                                   ]
+                     },
+                     {
+                         "id":  "tb_storyboard",
+                         "title":  "Tabletop — Story Board",
+                         "phase":  3,
+                         "description":  "Card/story system for the tabletop engine. Content lives in DB (tt_stories, tt_inject_cards, tt_response_cards, tabletop_card_plays). Haiku authors offline; Mark curates; Sonnet is AAR-only. Replaces tt_cards_1 and tt_cards_2.",
+                         "items":  [
+                                       {
+                                           "id":  "TB1",
+                                           "text":  "Precedence data model and database schema: add chainStage, requires, grants, scenarioTypes, track fields to the inject object; create tt_stories, tt_inject_cards, tt_response_cards, tabletop_card_plays tables as a numbered SQL patch. Foundation — every later item depends on this.",
+                                           "done":  false,
+                                           "priority":  "Critical"
+                                       },
+                                       {
+                                           "id":  "TB2",
+                                           "text":  "Kill chain sequences per archetype: define 3 to 5 fixed ATT&CK-ordered chains each for ransomware, BEC, insider, and vendor compromise. chain_stage values plus requires/grants tags form the branching backbone that produces the semi-random effect.",
+                                           "done":  false,
+                                           "priority":  "High",
+                                           "notes":  "Depends on TB1."
+                                       },
+                                       {
+                                           "id":  "TB3",
+                                           "text":  "Kickoff story pool: author 3 to 5 opener stories per archetype into tt_stories (initial access vector plus business framing). Launch with ransomware, BEC, and one more = 6 to 9 stories. Industry flavor is parameterization, not extra stories.",
+                                           "done":  false,
+                                           "priority":  "High",
+                                           "notes":  "Depends on TB1. Can be authored in parallel with TB2."
+                                       },
+                                       {
+                                           "id":  "TB4",
+                                           "text":  "Haiku offline authoring and curation: use Haiku to bulk-draft inject bodies and role_prompts along each kill chain. Mark reviews and curates; curated rows go into tt_inject_cards. Nothing unreviewed reaches a client.",
+                                           "done":  false,
+                                           "priority":  "High",
+                                           "notes":  "Depends on TB2, TB3."
+                                       },
+                                       {
+                                           "id":  "TB5",
+                                           "text":  "Precedence selection engine: at runtime read tt_inject_cards, filter to next-stage cards whose requires-tags are met and scenario/archetype matches, then pick weighted by the weight column. Lightweight state machine, no live AI.",
+                                           "done":  false,
+                                           "priority":  "High",
+                                           "notes":  "Depends on TB1, TB4."
+                                       },
+                                       {
+                                           "id":  "TB6",
+                                           "text":  "Response card library: author action cards into tt_response_cards, scoped by role x NIST phase x scenario type, roughly 8 to 12 per role per phase. Include plausible-but-wrong distractor cards — they are the assessment signal.",
+                                           "done":  false,
+                                           "priority":  "High",
+                                           "notes":  "Depends on TB1. Can run in parallel with inject deck work (TB2-TB5)."
+                                       },
+                                       {
+                                           "id":  "TB7",
+                                           "text":  "Appropriateness matrix: fill the appropriateness column on each response card — correct / defensible-partial / inappropriate / not-applicable, keyed by scenario and phase. Encodes rules like BEC does not need endpoint isolation.",
+                                           "done":  false,
+                                           "priority":  "High",
+                                           "notes":  "Depends on TB6."
+                                       },
+                                       {
+                                           "id":  "TB8",
+                                           "text":  "Card play persistence: wire the tabletop_card_plays table into the app so player card choices and grades are saved, following the tabletop_responses pattern.",
+                                           "done":  false,
+                                           "priority":  "High",
+                                           "notes":  "Depends on TB6."
+                                       },
+                                       {
+                                           "id":  "TB9",
+                                           "text":  "Card hand UI: in the inject view, deal the role/phase/scenario-filtered hand from tt_response_cards, let the player select cards, add a comment, and submit. Role-scoping preserves the fog of war.",
+                                           "done":  false,
+                                           "priority":  "High",
+                                           "notes":  "Depends on TB6, TB8."
+                                       },
+                                       {
+                                           "id":  "TB10",
+                                           "text":  "Scoring and AAR integration: grade the played hand against the appropriateness data (correct +, critical missed -, inappropriate -, partial credit for defensible-but-not-optimal) and feed results into the existing rubric and AAR.",
+                                           "done":  false,
+                                           "priority":  "High",
+                                           "notes":  "Depends on TB7, TB9."
+                                       },
+                                       {
+                                           "id":  "TB11",
+                                           "text":  "Randomized run mode (facilitated): facilitator picks the archetype, system randomizes which story and which chain within that archetype. Full randomness without a facilitator is reserved for TB13.",
+                                           "done":  false,
+                                           "priority":  "Medium",
+                                           "notes":  "Depends on TB3, TB5."
+                                       },
+                                       {
+                                           "id":  "TB12",
+                                           "text":  "BCDR track generalization: use the track field to add BCDR content — a BCDR sequence (Impact, Assess, Activate BCP, Failover/DR, Recover, Resume, Review), BCDR response cards, and BCDR appropriateness rows. Same engine and tables, different content.",
+                                           "done":  false,
+                                           "priority":  "Medium",
+                                           "notes":  "Depends on TB1, TB6, TB7."
+                                       },
+                                       {
+                                           "id":  "TB13",
+                                           "text":  "Fully autonomous mode (future state): no facilitator, live inject delivery, auto-scoring, auto-AAR. Build only once clients are running tabletops several times per year. The curated deck format must be proven first.",
+                                           "done":  false,
+                                           "priority":  "Low",
+                                           "notes":  "Depends on TB5, TB10."
                                        }
                                    ]
                      },
