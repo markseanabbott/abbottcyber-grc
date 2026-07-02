@@ -2,7 +2,7 @@
     "project":  "Abbott Cyber Consulting Ã¢â‚¬â€ GRC Security Scorecard",
     "version":  "1.6.1",
     "created":  "2026-05-14",
-    "updated":  "2026-07-02 (session 110)",
+    "updated":  "2026-07-02 (session 111)",
     "description":  "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
     "build_approach":  "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
     "sections":  [
@@ -1978,10 +1978,10 @@
                                        },
                                        {
                                            "id":  "tt_cards_2",
-                                           "text":  "Pre-authored inject deck with precedence engine: build a curated card pool per scenario archetype (ransomware, BEC, insider, vendor compromise) rather than generating injects live. Each card carries tactic/kill-chain stage (provides natural ordering), requires-tags (game state that must be true first), grants-tags (state it sets), and scenario applicability. Random selection = filter pool to cards whose prerequisites are met and scenario matches, then pick weighted by role/random. This gives replay variation without live LLM tokens and solves the 'some cards do not flow into others' precedence problem via a lightweight state machine.",
+                                           "text":  "Curated inject deck, Haiku-authored offline: for each scenario archetype (ransomware, BEC, insider, vendor compromise) define 3-5 pre-ordered MITRE kill chain sequences, then use Haiku OFFLINE to bulk-generate candidate inject bodies + rolePrompts along each chain. Mark reviews/curates the output into a static deck. Play from the curated deck deterministically. Each card carries tactic/kill-chain stage (ordering), requires-tags (state that must be true first), grants-tags (state it sets), and scenario applicability; selection = filter to cards whose prerequisites are met + scenario matches, then pick weighted by role/random.",
                                            "done":  false,
                                            "priority":  "Medium",
-                                           "notes":  "Recommended path over Haiku-per-card generation for now: zero gameplay tokens, deterministic, defensible. Reserve full generative mode (Haiku creates cards live) as an optional future 'endless mode'. Sonnet stays for AAR only. You do NOT need 5 cards for the whole ATT&CK matrix (~200 techniques) - author only the techniques that appear in the scenario kill chains you actually run."
+                                           "notes":  "Decision reconciled 2 Jul 2026 after comparing against a live-generation plan. Token cost is NOT the deciding factor (both approaches are ~$0.002/session, negligible). The deciding factors are: (1) reviewed correctness - every inject shown to a paying client has been human-checked; (2) cross-inject consistency within a session - static deck guarantees inject 3 stays consistent with inject 1; (3) no live API latency/failure mid-exercise. So use Haiku as an authoring accelerator, NOT a live game engine. This captures the upside of a live-gen plan (Haiku kills the authoring burden, near-infinite raw variation) without the client-facing risk. Reserve true live generation as an optional future 'endless mode' once the curated format is proven. Sonnet stays for AAR only. Do NOT author 5 cards for the whole ATT&CK matrix - only techniques that appear in the kill chains you run."
                                        }
                                    ]
                      },

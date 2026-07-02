@@ -1,4 +1,4 @@
--- SYNC_BACKLOG.sql -- generated 2026-07-02 (398 items)
+-- SYNC_BACKLOG.sql -- generated 2026-07-02 (400 items)
 -- Safe to re-run (ON CONFLICT DO UPDATE).
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
 VALUES ('s1', 'core', 'Core Concept', 1, 0, 'Security posture scoring for organisations / clients', true, NULL, NULL, '[]', 'completed')
@@ -4607,6 +4607,36 @@ ON CONFLICT (id) DO UPDATE SET
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
 VALUES ('tt_irp_auto_1', 'tt_autonomous', 'Tabletop ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Autonomous Mode (Jackbox-style, no facilitator)', 3, 11, 'IR plan comparison Ã¢â‚¬â€ autonomous: direct Claude API call from the app. User uploads IR plan document; app sends exercise data + plan to Claude Sonnet and receives structured JSON comparison result without copy-paste workflow. Requires API key management and premium tier gate.', false, 'High', NULL, '[]', 'add')
+ON CONFLICT (id) DO UPDATE SET
+  section_id    = EXCLUDED.section_id,
+  section_title = EXCLUDED.section_title,
+  section_phase = EXCLUDED.section_phase,
+  sort_order    = EXCLUDED.sort_order,
+  "text"        = EXCLUDED."text",
+  done          = EXCLUDED.done,
+  priority      = EXCLUDED.priority,
+  notes         = EXCLUDED.notes,
+  dependencies  = EXCLUDED.dependencies,
+  status        = EXCLUDED.status,
+  updated_at    = now();
+
+INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
+VALUES ('tt_cards_1', 'tt_autonomous', 'Tabletop ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Autonomous Mode (Jackbox-style, no facilitator)', 3, 12, 'Role-based response card hand: instead of free-text only, each player is dealt a hand of playable response cards scoped to their role and the current NIST IR phase (Detect/Analyze, Contain, Eradicate, Recover). Player clicks the card(s) they would play and adds a comment. Hand includes plausible-but-wrong distractor cards (e.g. endpoint isolation offered during a BEC) so the choice is a real decision test, not a checklist. Role-scoping preserves the fog of war (no single player sees the whole board).', false, 'High', 'Design decision (2 Jul 2026): cards are pre-authored, not generated at play time, to minimize tokens and guarantee technical correctness for a client-facing deliverable. Needs a card catalog keyed by (role_id x nist_phase) plus an appropriateness matrix keyed by (card x scenario x phase) resolving to correct / defensible-partial / inappropriate / not-applicable. Grading is not binary: some cards are always-reasonable (preserve logs, notify IC), some are scenario-wrong (isolate host on BEC), some are scenario-right (revoke tokens + force MFA reset + recall wire on BEC). Play action persists like tabletop_responses; AAR extends existing criticality-accuracy scoring to grade card choices. Bigger authoring lift than code lift; fits existing single-file architecture. New SQL patch needed for a card catalog + played-cards table.', '[]', 'add')
+ON CONFLICT (id) DO UPDATE SET
+  section_id    = EXCLUDED.section_id,
+  section_title = EXCLUDED.section_title,
+  section_phase = EXCLUDED.section_phase,
+  sort_order    = EXCLUDED.sort_order,
+  "text"        = EXCLUDED."text",
+  done          = EXCLUDED.done,
+  priority      = EXCLUDED.priority,
+  notes         = EXCLUDED.notes,
+  dependencies  = EXCLUDED.dependencies,
+  status        = EXCLUDED.status,
+  updated_at    = now();
+
+INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
+VALUES ('tt_cards_2', 'tt_autonomous', 'Tabletop ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Autonomous Mode (Jackbox-style, no facilitator)', 3, 13, 'Curated inject deck, Haiku-authored offline: for each scenario archetype (ransomware, BEC, insider, vendor compromise) define 3-5 pre-ordered MITRE kill chain sequences, then use Haiku OFFLINE to bulk-generate candidate inject bodies + rolePrompts along each chain. Mark reviews/curates the output into a static deck. Play from the curated deck deterministically. Each card carries tactic/kill-chain stage (ordering), requires-tags (state that must be true first), grants-tags (state it sets), and scenario applicability; selection = filter to cards whose prerequisites are met + scenario matches, then pick weighted by role/random.', false, 'Medium', 'Decision reconciled 2 Jul 2026 after comparing against a live-generation plan. Token cost is NOT the deciding factor (both approaches are ~$0.002/session, negligible). The deciding factors are: (1) reviewed correctness - every inject shown to a paying client has been human-checked; (2) cross-inject consistency within a session - static deck guarantees inject 3 stays consistent with inject 1; (3) no live API latency/failure mid-exercise. So use Haiku as an authoring accelerator, NOT a live game engine. This captures the upside of a live-gen plan (Haiku kills the authoring burden, near-infinite raw variation) without the client-facing risk. Reserve true live generation as an optional future ''endless mode'' once the curated format is proven. Sonnet stays for AAR only. Do NOT author 5 cards for the whole ATT&CK matrix - only techniques that appear in the kill chains you run.', '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
