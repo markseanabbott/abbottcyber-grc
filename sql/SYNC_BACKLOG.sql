@@ -1,4 +1,4 @@
--- SYNC_BACKLOG.sql -- generated 2026-07-01 (398 items)
+-- SYNC_BACKLOG.sql -- generated 2026-07-02 (398 items)
 -- Safe to re-run (ON CONFLICT DO UPDATE).
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
 VALUES ('s1', 'core', 'Core Concept', 1, 0, 'Security posture scoring for organisations / clients', true, NULL, NULL, '[]', 'completed')
@@ -4741,7 +4741,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('tb7', 'tabletop_bcdr', 'Tabletop ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â BCDR Track', 3, 6, 'AAR maps to BC Plan gaps same as cyber tabletop', false, NULL, NULL, '[]', 'add')
+VALUES ('tb7', 'tabletop_bcdr', 'Tabletop ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â BCDR Track', 3, 6, 'AAR maps to BC Plan gaps same as cyber tabletop', true, 'High', 'BCDR track AAR now shows a BC Plan Comparison section (ttRenderBcpSection) instead of IR Plan Comparison (ttRenderIrpSection). Detected via scenario.track === bcdr. New functions: ttBuildBcpPrompt (live), ttBuildBcpPromptFromSession (historical), ttBuildBcpPromptText (NIST SP 800-34 Rev.1 / ISO 22301 prompt), ttRenderBcpSection (UI), ttCopyBcpPrompt, ttSaveBcpComparison, ttBcpClearResult. JSON shape identical to IRP (follows_plan_score, nist_alignment_score, strengths, gaps) â€” reuses ir_comparison DB column. BCDR AAR also hides breach and notification cards, relabels MITRE mapping to Framework mapping. All in js/tabletop.js.', '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,

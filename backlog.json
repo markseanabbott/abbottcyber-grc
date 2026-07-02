@@ -2,7 +2,7 @@
     "project":  "Abbott Cyber Consulting Ã¢â‚¬â€ GRC Security Scorecard",
     "version":  "1.6.1",
     "created":  "2026-05-14",
-    "updated":  "2026-07-01 (session 109)",
+    "updated":  "2026-07-02 (session 110)",
     "description":  "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
     "build_approach":  "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
     "sections":  [
@@ -2041,7 +2041,9 @@
                                        {
                                            "id":  "tb7",
                                            "text":  "AAR maps to BC Plan gaps same as cyber tabletop",
-                                           "done":  false
+                                           "done":  true,
+                                           "priority":  "High",
+                                           "notes":  "BCDR track AAR now shows a BC Plan Comparison section (ttRenderBcpSection) instead of IR Plan Comparison (ttRenderIrpSection). Detected via scenario.track === bcdr. New functions: ttBuildBcpPrompt (live), ttBuildBcpPromptFromSession (historical), ttBuildBcpPromptText (NIST SP 800-34 Rev.1 / ISO 22301 prompt), ttRenderBcpSection (UI), ttCopyBcpPrompt, ttSaveBcpComparison, ttBcpClearResult. JSON shape identical to IRP (follows_plan_score, nist_alignment_score, strengths, gaps) — reuses ir_comparison DB column. BCDR AAR also hides breach and notification cards, relabels MITRE mapping to Framework mapping. All in js/tabletop.js."
                                        }
                                    ]
                      },

@@ -3577,6 +3577,7 @@ function _irpDialSvg(score, label, color) {
 // ---- AAR ----
 function ttRenderAAR() {
   const scenario = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
+  const isBcdr = scenario && scenario.track === 'bcdr';
   const totalInjects = scenario.injects.length;
   const injectsAnswered = Object.keys(ttState.responses).length;
   const sc = ttComputeExerciseScore();
@@ -3594,7 +3595,7 @@ function ttRenderAAR() {
       <div style="flex:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">
         <div style="font-size:12px"><span style="color:var(--muted)">Criticality accuracy</span><br/><b style="color:${ttScoreColor(sc.critScore)}">${sc.critScore}%</b> <span style="color:var(--muted);font-size:10px">(${sc.critCorrect}/${sc.critTotal} ratings)</span> <span style="color:var(--muted);font-size:10px">· 35% weight</span></div>
         <div style="font-size:12px"><span style="color:var(--muted)">Declaration quality</span><br/><b style="color:${ttScoreColor(sc.declScore)}">${sc.declScore}%</b> <span style="color:var(--muted);font-size:10px">(severity + declare/monitor)</span> <span style="color:var(--muted);font-size:10px">· 30% weight</span></div>
-        <div style="font-size:12px"><span style="color:var(--muted)">IR phase coverage</span><br/><b style="color:${ttScoreColor(sc.phaseScore)}">${sc.phaseScore}%</b> <span style="color:var(--muted);font-size:10px">(${sc.phasesHit}/${sc.phasesTotal} phases)</span> <span style="color:var(--muted);font-size:10px">· 20% weight</span></div>
+        <div style="font-size:12px"><span style="color:var(--muted)">${isBcdr ? 'BC phase coverage' : 'IR phase coverage'}</span><br/><b style="color:${ttScoreColor(sc.phaseScore)}">${sc.phaseScore}%</b> <span style="color:var(--muted);font-size:10px">(${sc.phasesHit}/${sc.phasesTotal} phases)</span> <span style="color:var(--muted);font-size:10px">· 20% weight</span></div>
         <div style="font-size:12px"><span style="color:var(--muted)">Notification completeness</span><br/><b style="color:${ttScoreColor(sc.notifScore)}">${sc.notifScore}%</b> <span style="color:var(--muted);font-size:10px">(${sc.notifChecked}/${sc.notifTotal} filed)</span> <span style="color:var(--muted);font-size:10px">· 15% weight</span></div>
       </div>
     </div>
@@ -3604,14 +3605,14 @@ function ttRenderAAR() {
   <div class="summary-metrics">
     <div class="sm-card"><div class="sm-val">${sc.critScore}%</div><div class="sm-lbl">Criticality acc.</div></div>
     <div class="sm-card"><div class="sm-val">${injectsAnswered}/${totalInjects}</div><div class="sm-lbl">Injects answered</div></div>
-    <div class="sm-card"><div class="sm-val">${sc.phasesHit}/${sc.phasesTotal}</div><div class="sm-lbl">NIST phases hit</div></div>
+    <div class="sm-card"><div class="sm-val">${sc.phasesHit}/${sc.phasesTotal}</div><div class="sm-lbl">${isBcdr ? 'BC phases hit' : 'NIST phases hit'}</div></div>
     <div class="sm-card"><div class="sm-val">${sc.notifChecked}/${sc.notifTotal}</div><div class="sm-lbl">Notifs filed</div></div>
   </div>
 
   ${ttRenderMitrePath()}
 
   <div class="card">
-    <div class="card-title">Step 0 — Declaration accuracy</div>
+    <div class="card-title">Step 0 — ${isBcdr ? 'Initial assessment accuracy' : 'Declaration accuracy'}</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div>
         <div style="font-size:11px;color:var(--muted)">TL severity called</div>
@@ -3620,9 +3621,9 @@ function ttRenderAAR() {
         </div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--muted)">TL recommendation</div>
-        <div style="font-size:14px;font-weight:700">${ttState.declaration.declare === null ? '—' : (ttState.declaration.declare ? 'Declare' : 'Monitor')}
-          <span style="font-size:11px;color:${sc.declMatch ? 'var(--green)' : 'var(--red)'};font-weight:700">${sc.declMatch ? '&#x2713; matches' : '&#x2717; correct was ' + (scenario.declaration.correctDeclare ? 'Declare' : 'Monitor')}</span>
+        <div style="font-size:11px;color:var(--muted)">${isBcdr ? 'TL recommendation' : 'TL recommendation'}</div>
+        <div style="font-size:14px;font-weight:700">${ttState.declaration.declare === null ? '—' : (ttState.declaration.declare ? (isBcdr ? 'Activate' : 'Declare') : 'Monitor')}
+          <span style="font-size:11px;color:${sc.declMatch ? 'var(--green)' : 'var(--red)'};font-weight:700">${sc.declMatch ? '&#x2713; matches' : '&#x2717; correct was ' + (scenario.declaration.correctDeclare ? (isBcdr ? 'Activate' : 'Declare') : 'Monitor')}</span>
         </div>
       </div>
     </div>
@@ -3630,7 +3631,7 @@ function ttRenderAAR() {
   </div>
 
   <div class="card">
-    <div class="card-title">MITRE ATT&CK mapping (revealed)</div>
+    <div class="card-title">${isBcdr ? 'Framework mapping — NIST SP 800-34 Rev.1 / ISO 22301 (revealed)' : 'MITRE ATT&CK mapping (revealed)'}</div>
     ${scenario.injects.map((inj, i) => `
       <div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
         <div><b>Inject ${i+1}</b> — ${inj.title}</div>
@@ -3659,6 +3660,7 @@ function ttRenderAAR() {
     }).join('')}
   </div>
 
+  ${!isBcdr ? `
   <div class="card">
     <div class="card-title">Breach declaration record</div>
     ${ttState.breach.declared ? `
@@ -3680,7 +3682,7 @@ function ttRenderAAR() {
         <span style="font-size:11px;color:var(--muted)">${c && c.checked && c.checkedAt ? new Date(c.checkedAt).toLocaleTimeString() : 'Not filed'}</span>
       </div>`;
     }).join('')}
-  </div>
+  </div>` : ''}
 
   <div class="card">
     <div class="card-title">Full event timeline</div>
@@ -3692,7 +3694,7 @@ function ttRenderAAR() {
       </div>`).join('') : '<div style="font-size:12px;color:var(--muted)">No log entries.</div>'}
   </div>
 
-  ${ttRenderIrpSection(ttState.sessionId, ttState.irComparison, true)}
+  ${isBcdr ? ttRenderBcpSection(ttState.sessionId, ttState.irComparison, true) : ttRenderIrpSection(ttState.sessionId, ttState.irComparison, true)}
 
   ${ttRenderActionItems()}
 
@@ -3941,7 +3943,7 @@ function ttRenderHistoryAAR() {
     }).join('') : '<div style="font-size:12px;color:var(--muted)">No log entries recorded.</div>'}
   </div>
 
-  ${ttRenderIrpSection(s.id, s.ir_comparison || null, false)}`;
+  ${(scenario && scenario.track === 'bcdr') ? ttRenderBcpSection(s.id, s.ir_comparison || null, false) : ttRenderIrpSection(s.id, s.ir_comparison || null, false)}`;
 }
 
 // ---- Event log formatting ----
@@ -4213,6 +4215,233 @@ async function ttIrpClearResult(sessionId, isLive) {
   }
 }
 
+// ---- BC Plan Comparison (BCDR track) ----
+
+function ttBuildBcpPrompt() {
+  const scenario = tteState.scenario || TT_SCENARIOS[ttState.scenarioId];
+  if (!scenario) return '';
+  const sc = ttComputeExerciseScore();
+  const injectsText = scenario.injects.map((inj, i) => {
+    const r = ttState.responses[i] || {};
+    const roleLines = TT_ROLES.map(role => {
+      const rr = r[role.id] || {};
+      if (!rr.text && !rr.criticality) return null;
+      return `  ${role.name} (${role.id.toUpperCase()}) [${rr.criticality || 'unrated'}]: ${rr.text || '(no written response)'}`;
+    }).filter(Boolean).join('\n');
+    return `Inject ${i + 1} — ${inj.title}\nBCDR focus: ${inj.mitre.tactic}\n${roleLines || '  (no responses recorded)'}`;
+  }).join('\n\n');
+  const logText = ttState.exerciseLog.length
+    ? ttState.exerciseLog.map(e => {
+        const t = new Date(e.ts).toLocaleTimeString();
+        const d = typeof e.detail === 'object' ? JSON.stringify(e.detail) : (e.detail || '');
+        return `[${t}] ${e.type}: ${d}`;
+      }).join('\n')
+    : 'No log entries recorded.';
+  return ttBuildBcpPromptText({
+    scenarioTitle: scenario.title,
+    scenarioSummary: scenario.summary || '',
+    date: new Date().toLocaleDateString('en-CA'),
+    score: `${sc.total}/100\n- Criticality accuracy: ${sc.critScore}% (${sc.critCorrect}/${sc.critTotal} ratings correct, 35% weight)\n- Declaration quality: ${sc.declScore}% (severity + activate/monitor, 30% weight)\n- Phase coverage: ${sc.phaseScore}% (${sc.phasesHit}/${sc.phasesTotal} phases, 20% weight)\n- Notification completeness: ${sc.notifScore}% (15% weight)`,
+    severity: ttState.declaration.severity || '(not set)',
+    decision: ttState.declaration.declare === null ? '(not made)' : (ttState.declaration.declare ? 'Activate BC Plan' : 'Monitor only'),
+    assessment: ttState.declaration.assessment || '(not provided)',
+    injects: injectsText,
+    log: logText,
+  });
+}
+
+function ttBuildBcpPromptFromSession(s) {
+  const scenario = TT_SCENARIOS[s.scenario_id];
+  const log = Array.isArray(s.exercise_log) ? s.exercise_log : [];
+  const logText = log.length
+    ? log.map(e => {
+        const t = e.time || (e.ts ? new Date(e.ts).toLocaleTimeString() : '—');
+        const d = e.action || (typeof e.detail === 'object' ? JSON.stringify(e.detail) : (e.detail || ''));
+        return `[${t}] ${e.type || e.role || ''}: ${d}`;
+      }).join('\n')
+    : 'No log entries recorded.';
+  return ttBuildBcpPromptText({
+    scenarioTitle: scenario ? scenario.title : (s.scenario_title || s.scenario_id),
+    scenarioSummary: scenario ? (scenario.summary || '') : '',
+    date: s.created_at ? new Date(s.created_at).toLocaleDateString('en-CA') : '—',
+    score: typeof s.exercise_score === 'number' ? `${s.exercise_score}/100` : '(not scored)',
+    severity: s.tl_severity || '(not set)',
+    decision: s.tl_declare ? 'Activate BC Plan' : 'Monitor only',
+    assessment: s.tl_assessment || '(not provided)',
+    injects: '(inject response detail not available in historical view — see event log)',
+    log: logText,
+  });
+}
+
+function ttBuildBcpPromptText(d) {
+  return `You are a senior business continuity consultant providing post-exercise analysis for a client's business continuity capability.
+
+Below is the output from a BCDR tabletop exercise conducted through Abbott Cyber GRC. Following the exercise data, you will find the client's documented Business Continuity Plan.
+
+Your task is to evaluate two things:
+A) How closely did the team follow their own documented BC Plan during the exercise?
+B) How well does the BC Plan itself align with NIST SP 800-34 Rev.1 (Contingency Planning Guide for Federal Information Systems) and ISO 22301:2019 (Business Continuity Management)?
+
+Be balanced and constructive. The goal is not to score the team harshly — it is to identify whether the plan was useful, whether it was followed, and where it needs strengthening. Pay particular attention to: formal activation procedures, RTO/RPO definitions and outcomes, communication tree effectiveness, alternate site / failover readiness, and vendor / supplier invocation authority.
+
+## Exercise Data
+
+**Scenario:** ${d.scenarioTitle}
+${d.scenarioSummary}
+
+**Date:** ${d.date}
+**Exercise Score:** ${d.score}
+
+**Step 0 — Technical Lead Initial Assessment**
+- Severity assigned: ${d.severity}
+- Recommendation: ${d.decision}
+- Written assessment: ${d.assessment}
+
+**Inject Responses by Role**
+${d.injects}
+
+**Exercise Event Log**
+${d.log}
+
+---
+
+## Response Format
+
+Return ONLY a valid JSON object. No markdown fences, no prose, no explanation — just the raw JSON:
+
+{
+  "follows_plan_score": <integer 0-100>,
+  "follows_plan_summary": "<2-3 sentences on how well the team followed their documented BC Plan, noting where they diverged or where the plan was silent>",
+  "nist_alignment_score": <integer 0-100>,
+  "nist_alignment_summary": "<2-3 sentences on how well the BC Plan aligns to NIST SP 800-34 Rev.1 and ISO 22301:2019, covering activation, continuity of operations, reconstitution, and testing requirements>",
+  "strengths": ["<observed strength>", ...],
+  "gaps": ["<BC Plan gap or improvement area>", ...]
+}
+
+---
+
+## Client Business Continuity Plan
+
+[PASTE YOUR BC PLAN BELOW THIS LINE]
+`;
+}
+
+function ttRenderBcpSection(sessionId, saved, isLive) {
+  if (!sessionId) return '';
+
+  if (saved && typeof saved === 'object') {
+    const fpScore   = saved.follows_plan_score    ?? 0;
+    const nistScore = saved.nist_alignment_score  ?? 0;
+    const fpGrade   = exGrade(fpScore);
+    const nistGrade = exGrade(nistScore);
+    const strengthsHtml = Array.isArray(saved.strengths) && saved.strengths.length
+      ? saved.strengths.map(s => `<div style="display:flex;gap:6px;font-size:12px;margin-bottom:5px"><span style="color:#15803d;flex-shrink:0;margin-top:1px">&#x2713;</span><span>${escH(s)}</span></div>`).join('')
+      : '<div style="font-size:12px;color:var(--muted)">None noted.</div>';
+    const gapsHtml = Array.isArray(saved.gaps) && saved.gaps.length
+      ? saved.gaps.map(g => `<div style="display:flex;gap:6px;font-size:12px;margin-bottom:5px"><span style="color:#d97706;flex-shrink:0;margin-top:1px">&#x26A0;</span><span>${escH(g)}</span></div>`).join('')
+      : '<div style="font-size:12px;color:var(--muted)">None noted.</div>';
+    return `<div class="card" style="margin-bottom:0.75rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <div class="card-title" style="margin:0">&#x1F4CB; BC Plan Comparison</div>
+        <button class="btn btn-outline btn-sm" onclick="ttBcpClearResult('${sessionId}',${isLive})">Re-paste &#x21BA;</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div style="padding:0.85rem;background:var(--bg);border-radius:8px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:10px">Follows Own Plan</div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+            ${_irpDialSvg(fpScore, fpGrade.letter, fpGrade.color)}
+            <div style="line-height:1"><span style="font-size:24px;font-weight:800;color:${fpGrade.color}">${fpScore}</span><span style="font-size:13px;font-weight:600;color:var(--muted)">/100</span></div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);line-height:1.55">${escH(saved.follows_plan_summary || '')}</div>
+        </div>
+        <div style="padding:0.85rem;background:var(--bg);border-radius:8px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:10px">NIST 800-34 / ISO 22301</div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+            ${_irpDialSvg(nistScore, nistGrade.letter, nistGrade.color)}
+            <div style="line-height:1"><span style="font-size:24px;font-weight:800;color:${nistGrade.color}">${nistScore}</span><span style="font-size:13px;font-weight:600;color:var(--muted)">/100</span></div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);line-height:1.55">${escH(saved.nist_alignment_summary || '')}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Strengths</div>
+          ${strengthsHtml}
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">BC Plan Gaps</div>
+          ${gapsHtml}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  return `<div class="card" style="margin-bottom:0.75rem">
+    <div class="card-title">&#x1F4CB; BC Plan Comparison</div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:0.85rem">Compare this exercise against the client's documented BC Plan, NIST SP 800-34 Rev.1, and ISO 22301:2019. Copy the prompt, take it to Claude with the BC Plan pasted below it, then paste the JSON response back here.</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:0.85rem">
+      <button class="btn btn-cyan btn-sm" onclick="ttCopyBcpPrompt(${isLive})">&#x1F4CB; Copy Prompt for Claude</button>
+      <span style="font-size:11px;color:var(--muted)">1. Copy prompt &rarr; 2. Paste into Claude with your BC Plan &rarr; 3. Paste JSON response below</span>
+    </div>
+    <textarea id="bcpPasteArea" placeholder="Paste Claude's JSON response here&hellip;" rows="6"
+      style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-family:monospace;color:var(--text);resize:vertical;outline:none"
+      onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+    <div style="display:flex;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-primary btn-sm" onclick="ttSaveBcpComparison('${sessionId}',${isLive})">Save Comparison</button>
+    </div>
+  </div>`;
+}
+
+function ttCopyBcpPrompt(isLive) {
+  const prompt = isLive ? ttBuildBcpPrompt() : ttBuildBcpPromptFromSession(ttState.historicalSession);
+  if (!prompt) { toast('Could not build prompt — session data missing', '#dc2626'); return; }
+  navigator.clipboard.writeText(prompt)
+    .then(() => toast('BC Plan prompt copied to clipboard', '#15803d'))
+    .catch(() => toast('Copy failed — please select the prompt text manually', '#dc2626'));
+}
+
+async function ttSaveBcpComparison(sessionId, isLive) {
+  const el = document.getElementById('bcpPasteArea');
+  if (!el || !el.value.trim()) { toast('Paste the Claude JSON response first', '#d97706'); return; }
+  let parsed;
+  try {
+    let raw = el.value.trim();
+    const fence = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (fence) raw = fence[1].trim();
+    parsed = JSON.parse(raw);
+  } catch(e) {
+    toast('Invalid JSON — check the pasted response and try again', '#dc2626');
+    return;
+  }
+  try {
+    await sb.tt.updateSession(sessionId, { ir_comparison: parsed });
+    if (isLive) {
+      ttState.irComparison = parsed;
+    } else {
+      if (ttState.historicalSession) ttState.historicalSession.ir_comparison = parsed;
+    }
+    ttRender();
+    toast('BC Plan comparison saved', '#15803d');
+    await auditLog('tabletop_bcp_comparison_saved', { session_id: sessionId });
+  } catch(e) {
+    toast('Save failed — ' + e.message, '#dc2626');
+  }
+}
+
+async function ttBcpClearResult(sessionId, isLive) {
+  try {
+    await sb.tt.updateSession(sessionId, { ir_comparison: null });
+    if (isLive) {
+      ttState.irComparison = null;
+    } else {
+      if (ttState.historicalSession) ttState.historicalSession.ir_comparison = null;
+    }
+    ttRender();
+  } catch(e) {
+    toast('Could not clear — ' + e.message, '#dc2626');
+  }
+}
+
 // ---- Excel export ----
 function ttLoadXlsxScript(src) {
   return new Promise((resolve, reject) => {
@@ -4300,4 +4529,7 @@ window.ttSaveAAR = ttSaveAAR;
 window.ttCopyIrpPrompt = ttCopyIrpPrompt;
 window.ttSaveIrComparison = ttSaveIrComparison;
 window.ttIrpClearResult = ttIrpClearResult;
+window.ttCopyBcpPrompt = ttCopyBcpPrompt;
+window.ttSaveBcpComparison = ttSaveBcpComparison;
+window.ttBcpClearResult = ttBcpClearResult;
 
