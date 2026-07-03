@@ -2,7 +2,7 @@
     "project":  "Abbott Cyber Consulting ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â GRC Security Scorecard",
     "version":  "1.6.1",
     "created":  "2026-05-14",
-    "updated":  "2026-07-03 (session 115)",
+    "updated":  "2026-07-03 (session 116)",
     "description":  "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
     "build_approach":  "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
     "sections":  [
@@ -2098,9 +2098,9 @@
                                        {
                                            "id":  "TB5",
                                            "text":  "Precedence selection engine: at runtime read tt_inject_cards, filter to next-stage cards whose requires-tags are met and scenario/archetype matches, then pick weighted by the weight column. Lightweight state machine, no live AI.",
-                                           "done":  false,
+                                           "done":  true,
                                            "priority":  "High",
-                                           "notes":  "Depends on TB1, TB4. IMPORTANT: card picker MUST filter WHERE curated = true — this is the enforcement gate ensuring no unreviewed content reaches a live client session. Cards with curated = false are authoring drafts only."
+                                           "notes":  "Built as js/tt_storyboard.js — 3-view UI (setup/running/terminal). Seeded mulberry32 PRNG (tsbPrngValue O(1)), tsbSimulate() preview path with Reroll, live tsbPickCard() re-derives from tagState. curated=eq.true enforced at Supabase fetch. Nav: tt_storyboard in Exercises group (phase 3). Stories deferred to TB11."
                                        },
                                        {
                                            "id":  "TB6",
