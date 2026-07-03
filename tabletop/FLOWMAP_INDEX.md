@@ -69,7 +69,9 @@ Track 3 uses a **branching tag system**: each session walks through a fixed stag
 
 ## Canonical NIST phase mapping per archetype
 
-> **This is the authoritative source.** The `generate_grids.mjs` script verifies that `tt_inject_cards` matches this table before writing any grid. A mismatch causes the script to exit with an error listing the divergent cards — fix the DB first, then re-run.
+> **`CANONICAL` in `generate_grids.mjs` is the authoritative source — do not edit this table by hand.** It is regenerated from `CANONICAL` on every generator run. The generator also verifies that `tt_inject_cards` matches this mapping before writing any grid. A mismatch causes the script to exit with an error listing the divergent cards — fix the DB first, then re-run.
+
+<!-- AUTOGEN:nistmapping START -->
 
 | Archetype (DB id) | S1 | S2 | S3 | S4 | S5 | S6 |
 |-------------------|----|----|----|----|----|----|
@@ -79,6 +81,7 @@ Track 3 uses a **branching tag system**: each session walks through a fixed stag
 | `vendor_compromise` | 1 | 1 | 2 | 3 | 3 | — |
 
 Phase key: **1** = Detect/Analyze · **2** = Contain · **3** = Eradicate
+<!-- AUTOGEN:nistmapping END -->
 
 ---
 

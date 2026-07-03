@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // tabletop/generate_grids.mjs
-// Regenerates <!-- AUTOGEN:cardgrid:<archetype> START/END --> blocks in storyboard files
-// from tt_inject_cards. Validates nist_phase_idx against the canonical mapping before
-// writing anything. A mismatch exits with an error listing every divergent card.
+// Regenerates AUTOGEN blocks in storyboard files and FLOWMAP_INDEX.md from tt_inject_cards.
+// Validates nist_phase_idx against CANONICAL before writing anything.
+// A mismatch exits with an error listing every divergent card.
 //
 // Usage: node tabletop/generate_grids.mjs
 // Requires Node 18+ (built-in fetch). Reads SUPABASE_URL and SUPABASE_ANON_KEY from .env.
@@ -35,7 +35,8 @@ function loadEnv() {
 }
 
 // ── Canonical NIST phase mapping ───────────────────────────────────────────
-// Authoritative source: tabletop/FLOWMAP_INDEX.md  (do not edit here without updating there too)
+// CANONICAL is the single authoritative source. FLOWMAP_INDEX.md derives its
+// mapping table from this object via the AUTOGEN:nistmapping block.
 // Structure: archetype → stage (1-based) → nist_phase_idx
 const CANONICAL = {
   ransomware:        { 1: 1, 2: 1, 3: 2, 4: 2, 5: 3, 6: 3 },
@@ -46,7 +47,7 @@ const CANONICAL = {
 
 const NIST_LABELS = { 1: 'Detect/Analyze', 2: 'Contain', 3: 'Eradicate' };
 
-// Fallback stage labels — used when stage_label column is null in DB
+// Fallback stage labels — used only when stage_label is null in the DB
 const STAGE_LABELS = {
   ransomware: {
     1: 'Initial Access',
@@ -87,10 +88,14 @@ const STORYBOARD_FILES = {
   vendor_compromise: resolve(__dir, 'storyboard', 'vendor.md'),
 };
 
+const INDEX_FILE = resolve(__dir, 'FLOWMAP_INDEX.md');
+
 // ── Supabase fetch ──────────────────────────────────────────────────────────
+const FETCH_LIMIT = 500;
+
 async function fetchCards(url, key) {
   const res = await fetch(
-    `${url}/rest/v1/tt_inject_cards?select=*&order=archetype,chain_stage,id&limit=500`,
+    `${url}/rest/v1/tt_inject_cards?select=*&order=archetype,chain_stage,id&limit=${FETCH_LIMIT}`,
     { headers: { apikey: key, Authorization: `Bearer ${key}` } }
   );
   if (!res.ok) {
@@ -98,7 +103,11 @@ async function fetchCards(url, key) {
     console.error(`ERROR: Supabase returned ${res.status}: ${body}`);
     process.exit(1);
   }
-  return res.json();
+  const cards = await res.json();
+  if (cards.length >= FETCH_LIMIT) {
+    console.warn(`  WARN: fetch returned ${cards.length} rows (= limit). Results may be truncated — increase FETCH_LIMIT or paginate.`);
+  }
+  return cards;
 }
 
 // ── Tag renderers ─────────────────────────────────────────────────────────
@@ -112,7 +121,56 @@ function renderGrants(arr) {
   return arr.map(t => `\`${t}\``).join(' · ');
 }
 
-// ── Grid builder ───────────────────────────────────────────────────────────
+// ── AUTOGEN block replacer ─────────────────────────────────────────────────
+function replaceBlock(fileContent, blockName, content) {
+  const startMarker = `<!-- AUTOGEN:${blockName} START -->`;
+  const endMarker   = `<!-- AUTOGEN:${blockName} END -->`;
+
+  const startIdx = fileContent.indexOf(startMarker);
+  const endIdx   = fileContent.indexOf(endMarker);
+
+  if (startIdx === -1 || endIdx === -1) {
+    console.warn(`  WARN: AUTOGEN markers for "${blockName}" not found — skipping`);
+    return fileContent;
+  }
+
+  return (
+    fileContent.slice(0, startIdx + startMarker.length) +
+    '\n' + content +
+    fileContent.slice(endIdx)
+  );
+}
+
+// ── NIST mapping table builder ─────────────────────────────────────────────
+// Derives the canonical mapping table from the CANONICAL object.
+function buildNistMappingTable() {
+  const archetypes = Object.keys(CANONICAL);
+  const maxStage   = Math.max(...archetypes.map(a => Math.max(...Object.keys(CANONICAL[a]).map(Number))));
+  const stageCols  = Array.from({ length: maxStage }, (_, i) => `S${i + 1}`);
+
+  const header = `| Archetype (DB id) | ${stageCols.join(' | ')} |`;
+  const sep    = `|-------------------|${stageCols.map(() => '----').join('|')}|`;
+
+  const rows = archetypes.map(arch => {
+    const cells = Array.from({ length: maxStage }, (_, i) => {
+      const val = CANONICAL[arch][i + 1];
+      return val !== undefined ? String(val) : '—';
+    });
+    return `| \`${arch}\` | ${cells.join(' | ')} |`;
+  });
+
+  return [
+    '',
+    header,
+    sep,
+    ...rows,
+    '',
+    'Phase key: **1** = Detect/Analyze · **2** = Contain · **3** = Eradicate',
+    '',
+  ].join('\n');
+}
+
+// ── Card grid builder ───────────────────────────────────────────────────────
 function buildGrid(archetype, cards) {
   const canon  = CANONICAL[archetype];
   const stages = Object.keys(canon).map(Number).sort((a, b) => a - b);
@@ -121,14 +179,15 @@ function buildGrid(archetype, cards) {
   for (const stage of stages) {
     const nistPhase  = canon[stage];
     const nistLabel  = NIST_LABELS[nistPhase];
-    const stageLabel = STAGE_LABELS[archetype]?.[stage] ?? `Stage ${stage}`;
+    const stageCards = cards.filter(c => c.chain_stage === stage);
+    // Prefer stage_label from DB; fall back to hardcoded STAGE_LABELS
+    const stageLabel = stageCards[0]?.stage_label ?? STAGE_LABELS[archetype]?.[stage] ?? `Stage ${stage}`;
 
     lines.push(`**Stage ${stage} — ${stageLabel} · ${nistLabel}**`);
     lines.push('');
     lines.push('| Card | Title | Requires | Grants | Weight | Criticality | NIST phase |');
     lines.push('|------|-------|----------|--------|--------|-------------|------------|');
 
-    const stageCards = cards.filter(c => c.chain_stage === stage);
     if (stageCards.length === 0) {
       lines.push('| — | *(no cards at this stage)* | | | | | |');
     } else {
@@ -142,26 +201,6 @@ function buildGrid(archetype, cards) {
   }
 
   return lines.join('\n');
-}
-
-// ── AUTOGEN block replacer ─────────────────────────────────────────────────
-function replaceBlock(fileContent, archetype, grid) {
-  const startMarker = `<!-- AUTOGEN:cardgrid:${archetype} START -->`;
-  const endMarker   = `<!-- AUTOGEN:cardgrid:${archetype} END -->`;
-
-  const startIdx = fileContent.indexOf(startMarker);
-  const endIdx   = fileContent.indexOf(endMarker);
-
-  if (startIdx === -1 || endIdx === -1) {
-    console.warn(`  WARN: AUTOGEN markers not found in ${archetype} storyboard — skipping`);
-    return fileContent;
-  }
-
-  return (
-    fileContent.slice(0, startIdx + startMarker.length) +
-    '\n' + grid +
-    fileContent.slice(endIdx)
-  );
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────
@@ -194,6 +233,16 @@ async function main() {
   }
   console.log('  Phase validation passed.\n');
 
+  // Update FLOWMAP_INDEX.md — canonical mapping table
+  const indexContent = readFileSync(INDEX_FILE, 'utf8');
+  const updatedIndex = replaceBlock(indexContent, 'nistmapping', buildNistMappingTable());
+  if (updatedIndex === indexContent) {
+    console.log('  FLOWMAP_INDEX.md: no change');
+  } else {
+    writeFileSync(INDEX_FILE, updatedIndex, 'utf8');
+    console.log('  FLOWMAP_INDEX.md: updated');
+  }
+
   // Write each archetype storyboard
   for (const [archetype, filePath] of Object.entries(STORYBOARD_FILES)) {
     const cards = allCards.filter(c => c.archetype === archetype);
@@ -211,7 +260,7 @@ async function main() {
     }
 
     const grid    = buildGrid(archetype, cards);
-    const updated = replaceBlock(fileContent, archetype, grid);
+    const updated = replaceBlock(fileContent, `cardgrid:${archetype}`, grid);
 
     if (updated === fileContent) {
       console.log(`  ${archetype}: no change (${cards.length} cards)`);
