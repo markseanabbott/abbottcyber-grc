@@ -118,10 +118,10 @@ Stage 6  Impact (terminal)       TA0040
 
 | Card | Title | Requires | Grants | Weight | Criticality | NIST phase |
 |------|-------|----------|--------|--------|-------------|------------|
-| R3a | LSASS dump via Mimikatz or equivalent | `c2:established` | `creds:domain_user` | 10 | Critical | 1 |
-| R3b | Kerberoasting — service account TGS tickets cracked offline | `c2:established` | `creds:service_account` · `creds:domain_user` | 10 | Critical | 1 |
-| R3c | Pass-the-hash with NTLM stolen from local SAM | `c2:established` | `creds:local_admin` | 10 | High | 1 |
-| R3d | Browser credential harvest + stored password dump | `persistence:established` | `creds:domain_user` | 10 | High | 1 |
+| R3a | LSASS dump via Mimikatz or equivalent | `c2:established` | `creds:domain_user` | 10 | Critical | 2 |
+| R3b | Kerberoasting — service account TGS tickets cracked offline | `c2:established` | `creds:service_account` · `creds:domain_user` | 10 | Critical | 2 |
+| R3c | Pass-the-hash with NTLM stolen from local SAM | `c2:established` | `creds:local_admin` | 10 | High | 2 |
+| R3d | Browser credential harvest + stored password dump | `persistence:established` | `creds:domain_user` | 10 | High | 2 |
 
 > R3b grants two credential tags — it unlocks both R4a and R4b at stage 4.
 > R3d is only reachable via R2d (the LOTL path).
@@ -142,11 +142,11 @@ Stage 6  Impact (terminal)       TA0040
 
 | Card | Title | Requires | Grants | Weight | Criticality | NIST phase |
 |------|-------|----------|--------|--------|-------------|------------|
-| R5a | Shadow copy deletion + backup agent disabled | `priv:domain_admin` | `backups:disabled` · `impact:imminent` | 10 | Critical | 2 |
-| R5b | 80 GB data staged and exfiltrated — double extortion lever armed | `lateral:complete` | `exfil:complete` · `extortion:leverage` · `impact:imminent` | 10 | Critical | 2 |
-| R5c | Ransomware payload pre-staged across all reachable hosts | `lateral:partial` | `payload:staged` · `impact:imminent` | 10 | Critical | 2 |
-| R5d | EDR / AV disabled domain-wide via GPO | `priv:domain_admin` | `defense:blind` · `impact:imminent` | 10 | Critical | 2 |
-| R5e | EDR silenced on reachable hosts (partial blind) | `lateral:partial` | `defense:blind` · `impact:imminent` | 10 | High | 2 |
+| R5a | Shadow copy deletion + backup agent disabled | `priv:domain_admin` | `backups:disabled` · `impact:imminent` | 10 | Critical | 3 |
+| R5b | 80 GB data staged and exfiltrated — double extortion lever armed | `lateral:complete` | `exfil:complete` · `extortion:leverage` · `impact:imminent` | 10 | Critical | 3 |
+| R5c | Ransomware payload pre-staged across all reachable hosts | `lateral:partial` | `payload:staged` · `impact:imminent` | 10 | Critical | 3 |
+| R5d | EDR / AV disabled domain-wide via GPO | `priv:domain_admin` | `defense:blind` · `impact:imminent` | 10 | Critical | 3 |
+| R5e | EDR silenced on reachable hosts (partial blind) | `lateral:partial` | `defense:blind` · `impact:imminent` | 10 | High | 3 |
 
 > After R4a / R4b (grant `priv:domain_admin` + `lateral:complete`) → R5a, R5b, R5d all valid (3 options).
 > After R4c (grants `lateral:partial` only) → R5c and R5e valid (2 options).
@@ -156,9 +156,9 @@ Stage 6  Impact (terminal)       TA0040
 
 | Card | Title | Requires | Grants | Weight | Criticality | NIST phase |
 |------|-------|----------|--------|--------|-------------|------------|
-| R6a | Ransomware deployed via GPO or remote execution script | `impact:imminent` | *(terminal)* | 10 | Critical | 2 |
-| R6b | Encrypt + threaten public data leak (double extortion) | `exfil:complete` | *(terminal)* | 10 | Critical | 2 |
-| R6c | Backup destruction first, then encrypt — no clean recovery path | `backups:disabled` | *(terminal)* | 10 | Critical | 2 |
+| R6a | Ransomware deployed via GPO or remote execution script | `impact:imminent` | *(terminal)* | 10 | Critical | 3 |
+| R6b | Encrypt + threaten public data leak (double extortion) | `exfil:complete` | *(terminal)* | 10 | Critical | 3 |
+| R6c | Backup destruction first, then encrypt — no clean recovery path | `backups:disabled` | *(terminal)* | 10 | Critical | 3 |
 
 > R6a is always available (every stage-5 card grants `impact:imminent`).
 > R6b is only available after R5b.
@@ -276,9 +276,9 @@ Stage 5  Financial Impact (terminal)
 
 | Card | Title | Requires | Grants | Weight | Criticality | NIST phase |
 |------|-------|----------|--------|--------|-------------|------------|
-| B3a | Attacker poses as CEO via compromised account — targets CFO with "confidential wire" framing | `recon:complete` | `trust:established` · `exec:impersonated` | 10 | High | 1 |
-| B3b | Attacker impersonates vendor — sends updated banking details from lookalike or compromised email | `recon:complete` | `trust:established` · `vendor:impersonated` | 10 | High | 1 |
-| B3c | Thread hijack — attacker replies inline to active payment thread from the compromised account | `recon:thread_harvested` | `trust:established` · `thread:hijacked` · `exec:impersonated` | 10 | Critical | 1 |
+| B3a | Attacker poses as CEO via compromised account — targets CFO with "confidential wire" framing | `recon:complete` | `trust:established` · `exec:impersonated` | 10 | High | 2 |
+| B3b | Attacker impersonates vendor — sends updated banking details from lookalike or compromised email | `recon:complete` | `trust:established` · `vendor:impersonated` | 10 | High | 2 |
+| B3c | Thread hijack — attacker replies inline to active payment thread from the compromised account | `recon:thread_harvested` | `trust:established` · `thread:hijacked` · `exec:impersonated` | 10 | Critical | 2 |
 
 > B3c is only reachable via B2c. Rated Critical — inline thread replies are nearly undetectable without email forensics.
 
@@ -286,10 +286,10 @@ Stage 5  Financial Impact (terminal)
 
 | Card | Title | Requires | Grants | Weight | Criticality | NIST phase |
 |------|-------|----------|--------|--------|-------------|------------|
-| B4a | Urgent same-day wire request — CEO cites confidential acquisition, instructs CFO not to call | `exec:impersonated` | `urgency:applied` · `wire:requested` · `fraud:submitted` | 10 | Critical | 1 |
-| B4b | Invoice arrives with updated ACH / wire details — existing vendor relationship exploited | `vendor:impersonated` | `invoice:substituted` · `wire:requested` · `fraud:submitted` | 10 | High | 1 |
-| B4c | Payroll diversion — attacker impersonates employee and submits direct-deposit change to HR | `trust:established` | `payroll:diverted` · `fraud:submitted` | 7 | High | 1 |
-| B4d | Thread hijack wire request — attacker continues real payment thread with changed banking details | `thread:hijacked` | `urgency:applied` · `wire:requested` · `fraud:submitted` | 10 | Critical | 1 |
+| B4a | Urgent same-day wire request — CEO cites confidential acquisition, instructs CFO not to call | `exec:impersonated` | `urgency:applied` · `wire:requested` · `fraud:submitted` | 10 | Critical | 2 |
+| B4b | Invoice arrives with updated ACH / wire details — existing vendor relationship exploited | `vendor:impersonated` | `invoice:substituted` · `wire:requested` · `fraud:submitted` | 10 | High | 2 |
+| B4c | Payroll diversion — attacker impersonates employee and submits direct-deposit change to HR | `trust:established` | `payroll:diverted` · `fraud:submitted` | 7 | High | 2 |
+| B4d | Thread hijack wire request — attacker continues real payment thread with changed banking details | `thread:hijacked` | `urgency:applied` · `wire:requested` · `fraud:submitted` | 10 | Critical | 2 |
 
 > All stage-4 cards grant `fraud:submitted` — universal convergence tag for stage 5.
 > B4a and B4d also grant `urgency:applied`, enabling the B5b terminal outcome.
@@ -298,9 +298,9 @@ Stage 5  Financial Impact (terminal)
 
 | Card | Title | Requires | Grants | Weight | Criticality | NIST phase |
 |------|-------|----------|--------|--------|-------------|------------|
-| B5a | Wire transfer authorized and processed — funds reach mule account within 90 minutes | `fraud:submitted` | *(terminal)* | 10 | Critical | 2 |
-| B5b | Attacker calls back posing as bank to "verify" the transfer — cancellation window closes | `urgency:applied` | *(terminal)* | 10 | Critical | 2 |
-| B5c | Payroll diversion runs silently for three pay cycles before discovered on reconciliation | `payroll:diverted` | *(terminal)* | 7 | High | 2 |
+| B5a | Wire transfer authorized and processed — funds reach mule account within 90 minutes | `fraud:submitted` | *(terminal)* | 10 | Critical | 3 |
+| B5b | Attacker calls back posing as bank to "verify" the transfer — cancellation window closes | `urgency:applied` | *(terminal)* | 10 | Critical | 3 |
+| B5c | Payroll diversion runs silently for three pay cycles before discovered on reconciliation | `payroll:diverted` | *(terminal)* | 7 | High | 3 |
 
 > B5a is available after any stage-4 card (all grant `fraud:submitted`).
 > B5b requires `urgency:applied` — only available after B4a or B4d.
@@ -404,10 +404,10 @@ Stage 5  Impact (terminal)
 
 | Card | Title | Requires | Grants | Weight | Criticality | NIST phase |
 |------|-------|----------|--------|--------|-------------|------------|
-| I4a | Insider resigns and walks out with USB containing client database — discovered during exit interview | `data:staged_usb` | `impact:data_loss` | 10 | High | 2 |
-| I4b | Cloud sync completes overnight — 4.7 GB confirmed downloaded to personal device | `data:staged_cloud` | `impact:data_loss` | 10 | High | 2 |
-| I4c | IR team locates local staging file — but forensics confirms a prior USB copy was already made | `data:staged_local` | `impact:data_loss` | 10 | High | 2 |
-| I4d | Insider transfers data directly to competitor via secure file transfer — large outbound transfer logged | `motive:competitive` · `data:ready` | `impact:data_loss` | 7 | Critical | 2 |
+| I4a | Insider resigns and walks out with USB containing client database — discovered during exit interview | `data:staged_usb` | `impact:data_loss` | 10 | High | 3 |
+| I4b | Cloud sync completes overnight — 4.7 GB confirmed downloaded to personal device | `data:staged_cloud` | `impact:data_loss` | 10 | High | 3 |
+| I4c | IR team locates local staging file — but forensics confirms a prior USB copy was already made | `data:staged_local` | `impact:data_loss` | 10 | High | 3 |
+| I4d | Insider transfers data directly to competitor via secure file transfer — large outbound transfer logged | `motive:competitive` · `data:ready` | `impact:data_loss` | 7 | Critical | 3 |
 
 > I4a–I4c gated by their specific staging tag. I4d requires both `motive:competitive` (stage 1) and `data:ready` (stage 3) — available only on the I1b path.
 
@@ -415,9 +415,9 @@ Stage 5  Impact (terminal)
 
 | Card | Title | Requires | Grants | Weight | Criticality | NIST phase |
 |------|-------|----------|--------|--------|-------------|------------|
-| I5a | Competitor announces product matching stolen IP within 90 days — data confirmed used | `impact:data_loss` | *(terminal)* | 10 | High | 2 |
-| I5b | Regulatory notification required — PII of 50,000+ individuals confirmed exfiltrated | `impact:data_loss` | *(terminal)* | 10 | Critical | 2 |
-| I5c | Insider arrested at airport with USB — criminal referral filed, data partially recovered | `data:staged_usb` | *(terminal)* | 7 | High | 2 |
+| I5a | Competitor announces product matching stolen IP within 90 days — data confirmed used | `impact:data_loss` | *(terminal)* | 10 | High | 3 |
+| I5b | Regulatory notification required — PII of 50,000+ individuals confirmed exfiltrated | `impact:data_loss` | *(terminal)* | 10 | Critical | 3 |
+| I5c | Insider arrested at airport with USB — criminal referral filed, data partially recovered | `data:staged_usb` | *(terminal)* | 7 | High | 3 |
 
 > I5a and I5b available after any stage-4 card. I5c requires the USB staging path.
 
@@ -497,10 +497,10 @@ Stage 5  Impact (terminal)              TA0040
 
 | Card | Title | Requires | Grants | Weight | Criticality | NIST phase |
 |------|-------|----------|--------|--------|-------------|------------|
-| V3a | RMM tool executes PowerShell across all managed clients — legitimate tool, no alerts triggered | `vendor:msp_access` · `recon:client_list` | `pivot:via_rmm` · `client:foothold` | 10 | Critical | 1 |
-| V3b | API token used to pull live customer PII from client via existing integration | `vendor:api_access` · `recon:api_scope` | `pivot:via_api` · `client:foothold` | 10 | High | 1 |
-| V3c | Trojanized update auto-installs on 23 client endpoints — backdoor active in production | `vendor:software_update` · `recon:update_targets` | `pivot:via_update` · `client:foothold` | 10 | Critical | 1 |
-| V3d | Attacker selects highest-value client from MSP console and pivots via privileged RMM agent | `trust:elevated` · `recon:client_list` | `pivot:via_rmm` · `client:foothold` · `client:targeted` | 7 | Critical | 1 |
+| V3a | RMM tool executes PowerShell across all managed clients — legitimate tool, no alerts triggered | `vendor:msp_access` · `recon:client_list` | `pivot:via_rmm` · `client:foothold` | 10 | Critical | 2 |
+| V3b | API token used to pull live customer PII from client via existing integration | `vendor:api_access` · `recon:api_scope` | `pivot:via_api` · `client:foothold` | 10 | High | 2 |
+| V3c | Trojanized update auto-installs on 23 client endpoints — backdoor active in production | `vendor:software_update` · `recon:update_targets` | `pivot:via_update` · `client:foothold` | 10 | Critical | 2 |
+| V3d | Attacker selects highest-value client from MSP console and pivots via privileged RMM agent | `trust:elevated` · `recon:client_list` | `pivot:via_rmm` · `client:foothold` · `client:targeted` | 7 | Critical | 2 |
 
 > V3a–V3c each require specific vendor access + matching recon tag. V3d requires both `trust:elevated` and `recon:client_list` — only available via V2a, enabling a targeted single-client pivot.
 
@@ -508,9 +508,9 @@ Stage 5  Impact (terminal)              TA0040
 
 | Card | Title | Requires | Grants | Weight | Criticality | NIST phase |
 |------|-------|----------|--------|--------|-------------|------------|
-| V4a | BloodHound-equivalent run via RMM — full AD map acquired, domain admin path confirmed | `pivot:via_rmm` | `client:admin_creds` · `impact:imminent` | 10 | Critical | 2 |
-| V4b | API pivot exposes complete customer PII dataset — attacker begins staged exfiltration | `pivot:via_api` | `exfil:staging` · `impact:imminent` | 10 | High | 2 |
-| V4c | Backdoor on 23 endpoints begins silent credential harvesting and lateral reconnaissance | `pivot:via_update` | `client:admin_creds` · `impact:imminent` | 10 | Critical | 2 |
+| V4a | BloodHound-equivalent run via RMM — full AD map acquired, domain admin path confirmed | `pivot:via_rmm` | `client:admin_creds` · `impact:imminent` | 10 | Critical | 3 |
+| V4b | API pivot exposes complete customer PII dataset — attacker begins staged exfiltration | `pivot:via_api` | `exfil:staging` · `impact:imminent` | 10 | High | 3 |
+| V4c | Backdoor on 23 endpoints begins silent credential harvesting and lateral reconnaissance | `pivot:via_update` | `client:admin_creds` · `impact:imminent` | 10 | Critical | 3 |
 
 > All stage-4 cards grant `impact:imminent` — universal convergence for stage 5.
 
@@ -518,9 +518,9 @@ Stage 5  Impact (terminal)              TA0040
 
 | Card | Title | Requires | Grants | Weight | Criticality | NIST phase |
 |------|-------|----------|--------|--------|-------------|------------|
-| V5a | Ransomware deployed across client environment via RMM — all managed clients encrypted simultaneously | `impact:imminent` | *(terminal)* | 10 | Critical | 2 |
-| V5b | Complete customer PII exfiltrated silently via API — discovered weeks later via dark web alert | `exfil:staging` | *(terminal)* | 10 | Critical | 2 |
-| V5c | Client admin credentials sold on dark web — multiple threat actors gain independent access | `client:admin_creds` | *(terminal)* | 7 | Critical | 2 |
+| V5a | Ransomware deployed across client environment via RMM — all managed clients encrypted simultaneously | `impact:imminent` | *(terminal)* | 10 | Critical | 3 |
+| V5b | Complete customer PII exfiltrated silently via API — discovered weeks later via dark web alert | `exfil:staging` | *(terminal)* | 10 | Critical | 3 |
+| V5c | Client admin credentials sold on dark web — multiple threat actors gain independent access | `client:admin_creds` | *(terminal)* | 7 | Critical | 3 |
 
 > V5a always available (every stage-4 card grants `impact:imminent`).
 > V5b requires the API path (`exfil:staging` from V4b).
