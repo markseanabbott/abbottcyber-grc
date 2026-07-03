@@ -129,6 +129,7 @@ const NAV = [
     { id: 'audit_log',        icon: '🔍', label: 'Audit Log',         live: true, phase: 1 },
     { id: 'scenario_builder', icon: '🎬', label: 'Scenario Builder',  live: true, phase: 3 },
     { id: 'scenario_library', icon: '📚', label: 'Scenario Library',  live: true, phase: 3 },
+    { id: 'card_curator',     icon: '🃏', label: 'Inject Card Curator', live: true, phase: 3 },
   ]},
 ];
 
