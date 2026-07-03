@@ -1,4 +1,4 @@
--- SYNC_BACKLOG.sql -- generated 2026-07-02 (415 items)
+-- SYNC_BACKLOG.sql -- generated 2026-07-03 (415 items)
 -- Safe to re-run (ON CONFLICT DO UPDATE).
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
 VALUES ('s1', 'core', 'Core Concept', 1, 0, 'Security posture scoring for organisations / clients', true, NULL, NULL, '[]', 'completed')
@@ -4816,7 +4816,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB4', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 3, 'Haiku offline authoring and curation: use Haiku to bulk-draft inject bodies and role_prompts along each kill chain. Mark reviews and curates; curated rows go into tt_inject_cards. Nothing unreviewed reaches a client.', false, 'High', 'Depends on TB2, TB3.', '[]', 'add')
+VALUES ('TB4', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 3, 'Haiku offline authoring and curation: use Haiku to bulk-draft inject bodies and role_prompts along each kill chain. Mark reviews and curates; curated rows go into tt_inject_cards. Nothing unreviewed reaches a client.', true, 'High', 'Used Sonnet (not Haiku) for quality. All 74 cards authored: Ransomware (22, R1a-R6c) | BEC (16, B1a-B5c) | Insider (19, I1a-I5c) | Vendor Compromise (17, V1a-V5c). Bodies: 2-4 sentences, {{org_name}} token once per body, order-agnostic and self-contained. Role prompts: only active roles per stage get a real prompt; inactive roles get the exact monitor string. curated=false on all cards. Run SUPABASE_PATCH_064.sql first (adds curated column), then SEED_TT_INJECT_BODIES.sql. Mark reviews each card and flips curated=true before use in live sessions.', '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
@@ -4831,7 +4831,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB5', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 4, 'Precedence selection engine: at runtime read tt_inject_cards, filter to next-stage cards whose requires-tags are met and scenario/archetype matches, then pick weighted by the weight column. Lightweight state machine, no live AI.', false, 'High', 'Depends on TB1, TB4.', '[]', 'add')
+VALUES ('TB5', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 4, 'Precedence selection engine: at runtime read tt_inject_cards, filter to next-stage cards whose requires-tags are met and scenario/archetype matches, then pick weighted by the weight column. Lightweight state machine, no live AI.', false, 'High', 'Depends on TB1, TB4. IMPORTANT: card picker MUST filter WHERE curated = true â€” this is the enforcement gate ensuring no unreviewed content reaches a live client session. Cards with curated = false are authoring drafts only.', '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
@@ -4936,7 +4936,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB11', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 11, 'Randomized run mode (facilitated): facilitator picks the archetype, system randomizes which story and which chain within that archetype. Full randomness without a facilitator is reserved for TB13.', false, 'Medium', 'Depends on TB3, TB5.', '[]', 'add')
+VALUES ('TB11', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 11, 'Randomized run mode (facilitated): facilitator picks the archetype, system randomizes which story and which chain within that archetype. Full randomness without a facilitator is reserved for TB13.', false, 'Medium', 'Depends on TB3, TB5. INTEGRATION NOTE: for the story''s entry card, the TB3 opener text already delivers the detection narrative to players â€” the entry card body must not duplicate or contradict the opener. At TB11 build time, resolve whether the entry card body is suppressed, summarized, or replaced by the opener. Also: substitute {{org_name}} at render time via body.replace(/\{\{org_name\}\}/g, session.orgName) where session.orgName comes from organisations.name via the session''s org_id.', '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
