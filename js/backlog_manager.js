@@ -328,7 +328,7 @@ function blmRenderItem(item, idx) {
   </select>`;
 
   return `<div style="display:flex;align-items:flex-start;gap:.75rem;padding:.65rem 1rem;border-bottom:1px solid var(--border);${isDimmed?'opacity:.55':''}">
-    ${idx ? `<div style="font-size:10px;color:#c4cad8;font-weight:700;min-width:20px;text-align:right;flex-shrink:0;padding-top:6px;user-select:none">${idx}</div>` : ''}
+    <div style="font-size:10px;color:var(--navy);font-weight:700;min-width:72px;max-width:72px;text-align:right;flex-shrink:0;padding-top:5px;user-select:none;word-break:break-all;line-height:1.3;opacity:.7">${escH(item.id)}</div>
     <div style="flex-shrink:0;padding-top:1px">${statusSelect}</div>
     <div style="flex:1;min-width:0">
       <div style="font-size:13px;line-height:1.5;${textStyle}">${escH(item.text)}</div>
