@@ -4801,7 +4801,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB3', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 2, 'Kickoff story pool: author 3 to 5 opener stories per archetype into tt_stories (initial access vector plus business framing). Launch with ransomware, BEC, and one more = 6 to 9 stories. Industry flavor is parameterization, not extra stories.', false, 'High', 'Depends on TB1. Can be authored in parallel with TB2.', '[]', 'add')
+VALUES ('TB3', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 2, 'Kickoff story pool: author 3 to 5 opener stories per archetype into tt_stories (initial access vector plus business framing). Launch with ransomware, BEC, and one more = 6 to 9 stories. Industry flavor is parameterization, not extra stories.', true, 'High', '12 stories authored across all 4 IR archetypes (3 each: ransomware, bec, insider, vendor_compromise). Openers end at the detection point, not the attacker stage-1 card. SUPABASE_PATCH_063.sql adds entry_card_id (FK to tt_inject_cards) and detection_maturity (''early''|''mid''|''late'') to tt_stories. SEED_TT_STORIES.sql seeds all 12 stories. {{org_name}} token for parameterization. Run PATCH_063 then SEED_TT_STORIES in Supabase.', '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
