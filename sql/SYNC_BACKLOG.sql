@@ -4771,7 +4771,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB2', 'tb_storyboard', 'Tabletop â€” Story Board', 3, 1, 'Kill chain sequences per archetype: define 3 to 5 fixed ATT&CK-ordered chains each for ransomware, BEC, insider, and vendor compromise. chain_stage values plus requires/grants tags form the branching backbone that produces the semi-random effect.', false, 'High', 'Depends on TB1.', '[]', 'add')
+VALUES ('TB2', 'tb_storyboard', 'Tabletop â€” Story Board', 3, 1, 'Kill chain sequences per archetype: define 3 to 5 fixed ATT&CK-ordered chains each for ransomware, BEC, insider, and vendor compromise. chain_stage values plus requires/grants tags form the branching backbone that produces the semi-random effect.', true, 'High', 'Branching grid model designed for all 4 IR archetypes (ransomware 21 cards / BEC 16 / insider 19 / vendor_compromise 17 = 73 total). Fixed stage skeleton per archetype with 3-4 option cards per stage. Requires/grants tag vocabulary per archetype. Reference grid in TABLETOP_CHAINS.md. Seed SQL in sql/SEED_TT_INJECT_CHAINS.sql â€” run in Supabase to populate tt_inject_cards.', '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
