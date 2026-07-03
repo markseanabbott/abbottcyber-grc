@@ -2,7 +2,7 @@
     "project":  "Abbott Cyber Consulting ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â GRC Security Scorecard",
     "version":  "1.6.1",
     "created":  "2026-05-14",
-    "updated":  "2026-07-02 (session 114)",
+    "updated":  "2026-07-03 (session 115)",
     "description":  "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
     "build_approach":  "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
     "sections":  [
@@ -2072,7 +2072,7 @@
                                            "text":  "Kill chain sequences per archetype: define 3 to 5 fixed ATT\u0026CK-ordered chains each for ransomware, BEC, insider, and vendor compromise. chain_stage values plus requires/grants tags form the branching backbone that produces the semi-random effect.",
                                            "done":  true,
                                            "priority":  "High",
-                                           "notes":  "Branching grid model designed for all 4 IR archetypes (ransomware 21 cards / BEC 16 / insider 19 / vendor_compromise 17 = 73 total). Fixed stage skeleton per archetype with 3-4 option cards per stage. Requires/grants tag vocabulary per archetype. Reference grid in TABLETOP_CHAINS.md. Seed SQL in sql/SEED_TT_INJECT_CHAINS.sql â€ run in Supabase to populate tt_inject_cards."
+                                           "notes":  "Branching grid model designed for all 4 IR archetypes (ransomware 22 cards / BEC 16 / insider 19 / vendor_compromise 17 = 74 total). Fixed stage skeleton per archetype with 3-4 option cards per stage. Requires/grants tag vocabulary per archetype. Reference grid in TABLETOP_CHAINS.md. Seed SQL in sql/SEED_TT_INJECT_CHAINS.sql â€ run in Supabase to populate tt_inject_cards."
                                        },
                                        {
                                            "id":  "TB3",
@@ -2087,6 +2087,13 @@
                                            "done":  true,
                                            "priority":  "High",
                                            "notes":  "Used Sonnet (not Haiku) for quality. All 74 cards authored: Ransomware (22, R1a-R6c) | BEC (16, B1a-B5c) | Insider (19, I1a-I5c) | Vendor Compromise (17, V1a-V5c). Bodies: 2-4 sentences, {{org_name}} token once per body, order-agnostic and self-contained. Role prompts: only active roles per stage get a real prompt; inactive roles get the exact monitor string. curated=false on all cards. Run SUPABASE_PATCH_064.sql first (adds curated column), then SEED_TT_INJECT_BODIES.sql. Mark reviews each card and flips curated=true before use in live sessions."
+                                       },
+                                       {
+                                           "id":  "TB4b",
+                                           "text":  "Card curator admin tool: standalone HTML tool (card-curator.html) to browse all inject cards by archetype and stage, review body and role_prompts, and flip curated = true/false live against Supabase. Also update TABLETOP_FLOWMAP.md with full Track 3 TB Storyboard section.",
+                                           "done":  true,
+                                           "priority":  "High",
+                                           "notes":  "card-curator.html — standalone admin tool, same pattern as backlog-manager.html. Loads all 74 tt_inject_cards from Supabase, groups by archetype and stage tabs, displays full card content with role-labeled prompts (IC/TL/CL/LC/ES), criticality badge, NIST phase, weight, MITRE. Curated toggle PATCHes Supabase immediately. Progress counter (X/74 curated) in header. Uses SB_URL/SB_KEY from js/supabase.js. TABLETOP_FLOWMAP.md updated: new Track 3 TB Storyboard section with all 4 archetypes (stage skeletons, complete card grids, 3 example paths each with narrative and discussion questions). TABLETOP_CHAINS.md stale count corrected: 21→22 ransomware cards, 73→74 total."
                                        },
                                        {
                                            "id":  "TB5",

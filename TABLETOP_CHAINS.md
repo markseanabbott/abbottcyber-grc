@@ -56,7 +56,7 @@ The session maintains a running set of **granted tags**. Every card played adds 
 
 ## Ransomware
 
-**Track:** `ir` | **Stages:** 6 | **Total cards:** 21
+**Track:** `ir` | **Stages:** 6 | **Total cards:** 22
 
 ### Stage skeleton
 
@@ -549,4 +549,4 @@ Stage 5  Impact (terminal)              TA0040
 
 ---
 
-*Last updated: 2026-07-02 (TB2 complete — all 4 IR archetypes designed and seeded; 73 cards total)*
+*Last updated: 2026-07-03 (TB2 complete — all 4 IR archetypes designed and seeded; 74 cards total)*

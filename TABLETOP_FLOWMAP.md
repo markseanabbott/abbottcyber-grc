@@ -979,4 +979,376 @@ Framework: NIST AI RMF (GV/MP/MS/MG) and ISO/IEC 42001:2023. US regulatory law o
 | Is this a reportable data incident under US state law? | Potentially yes, depending on the state and what data was accessed. If the HR records include personal information as defined by the applicable state law, and the access was without authorisation, notification obligations may be triggered. Legal counsel must assess based on the specific states involved. |
 | What do you tell the three affected employees? | Tell them what happened: that their HR records were accessed by a colleague through an AI system, that the access was not authorised, and what you are doing to prevent recurrence. Depending on what was accessed, they may have rights to know the full scope. |
 | What does this reveal about your AI assistant's permission model? | The AI has access to HR data that should require explicit individual-level permission to retrieve — not just integration-level access. The fix is least-privilege enforcement at the AI layer: the AI should only surface data that the querying user is explicitly authorised to see, enforced at the data access layer rather than by policy alone. |
+
+---
+
+---
+
+## TRACK 3 — TB STORYBOARD (`js/tabletop.js` → TB5 branching engine)
+
+> **Updated:** 2026-07-03 — 74 cards seeded (TB4 complete). TB5 card picker pending.
+
+### How this track differs from Track 1 / Track 2
+
+Track 1 and 2 use **hardcoded inject sequences** — every session sees the same cards in the same order. Track 3 uses a **branching tag system**: each session walks through a fixed stage skeleton but the specific card at each stage is drawn from a pool, weighted by a tag state machine. Two sessions running the same archetype will almost never take the same path.
+
+**Engine rules:**
+- One card per stage, picked from eligible cards whose `requires` tags are all present in the current session tag state.
+- Each played card adds its `grants` tags to the session state — shaping which cards are eligible at the next stage.
+- `requires: []` = eligible at start (opener cards). `grants: []` = terminal (impact cards).
+- Curation gate: card picker filters `WHERE curated = true`. Uncurated cards never appear in live sessions.
+- `{{org_name}}` token in every body text is substituted at runtime with the client org name.
+
+**Facilitator role:** You see the body and all five role prompts. Participants only see their own role prompt. After each inject, open discussion — draw out the right answer from the table before moving on.
+
+**NIST phase key:** 0=Prepare · 1=Detect/Analyze · 2=Contain · 3=Eradicate · 4=Recover · 5=Post-Incident
+
+**Role key:** IC=Incident Commander · TL=Technical Lead · CL=Communications Lead · LC=Legal Counsel · ES=Executive Sponsor
+
+---
+
+### Archetypes at a glance
+
+| Archetype | Stages | Cards | Typical duration | Hardest outcome |
+|-----------|--------|-------|-----------------|-----------------|
+| Ransomware | 6 | 22 | 90–120 min | R6c — backup destruction + encrypt, no clean recovery |
+| BEC | 5 | 16 | 60–75 min | B5b — double-tap phone call closes cancellation window |
+| Insider | 5 | 19 | 60–75 min | I5b — regulatory notification for 50K+ PII records |
+| Vendor Compromise | 5 | 17 | 75–90 min | V5a — RMM used to encrypt all managed clients simultaneously |
+
+---
+
+## ARCHETYPE: Ransomware
+
+**Stages:** 6 | **Cards:** 22 | **Track:** IR | **Roles:** IC / TL / CL / LC / ES
+
+### Stage skeleton
+
+| Stage | Label | ATT&CK | NIST phase |
+|-------|-------|--------|------------|
+| 1 | Initial Access | TA0001 | Detect/Analyze |
+| 2 | Execution & C2 | TA0002 | Detect/Analyze |
+| 3 | Credential Access | TA0006 | Detect/Analyze |
+| 4 | Privilege Escalation & Lateral Movement | TA0004 / TA0008 | Detect/Analyze |
+| 5 | Pre-Impact | TA0005 / TA0009 / TA0010 | Contain |
+| 6 | Impact (terminal) | TA0040 | Eradicate |
+
+### Card grid
+
+**Stage 1 — Initial Access**
+
+| Card | Title | Requires | Grants | Weight | Criticality |
+|------|-------|----------|--------|--------|-------------|
+| R1a | Phishing — malicious macro attachment delivered to employee | *(none)* | `access:email` · `foothold:achieved` | 10 | High |
+| R1b | VPN / edge appliance exploit on unpatched CVE | *(none)* | `access:web` · `foothold:achieved` | 10 | Critical |
+| R1c | RDP brute force on externally exposed port | *(none)* | `access:interactive` · `foothold:achieved` | 10 | High |
+
+**Stage 2 — Execution & C2**
+
+| Card | Title | Requires | Grants | Weight | Criticality |
+|------|-------|----------|--------|--------|-------------|
+| R2a | Macro executes — Cobalt Strike / Sliver beacon dropped in memory | `access:email` | `c2:established` · `c2:beaconing` | 10 | Critical |
+| R2b | Web shell planted on compromised edge device | `access:web` | `c2:established` · `c2:webshell` | 10 | Critical |
+| R2c | Attacker deploys tooling via live RDP session | `access:interactive` | `c2:established` · `c2:interactive` | 10 | Critical |
+| R2d | LOTL — PowerShell scheduled task, no beacon | `foothold:achieved` | `c2:established` · `persistence:established` | 7 | High |
+
+**Stage 3 — Credential Access**
+
+| Card | Title | Requires | Grants | Weight | Criticality |
+|------|-------|----------|--------|--------|-------------|
+| R3a | LSASS dump via Mimikatz or equivalent | `c2:established` | `creds:domain_user` | 10 | Critical |
+| R3b | Kerberoasting — service account TGS tickets cracked offline | `c2:established` | `creds:service_account` · `creds:domain_user` | 10 | Critical |
+| R3c | Pass-the-hash with NTLM stolen from local SAM | `c2:established` | `creds:local_admin` | 10 | High |
+| R3d | Browser credential harvest + stored password dump | `persistence:established` | `creds:domain_user` | 10 | High |
+
+**Stage 4 — Privilege Escalation & Lateral Movement**
+
+| Card | Title | Requires | Grants | Weight | Criticality |
+|------|-------|----------|--------|--------|-------------|
+| R4a | Service account pivots to domain controller | `creds:service_account` | `priv:domain_admin` · `lateral:complete` | 10 | Critical |
+| R4b | Pass-the-hash / pass-the-ticket to domain controller | `creds:domain_user` | `priv:domain_admin` · `lateral:complete` | 10 | Critical |
+| R4c | Local admin relay — spreads to nearby hosts, stops short of DC | `creds:local_admin` | `lateral:partial` | 10 | High |
+
+**Stage 5 — Pre-Impact**
+
+| Card | Title | Requires | Grants | Weight | Criticality |
+|------|-------|----------|--------|--------|-------------|
+| R5a | Shadow copy deletion + backup agent disabled | `priv:domain_admin` | `backups:disabled` · `impact:imminent` | 10 | Critical |
+| R5b | 80 GB data staged and exfiltrated — double extortion lever armed | `lateral:complete` | `exfil:complete` · `extortion:leverage` · `impact:imminent` | 10 | Critical |
+| R5c | Ransomware payload pre-staged across all reachable hosts | `lateral:partial` | `payload:staged` · `impact:imminent` | 10 | Critical |
+| R5d | EDR / AV disabled domain-wide via GPO | `priv:domain_admin` | `defense:blind` · `impact:imminent` | 10 | Critical |
+| R5e | EDR silenced on reachable hosts (partial blind) | `lateral:partial` | `defense:blind` · `impact:imminent` | 10 | High |
+
+**Stage 6 — Impact (terminal)**
+
+| Card | Title | Requires | Grants | Weight | Criticality |
+|------|-------|----------|--------|--------|-------------|
+| R6a | Ransomware deployed via GPO or remote execution script | `impact:imminent` | *(terminal)* | 10 | Critical |
+| R6b | Encrypt + threaten public data leak (double extortion) | `exfil:complete` | *(terminal)* | 10 | Critical |
+| R6c | Backup destruction first, then encrypt — no clean recovery path | `backups:disabled` | *(terminal)* | 10 | Critical |
+
+### Ransomware — example paths
+
+**Path 1 — Classic phishing, no recovery path** `R1a → R2a → R3a → R4b → R5a → R6c`
+
+Narrative: Front-desk staff clicks a macro. Cobalt Strike beacon establishes quietly. Attacker dumps LSASS, moves laterally to DC via PTH, destroys shadow copies, then detonates with backup destruction first. No clean restore path.
+
+Key discussion: What is your RTO with no backups? Is your backup provider's console on the same domain? Who calls cyber insurance?
+
+**Path 2 — VPN exploit, double extortion** `R1b → R2b → R3b → R4a → R5b → R6b`
+
+Narrative: Unpatched VPN CVE. Web shell persistence. Kerberoasting gets a service account. DA achieved. 80 GB of guest PII quietly exfiltrated before encryption fires. Two simultaneous ransom levers.
+
+Key discussion: Can you negotiate without paying when data is already out? What is your notification obligation once exfil is confirmed regardless of whether you pay?
+
+**Path 3 — RDP brute force, LOTL, quiet entry** `R1c → R2d → R3d → R4b → R5d → R6a`
+
+Narrative: Exposed RDP port ground down, no C2 beacon, stays under EDR via LOTL. Browser credentials harvested, DA achieved via PTH, EDR killed via GPO, then standard deploy. No beacon ever fires — EDR has nothing to alert on.
+
+Key discussion: What controls detect this without EDR? Does your RDP exposure exist? How does the org discover this attack happened at all?
+
+---
+
+## ARCHETYPE: BEC (Business Email Compromise)
+
+**Stages:** 5 | **Cards:** 16 | **Track:** IR | **Roles:** IC / TL / CL / LC / ES
+
+### Stage skeleton
+
+| Stage | Label | ATT&CK | NIST phase |
+|-------|-------|--------|------------|
+| 1 | Initial Access / Infiltration | TA0001 / TA0043 | Detect/Analyze |
+| 2 | Reconnaissance | TA0007 / T1114 | Detect/Analyze |
+| 3 | Account Position / Impersonation | TA0043 / T1078 | Contain |
+| 4 | Social Engineering / Fraud Execution | TA0043 / T1566.002 | Contain |
+| 5 | Financial Impact (terminal) | — | Eradicate |
+
+### Card grid
+
+**Stage 1 — Initial Access**
+
+| Card | Title | Requires | Grants | Weight | Criticality |
+|------|-------|----------|--------|--------|-------------|
+| B1a | IT help-desk spear phish harvests executive O365 credentials | *(none)* | `access:phishing` · `email:account_compromised` | 10 | High |
+| B1b | Attacker registers typosquat domain — one character off from client domain | *(none)* | `access:lookalike` · `email:lookalike_active` | 10 | Medium |
+| B1c | Finance team password found in credential database from prior breach | *(none)* | `access:credential_stuffing` · `email:account_compromised` | 7 | High |
+
+**Stage 2 — Reconnaissance**
+
+| Card | Title | Requires | Grants | Weight | Criticality |
+|------|-------|----------|--------|--------|-------------|
+| B2a | Hidden inbox rules set — attacker monitors payment approvals in real time | `email:account_compromised` | `recon:complete` · `recon:inbox_monitored` | 10 | High |
+| B2b | OSINT sweep — LinkedIn, filed accounts, press releases reveal CFO name and approval thresholds | `access:lookalike` | `recon:complete` · `recon:osint_only` | 10 | Medium |
+| B2c | Attacker reads live payment threads — vendor relationships and pending invoices catalogued | `email:account_compromised` | `recon:complete` · `recon:thread_harvested` · `vendor:identified` | 10 | High |
+
+**Stage 3 — Account Position / Impersonation**
+
+| Card | Title | Requires | Grants | Weight | Criticality |
+|------|-------|----------|--------|--------|-------------|
+| B3a | Attacker poses as CEO via compromised account — targets CFO with "confidential wire" framing | `recon:complete` | `trust:established` · `exec:impersonated` | 10 | High |
+| B3b | Attacker impersonates vendor — sends updated banking details from lookalike or compromised email | `recon:complete` | `trust:established` · `vendor:impersonated` | 10 | High |
+| B3c | Thread hijack — attacker replies inline to active payment thread from the compromised account | `recon:thread_harvested` | `trust:established` · `thread:hijacked` · `exec:impersonated` | 10 | Critical |
+
+**Stage 4 — Fraud Execution**
+
+| Card | Title | Requires | Grants | Weight | Criticality |
+|------|-------|----------|--------|--------|-------------|
+| B4a | Urgent same-day wire request — CEO cites confidential acquisition, instructs CFO not to call | `exec:impersonated` | `urgency:applied` · `wire:requested` · `fraud:submitted` | 10 | Critical |
+| B4b | Invoice arrives with updated ACH / wire details — existing vendor relationship exploited | `vendor:impersonated` | `invoice:substituted` · `wire:requested` · `fraud:submitted` | 10 | High |
+| B4c | Payroll diversion — attacker impersonates employee and submits direct-deposit change to HR | `trust:established` | `payroll:diverted` · `fraud:submitted` | 7 | High |
+| B4d | Thread hijack wire request — attacker continues real payment thread with changed banking details | `thread:hijacked` | `urgency:applied` · `wire:requested` · `fraud:submitted` | 10 | Critical |
+
+**Stage 5 — Financial Impact (terminal)**
+
+| Card | Title | Requires | Grants | Weight | Criticality |
+|------|-------|----------|--------|--------|-------------|
+| B5a | Wire transfer authorized and processed — funds reach mule account within 90 minutes | `fraud:submitted` | *(terminal)* | 10 | Critical |
+| B5b | Attacker calls back posing as bank to "verify" the transfer — cancellation window closes | `urgency:applied` | *(terminal)* | 10 | Critical |
+| B5c | Payroll diversion runs silently for three pay cycles before discovered on reconciliation | `payroll:diverted` | *(terminal)* | 7 | High |
+
+### BEC — example paths
+
+**Path 1 — Phishing, exec impersonation, double-tap** `B1a → B2a → B3a → B4a → B5b`
+
+Narrative: Executive account taken via spear phish. Attacker monitors email for 4 days, then sends a same-day wire request as the CEO. Finance calls the bank to reverse — attacker calls first posing as the bank, closes the window.
+
+Key discussion: What is your call-back verification procedure for wire requests? Does "the CEO said not to call" override your controls? Who has authority to instruct a reversal request?
+
+**Path 2 — Lookalike domain, vendor invoice fraud** `B1b → B2b → B3b → B4b → B5a`
+
+Narrative: Attacker registers a one-character typosquat and does full OSINT. Sends an updated-banking-details invoice for an active vendor relationship. Wire processed — no real account was ever compromised.
+
+Key discussion: How do you verify changed payment details? What is your vendor payment verification procedure? Does accounts payable call back on a known number?
+
+**Path 3 — Thread hijack, inline wire** `B1a → B2c → B3c → B4d → B5b`
+
+Narrative: Phishing gets the account. Attacker reads a live payment thread, waits for the right moment, then replies inline as if continuing a real conversation. Wire goes through; follow-up call closes cancellation window. Most convincing BEC vector — no new thread started.
+
+Key discussion: Would your finance team recognize that the reply domain changed? Do you have email authentication (DMARC, DKIM) that would flag a reply from a different domain?
+
+---
+
+## ARCHETYPE: Insider Threat
+
+**Stages:** 5 | **Cards:** 19 | **Track:** IR | **Roles:** IC / TL / CL / LC / ES
+
+### Stage skeleton
+
+| Stage | Label | ATT&CK | NIST phase |
+|-------|-------|--------|------------|
+| 1 | Initial Act / Motivation | — (insider misuse) | Detect/Analyze |
+| 2 | Reconnaissance & Data Mapping | TA0007 / T1083 | Detect/Analyze |
+| 3 | Data Staging | TA0009 / T1005 / T1213 | Contain |
+| 4 | Exfiltration | TA0010 / T1052 / T1567 | Eradicate |
+| 5 | Impact (terminal) | — | Post-Incident |
+
+### Card grid
+
+**Stage 1 — Initial Act / Motivation**
+
+| Card | Title | Requires | Grants | Weight | Criticality |
+|------|-------|----------|--------|--------|-------------|
+| I1a | Disgruntled IT admin queries HR and finance records outside job scope after being passed over | *(none)* | `motive:grievance` · `access:privileged` · `insider:active` | 10 | High |
+| I1b | Sales rep accepts position at competitor — begins archiving client contact and pricing data | *(none)* | `motive:competitive` · `access:standard` · `insider:active` | 10 | High |
+| I1c | Finance analyst approached by external party and agrees to exfiltrate financial data for payment | *(none)* | `motive:financial` · `access:standard` · `insider:active` | 7 | Critical |
+| I1d | Terminated employee AD account not disabled — remote access continues 48 hours post-termination | *(none)* | `motive:grievance` · `access:deprovision_missed` · `insider:active` | 7 | Critical |
+
+**Stage 2 — Reconnaissance & Data Mapping**
+
+| Card | Title | Requires | Grants | Weight | Criticality |
+|------|-------|----------|--------|--------|-------------|
+| I2a | Privileged user runs broad database queries, maps tables containing PII, financial records, and IP | `access:privileged` | `recon:data_mapped` · `recon:db_queried` | 10 | High |
+| I2b | Standard user browses file shares, identifies folders with insufficient access controls | `access:standard` | `recon:data_mapped` · `recon:share_browsed` | 10 | Medium |
+| I2c | Insider tests DLP behavior with small transfers and confirms personal cloud storage is not scanned | `access:standard` | `recon:dlp_gap` · `recon:data_mapped` | 7 | High |
+| I2d | Terminated employee uses stale VPN credentials to re-enter environment and navigate shared drives | `access:deprovision_missed` | `recon:data_mapped` · `recon:remote_access` | 10 | Critical |
+
+**Stage 3 — Data Staging**
+
+| Card | Title | Requires | Grants | Weight | Criticality |
+|------|-------|----------|--------|--------|-------------|
+| I3a | Insider runs bulk export of customer database to local Downloads folder — 3.2 GB | `recon:data_mapped` | `data:staged_local` · `data:volume_high` · `data:ready` | 10 | High |
+| I3b | Files copied to personal Dropbox via browser — DLP gap confirmed exploited | `recon:dlp_gap` | `data:staged_cloud` · `data:volume_moderate` · `data:ready` | 10 | High |
+| I3c | USB device plugged in — 6 GB of files copied; endpoint protection does not block USB | `recon:data_mapped` | `data:staged_usb` · `data:volume_high` · `data:ready` | 7 | High |
+| I3d | Files emailed to personal Gmail in small batches over two weeks — under single-file size threshold | `recon:data_mapped` | `data:staged_cloud` · `data:volume_moderate` · `data:ready` | 7 | High |
+
+**Stage 4 — Exfiltration**
+
+| Card | Title | Requires | Grants | Weight | Criticality |
+|------|-------|----------|--------|--------|-------------|
+| I4a | Insider resigns and walks out with USB containing client database — discovered during exit interview | `data:staged_usb` | `impact:data_loss` | 10 | High |
+| I4b | Cloud sync completes overnight — 4.7 GB confirmed downloaded to personal device | `data:staged_cloud` | `impact:data_loss` | 10 | High |
+| I4c | IR team locates local staging file — but forensics confirms a prior USB copy was already made | `data:staged_local` | `impact:data_loss` | 10 | High |
+| I4d | Insider transfers data directly to competitor via secure file transfer — large outbound transfer logged | `motive:competitive` · `data:ready` | `impact:data_loss` | 7 | Critical |
+
+**Stage 5 — Impact (terminal)**
+
+| Card | Title | Requires | Grants | Weight | Criticality |
+|------|-------|----------|--------|--------|-------------|
+| I5a | Competitor announces product matching stolen IP within 90 days — data confirmed used | `impact:data_loss` | *(terminal)* | 10 | High |
+| I5b | Regulatory notification required — PII of 50,000+ individuals confirmed exfiltrated | `impact:data_loss` | *(terminal)* | 10 | Critical |
+| I5c | Insider arrested at airport with USB — criminal referral filed, data partially recovered | `data:staged_usb` | *(terminal)* | 7 | High |
+
+### Insider — example paths
+
+**Path 1 — Privileged admin, bulk export, discovered late** `I1a → I2a → I3a → I4c → I5b`
+
+Narrative: IT admin passed over for promotion starts probing HR and finance data. Bulk-exports 3.2 GB customer database. IR discovers the local staging file — but forensics reveals a USB copy was made days earlier. 50K+ PII records are confirmed out. Regulatory notification required.
+
+Key discussion: What does your UEBA / DBA monitoring alert on? What is the threshold for notifying affected individuals under applicable US state law? Does your incident response plan cover the insider vector specifically?
+
+**Path 2 — Competitive departure, DLP gap exploited** `I1b → I2c → I3b → I4b → I5a`
+
+Narrative: Sales rep resigns and accepts a competitor offer. Tests DLP with small personal cloud transfers — finds a gap. Copies client contact list and pricing to personal Dropbox. Cloud sync runs overnight. Competitor launches a near-identical product in 90 days.
+
+Key discussion: What does your DLP policy cover? Is personal cloud storage blocked or just monitored? What employment agreement provisions (non-compete, NDA) apply, and are they enforceable in your state?
+
+**Path 3 — Terminated employee, stale access, USB, arrest** `I1d → I2d → I3c → I4a → I5c`
+
+Narrative: Terminated employee retains active VPN credentials for 48 hours. Re-enters via VPN, navigates file shares. Plugs in a USB — endpoint doesn't block it. Walks out. Discovered during airport security screening on departure flight. Criminal referral filed; partial recovery.
+
+Key discussion: What is your offboarding checklist and SLA for account deprovisioning? How quickly are VPN credentials revoked? Does your endpoint policy block USB mass storage?
+
+---
+
+## ARCHETYPE: Vendor Compromise
+
+**Stages:** 5 | **Cards:** 17 | **Track:** IR | **Roles:** IC / TL / CL / LC / ES
+
+### Stage skeleton
+
+| Stage | Label | ATT&CK | NIST phase |
+|-------|-------|--------|------------|
+| 1 | Vendor Compromise | TA0001 / T1195 / T1078 | Detect/Analyze |
+| 2 | Vendor Reconnaissance | TA0007 / T1583 | Detect/Analyze |
+| 3 | Client Pivot | TA0008 / T1199 | Contain |
+| 4 | Client Discovery & Pre-Impact | TA0007 / TA0009 | Eradicate |
+| 5 | Impact (terminal) | TA0040 | Eradicate |
+
+### Card grid
+
+**Stage 1 — Vendor Compromise**
+
+| Card | Title | Requires | Grants | Weight | Criticality |
+|------|-------|----------|--------|--------|-------------|
+| V1a | MSP management console accessed via credential stuffing on reused password | *(none)* | `vendor:compromised` · `vendor:msp_access` · `access:credential_stuffing` | 10 | Critical |
+| V1b | MSP technician spear-phished — RAT installed on their workstation | *(none)* | `vendor:compromised` · `vendor:msp_access` · `access:phishing` | 10 | Critical |
+| V1c | SaaS vendor API key exposed in a public GitHub repository | *(none)* | `vendor:compromised` · `vendor:api_access` · `access:credential_exposure` | 10 | High |
+| V1d | Trojanized software update — backdoor inserted into signed patch pushed to all managed clients | *(none)* | `vendor:compromised` · `vendor:software_update` · `access:supply_chain` | 7 | Critical |
+
+**Stage 2 — Vendor Reconnaissance**
+
+| Card | Title | Requires | Grants | Weight | Criticality |
+|------|-------|----------|--------|--------|-------------|
+| V2a | Attacker maps all client orgs in MSP console — identifies clients with admin-level RMM agents | `vendor:msp_access` | `recon:complete` · `recon:client_list` · `trust:elevated` | 10 | High |
+| V2b | Attacker reviews API documentation and live traffic to understand accessible client endpoints | `vendor:api_access` | `recon:complete` · `recon:api_scope` | 10 | Medium |
+| V2c | Update server analysis confirms which clients have auto-update enabled and next push schedule | `vendor:software_update` | `recon:complete` · `recon:update_targets` | 10 | High |
+
+**Stage 3 — Client Pivot**
+
+| Card | Title | Requires | Grants | Weight | Criticality |
+|------|-------|----------|--------|--------|-------------|
+| V3a | RMM tool executes PowerShell across all managed clients — legitimate tool, no alerts triggered | `vendor:msp_access` · `recon:client_list` | `pivot:via_rmm` · `client:foothold` | 10 | Critical |
+| V3b | API token used to pull live customer PII from client via existing integration | `vendor:api_access` · `recon:api_scope` | `pivot:via_api` · `client:foothold` | 10 | High |
+| V3c | Trojanized update auto-installs on 23 client endpoints — backdoor active in production | `vendor:software_update` · `recon:update_targets` | `pivot:via_update` · `client:foothold` | 10 | Critical |
+| V3d | Attacker selects highest-value client from MSP console and pivots via privileged RMM agent | `trust:elevated` · `recon:client_list` | `pivot:via_rmm` · `client:foothold` · `client:targeted` | 7 | Critical |
+
+**Stage 4 — Client Discovery & Pre-Impact**
+
+| Card | Title | Requires | Grants | Weight | Criticality |
+|------|-------|----------|--------|--------|-------------|
+| V4a | BloodHound-equivalent run via RMM — full AD map acquired, domain admin path confirmed | `pivot:via_rmm` | `client:admin_creds` · `impact:imminent` | 10 | Critical |
+| V4b | API pivot exposes complete customer PII dataset — attacker begins staged exfiltration | `pivot:via_api` | `exfil:staging` · `impact:imminent` | 10 | High |
+| V4c | Backdoor on 23 endpoints begins silent credential harvesting and lateral reconnaissance | `pivot:via_update` | `client:admin_creds` · `impact:imminent` | 10 | Critical |
+
+**Stage 5 — Impact (terminal)**
+
+| Card | Title | Requires | Grants | Weight | Criticality |
+|------|-------|----------|--------|--------|-------------|
+| V5a | Ransomware deployed across client environment via RMM — all managed clients encrypted simultaneously | `impact:imminent` | *(terminal)* | 10 | Critical |
+| V5b | Complete customer PII exfiltrated silently via API — discovered weeks later via dark web alert | `exfil:staging` | *(terminal)* | 10 | Critical |
+| V5c | Client admin credentials sold on dark web — multiple threat actors gain independent access | `client:admin_creds` | *(terminal)* | 7 | Critical |
+
+### Vendor Compromise — example paths
+
+**Path 1 — MSP credential stuffing, mass RMM ransomware deploy** `V1a → V2a → V3a → V4a → V5a`
+
+Narrative: MSP console accessed via a reused password. Attacker maps every managed client and their RMM agent scope. Fires PowerShell across all clients via the legitimate RMM tool — no alerts. BloodHound equivalent acquires DA path. Ransomware deployed to all clients simultaneously via the same RMM channel.
+
+Key discussion: Does your MSP enforce MFA on their management console? What is your contractual right to audit your MSP's security posture? If your MSP's RMM is the attack vector, how do you contain it without losing all managed access?
+
+**Path 2 — API key on GitHub, silent PII theft** `V1c → V2b → V3b → V4b → V5b`
+
+Narrative: SaaS vendor had an API key committed to a public GitHub repository months ago. Attacker finds it, reviews live API traffic, pulls complete customer PII via the trusted integration. Discovered weeks later via a dark web alert showing client records for sale.
+
+Key discussion: Do you know which vendors have API integration access to your data? Do your vendor contracts require key rotation, secret scanning, and breach notification timelines? What is your dark web monitoring capability?
+
+**Path 3 — Trojanized update, credential harvest, dark web sale** `V1d → V2c → V3c → V4c → V5c`
+
+Narrative: Backdoor inserted into a signed software update. Auto-installs on 23 managed endpoints. Harvests credentials silently over two weeks. Admin credentials sold on a dark web forum — multiple independent threat actors purchase access. Attribution becomes impossible; multiple concurrent intrusions.
+
+Key discussion: Do you verify software update integrity before deployment? What is your vendor's secure development and signing process? How do you respond when the same compromise is being exploited by multiple unrelated actors simultaneously?
+
+---
+
+*Last updated: 2026-07-03 — Track 3 TB Storyboard section added (74 cards: Ransomware 22, BEC 16, Insider 19, Vendor 17)*
 | What disciplinary posture do you take? | The absence of a technical barrier does not excuse intentional misuse. Accessing colleagues' HR records and salary data without a legitimate business reason violates reasonable workplace expectations and likely violates your acceptable use policy — regardless of whether the AI permitted it. Disciplinary action is appropriate; termination may be warranted depending on intent and what was done with the data. |

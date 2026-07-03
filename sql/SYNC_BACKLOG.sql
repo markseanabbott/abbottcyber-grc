@@ -1,4 +1,4 @@
--- SYNC_BACKLOG.sql -- generated 2026-07-03 (415 items)
+-- SYNC_BACKLOG.sql -- generated 2026-07-03 (416 items)
 -- Safe to re-run (ON CONFLICT DO UPDATE).
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
 VALUES ('s1', 'core', 'Core Concept', 1, 0, 'Security posture scoring for organisations / clients', true, NULL, NULL, '[]', 'completed')
@@ -4786,7 +4786,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB2', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 1, 'Kill chain sequences per archetype: define 3 to 5 fixed ATT&CK-ordered chains each for ransomware, BEC, insider, and vendor compromise. chain_stage values plus requires/grants tags form the branching backbone that produces the semi-random effect.', true, 'High', 'Branching grid model designed for all 4 IR archetypes (ransomware 21 cards / BEC 16 / insider 19 / vendor_compromise 17 = 73 total). Fixed stage skeleton per archetype with 3-4 option cards per stage. Requires/grants tag vocabulary per archetype. Reference grid in TABLETOP_CHAINS.md. Seed SQL in sql/SEED_TT_INJECT_CHAINS.sql Ã¢â‚¬ run in Supabase to populate tt_inject_cards.', '[]', 'completed')
+VALUES ('TB2', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 1, 'Kill chain sequences per archetype: define 3 to 5 fixed ATT&CK-ordered chains each for ransomware, BEC, insider, and vendor compromise. chain_stage values plus requires/grants tags form the branching backbone that produces the semi-random effect.', true, 'High', 'Branching grid model designed for all 4 IR archetypes (ransomware 22 cards / BEC 16 / insider 19 / vendor_compromise 17 = 74 total). Fixed stage skeleton per archetype with 3-4 option cards per stage. Requires/grants tag vocabulary per archetype. Reference grid in TABLETOP_CHAINS.md. Seed SQL in sql/SEED_TT_INJECT_CHAINS.sql Ã¢â‚¬ run in Supabase to populate tt_inject_cards.', '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
@@ -4831,7 +4831,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB5', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 4, 'Precedence selection engine: at runtime read tt_inject_cards, filter to next-stage cards whose requires-tags are met and scenario/archetype matches, then pick weighted by the weight column. Lightweight state machine, no live AI.', false, 'High', 'Depends on TB1, TB4. IMPORTANT: card picker MUST filter WHERE curated = true â€” this is the enforcement gate ensuring no unreviewed content reaches a live client session. Cards with curated = false are authoring drafts only.', '[]', 'add')
+VALUES ('TB4b', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 4, 'Card curator admin tool: standalone HTML tool (card-curator.html) to browse all inject cards by archetype and stage, review body and role_prompts, and flip curated = true/false live against Supabase. Also update TABLETOP_FLOWMAP.md with full Track 3 TB Storyboard section.', true, 'High', 'card-curator.html â€” standalone admin tool, same pattern as backlog-manager.html. Loads all 74 tt_inject_cards from Supabase, groups by archetype and stage tabs, displays full card content with role-labeled prompts (IC/TL/CL/LC/ES), criticality badge, NIST phase, weight, MITRE. Curated toggle PATCHes Supabase immediately. Progress counter (X/74 curated) in header. Uses SB_URL/SB_KEY from js/supabase.js. TABLETOP_FLOWMAP.md updated: new Track 3 TB Storyboard section with all 4 archetypes (stage skeletons, complete card grids, 3 example paths each with narrative and discussion questions). TABLETOP_CHAINS.md stale count corrected: 21â†’22 ransomware cards, 73â†’74 total.', '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
@@ -4846,7 +4846,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB6', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 5, 'Response card library: author action cards into tt_response_cards, scoped by role x NIST phase x scenario type, roughly 8 to 12 per role per phase. Include plausible-but-wrong distractor cards - they are the assessment signal. Must cover ALL five in-game NIST phases: Detect/Analyze (1), Contain (2), Eradicate (3), Recover (4), and Post-Incident (5). Recover and Post-Incident cards are required for the post-terminal wrap-up round (TB10b) and must be authored before that feature can be built.', false, 'High', 'Depends on TB1. Can run in parallel with inject deck work (TB2-TB5).', '[]', 'add')
+VALUES ('TB5', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 5, 'Precedence selection engine: at runtime read tt_inject_cards, filter to next-stage cards whose requires-tags are met and scenario/archetype matches, then pick weighted by the weight column. Lightweight state machine, no live AI.', false, 'High', 'Depends on TB1, TB4. IMPORTANT: card picker MUST filter WHERE curated = true â€” this is the enforcement gate ensuring no unreviewed content reaches a live client session. Cards with curated = false are authoring drafts only.', '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
@@ -4861,7 +4861,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB7', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 6, 'Appropriateness matrix: fill the appropriateness column on each response card Ã¢â‚¬ correct / defensible-partial / inappropriate / not-applicable, keyed by scenario and phase. Encodes rules like BEC does not need endpoint isolation.', false, 'High', 'Depends on TB6.', '[]', 'add')
+VALUES ('TB6', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 6, 'Response card library: author action cards into tt_response_cards, scoped by role x NIST phase x scenario type, roughly 8 to 12 per role per phase. Include plausible-but-wrong distractor cards - they are the assessment signal. Must cover ALL five in-game NIST phases: Detect/Analyze (1), Contain (2), Eradicate (3), Recover (4), and Post-Incident (5). Recover and Post-Incident cards are required for the post-terminal wrap-up round (TB10b) and must be authored before that feature can be built.', false, 'High', 'Depends on TB1. Can run in parallel with inject deck work (TB2-TB5).', '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
@@ -4876,7 +4876,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB8', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 7, 'Card play persistence: wire the tabletop_card_plays table into the app so player card choices and grades are saved, following the tabletop_responses pattern.', false, 'High', 'Depends on TB6.', '[]', 'add')
+VALUES ('TB7', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 7, 'Appropriateness matrix: fill the appropriateness column on each response card Ã¢â‚¬ correct / defensible-partial / inappropriate / not-applicable, keyed by scenario and phase. Encodes rules like BEC does not need endpoint isolation.', false, 'High', 'Depends on TB6.', '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
@@ -4891,7 +4891,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB9', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 8, 'Card hand UI: in the inject view, deal the role/phase/scenario-filtered hand from tt_response_cards, let the player select cards, add a comment, and submit. Role-scoping preserves the fog of war.', false, 'High', 'Depends on TB6, TB8.', '[]', 'add')
+VALUES ('TB8', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 8, 'Card play persistence: wire the tabletop_card_plays table into the app so player card choices and grades are saved, following the tabletop_responses pattern.', false, 'High', 'Depends on TB6.', '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
@@ -4906,7 +4906,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB10', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 9, 'Scoring and AAR integration: grade the played hand against the appropriateness data (correct +, critical missed -, inappropriate -, partial credit for defensible-but-not-optimal) and feed results into the existing rubric and AAR.', false, 'High', 'Depends on TB7, TB9.', '[]', 'add')
+VALUES ('TB9', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 9, 'Card hand UI: in the inject view, deal the role/phase/scenario-filtered hand from tt_response_cards, let the player select cards, add a comment, and submit. Role-scoping preserves the fog of war.', false, 'High', 'Depends on TB6, TB8.', '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
@@ -4921,7 +4921,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB10b', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 10, 'Post-terminal wrap-up round: after the terminal inject fires, automatically deal a Recover (phase 4) response card hand to all roles, score it, then deal a Post-Incident (phase 5) hand and score it. Two sequential dealing rounds triggered by terminal card detection - Recover then Post-Incident. This is the only place in the chain where phases 4 and 5 response cards are surfaced. Depends on TB6 (Recover and Post-Incident cards must exist), TB9 (card hand UI must support the extra rounds), and TB10 (scoring must grade these plays).', false, 'High', 'Depends on TB6, TB9, TB10. Must be built before TB11 (run mode) can function end-to-end.', '[]', 'add')
+VALUES ('TB10', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 10, 'Scoring and AAR integration: grade the played hand against the appropriateness data (correct +, critical missed -, inappropriate -, partial credit for defensible-but-not-optimal) and feed results into the existing rubric and AAR.', false, 'High', 'Depends on TB7, TB9.', '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
@@ -4936,7 +4936,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB11', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 11, 'Randomized run mode (facilitated): facilitator picks the archetype, system randomizes which story and which chain within that archetype. Full randomness without a facilitator is reserved for TB13.', false, 'Medium', 'Depends on TB3, TB5. INTEGRATION NOTE: for the story''s entry card, the TB3 opener text already delivers the detection narrative to players â€” the entry card body must not duplicate or contradict the opener. At TB11 build time, resolve whether the entry card body is suppressed, summarized, or replaced by the opener. Also: substitute {{org_name}} at render time via body.replace(/\{\{org_name\}\}/g, session.orgName) where session.orgName comes from organisations.name via the session''s org_id.', '[]', 'add')
+VALUES ('TB10b', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 11, 'Post-terminal wrap-up round: after the terminal inject fires, automatically deal a Recover (phase 4) response card hand to all roles, score it, then deal a Post-Incident (phase 5) hand and score it. Two sequential dealing rounds triggered by terminal card detection - Recover then Post-Incident. This is the only place in the chain where phases 4 and 5 response cards are surfaced. Depends on TB6 (Recover and Post-Incident cards must exist), TB9 (card hand UI must support the extra rounds), and TB10 (scoring must grade these plays).', false, 'High', 'Depends on TB6, TB9, TB10. Must be built before TB11 (run mode) can function end-to-end.', '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
@@ -4951,7 +4951,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB12', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 12, 'BCDR track generalization: use the track field to add BCDR content Ã¢â‚¬ a BCDR sequence (Impact, Assess, Activate BCP, Failover/DR, Recover, Resume, Review), BCDR response cards, and BCDR appropriateness rows. Same engine and tables, different content.', false, 'Medium', 'Depends on TB1, TB6, TB7.', '[]', 'add')
+VALUES ('TB11', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 12, 'Randomized run mode (facilitated): facilitator picks the archetype, system randomizes which story and which chain within that archetype. Full randomness without a facilitator is reserved for TB13.', false, 'Medium', 'Depends on TB3, TB5. INTEGRATION NOTE: for the story''s entry card, the TB3 opener text already delivers the detection narrative to players â€” the entry card body must not duplicate or contradict the opener. At TB11 build time, resolve whether the entry card body is suppressed, summarized, or replaced by the opener. Also: substitute {{org_name}} at render time via body.replace(/\{\{org_name\}\}/g, session.orgName) where session.orgName comes from organisations.name via the session''s org_id.', '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
@@ -4966,7 +4966,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB13', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 13, 'Fully autonomous mode (future state): no facilitator, live inject delivery, auto-scoring, auto-AAR. Build only once clients are running tabletops several times per year. The curated deck format must be proven first.', false, 'Low', 'Depends on TB5, TB10.', '[]', 'add')
+VALUES ('TB12', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 13, 'BCDR track generalization: use the track field to add BCDR content Ã¢â‚¬ a BCDR sequence (Impact, Assess, Activate BCP, Failover/DR, Recover, Resume, Review), BCDR response cards, and BCDR appropriateness rows. Same engine and tables, different content.', false, 'Medium', 'Depends on TB1, TB6, TB7.', '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
@@ -4981,7 +4981,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB_ARC_POS', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 14, 'Future archetype - POS / payment card compromise (hospitality): hotel POS or card-skimming breach. Plays differently from ransomware - distinct notification path (card brands, acquirer, PCI obligations), different containment. Strongest fifth archetype for the hotel vertical. NOT YET BUILT - add stage skeleton + card pool to tt_inject_cards / tt_response_cards when ready; no code change required.', false, 'Low', 'Content decision only - no code change when added. Build after the four live archetypes are proven.', '[]', 'add')
+VALUES ('TB13', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 14, 'Fully autonomous mode (future state): no facilitator, live inject delivery, auto-scoring, auto-AAR. Build only once clients are running tabletops several times per year. The curated deck format must be proven first.', false, 'Low', 'Depends on TB5, TB10.', '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
@@ -4996,7 +4996,22 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB_ARC_CLOUD', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 15, 'Future archetype - cloud / SaaS account takeover (tech and SaaS clients): M365 or Google Workspace tenant compromise, OAuth abuse, admin account theft. Distinct from BEC and increasingly common in the SaaS vertical. DDoS / availability attack is a lighter secondary option for the same segment. NOT YET BUILT - add stage skeleton + card pool to tt_inject_cards / tt_response_cards when ready; no code change required.', false, 'Low', 'Content decision only - no code change when added. Build after the four live archetypes are proven. DDoS is a lighter secondary option for the same client segment.', '[]', 'add')
+VALUES ('TB_ARC_POS', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 15, 'Future archetype - POS / payment card compromise (hospitality): hotel POS or card-skimming breach. Plays differently from ransomware - distinct notification path (card brands, acquirer, PCI obligations), different containment. Strongest fifth archetype for the hotel vertical. NOT YET BUILT - add stage skeleton + card pool to tt_inject_cards / tt_response_cards when ready; no code change required.', false, 'Low', 'Content decision only - no code change when added. Build after the four live archetypes are proven.', '[]', 'add')
+ON CONFLICT (id) DO UPDATE SET
+  section_id    = EXCLUDED.section_id,
+  section_title = EXCLUDED.section_title,
+  section_phase = EXCLUDED.section_phase,
+  sort_order    = EXCLUDED.sort_order,
+  "text"        = EXCLUDED."text",
+  done          = EXCLUDED.done,
+  priority      = EXCLUDED.priority,
+  notes         = EXCLUDED.notes,
+  dependencies  = EXCLUDED.dependencies,
+  status        = EXCLUDED.status,
+  updated_at    = now();
+
+INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
+VALUES ('TB_ARC_CLOUD', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 16, 'Future archetype - cloud / SaaS account takeover (tech and SaaS clients): M365 or Google Workspace tenant compromise, OAuth abuse, admin account theft. Distinct from BEC and increasingly common in the SaaS vertical. DDoS / availability attack is a lighter secondary option for the same segment. NOT YET BUILT - add stage skeleton + card pool to tt_inject_cards / tt_response_cards when ready; no code change required.', false, 'Low', 'Content decision only - no code change when added. Build after the four live archetypes are proven. DDoS is a lighter secondary option for the same client segment.', '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,

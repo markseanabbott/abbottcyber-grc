@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inject Card Curator — Abbott Cyber</title>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:#152168; --navy2:#1a2a7a; --cyan:#07B4D9; --cyan2:#07D1F2;
+    --bg:#f0f4fa; --card:#fff; --border:#dde3ef; --text:#1a2340; --muted:#5a6a8a;
+    --green:#16a34a; --amber:#d97706; --red:#dc2626;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Kanit',sans-serif; background:#d8e2f0; color:var(--text); font-size:14px; }
+
+  .topbar { background:linear-gradient(135deg,var(--navy),var(--navy2)); color:#fff; padding:0 28px;
+    height:54px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100;
+    box-shadow:0 2px 10px rgba(0,0,0,.3); }
+  .topbar-title { font-size:17px; font-weight:700; }
+  .topbar-sub { font-size:11px; color:var(--cyan2); }
+  #statusBadge { font-size:11px; padding:4px 10px; border-radius:20px; font-weight:600;
+    background:rgba(255,255,255,.12); color:#fff; }
+
+  .controls { background:var(--navy); padding:12px 28px; display:flex; gap:10px; flex-wrap:wrap; border-bottom:2px solid var(--cyan); }
+  .arch-btn { padding:6px 18px; border-radius:20px; border:1.5px solid rgba(255,255,255,.25);
+    background:transparent; color:rgba(255,255,255,.7); font-family:'Kanit',sans-serif; font-size:12px;
+    font-weight:600; cursor:pointer; transition:.15s; }
+  .arch-btn.active { background:var(--cyan); border-color:var(--cyan); color:#fff; }
+  .arch-btn:hover:not(.active) { border-color:rgba(255,255,255,.5); color:#fff; }
+
+  .stage-bar { background:#1c2d5e; padding:8px 28px; display:flex; gap:8px; border-bottom:1px solid rgba(255,255,255,.1); }
+  .stage-btn { padding:4px 14px; border-radius:14px; border:1px solid rgba(255,255,255,.2);
+    background:transparent; color:rgba(255,255,255,.6); font-family:'Kanit',sans-serif; font-size:11px;
+    font-weight:600; cursor:pointer; transition:.15s; white-space:nowrap; }
+  .stage-btn.active { background:rgba(7,180,217,.25); border-color:var(--cyan); color:#fff; }
+  .stage-btn:hover:not(.active) { border-color:rgba(255,255,255,.4); color:#fff; }
+  .stage-label { color:rgba(255,255,255,.4); font-size:11px; padding:4px 6px; align-self:center; }
+
+  .content { max-width:900px; margin:0 auto; padding:20px 16px; display:flex; flex-direction:column; gap:16px; }
+
+  .card { background:var(--card); border-radius:10px; box-shadow:0 1px 4px rgba(21,33,104,.08); overflow:hidden; }
+  .card-head { padding:12px 16px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--border); }
+  .card-id { font-size:11px; font-weight:700; padding:2px 8px; border-radius:4px;
+    background:var(--navy); color:#fff; letter-spacing:.5px; }
+  .card-title { font-size:13px; font-weight:700; flex:1; line-height:1.3; }
+  .badge { font-size:10px; font-weight:700; padding:2px 8px; border-radius:4px; }
+  .badge-critical { background:#fef2f2; color:#dc2626; border:1px solid #fca5a5; }
+  .badge-high { background:#fff7ed; color:#ea580c; border:1px solid #fdba74; }
+  .badge-medium { background:#fefce8; color:#ca8a04; border:1px solid #fde047; }
+  .badge-low { background:#f0fdf4; color:#16a34a; border:1px solid #86efac; }
+  .badge-nist { background:#f5f3ff; color:#7c3aed; border:1px solid #c4b5fd; }
+
+  .curated-toggle { margin-left:auto; display:flex; align-items:center; gap:8px; cursor:pointer; }
+  .curated-toggle input { width:0; height:0; opacity:0; position:absolute; }
+  .toggle-track { width:38px; height:20px; border-radius:10px; background:#dde3ef; position:relative;
+    transition:.2s; cursor:pointer; }
+  .toggle-track.on { background:var(--green); }
+  .toggle-thumb { position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%;
+    background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.2); transition:.2s; }
+  .toggle-track.on .toggle-thumb { left:20px; }
+  .toggle-label { font-size:10px; font-weight:700; color:var(--muted); }
+  .toggle-label.on { color:var(--green); }
+
+  .card-body-section { padding:14px 16px; border-bottom:1px solid var(--border); }
+  .section-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--muted); margin-bottom:6px; }
+  .body-text { font-size:13px; line-height:1.65; color:var(--text); }
+
+  .roles-grid { padding:14px 16px; border-bottom:1px solid var(--border); }
+  .roles-row { display:grid; grid-template-columns:72px 1fr; gap:0; margin-bottom:6px; }
+  .roles-row:last-child { margin-bottom:0; }
+  .role-tag { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+    padding:3px 8px; border-radius:4px; align-self:flex-start; margin-top:1px; }
+  .role-ic { background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; }
+  .role-tl { background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0; }
+  .role-cl { background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; }
+  .role-lc { background:#faf5ff; color:#7c3aed; border:1px solid #ddd6fe; }
+  .role-es { background:#fdf2f8; color:#be185d; border:1px solid #fbcfe8; }
+  .role-monitor { color:var(--muted); font-style:italic; }
+  .role-prompt { font-size:12.5px; line-height:1.55; color:var(--text); padding:3px 0 0 10px; }
+
+  .card-meta { padding:10px 16px; display:flex; gap:10px; flex-wrap:wrap; }
+  .meta-chip { font-size:10px; padding:2px 8px; background:var(--bg); border:1px solid var(--border);
+    border-radius:4px; color:var(--muted); }
+
+  .empty-state { text-align:center; padding:3rem; color:var(--muted); }
+  .spinner { width:24px; height:24px; border:3px solid rgba(21,33,104,.15); border-top-color:var(--navy);
+    border-radius:50%; animation:spin .7s linear infinite; margin:0 auto 1rem; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  .stats-bar { background:rgba(255,255,255,.07); padding:4px 28px; font-size:11px; color:rgba(255,255,255,.5);
+    border-bottom:1px solid rgba(255,255,255,.07); }
+  .stats-bar span { color:var(--cyan2); font-weight:700; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="topbar-title">Inject Card Curator</div>
+    <div class="topbar-sub">TB4 — review bodies &amp; role_prompts · flip curated = true to approve</div>
+  </div>
+  <div id="statusBadge">Loading…</div>
+</div>
+
+<div class="controls" id="archControls">
+  <button class="arch-btn active" onclick="selectArch('ransomware')" id="arch-ransomware">Ransomware (22)</button>
+  <button class="arch-btn" onclick="selectArch('bec')" id="arch-bec">BEC (16)</button>
+  <button class="arch-btn" onclick="selectArch('insider')" id="arch-insider">Insider (19)</button>
+  <button class="arch-btn" onclick="selectArch('vendor_compromise')" id="arch-vendor_compromise">Vendor (17)</button>
+</div>
+
+<div class="stage-bar" id="stageBar"></div>
+<div class="stats-bar" id="statsBar">&nbsp;</div>
+
+<div class="content" id="cardList">
+  <div class="empty-state"><div class="spinner"></div>Connecting to Supabase…</div>
+</div>
+
+<script src="js/supabase.js"></script>
+<script>
+// SB_URL and SB_KEY are globals from js/supabase.js
+const SUPABASE_URL = SB_URL;
+const SUPABASE_ANON_KEY = SB_KEY;
+
+const NIST_LABELS = ['Prepare','Detect/Analyze','Contain','Eradicate','Recover','Post-Incident'];
+const ROLE_LABELS = {ic:'IC',tl:'TL',cl:'CL',lc:'LC',es:'ES'};
+const ARCH_STAGES = {
+  ransomware: [
+    {n:1,label:'Initial Access'},
+    {n:2,label:'Execution & C2'},
+    {n:3,label:'Credential Access'},
+    {n:4,label:'Lateral Movement'},
+    {n:5,label:'Pre-Impact'},
+    {n:6,label:'Impact'},
+  ],
+  bec: [
+    {n:1,label:'Initial Access'},
+    {n:2,label:'Reconnaissance'},
+    {n:3,label:'Impersonation'},
+    {n:4,label:'Fraud Execution'},
+    {n:5,label:'Financial Impact'},
+  ],
+  insider: [
+    {n:1,label:'Initial Act'},
+    {n:2,label:'Recon'},
+    {n:3,label:'Data Staging'},
+    {n:4,label:'Exfiltration'},
+    {n:5,label:'Impact'},
+  ],
+  vendor_compromise: [
+    {n:1,label:'Vendor Compromise'},
+    {n:2,label:'Vendor Recon'},
+    {n:3,label:'Client Pivot'},
+    {n:4,label:'Client Discovery'},
+    {n:5,label:'Impact'},
+  ],
+};
+
+let allCards = [];
+let curArch = 'ransomware';
+let curStage = 1;
+
+async function loadCards() {
+  const url = SUPABASE_URL + '/rest/v1/tt_inject_cards?select=*&order=archetype,chain_stage,id&limit=200';
+  try {
+    const r = await fetch(url, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY }
+    });
+    if (!r.ok) throw new Error(await r.text());
+    allCards = await r.json();
+    const curated = allCards.filter(c => c.curated).length;
+    document.getElementById('statusBadge').textContent = curated + ' / ' + allCards.length + ' curated';
+    document.getElementById('statusBadge').style.background = curated === allCards.length
+      ? 'rgba(22,163,74,.3)' : 'rgba(255,255,255,.12)';
+    render();
+  } catch(e) {
+    document.getElementById('statusBadge').textContent = 'Connection error';
+    document.getElementById('statusBadge').style.background = 'rgba(220,38,38,.4)';
+    document.getElementById('cardList').innerHTML =
+      '<div class="empty-state" style="color:#dc2626">Failed to load cards.<br><small>' + e.message + '</small></div>';
+  }
+}
+
+function selectArch(arch) {
+  curArch = arch;
+  curStage = 1;
+  document.querySelectorAll('.arch-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('arch-' + arch).classList.add('active');
+  renderStageBar();
+  render();
+}
+
+function selectStage(n) {
+  curStage = n;
+  document.querySelectorAll('.stage-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('stage-' + n).classList.add('active');
+  render();
+}
+
+function renderStageBar() {
+  const stages = ARCH_STAGES[curArch] || [];
+  document.getElementById('stageBar').innerHTML = stages.map(s =>
+    `<button class="stage-btn${s.n===curStage?' active':''}" id="stage-${s.n}" onclick="selectStage(${s.n})">
+      ${s.n}. ${s.label}
+    </button>`
+  ).join('');
+}
+
+function badgeClass(c) {
+  if (!c) return '';
+  return {Critical:'badge-critical',High:'badge-high',Medium:'badge-medium',Low:'badge-low'}[c] || '';
+}
+
+function renderCard(card) {
+  const rp = (typeof card.role_prompts === 'string')
+    ? JSON.parse(card.role_prompts)
+    : (card.role_prompts || {});
+  const isMonitor = s => s === 'Monitor situation. No action required at this inject.';
+  const rolesHtml = ['ic','tl','cl','lc','es'].map(r => {
+    const prompt = rp[r] || '';
+    const mon = isMonitor(prompt);
+    return `<div class="roles-row">
+      <span class="role-tag role-${r}">${ROLE_LABELS[r]}</span>
+      <div class="role-prompt${mon?' role-monitor':''}">${prompt || '<em>—</em>'}</div>
+    </div>`;
+  }).join('');
+
+  const nistLabel = NIST_LABELS[card.nist_phase_idx] || ('Phase ' + card.nist_phase_idx);
+  const curated = !!card.curated;
+
+  return `<div class="card" id="card-${card.id}">
+    <div class="card-head">
+      <span class="card-id">${card.id}</span>
+      <span class="card-title">${card.title}</span>
+      <span class="badge ${badgeClass(card.correct_criticality)}">${card.correct_criticality || ''}</span>
+      <span class="badge badge-nist">${nistLabel}</span>
+      <div class="curated-toggle" onclick="toggleCurated('${card.id}', ${!curated})">
+        <div class="toggle-track${curated?' on':''}" id="track-${card.id}">
+          <div class="toggle-thumb"></div>
+        </div>
+        <span class="toggle-label${curated?' on':''}" id="tlabel-${card.id}">${curated?'Curated':'Draft'}</span>
+      </div>
+    </div>
+    <div class="card-body-section">
+      <div class="section-label">Body</div>
+      <div class="body-text">${card.body || '<em style="color:var(--muted)">No body yet</em>'}</div>
+    </div>
+    <div class="roles-grid">
+      <div class="section-label">Role Prompts</div>
+      ${rolesHtml}
+    </div>
+    <div class="card-meta">
+      <span class="meta-chip">MITRE: ${card.mitre_tactic || '—'}</span>
+      <span class="meta-chip">${card.mitre_technique || '—'}</span>
+      <span class="meta-chip">Stage ${card.chain_stage}</span>
+      <span class="meta-chip">Weight: ${card.weight}</span>
+    </div>
+  </div>`;
+}
+
+function render() {
+  const cards = allCards.filter(c => c.archetype === curArch && c.chain_stage === curStage);
+  const totalArch = allCards.filter(c => c.archetype === curArch);
+  const curatedArch = totalArch.filter(c => c.curated).length;
+  const curatedStage = cards.filter(c => c.curated).length;
+
+  document.getElementById('statsBar').innerHTML =
+    `<span>${curatedStage}/${cards.length}</span> cards curated this stage &nbsp;·&nbsp; ` +
+    `<span>${curatedArch}/${totalArch.length}</span> curated across this archetype`;
+
+  renderStageBar();
+
+  if (!cards.length) {
+    document.getElementById('cardList').innerHTML =
+      '<div class="empty-state">No cards found for this stage.</div>';
+    return;
+  }
+  document.getElementById('cardList').innerHTML = cards.map(renderCard).join('');
+}
+
+async function toggleCurated(id, newVal) {
+  const track = document.getElementById('track-' + id);
+  const label = document.getElementById('tlabel-' + id);
+  if (track) { track.classList.toggle('on', newVal); }
+  if (label) { label.textContent = newVal ? 'Curated' : 'Draft'; label.className = 'toggle-label' + (newVal?' on':''); }
+
+  const card = allCards.find(c => c.id === id);
+  if (card) card.curated = newVal;
+
+  const curated = allCards.filter(c => c.curated).length;
+  document.getElementById('statusBadge').textContent = curated + ' / ' + allCards.length + ' curated';
+
+  const url = SUPABASE_URL + '/rest/v1/tt_inject_cards?id=eq.' + id;
+  try {
+    const r = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      },
+      body: JSON.stringify({ curated: newVal })
+    });
+    if (!r.ok) throw new Error(await r.text());
+  } catch(e) {
+    alert('Save failed for ' + id + ': ' + e.message);
+    if (card) card.curated = !newVal;
+    if (track) track.classList.toggle('on', !newVal);
+    if (label) { label.textContent = !newVal ? 'Curated' : 'Draft'; label.className = 'toggle-label' + (!newVal?' on':''); }
+  }
+
+  // refresh stats bar
+  const stageCards = allCards.filter(c => c.archetype === curArch && c.chain_stage === curStage);
+  const totalArch = allCards.filter(c => c.archetype === curArch);
+  document.getElementById('statsBar').innerHTML =
+    `<span>${stageCards.filter(c=>c.curated).length}/${stageCards.length}</span> cards curated this stage &nbsp;·&nbsp; ` +
+    `<span>${totalArch.filter(c=>c.curated).length}/${totalArch.length}</span> curated across this archetype`;
+}
+
+renderStageBar();
+loadCards();
+</script>
+</body>
+</html>
