@@ -2178,6 +2178,13 @@
                                            "done":  false,
                                            "priority":  "Low",
                                            "notes":  "Content decision only - no code change when added. Build after the four live archetypes are proven. DDoS is a lighter secondary option for the same client segment."
+                                       },
+                                       {
+                                           "id":  "TB14",
+                                           "text":  "Interactive flow map: extend generate_grids.mjs to also write tabletop/flowmap.json (archetype-keyed, cards with stage/requires/grants/nist_phase, deterministic order). Create tabletop/flowmap.html — self-contained page (no build step) that loads flowmap.json and renders an interactive layered graph: archetype selector, nodes = cards in stage columns colored by NIST phase, edges = A.grants intersects B.requires, click to BFS-highlight downstream-reachable path, hover shows requires/grants. Note in FLOWMAP_INDEX.md that flowmap.html refreshes with node tabletop/generate_grids.mjs.",
+                                           "done":  false,
+                                           "priority":  "Medium",
+                                           "notes":  "Depends on TB5. Generator already fetches all cards — flowmap.json is a zero-cost side output. flowmap.html is a facilitator/developer tool, not a client-facing module. Keep dependency-light (vanilla JS or single CDN lib)."
                                        }
                                    ]
                      },
