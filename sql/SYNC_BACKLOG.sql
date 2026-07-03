@@ -1,4 +1,4 @@
--- SYNC_BACKLOG.sql -- generated 2026-07-02 (413 items)
+-- SYNC_BACKLOG.sql -- generated 2026-07-02 (415 items)
 -- Safe to re-run (ON CONFLICT DO UPDATE).
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
 VALUES ('s1', 'core', 'Core Concept', 1, 0, 'Security posture scoring for organisations / clients', true, NULL, NULL, '[]', 'completed')
@@ -4967,6 +4967,36 @@ ON CONFLICT (id) DO UPDATE SET
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
 VALUES ('TB13', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 13, 'Fully autonomous mode (future state): no facilitator, live inject delivery, auto-scoring, auto-AAR. Build only once clients are running tabletops several times per year. The curated deck format must be proven first.', false, 'Low', 'Depends on TB5, TB10.', '[]', 'add')
+ON CONFLICT (id) DO UPDATE SET
+  section_id    = EXCLUDED.section_id,
+  section_title = EXCLUDED.section_title,
+  section_phase = EXCLUDED.section_phase,
+  sort_order    = EXCLUDED.sort_order,
+  "text"        = EXCLUDED."text",
+  done          = EXCLUDED.done,
+  priority      = EXCLUDED.priority,
+  notes         = EXCLUDED.notes,
+  dependencies  = EXCLUDED.dependencies,
+  status        = EXCLUDED.status,
+  updated_at    = now();
+
+INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
+VALUES ('TB_ARC_POS', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 14, 'Future archetype - POS / payment card compromise (hospitality): hotel POS or card-skimming breach. Plays differently from ransomware - distinct notification path (card brands, acquirer, PCI obligations), different containment. Strongest fifth archetype for the hotel vertical. NOT YET BUILT - add stage skeleton + card pool to tt_inject_cards / tt_response_cards when ready; no code change required.', false, 'Low', 'Content decision only - no code change when added. Build after the four live archetypes are proven.', '[]', 'add')
+ON CONFLICT (id) DO UPDATE SET
+  section_id    = EXCLUDED.section_id,
+  section_title = EXCLUDED.section_title,
+  section_phase = EXCLUDED.section_phase,
+  sort_order    = EXCLUDED.sort_order,
+  "text"        = EXCLUDED."text",
+  done          = EXCLUDED.done,
+  priority      = EXCLUDED.priority,
+  notes         = EXCLUDED.notes,
+  dependencies  = EXCLUDED.dependencies,
+  status        = EXCLUDED.status,
+  updated_at    = now();
+
+INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
+VALUES ('TB_ARC_CLOUD', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 15, 'Future archetype - cloud / SaaS account takeover (tech and SaaS clients): M365 or Google Workspace tenant compromise, OAuth abuse, admin account theft. Distinct from BEC and increasingly common in the SaaS vertical. DDoS / availability attack is a lighter secondary option for the same segment. NOT YET BUILT - add stage skeleton + card pool to tt_inject_cards / tt_response_cards when ready; no code change required.', false, 'Low', 'Content decision only - no code change when added. Build after the four live archetypes are proven. DDoS is a lighter secondary option for the same client segment.', '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,

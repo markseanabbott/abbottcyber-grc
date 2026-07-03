@@ -2157,6 +2157,20 @@
                                            "done":  false,
                                            "priority":  "Low",
                                            "notes":  "Depends on TB5, TB10."
+                                       },
+                                       {
+                                           "id":  "TB_ARC_POS",
+                                           "text":  "Future archetype - POS / payment card compromise (hospitality): hotel POS or card-skimming breach. Plays differently from ransomware - distinct notification path (card brands, acquirer, PCI obligations), different containment. Strongest fifth archetype for the hotel vertical. NOT YET BUILT - add stage skeleton + card pool to tt_inject_cards / tt_response_cards when ready; no code change required.",
+                                           "done":  false,
+                                           "priority":  "Low",
+                                           "notes":  "Content decision only - no code change when added. Build after the four live archetypes are proven."
+                                       },
+                                       {
+                                           "id":  "TB_ARC_CLOUD",
+                                           "text":  "Future archetype - cloud / SaaS account takeover (tech and SaaS clients): M365 or Google Workspace tenant compromise, OAuth abuse, admin account theft. Distinct from BEC and increasingly common in the SaaS vertical. DDoS / availability attack is a lighter secondary option for the same segment. NOT YET BUILT - add stage skeleton + card pool to tt_inject_cards / tt_response_cards when ready; no code change required.",
+                                           "done":  false,
+                                           "priority":  "Low",
+                                           "notes":  "Content decision only - no code change when added. Build after the four live archetypes are proven. DDoS is a lighter secondary option for the same client segment."
                                        }
                                    ]
                      },
