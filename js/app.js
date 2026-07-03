@@ -532,6 +532,7 @@ function renderMain() {
   if (activeNav === 'policy_lib') { el.innerHTML = renderPolicyLib(); return; }
   if (activeNav === 'tabletop') { el.innerHTML = renderTabletop(); return; }
   if (activeNav === 'tt_ai') { el.innerHTML = renderAiTabletop(); return; }
+  if (activeNav === 'tt_storyboard') { el.innerHTML = renderTTStoryboard(); return; }
   if (activeNav === 'techstack') {
     if (!tsState || tsState.orgId !== currentOrg.id) {
       tsInit();

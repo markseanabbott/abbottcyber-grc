@@ -107,7 +107,8 @@ const NAV = [
     { id: 'governance', icon: '⚖️', label: 'Governance', live: true, phase: 1 },
   ]},
   { id: 'g_exercises', group: 'Exercises', icon: '🎯', items: [
-    { id: 'exercises', icon: '🎯', label: 'Exercises', live: true, phase: 1 },
+    { id: 'exercises',     icon: '🎯', label: 'Exercises',          live: true, phase: 1 },
+    { id: 'tt_storyboard', icon: '🎲', label: 'Storyboard Exercise', live: true, phase: 3 },
   ]},
   { id: 'g_reporting', group: 'Reports', icon: '📊', items: [
     { id: 'gap_register', icon: '📋', label: 'Tool Gap Register', live: true, phase: 1 },
