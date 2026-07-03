@@ -62,4 +62,13 @@ VALUES
 
   ('TB13', 'tb_storyboard', 'TB Story Board', 3, 13,
    'TB13 - Fully autonomous mode (future state): no facilitator, live inject delivery, auto-scoring and auto-AAR. Build only once clients run tabletops several times per year.',
-   false, 'Low', '["TB5","TB10"]'::jsonb, 'add');
+   false, 'Low', '["TB5","TB10"]'::jsonb, 'add')
+ON CONFLICT (id) DO UPDATE SET
+  section_id    = EXCLUDED.section_id,
+  section_title = EXCLUDED.section_title,
+  section_phase = EXCLUDED.section_phase,
+  sort_order    = EXCLUDED.sort_order,
+  text          = EXCLUDED.text,
+  priority      = EXCLUDED.priority,
+  dependencies  = EXCLUDED.dependencies,
+  status        = EXCLUDED.status;

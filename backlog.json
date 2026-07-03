@@ -1,8 +1,8 @@
-﻿{
+{
     "project":  "Abbott Cyber Consulting ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â GRC Security Scorecard",
     "version":  "1.6.1",
     "created":  "2026-05-14",
-    "updated":  "2026-07-02 (session 113)",
+    "updated":  "2026-07-02 (session 114)",
     "description":  "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
     "build_approach":  "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
     "sections":  [
@@ -1341,8 +1341,15 @@
                                        {
                                            "id":  "rr_g",
                                            "text":  "AI POAM ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Risk Register: activate and verify end-to-end flow ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â PATCH_020 must be run in Supabase SQL Editor before this works. JS code is complete (session 26): _aiuBuildRrItems(), aiuSavePoam() fire-and-forget sync, sb.riskRegister.syncAi(), rrSyncFromAiPoam(), rrRow() AI Gov badge. After running the patch, test: (1) open AI Governance POAM, assign status/owner/date to a few gaps, save ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â confirm AI Gov rows appear in Risk Register; (2) \u0027ÃƒÂ¢Ã¢â‚¬Â Ã‚Â» AI Gov\u0027 sync button in Risk Register header; (3) Edit Notes modal shows correct AI Gov badge; (4) \u0027ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ POAM\u0027 button navigates to ai_unified.",
+                                           "done":  true,
+                                           "priority":  "High",
+                                           "notes":  "Flow verified working. PATCH_020 ran (fixed missing \u0027tabletop\u0027 in source CHECK constraint). Bug fixed: _aiuBuildRrItems() and rrSyncFromAiPoam() both had \u0027if (!poamItem?.status) continue\u0027 which skipped items with no explicit status set (appeared as Open in UI but stored null). Fixed to \u0027if (!poamItem || !Object.keys(poamItem).length) continue\u0027 so all POAM items with any data sync; riskStatus mapping already defaults null/undefined to \u0027Open\u0027."
+                                       },
+                                       {
+                                           "id":  "rr_h",
+                                           "text":  "Risk Register: auto-seed all No/Partial assessment gaps on save — currently only AI Gov POAM items the user has explicitly touched (any field set) end up in _poam and get synced to the Risk Register. Gaps the user has never opened in the POAM accordion are invisible to the sync. Enhancement: on aiuSavePoam(), also read the assessment answers directly and push all No/Partial control gaps to the Risk Register as \u0027Open\u0027, even if poamItems[ctrlId] is empty. This ensures full coverage without requiring the user to open every gap card first.",
                                            "done":  false,
-                                           "priority":  "High"
+                                           "priority":  "Medium"
                                        }
                                    ]
                      },
@@ -2062,7 +2069,7 @@
                                        },
                                        {
                                            "id":  "TB2",
-                                           "text":  "Kill chain sequences per archetype: define 3 to 5 fixed ATT&CK-ordered chains each for ransomware, BEC, insider, and vendor compromise. chain_stage values plus requires/grants tags form the branching backbone that produces the semi-random effect.",
+                                           "text":  "Kill chain sequences per archetype: define 3 to 5 fixed ATT\u0026CK-ordered chains each for ransomware, BEC, insider, and vendor compromise. chain_stage values plus requires/grants tags form the branching backbone that produces the semi-random effect.",
                                            "done":  true,
                                            "priority":  "High",
                                            "notes":  "Branching grid model designed for all 4 IR archetypes (ransomware 21 cards / BEC 16 / insider 19 / vendor_compromise 17 = 73 total). Fixed stage skeleton per archetype with 3-4 option cards per stage. Requires/grants tag vocabulary per archetype. Reference grid in TABLETOP_CHAINS.md. Seed SQL in sql/SEED_TT_INJECT_CHAINS.sql â€” run in Supabase to populate tt_inject_cards."
@@ -2701,7 +2708,7 @@
                                            "id":  "ex2",
                                            "text":  "Dashboard exercises chicklet with SVG dial ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Replaces link-only Exercises widget. SVG dial arc (0ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“100) shows average exercise_score across all completed sessions. Colour-banded: green ÃƒÂ¢Ã¢â‚¬Â°Ã‚Â¥70, amber 40ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“69, red \u003c40, grey = no data. Sessions run count, last exercise date. \u0027Start New\u0027 CTA.",
                                            "done":  true,
-                                           "notes":  "home.js: _exRowDialSvg(score, label, color) -- 40x24px inline SVG semicircle per session row, arc proportional to score, letter grade as text. exGrade(score) returns {letter, color} A>=90 B>=75 C>=60 D>=45 F<45. _widgetTabletop(h) shows up to 4 sessions newest-first each with dial and standalone letter. Null exercise_score shows gray dash (no fake score for pre-scoring sessions). PATCH_059 backfills exercise_score for all historical sessions."
+                                           "notes":  "home.js: _exRowDialSvg(score, label, color) -- 40x24px inline SVG semicircle per session row, arc proportional to score, letter grade as text. exGrade(score) returns {letter, color} A\u003e=90 B\u003e=75 C\u003e=60 D\u003e=45 F\u003c45. _widgetTabletop(h) shows up to 4 sessions newest-first each with dial and standalone letter. Null exercise_score shows gray dash (no fake score for pre-scoring sessions). PATCH_059 backfills exercise_score for all historical sessions."
                                        },
                                        {
                                            "id":  "ex3",
@@ -2712,4 +2719,3 @@
                      }
                  ]
 }
-

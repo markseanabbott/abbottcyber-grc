@@ -18,7 +18,7 @@
 ALTER TABLE risk_register DROP CONSTRAINT IF EXISTS risk_register_source_check;
 ALTER TABLE risk_register
   ADD CONSTRAINT risk_register_source_check
-  CHECK (source IN ('cis_poam', 'manual', 'tpra', 'ai_poam'));
+  CHECK (source IN ('cis_poam', 'manual', 'tpra', 'ai_poam', 'tabletop'));
 
 -- 2. Partial unique index — one risk_register row per org per AI control
 CREATE UNIQUE INDEX IF NOT EXISTS uq_rr_ai_poam

@@ -1304,7 +1304,7 @@ function aiuPoamUpdate(id, field, value) {
 function _aiuBuildRrItems() {
   const items = [];
   for (const [ctrlId, poamItem] of Object.entries(aiUnifiedState.poamItems || {})) {
-    if (!poamItem?.status) continue;
+    if (!poamItem || !Object.keys(poamItem).length) continue;
     const ctrl = (typeof AI_UNIFIED_CONTROLS !== 'undefined' ? AI_UNIFIED_CONTROLS : []).find(c => c.id === ctrlId);
     if (!ctrl) continue;
     const riskStatus = poamItem.status === 'complete' ? 'Closed'
