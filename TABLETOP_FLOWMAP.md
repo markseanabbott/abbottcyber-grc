@@ -1028,9 +1028,9 @@ Track 1 and 2 use **hardcoded inject sequences** — every session sees the same
 |-------|-------|--------|------------|
 | 1 | Initial Access | TA0001 | Detect/Analyze |
 | 2 | Execution & C2 | TA0002 | Detect/Analyze |
-| 3 | Credential Access | TA0006 | Detect/Analyze |
-| 4 | Privilege Escalation & Lateral Movement | TA0004 / TA0008 | Detect/Analyze |
-| 5 | Pre-Impact | TA0005 / TA0009 / TA0010 | Contain |
+| 3 | Credential Access | TA0006 | Contain |
+| 4 | Privilege Escalation & Lateral Movement | TA0004 / TA0008 | Contain |
+| 5 | Pre-Impact | TA0005 / TA0009 / TA0010 | Eradicate |
 | 6 | Impact (terminal) | TA0040 | Eradicate |
 
 ### Card grid
@@ -1200,7 +1200,7 @@ Key discussion: Would your finance team recognize that the reply domain changed?
 | 2 | Reconnaissance & Data Mapping | TA0007 / T1083 | Detect/Analyze |
 | 3 | Data Staging | TA0009 / T1005 / T1213 | Contain |
 | 4 | Exfiltration | TA0010 / T1052 / T1567 | Eradicate |
-| 5 | Impact (terminal) | — | Post-Incident |
+| 5 | Impact (terminal) | — | Eradicate |
 
 ### Card grid
 
