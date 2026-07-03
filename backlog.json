@@ -2,7 +2,7 @@
     "project":  "Abbott Cyber Consulting Ã¢â‚¬â€ GRC Security Scorecard",
     "version":  "1.6.1",
     "created":  "2026-05-14",
-    "updated":  "2026-07-02 (session 111)",
+    "updated":  "2026-07-02 (session 112)",
     "description":  "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
     "build_approach":  "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
     "sections":  [
@@ -2056,8 +2056,9 @@
                                        {
                                            "id":  "TB1",
                                            "text":  "Precedence data model and database schema: add chainStage, requires, grants, scenarioTypes, track fields to the inject object; create tt_stories, tt_inject_cards, tt_response_cards, tabletop_card_plays tables as a numbered SQL patch. Foundation — every later item depends on this.",
-                                           "done":  false,
-                                           "priority":  "Critical"
+                                           "done":  true,
+                                           "priority":  "Critical",
+                                           "notes":  "SUPABASE_PATCH_061.sql. Four tables: tt_stories (id, archetype, track, title, opener_text, business_context, notes), tt_inject_cards (id, archetype, track, chain_stage int, requires jsonb, grants jsonb, weight int, title, body, role_prompts jsonb, mitre_tactic, mitre_technique, correct_criticality, nist_phase_idx), tt_response_cards (id, role_id, nist_phase, track, scenario_types jsonb, title, body, appropriateness jsonb), tabletop_card_plays (id uuid PK, session_id fk, inject_index, role_id, player_name, card_ids jsonb, comment, appropriateness jsonb, UNIQUE session+inject+role). RLS: anon SELECT on all three content tables; anon INSERT+UPDATE on tabletop_card_plays. updated_at triggers on inject_cards, response_cards, card_plays."
                                        },
                                        {
                                            "id":  "TB2",
