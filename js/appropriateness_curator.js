@@ -200,17 +200,49 @@ function renderAppropriatenessCurator() {
         </div>
       </div>
 
-      <!-- Weights -->
+      <!-- Weights + scoring model -->
       <div>
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:8px">Weight — how important is this card?</div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:8px">Weight &amp; Scoring — how points are awarded</div>
+        <div style="overflow-x:auto;margin-bottom:8px">
+          <table style="border-collapse:collapse;font-size:12px;min-width:380px">
+            <thead>
+              <tr style="background:var(--bg)">
+                <th style="padding:7px 12px;text-align:left;border:1px solid var(--border);font-weight:700;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em">Rating</th>
+                <th style="padding:7px 16px;text-align:center;border:1px solid var(--border);font-weight:700;color:#0369a1;font-size:10px;text-transform:uppercase;letter-spacing:.06em">Weight 1</th>
+                <th style="padding:7px 16px;text-align:center;border:1px solid var(--border);font-weight:700;color:#92400e;font-size:10px;text-transform:uppercase;letter-spacing:.06em">Weight 2★</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="background:#dcfce7">
+                <td style="padding:7px 12px;border:1px solid var(--border);font-weight:600;color:#15803d">Correct</td>
+                <td style="padding:7px 16px;border:1px solid var(--border);text-align:center;font-weight:700;color:#15803d">+1</td>
+                <td style="padding:7px 16px;border:1px solid var(--border);text-align:center;font-weight:700;color:#15803d">+2</td>
+              </tr>
+              <tr style="background:#fef3c7">
+                <td style="padding:7px 12px;border:1px solid var(--border);font-weight:600;color:#92400e">Defensible-Partial</td>
+                <td style="padding:7px 16px;border:1px solid var(--border);text-align:center;font-weight:700;color:#92400e">+0.5</td>
+                <td style="padding:7px 16px;border:1px solid var(--border);text-align:center;font-weight:700;color:#92400e">+1</td>
+              </tr>
+              <tr style="background:#fee2e2">
+                <td style="padding:7px 12px;border:1px solid var(--border);font-weight:600;color:#b91c1c">Inappropriate</td>
+                <td style="padding:7px 16px;border:1px solid var(--border);text-align:center;font-weight:700;color:#b91c1c">−1</td>
+                <td style="padding:7px 16px;border:1px solid var(--border);text-align:center;font-weight:700;color:#b91c1c">−2</td>
+              </tr>
+              <tr style="background:#f3f4f6">
+                <td style="padding:7px 12px;border:1px solid var(--border);font-weight:600;color:#6b7280">Not Applicable</td>
+                <td style="padding:7px 16px;border:1px solid var(--border);text-align:center;color:#9ca3af" colspan="2">Not dealt — no score</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <div style="padding:10px 14px;background:#e0f2fe;border:1px solid #7dd3fc;border-radius:8px;flex:1;min-width:200px">
-            <div style="font-size:12px;font-weight:700;color:#0369a1">Weight 1 — Normal</div>
-            <div style="font-size:11px;color:#0c4a6e;margin-top:3px;line-height:1.5">Standard action. Correct/wrong matters but isn't catastrophic.</div>
+          <div style="padding:8px 12px;background:#e0f2fe;border:1px solid #7dd3fc;border-radius:8px;flex:1;min-width:180px">
+            <div style="font-size:11px;font-weight:700;color:#0369a1">Weight 1 — Normal</div>
+            <div style="font-size:11px;color:#0c4a6e;margin-top:2px;line-height:1.5">Standard action. Correct/wrong matters but isn't catastrophic.</div>
           </div>
-          <div style="padding:10px 14px;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;flex:1;min-width:200px">
-            <div style="font-size:12px;font-weight:700;color:#92400e">Weight 2★ — Critical</div>
-            <div style="font-size:11px;color:#78350f;margin-top:3px;line-height:1.5">Must-do action, or catastrophic if wrong. Scores double. Used for breach declaration, legal notification, evidence preservation.</div>
+          <div style="padding:8px 12px;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;flex:1;min-width:180px">
+            <div style="font-size:11px;font-weight:700;color:#92400e">Weight 2★ — Critical</div>
+            <div style="font-size:11px;color:#78350f;margin-top:2px;line-height:1.5">Must-do or catastrophic if wrong — breach declaration, legal notification, evidence preservation.</div>
           </div>
         </div>
       </div>
@@ -332,10 +364,13 @@ function acRenderRow(card, isLast) {
         <option value="" ${!rating?'selected':''}>(unset)</option>
         ${AC_RATINGS.map(r=>`<option value="${r}" ${rating===r?'selected':''}>${AC_RATING_LABELS[r]}</option>`).join('')}
       </select>
-      <div style="display:flex;gap:2px;margin-top:3px">
-        <button onclick="acOnWeightChange('${card.id}','${s}',1)" style="flex:1;padding:2px 4px;font-size:10px;font-weight:700;border:1.5px solid ${weight===1?'#7dd3fc':'var(--border)'};border-radius:4px;cursor:pointer;background:${weight===1?'#e0f2fe':'#fff'};color:${weight===1?'#0369a1':'var(--muted)'};font-family:inherit">1</button>
-        <button onclick="acOnWeightChange('${card.id}','${s}',2)" style="flex:1;padding:2px 4px;font-size:10px;font-weight:700;border:1.5px solid ${weight===2?'#fcd34d':'var(--border)'};border-radius:4px;cursor:pointer;background:${weight===2?'#fef3c7':'#fff'};color:${weight===2?'#92400e':'var(--muted)'};font-family:inherit">2★</button>
-      </div>
+      ${rating === 'not-applicable'
+        ? `<div style="margin-top:3px;padding:2px 6px;font-size:10px;font-weight:700;color:#9ca3af;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:4px;text-align:center;letter-spacing:.04em">N/A</div>`
+        : `<div style="display:flex;gap:2px;margin-top:3px">
+          <button onclick="acOnWeightChange('${card.id}','${s}',1)" style="flex:1;padding:2px 4px;font-size:10px;font-weight:700;border:1.5px solid ${weight===1?'#7dd3fc':'var(--border)'};border-radius:4px;cursor:pointer;background:${weight===1?'#e0f2fe':'#fff'};color:${weight===1?'#0369a1':'var(--muted)'};font-family:inherit" title="Weight 1 — correct:+1 / inappropriate:−1">1</button>
+          <button onclick="acOnWeightChange('${card.id}','${s}',2)" style="flex:1;padding:2px 4px;font-size:10px;font-weight:700;border:1.5px solid ${weight===2?'#fcd34d':'var(--border)'};border-radius:4px;cursor:pointer;background:${weight===2?'#fef3c7':'#fff'};color:${weight===2?'#92400e':'var(--muted)'};font-family:inherit" title="Weight 2★ — correct:+2 / inappropriate:−2">2★</button>
+        </div>`
+      }
     </td>`;
   }).join('');
 
