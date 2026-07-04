@@ -42,6 +42,7 @@ let tsbState = {
   currentCard:   null,
   path:          [],        // [{stage, card}] — actual path taken so far
   showPath:      false,
+  sessionId:     null,     // set async when tsbStart() creates a tabletop_sessions row (TB9)
 };
 
 // ── Seeded PRNG (mulberry32) ──────────────────────────────────────────────
@@ -156,7 +157,7 @@ function tsbReroll() {
   tsbRender();
 }
 
-function tsbStart() {
+async function tsbStart() {
   if (!tsbState.allCards.length || !tsbState.seed) return;
   tsbState.view          = 'running';
   tsbState.tagState      = [];
@@ -164,6 +165,8 @@ function tsbStart() {
   tsbState.path          = [];
   tsbState.prngCallCount = 0;  // reset so delivery starts at same PRNG position as preview
   tsbState.showPath      = false;
+  tsbState.sessionId     = null;
+  if (typeof tb9Init === 'function') tb9Init();
 
   const card = tsbPickCard(1);
   if (!card) {
@@ -176,6 +179,29 @@ function tsbStart() {
   tsbState.currentStage = 1;
   tsbState.path.push({ stage: 1, card });
   tsbRender();
+
+  // Create a tabletop_sessions row async (non-blocking) for TB9 card play persistence
+  try {
+    const code     = await sb.tt.newCode();
+    const archMeta = TSB_ARCHETYPES[tsbState.archetype] || {};
+    const sess     = await sb.tt.createSession({
+      org_id:             (typeof currentOrg !== 'undefined' && currentOrg?.id) || null,
+      scenario_id:        `tsb_${tsbState.archetype}`,
+      scenario_title:     `${archMeta.label || tsbState.archetype} — Storyboard`,
+      session_code:       code,
+      status:             'active',
+      facilitator_name:   (typeof authState !== 'undefined' && authState?.user?.user_metadata?.name) || 'Facilitator',
+      current_inject:     1,
+      declaration_logged: false,
+      breach_declared:    false,
+      notif_filed:        false,
+      exercise_log:       [],
+    });
+    tsbState.sessionId = sess?.id || null;
+  } catch (e) {
+    console.warn('TB9: session creation failed — card plays will not persist:', e.message || e);
+    tsbState.sessionId = null;
+  }
 }
 
 function tsbAdvance() {
@@ -209,14 +235,16 @@ function tsbAdvance() {
 }
 
 function tsbReset() {
-  tsbState.view         = 'setup';
-  tsbState.tagState     = [];
-  tsbState.currentStage = 1;
-  tsbState.currentCard  = null;
-  tsbState.path         = [];
-  tsbState.showPath     = false;
+  tsbState.view          = 'setup';
+  tsbState.tagState      = [];
+  tsbState.currentStage  = 1;
+  tsbState.currentCard   = null;
+  tsbState.path          = [];
+  tsbState.showPath      = false;
+  tsbState.sessionId     = null;
   // Keep archetype + loaded cards + seed so user can reroll or re-start immediately
   tsbState.prngCallCount = 0;
+  if (typeof tb9Init === 'function') tb9Init();
   tsbRender();
 }
 
@@ -365,6 +393,9 @@ function _tsbRenderSetup() {
 // ── Running view ──────────────────────────────────────────────────────────
 
 function _tsbRenderRunning() {
+  // TB9 card hand round — takes over the running view while active
+  if (typeof tb9State !== 'undefined' && tb9State.mode !== null) return renderTB9Round();
+
   const card = tsbState.currentCard;
   if (!card) return '<p style="padding:2rem">No card loaded.</p>';
 
@@ -467,11 +498,11 @@ function _tsbRenderRunning() {
         </table>` : ''}
       </div>
 
-      <!-- Advance -->
+      <!-- TB9 Deal Hands — replaces direct inject advance; inject advances after all roles submit -->
       <div style="display:flex;gap:0.75rem;align-items:center">
-        ${isTerminal
-          ? `<button class="btn btn-primary" onclick="tsbAdvance()" style="background:#dc2626;font-size:14px;padding:0.6rem 1.5rem">⛔ End — view debrief</button>`
-          : `<button class="btn btn-primary" onclick="tsbAdvance()" style="font-size:14px;padding:0.6rem 1.5rem">▶ Draw next inject</button>`}
+        <button class="btn btn-primary" onclick="tb9StartRound()" style="font-size:14px;padding:0.6rem 1.5rem">
+          🃏 Deal response hands
+        </button>
       </div>
     </div>`;
 }

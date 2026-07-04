@@ -1,8 +1,8 @@
 {
     "project":  "Abbott Cyber Consulting ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â GRC Security Scorecard",
-    "version":  "1.6.1",
+    "version":  "1.6.2",
     "created":  "2026-05-14",
-    "updated":  "2026-07-03 (session 118)",
+    "updated":  "2026-07-04 (session 119)",
     "description":  "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
     "build_approach":  "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
     "sections":  [
@@ -2126,9 +2126,9 @@
                                        {
                                            "id":  "TB9",
                                            "text":  "Card hand UI: in the inject view, deal the role/phase/scenario-filtered hand from tt_response_cards, let the player select cards, add a comment, and submit. Role-scoping preserves the fog of war.",
-                                           "done":  false,
+                                           "done":  true,
                                            "priority":  "High",
-                                           "notes":  "Depends on TB6, TB8."
+                                           "notes":  "Single shared screen, sequential round-robin IC->TL->CL->LC->ES per inject. No fog of war (war-room collaboration model). New file: js/tb9_hand.js. On tsbStart(), a tabletop_sessions row is created async (non-blocking) and stored as tsbState.sessionId. tb9StartRound() fetches tt_response_cards?nist_phase=eq.{phase}&curated=eq.true, client-side filters not-applicable for current archetype, prepends HOLD card. Multi-select grid, inline comment, hold prompt, step-back before inject round closes. After ES submits -> round_complete summary -> tb9NextInject() calls tsbAdvance(). Plays persisted via sb.tt.upsertCardPlay (TB8). Running view advance button replaced with 'Deal response hands' button. Depends on TB6, TB8."
                                        },
                                        {
                                            "id":  "TB10",

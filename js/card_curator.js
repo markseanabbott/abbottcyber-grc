@@ -230,30 +230,25 @@ function ccSetView(v) {
 }
 
 async function ccToggleCurated(id, newVal) {
-  // Optimistic UI
-  const btn = document.getElementById('cc-btn-' + id);
-  if (btn) {
-    btn.textContent = newVal ? '✓ Curated' : 'Draft';
-    btn.className   = `btn btn-sm ${newVal ? 'btn-cyan' : 'btn-outline'}`;
-    btn.style.minWidth = '72px';
-    btn.style.fontSize = '10px';
-    btn.style.padding  = '3px 10px';
-  }
+  // Optimistic UI — update state then re-render
   const card = ccState.cards && ccState.cards.find(c => c.id === id);
   if (card) card.curated = newVal;
   ccUpdateCounter();
 
   try {
-    await sbFetch(`tt_inject_cards?id=eq.${id}`, 'PATCH', { curated: newVal }, { Prefer: 'return=minimal' });
-  } catch(e) {
-    // Revert on failure
-    if (card) card.curated = !newVal;
-    if (btn) {
-      btn.textContent = !newVal ? '✓ Curated' : 'Draft';
-      btn.className   = `btn btn-sm ${!newVal ? 'btn-cyan' : 'btn-outline'}`;
+    const r = await sbFetch(`tt_inject_cards?id=eq.${id}`, 'PATCH', { curated: newVal }, { Prefer: 'return=representation' });
+    if (!Array.isArray(r) || r.length === 0) {
+      // RLS silently blocked — no UPDATE policy in place yet (run SUPABASE_PATCH_066.sql)
+      if (card) card.curated = !newVal;
+      ccUpdateCounter();
+      toast(`Save blocked — run SUPABASE_PATCH_066.sql to enable curator writes`, '#dc2626');
+    } else {
+      toast(newVal ? `${id} — marked Curated` : `${id} — reverted to Draft`, newVal ? '#16a34a' : '#6b7280');
     }
+  } catch(e) {
+    if (card) card.curated = !newVal;
     ccUpdateCounter();
-    alert('Save failed for ' + id + ': ' + e.message);
+    toast('Save failed for ' + id + ': ' + e.message, '#dc2626');
   }
 }
 

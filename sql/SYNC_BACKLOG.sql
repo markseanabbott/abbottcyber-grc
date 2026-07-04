@@ -4906,7 +4906,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB9', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 9, 'Card hand UI: in the inject view, deal the role/phase/scenario-filtered hand from tt_response_cards, let the player select cards, add a comment, and submit. Role-scoping preserves the fog of war.', false, 'High', 'Depends on TB6, TB8.', '[]', 'add')
+VALUES ('TB9', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 9, 'Card hand UI: in the inject view, deal the role/phase/scenario-filtered hand from tt_response_cards, let the player select cards, add a comment, and submit. Role-scoping preserves the fog of war.', true, 'High', 'Single shared screen, sequential round-robin IC->TL->CL->LC->ES per inject. No fog of war (war-room collaboration model). New file: js/tb9_hand.js. On tsbStart(), a tabletop_sessions row is created async (non-blocking) and stored as tsbState.sessionId. tb9StartRound() fetches tt_response_cards?nist_phase=eq.{phase}&curated=eq.true, client-side filters not-applicable for current archetype, prepends HOLD card. Multi-select grid, inline comment, hold prompt, step-back before inject round closes. After ES submits -> round_complete summary -> tb9NextInject() calls tsbAdvance(). Plays persisted via sb.tt.upsertCardPlay (TB8). Running view advance button replaced with ''Deal response hands'' button. Depends on TB6, TB8.', '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
