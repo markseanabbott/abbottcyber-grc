@@ -2105,9 +2105,9 @@
                                        {
                                            "id":  "TB6",
                                            "text":  "Response card library: author action cards into tt_response_cards, scoped by role x NIST phase x scenario type, roughly 8 to 12 per role per phase. Include plausible-but-wrong distractor cards - they are the assessment signal. Must cover ALL five in-game NIST phases: Detect/Analyze (1), Contain (2), Eradicate (3), Recover (4), and Post-Incident (5). Recover and Post-Incident cards are required for the post-terminal wrap-up round (TB10b) and must be authored before that feature can be built.",
-                                           "done":  false,
+                                           "done":  true,
                                            "priority":  "High",
-                                           "notes":  "Depends on TB1. Can run in parallel with inject deck work (TB2-TB5)."
+                                           "notes":  "154 cards: IC=34, TL=37, CL=30, LC=29, ES=24. All 5 NIST phases covered per role. scenario_types marks correct-action scenarios (TB7 scoring input, NOT a dealing filter). Hard distractors use scenario_types=[]. Schema patch: SUPABASE_PATCH_065.sql (adds curated column). Seed: SEED_TT_RESPONSE_CARDS.sql. All cards seeded curated=false — review and flip before live sessions. TB9 MUST filter WHERE curated=true."
                                        },
                                        {
                                            "id":  "TB7",
