@@ -1,4 +1,4 @@
--- SYNC_BACKLOG.sql -- generated 2026-07-03 (417 items)
+-- SYNC_BACKLOG.sql -- generated 2026-07-04 (417 items)
 -- Safe to re-run (ON CONFLICT DO UPDATE).
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
 VALUES ('s1', 'core', 'Core Concept', 1, 0, 'Security posture scoring for organisations / clients', true, NULL, NULL, '[]', 'completed')
@@ -4891,7 +4891,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB8', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 8, 'Card play persistence: wire the tabletop_card_plays table into the app so player card choices and grades are saved, following the tabletop_responses pattern.', false, 'High', 'Depends on TB6.', '[]', 'add')
+VALUES ('TB8', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 8, 'Card play persistence: wire the tabletop_card_plays table into the app so player card choices and grades are saved, following the tabletop_responses pattern.', true, 'High', 'Data-access layer only â€” no UI, no scoring. 4 methods added to sb.tt in js/supabase.js: upsertCardPlay (upsert with merge-duplicates + auditLog), getCardPlays (session+inject), getCardPlaysForSession (all plays, TB10 scoring path), gradeCardPlay (PATCH appropriateness field, TB10 writes grades). inject_index = tsbState.currentStage (chain_stage of active inject). appropriateness left null on write; TB10 fills it later. No schema patch needed â€” tabletop_card_plays already existed from PATCH_061. console-callable window.tbVerifyCardPlay() added for round-trip test; run in browser console after logging in and selecting an org.', '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,

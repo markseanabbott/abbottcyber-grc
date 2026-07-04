@@ -2,7 +2,7 @@
     "project":  "Abbott Cyber Consulting ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â GRC Security Scorecard",
     "version":  "1.6.1",
     "created":  "2026-05-14",
-    "updated":  "2026-07-03 (session 117)",
+    "updated":  "2026-07-03 (session 118)",
     "description":  "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
     "build_approach":  "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
     "sections":  [
@@ -2119,9 +2119,9 @@
                                        {
                                            "id":  "TB8",
                                            "text":  "Card play persistence: wire the tabletop_card_plays table into the app so player card choices and grades are saved, following the tabletop_responses pattern.",
-                                           "done":  false,
+                                           "done":  true,
                                            "priority":  "High",
-                                           "notes":  "Depends on TB6."
+                                           "notes":  "Data-access layer only — no UI, no scoring. 4 methods added to sb.tt in js/supabase.js: upsertCardPlay (upsert with merge-duplicates + auditLog), getCardPlays (session+inject), getCardPlaysForSession (all plays, TB10 scoring path), gradeCardPlay (PATCH appropriateness field, TB10 writes grades). inject_index = tsbState.currentStage (chain_stage of active inject). appropriateness left null on write; TB10 fills it later. No schema patch needed — tabletop_card_plays already existed from PATCH_061. console-callable window.tbVerifyCardPlay() added for round-trip test; run in browser console after logging in and selecting an org."
                                        },
                                        {
                                            "id":  "TB9",
