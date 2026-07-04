@@ -310,4 +310,108 @@ sb.tt = {
   },
   updateActionItem: (id, patch) => sbFetch(`tabletop_action_items?id=eq.${id}`, 'PATCH', patch, { Prefer: 'return=representation' }),
   deleteActionItem: (id) => sbFetch(`tabletop_action_items?id=eq.${id}`, 'DELETE'),
+
+  // ── TB8: Card play persistence ───────────────────────────────────────────
+  // tabletop_card_plays — created in SUPABASE_PATCH_061.
+  // UNIQUE (session_id, inject_index, role_id) — one row per role per inject.
+  // inject_index maps to tsbState.currentStage (chain_stage of the active inject card).
+  // appropriateness is left null on write; TB10 fills it with grades later.
+  //
+  // Row shape for upsertCardPlay:
+  //   { session_id, inject_index, role_id, player_name, card_ids (array), comment }
+
+  upsertCardPlay: async (row) => {
+    const r = await sbFetch('tabletop_card_plays', 'POST', row,
+      { Prefer: 'resolution=merge-duplicates,return=representation' });
+    auditLog('card_play_saved', 'tabletop_card_plays',
+      `session ${row.session_id} inject ${row.inject_index} role ${row.role_id}`,
+      { card_ids: row.card_ids, comment: row.comment || null });
+    return Array.isArray(r) ? r[0] : r;
+  },
+
+  // Fetch all card plays for one inject (used by TB9 to show what others played)
+  getCardPlays: async (sessionId, injectIdx) => {
+    const r = await sbFetch(
+      `tabletop_card_plays?session_id=eq.${sessionId}&inject_index=eq.${injectIdx}&select=*`
+    );
+    return r || [];
+  },
+
+  // Fetch all card plays across every inject for a session (used by TB10 scoring / AAR)
+  getCardPlaysForSession: async (sessionId) => {
+    const r = await sbFetch(
+      `tabletop_card_plays?session_id=eq.${sessionId}&select=*&order=inject_index.asc,role_id.asc`
+    );
+    return r || [];
+  },
+
+  // TB10 writes per-card grades into the appropriateness field.
+  // grades shape: { 'RC-IC-1-01': 'correct', 'RC-IC-2-03': 'inappropriate', ... }
+  gradeCardPlay: (sessionId, injectIdx, roleId, grades) => sbFetch(
+    `tabletop_card_plays?session_id=eq.${sessionId}&inject_index=eq.${injectIdx}&role_id=eq.${encodeURIComponent(roleId)}`,
+    'PATCH',
+    { appropriateness: grades },
+    { Prefer: 'return=representation' }
+  ),
+};
+
+// ── TB8 verification helper ─────────────────────────────────────────────────
+// Run tbVerifyCardPlay() in the browser console (must be logged in to the app).
+// Creates a throw-away tabletop session, writes + grades + reads a card play,
+// then cascades-deletes everything via the session delete.
+window.tbVerifyCardPlay = async function() {
+  console.group('TB8 card play round-trip verification');
+  try {
+    const orgId = (typeof currentOrg !== 'undefined' && currentOrg?.id) ? currentOrg.id : null;
+    if (!orgId) { console.error('No org selected — switch to an org in the app first'); console.groupEnd(); return; }
+
+    // 1. Create a temporary session
+    const sess = await sb.tt.createSession({
+      org_id:            orgId,
+      scenario_id:       'TB8_VERIFY',
+      scenario_title:    'TB8 verification session (auto-delete)',
+      session_code:      'TB8VFY',
+      status:            'setup',
+      facilitator_name:  'tb8-test',
+      current_inject:    1,
+      declaration_logged: false,
+      breach_declared:    false,
+      notif_filed:        false,
+      exercise_log:       [],
+    });
+    console.log('1. Session created:', sess.id);
+
+    // 2. Write a card play
+    const play = await sb.tt.upsertCardPlay({
+      session_id:      sess.id,
+      inject_index:    1,
+      role_id:         'ic',
+      player_name:     'TB8-test-player',
+      card_ids:        ['RC-IC-1-01', 'RC-IC-1-05'],
+      comment:         'TB8 round-trip verification',
+    });
+    console.log('2. Card play written:', play?.id, '| cards:', play?.card_ids);
+
+    // 3. Read it back
+    const plays = await sb.tt.getCardPlays(sess.id, 1);
+    console.log('3. Read back:', plays.length, 'play(s) | player:', plays[0]?.player_name, '| cards:', plays[0]?.card_ids);
+
+    // 4. Simulate TB10 grade write
+    await sb.tt.gradeCardPlay(sess.id, 1, 'ic', { 'RC-IC-1-01': 'correct', 'RC-IC-1-05': 'defensible-partial' });
+    const graded = await sb.tt.getCardPlays(sess.id, 1);
+    console.log('4. Grade written:', JSON.stringify(graded[0]?.appropriateness));
+
+    // 5. Get all plays for session (TB10 path)
+    const all = await sb.tt.getCardPlaysForSession(sess.id);
+    console.log('5. getCardPlaysForSession:', all.length, 'row(s)');
+
+    // 6. Clean up (session DELETE cascades to card_plays)
+    await sbFetch(`tabletop_sessions?id=eq.${sess.id}`, 'DELETE');
+    console.log('6. Cleanup done — session + card play deleted');
+
+    console.log('%cTB8 PASSED — all 6 steps completed', 'color:green;font-weight:bold');
+  } catch(e) {
+    console.error('TB8 FAILED:', e.message || e);
+  }
+  console.groupEnd();
 };
