@@ -4876,7 +4876,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB7', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 7, 'Appropriateness matrix: fill the appropriateness column on each response card Ã¢â‚¬ correct / defensible-partial / inappropriate / not-applicable, keyed by scenario and phase. Encodes rules like BEC does not need endpoint isolation.', false, 'High', 'Depends on TB6.', '[]', 'add')
+VALUES ('TB7', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 7, 'Appropriateness matrix: fill the appropriateness column on each response card â€” correct / defensible-partial / inappropriate / not-applicable, keyed by scenario and phase. Encodes rules like BEC does not need endpoint isolation.', true, 'High', 'Shape: appropriateness = { scenario: { rating, weight } } keyed by scenario only (nist_phase is already its own column). Ratings: correct/defensible-partial/inappropriate/not-applicable. Weight: 1=normal, 2=critical (must-do or catastrophic-if-wrong). TB9 dealing rule: deal correct+partial+inappropriate; skip not-applicable only. not-applicable vs inappropriate is the key distinction â€” inappropriate IS a distractor and WILL be dealt; not-applicable will NOT. Files: SEED_TT_APPROPRIATENESS.sql (154 UPDATE statements, idempotent), appropriateness-curator.html (standalone tuning tool with filter, inline edit, per-card and save-all). No main-app changes.', '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,

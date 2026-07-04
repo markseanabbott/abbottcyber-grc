@@ -2111,10 +2111,10 @@
                                        },
                                        {
                                            "id":  "TB7",
-                                           "text":  "Appropriateness matrix: fill the appropriateness column on each response card â€ correct / defensible-partial / inappropriate / not-applicable, keyed by scenario and phase. Encodes rules like BEC does not need endpoint isolation.",
-                                           "done":  false,
+                                           "text":  "Appropriateness matrix: fill the appropriateness column on each response card — correct / defensible-partial / inappropriate / not-applicable, keyed by scenario and phase. Encodes rules like BEC does not need endpoint isolation.",
+                                           "done":  true,
                                            "priority":  "High",
-                                           "notes":  "Depends on TB6."
+                                           "notes":  "Shape: appropriateness = { scenario: { rating, weight } } keyed by scenario only (nist_phase is already its own column). Ratings: correct/defensible-partial/inappropriate/not-applicable. Weight: 1=normal, 2=critical (must-do or catastrophic-if-wrong). TB9 dealing rule: deal correct+partial+inappropriate; skip not-applicable only. not-applicable vs inappropriate is the key distinction — inappropriate IS a distractor and WILL be dealt; not-applicable will NOT. Files: SEED_TT_APPROPRIATENESS.sql (154 UPDATE statements, idempotent), appropriateness-curator.html (standalone tuning tool with filter, inline edit, per-card and save-all). No main-app changes."
                                        },
                                        {
                                            "id":  "TB8",

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Appropriateness Curator — TB7</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --navy: #152168; --navy2: #1a2a7a; --cyan: #07B4D9; --cyan2: #07D1F2;
+  --bg: #f0f4fa; --card: #fff; --border: #dde3ef;
+  --text: #1a2340; --muted: #5a6a8a;
+  --green: #16a34a; --amber: #d97706; --red: #b91c1c; --gray: #6b7280;
+  --green-bg: #dcfce7; --amber-bg: #fef3c7; --red-bg: #fee2e2; --gray-bg: #f3f4f6;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:13px}
+.topbar{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.2)}
+.topbar-title{font-size:15px;font-weight:700;letter-spacing:0.01em}
+.topbar-sub{font-size:11px;opacity:0.7;margin-top:2px}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.db-status{font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,0.15)}
+.db-status.ok{background:rgba(22,163,74,0.3)}
+.db-status.err{background:rgba(185,28,28,0.3)}
+.controls{padding:14px 20px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.controls select,.controls input{padding:6px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;color:var(--text);background:#fff;outline:none}
+.controls select:focus,.controls input:focus{border-color:var(--cyan)}
+.btn{padding:7px 14px;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:opacity 0.15s}
+.btn-navy{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff}
+.btn-cyan{background:var(--cyan);color:#fff}
+.btn-sm{padding:4px 10px;font-size:11px}
+.btn:hover{opacity:0.85}
+.stats-bar{padding:10px 20px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;gap:20px;font-size:11px;font-weight:600;color:var(--muted)}
+.stat-item{display:flex;align-items:center;gap:5px}
+.stat-dot{width:8px;height:8px;border-radius:50%}
+.main{padding:16px 20px}
+.role-section{margin-bottom:24px}
+.role-header{font-size:14px;font-weight:700;color:var(--navy);padding:10px 14px;background:#fff;border:1px solid var(--border);border-radius:10px 10px 0 0;display:flex;align-items:center;gap:8px}
+.phase-group{margin-bottom:0}
+.phase-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);padding:6px 14px;background:var(--bg);border-left:1px solid var(--border);border-right:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--border)}
+table:last-child{border-radius:0 0 10px 10px;overflow:hidden}
+th{padding:8px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);background:var(--bg);border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover{background:#f8f9fc}
+.card-id{font-size:10px;font-weight:700;color:var(--muted);font-family:monospace;white-space:nowrap}
+.card-title{font-size:12px;font-weight:500;max-width:220px}
+.scenario-cell{min-width:140px}
+.rating-select{width:100%;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;font-family:'Inter',sans-serif;outline:none;cursor:pointer;background:#fff}
+.rating-select:focus{border-color:var(--cyan)}
+.rating-correct{background:var(--green-bg);color:var(--green);border-color:#86efac}
+.rating-partial{background:var(--amber-bg);color:var(--amber);border-color:#fcd34d}
+.rating-inappropriate{background:var(--red-bg);color:var(--red);border-color:#fca5a5}
+.rating-na{background:var(--gray-bg);color:var(--gray);border-color:#d1d5db}
+.weight-toggle{display:flex;gap:3px;margin-top:3px}
+.w-btn{flex:1;padding:2px 4px;font-size:10px;font-weight:700;border:1.5px solid var(--border);border-radius:4px;cursor:pointer;background:#fff;color:var(--muted);transition:all 0.1s;font-family:'Inter',sans-serif}
+.w-btn.active-1{background:#e0f2fe;border-color:#7dd3fc;color:#0369a1}
+.w-btn.active-2{background:#fef3c7;border-color:#fcd34d;color:#92400e}
+.save-cell{white-space:nowrap}
+.changed-indicator{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--amber);margin-left:4px;vertical-align:middle}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--navy);color:#fff;padding:10px 18px;border-radius:10px;font-size:12px;font-weight:600;opacity:0;transition:opacity 0.3s;z-index:9999;pointer-events:none}
+.toast.show{opacity:1}
+.loading{text-align:center;padding:3rem;color:var(--muted)}
+.spinner{width:24px;height:24px;border:3px solid rgba(21,33,104,0.15);border-top-color:var(--navy);border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:2rem;color:var(--muted);font-size:13px}
+.filter-count{font-size:11px;color:var(--muted);font-weight:400;margin-left:6px}
+.scenario-header{font-size:10px;text-align:center}
+.scenario-abbr{font-weight:700;font-size:11px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="topbar-title">Appropriateness Curator — TB7</div>
+    <div class="topbar-sub">Review and tune response card ratings per scenario</div>
+  </div>
+  <div class="topbar-right">
+    <span class="db-status" id="dbStatus">Connecting…</span>
+    <button class="btn btn-cyan btn-sm" onclick="saveAll()">Save All Changes</button>
+  </div>
+</div>
+
+<div class="controls">
+  <select id="roleFilter" onchange="applyFilters()">
+    <option value="">All Roles</option>
+    <option value="ic">IC — Incident Commander</option>
+    <option value="tl">TL — Technical Lead</option>
+    <option value="cl">CL — Communications Lead</option>
+    <option value="lc">LC — Legal Counsel</option>
+    <option value="es">ES — Executive Sponsor</option>
+  </select>
+  <select id="phaseFilter" onchange="applyFilters()">
+    <option value="">All Phases</option>
+    <option value="detect_analyze">Detect / Analyze</option>
+    <option value="contain">Contain</option>
+    <option value="eradicate">Eradicate</option>
+    <option value="recover">Recover</option>
+    <option value="post_incident">Post-Incident</option>
+  </select>
+  <select id="ratingFilter" onchange="applyFilters()">
+    <option value="">All Ratings</option>
+    <option value="unset">Unset (empty appropriateness)</option>
+    <option value="has-na">Has not-applicable</option>
+    <option value="has-inappropriate">Has inappropriate</option>
+    <option value="changed">Unsaved changes</option>
+  </select>
+  <input type="text" id="searchBox" placeholder="Search title or ID…" oninput="applyFilters()" style="width:180px"/>
+  <button class="btn btn-navy btn-sm" onclick="resetFilters()">Clear Filters</button>
+</div>
+
+<div class="stats-bar" id="statsBar">Loading…</div>
+
+<div class="main" id="mainContent">
+  <div class="loading"><div class="spinner"></div>Loading cards from Supabase…</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/secrets.js" onerror=""></script>
+<script>
+// ── Supabase credentials ─────────────────────────────────────────────────────
+const SB_URL  = (typeof SUPABASE_URL  !== 'undefined' ? SUPABASE_URL  : 'https://sssyimtkvmtgjpusedvq.supabase.co');
+const SB_KEY  = (typeof SUPABASE_ANON_KEY !== 'undefined' ? SUPABASE_ANON_KEY : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzc3lpbXRrdm10Z2pwdXNlZHZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NzA1NTMsImV4cCI6MjA5NDU0NjU1M30.FxQaJn97YewSQi6s45nw1LgMRfBj8xhswLM47_Q2zXI');
+
+const SCENARIOS = ['ransomware','bec','insider','vendor_compromise'];
+const SCENARIO_LABELS = { ransomware:'Ransomware', bec:'BEC', insider:'Insider', vendor_compromise:'Vendor' };
+const RATINGS = ['correct','defensible-partial','inappropriate','not-applicable'];
+const RATING_LABELS = { 'correct':'Correct', 'defensible-partial':'Defensible-Partial', 'inappropriate':'Inappropriate', 'not-applicable':'Not Applicable' };
+
+const ROLE_NAMES = { ic:'IC — Incident Commander', tl:'TL — Technical Lead', cl:'CL — Communications Lead', lc:'LC — Legal Counsel', es:'ES — Executive Sponsor' };
+const ROLE_ORDER = ['ic','tl','cl','lc','es'];
+const PHASE_ORDER = ['detect_analyze','contain','eradicate','recover','post_incident'];
+const PHASE_LABELS = { detect_analyze:'Detect / Analyze', contain:'Contain', eradicate:'Eradicate', recover:'Recover', post_incident:'Post-Incident' };
+
+let allCards = [];
+let changed = {}; // card id → { appropriateness jsonb }
+
+async function sbFetch(path, opts = {}) {
+  const headers = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', ...opts.headers };
+  const res = await fetch(SB_URL + '/rest/v1/' + path, { ...opts, headers });
+  if (!res.ok) { const t = await res.text(); throw new Error(res.status + ': ' + t); }
+  if (res.status === 204 || res.headers.get('content-length') === '0') return null;
+  return res.json();
+}
+
+async function loadCards() {
+  try {
+    const data = await sbFetch('tt_response_cards?select=id,role_id,nist_phase,title,appropriateness&order=role_id,nist_phase,id&limit=300');
+    allCards = data || [];
+    document.getElementById('dbStatus').textContent = 'Connected — ' + allCards.length + ' cards';
+    document.getElementById('dbStatus').className = 'db-status ok';
+    renderStats();
+    applyFilters();
+  } catch(e) {
+    document.getElementById('dbStatus').textContent = 'Error: ' + e.message;
+    document.getElementById('dbStatus').className = 'db-status err';
+    document.getElementById('mainContent').innerHTML = '<div class="empty">Failed to load cards: ' + e.message + '</div>';
+  }
+}
+
+function getRating(card, scenario) {
+  if (changed[card.id]) return changed[card.id].appropriateness?.[scenario]?.rating || '';
+  return card.appropriateness?.[scenario]?.rating || '';
+}
+function getWeight(card, scenario) {
+  if (changed[card.id]) return changed[card.id].appropriateness?.[scenario]?.weight || 1;
+  return card.appropriateness?.[scenario]?.weight || 1;
+}
+
+function ratingClass(rating) {
+  if (!rating) return '';
+  const map = { 'correct':'rating-correct', 'defensible-partial':'rating-partial', 'inappropriate':'rating-inappropriate', 'not-applicable':'rating-na' };
+  return map[rating] || '';
+}
+
+function renderStats() {
+  const total = allCards.length;
+  const fullySet = allCards.filter(c => SCENARIOS.every(s => (c.appropriateness?.[s]?.rating || '') !== '')).length;
+  const hasNA = allCards.filter(c => SCENARIOS.some(s => c.appropriateness?.[s]?.rating === 'not-applicable')).length;
+  const hasInappropriate = allCards.filter(c => SCENARIOS.some(s => c.appropriateness?.[s]?.rating === 'inappropriate')).length;
+  const unset = allCards.filter(c => SCENARIOS.some(s => !(c.appropriateness?.[s]?.rating))).length;
+  const changedCount = Object.keys(changed).length;
+  document.getElementById('statsBar').innerHTML =
+    `<span class="stat-item"><span class="stat-dot" style="background:var(--green)"></span>${fullySet}/${total} fully rated</span>` +
+    `<span class="stat-item"><span class="stat-dot" style="background:var(--gray)"></span>${hasNA} with not-applicable</span>` +
+    `<span class="stat-item"><span class="stat-dot" style="background:var(--red)"></span>${hasInappropriate} with inappropriate</span>` +
+    (unset ? `<span class="stat-item"><span class="stat-dot" style="background:var(--amber)"></span>${unset} cards have unset scenarios</span>` : '') +
+    (changedCount ? `<span class="stat-item"><span class="stat-dot" style="background:var(--amber)"></span><strong>${changedCount} unsaved changes</strong></span>` : '');
+}
+
+function applyFilters() {
+  const role = document.getElementById('roleFilter').value;
+  const phase = document.getElementById('phaseFilter').value;
+  const ratingF = document.getElementById('ratingFilter').value;
+  const search = document.getElementById('searchBox').value.toLowerCase();
+
+  let filtered = allCards.filter(c => {
+    if (role && c.role_id !== role) return false;
+    if (phase && c.nist_phase !== phase) return false;
+    if (search && !c.title.toLowerCase().includes(search) && !c.id.toLowerCase().includes(search)) return false;
+    if (ratingF === 'unset' && SCENARIOS.every(s => (c.appropriateness?.[s]?.rating || '') !== '')) return false;
+    if (ratingF === 'has-na' && !SCENARIOS.some(s => c.appropriateness?.[s]?.rating === 'not-applicable')) return false;
+    if (ratingF === 'has-inappropriate' && !SCENARIOS.some(s => c.appropriateness?.[s]?.rating === 'inappropriate')) return false;
+    if (ratingF === 'changed' && !changed[c.id]) return false;
+    return true;
+  });
+
+  renderCards(filtered);
+}
+
+function renderCards(cards) {
+  const content = document.getElementById('mainContent');
+  if (!cards.length) { content.innerHTML = '<div class="empty">No cards match the current filters.</div>'; return; }
+
+  // Group by role then phase
+  const grouped = {};
+  for (const c of cards) {
+    if (!grouped[c.role_id]) grouped[c.role_id] = {};
+    if (!grouped[c.role_id][c.nist_phase]) grouped[c.role_id][c.nist_phase] = [];
+    grouped[c.role_id][c.nist_phase].push(c);
+  }
+
+  let html = '';
+  for (const role of ROLE_ORDER) {
+    if (!grouped[role]) continue;
+    const roleCards = Object.values(grouped[role]).flat().length;
+    html += `<div class="role-section">
+      <div class="role-header">
+        <span>${ROLE_NAMES[role] || role.toUpperCase()}</span>
+        <span class="filter-count">${roleCards} card${roleCards !== 1 ? 's' : ''}</span>
+      </div>`;
+
+    for (const phase of PHASE_ORDER) {
+      if (!grouped[role][phase]) continue;
+      const phaseCards = grouped[role][phase];
+      html += `<div class="phase-group">
+        <div class="phase-label">${PHASE_LABELS[phase] || phase} — ${phaseCards.length} card${phaseCards.length !== 1 ? 's' : ''}</div>
+        <table>
+          <thead><tr>
+            <th>ID</th>
+            <th>Title</th>
+            ${SCENARIOS.map(s => `<th class="scenario-header"><div class="scenario-abbr">${SCENARIO_LABELS[s]}</div><div style="font-size:9px;font-weight:400">rating / weight</div></th>`).join('')}
+            <th>Save</th>
+          </tr></thead>
+          <tbody>
+          ${phaseCards.map(c => renderRow(c)).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+  content.innerHTML = html;
+}
+
+function renderRow(card) {
+  const id = card.id;
+  const hasPending = !!changed[id];
+  const scenarioCells = SCENARIOS.map(s => {
+    const rating = getRating(card, s);
+    const weight = getWeight(card, s);
+    return `<td class="scenario-cell">
+      <select class="rating-select ${ratingClass(rating)}" onchange="onRatingChange('${id}','${s}',this)" data-card="${id}" data-scenario="${s}">
+        <option value="" ${!rating ? 'selected' : ''}>(unset)</option>
+        ${RATINGS.map(r => `<option value="${r}" ${rating === r ? 'selected' : ''}>${RATING_LABELS[r]}</option>`).join('')}
+      </select>
+      <div class="weight-toggle">
+        <button class="w-btn ${weight === 1 ? 'active-1' : ''}" onclick="onWeightChange('${id}','${s}',1,this.parentNode)" title="Normal weight">1</button>
+        <button class="w-btn ${weight === 2 ? 'active-2' : ''}" onclick="onWeightChange('${id}','${s}',2,this.parentNode)" title="Critical weight">2★</button>
+      </div>
+    </td>`;
+  }).join('');
+
+  return `<tr id="row-${id}">
+    <td class="card-id">${id}${hasPending ? '<span class="changed-indicator" title="Unsaved"></span>' : ''}</td>
+    <td class="card-title">${card.title}</td>
+    ${scenarioCells}
+    <td class="save-cell"><button class="btn btn-navy btn-sm" onclick="saveCard('${id}')">Save</button></td>
+  </tr>`;
+}
+
+function getCardData(id) {
+  return allCards.find(c => c.id === id);
+}
+
+function ensureChanged(id) {
+  if (!changed[id]) {
+    const card = getCardData(id);
+    changed[id] = { appropriateness: JSON.parse(JSON.stringify(card.appropriateness || {})) };
+  }
+}
+
+function onRatingChange(id, scenario, sel) {
+  ensureChanged(id);
+  if (!changed[id].appropriateness[scenario]) changed[id].appropriateness[scenario] = { rating: '', weight: 1 };
+  changed[id].appropriateness[scenario].rating = sel.value;
+  sel.className = 'rating-select ' + ratingClass(sel.value);
+  markRowChanged(id);
+  renderStats();
+}
+
+function onWeightChange(id, scenario, weight, container) {
+  ensureChanged(id);
+  if (!changed[id].appropriateness[scenario]) changed[id].appropriateness[scenario] = { rating: '', weight: 1 };
+  changed[id].appropriateness[scenario].weight = weight;
+  container.querySelectorAll('.w-btn').forEach((b, i) => {
+    b.className = 'w-btn' + (i === 0 && weight === 1 ? ' active-1' : i === 1 && weight === 2 ? ' active-2' : '');
+  });
+  markRowChanged(id);
+  renderStats();
+}
+
+function markRowChanged(id) {
+  const row = document.getElementById('row-' + id);
+  if (!row) return;
+  const idCell = row.querySelector('.card-id');
+  if (idCell && !idCell.querySelector('.changed-indicator')) {
+    idCell.insertAdjacentHTML('beforeend', '<span class="changed-indicator" title="Unsaved"></span>');
+  }
+}
+
+async function saveCard(id) {
+  const data = changed[id];
+  if (!data) { showToast('No changes to save for ' + id); return; }
+  try {
+    await sbFetch('tt_response_cards?id=eq.' + encodeURIComponent(id), {
+      method: 'PATCH',
+      headers: { 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ appropriateness: data.appropriateness })
+    });
+    // Sync to allCards
+    const card = getCardData(id);
+    if (card) card.appropriateness = JSON.parse(JSON.stringify(data.appropriateness));
+    delete changed[id];
+    // Re-render the row
+    const row = document.getElementById('row-' + id);
+    if (row && card) row.outerHTML = renderRow(card);
+    renderStats();
+    showToast('Saved ' + id);
+  } catch(e) {
+    showToast('Error saving ' + id + ': ' + e.message, true);
+  }
+}
+
+async function saveAll() {
+  const ids = Object.keys(changed);
+  if (!ids.length) { showToast('No unsaved changes'); return; }
+  let saved = 0, failed = 0;
+  for (const id of ids) {
+    try {
+      await sbFetch('tt_response_cards?id=eq.' + encodeURIComponent(id), {
+        method: 'PATCH',
+        headers: { 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ appropriateness: changed[id].appropriateness })
+      });
+      const card = getCardData(id);
+      if (card) card.appropriateness = JSON.parse(JSON.stringify(changed[id].appropriateness));
+      delete changed[id];
+      saved++;
+    } catch(e) {
+      failed++;
+    }
+  }
+  renderStats();
+  applyFilters();
+  showToast(saved + ' saved' + (failed ? ', ' + failed + ' failed' : ''), failed > 0);
+}
+
+function resetFilters() {
+  document.getElementById('roleFilter').value = '';
+  document.getElementById('phaseFilter').value = '';
+  document.getElementById('ratingFilter').value = '';
+  document.getElementById('searchBox').value = '';
+  applyFilters();
+}
+
+function showToast(msg, isErr = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = isErr ? '#b91c1c' : '#152168';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+loadCards();
+</script>
+</body>
+</html>
