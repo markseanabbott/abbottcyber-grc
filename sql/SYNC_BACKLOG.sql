@@ -1,4 +1,4 @@
--- SYNC_BACKLOG.sql -- generated 2026-07-04 (417 items)
+-- SYNC_BACKLOG.sql -- generated 2026-07-10 (418 items)
 -- Safe to re-run (ON CONFLICT DO UPDATE).
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
 VALUES ('s1', 'core', 'Core Concept', 1, 0, 'Security posture scoring for organisations / clients', true, NULL, NULL, '[]', 'completed')
@@ -4921,7 +4921,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB10', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 10, 'Scoring and AAR integration: grade the played hand against the appropriateness data (correct +, critical missed -, inappropriate -, partial credit for defensible-but-not-optimal) and feed results into the existing rubric and AAR.', false, 'High', 'Depends on TB7, TB9.', '[]', 'add')
+VALUES ('TB10', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 10, 'Scoring and AAR integration: grade the played hand against the appropriateness data (correct +, critical missed -, inappropriate -, partial credit for defensible-but-not-optimal) and feed results into the existing rubric and AAR.', true, 'High', 'Deterministic client-side scoring, no AI. Scoring: correct=+weight, inappropriate=-weight, defensible_partial=0 (neutral; precision over volume). tb9ScoreRound() in js/tb9_hand.js runs after ES submits â€” computes per-role scores from appropriateness[archetype].rating/.weight on each hand card, accumulates into tsbState.aarData (perInject[], roleTotals, insightTotals). Grades persisted async via sb.tt.gradeCardPlay() (TB8 hook). _tb9FormatBreakdown() formats compact score+play-type cells (2âœ“ 1âœ— etc). Round-complete screen gains a Score column in summary table. Insight +1 buttons (one per role, one per inject) allow facilitator to award a discretionary point for strong commentary â€” tracked in aarData.insightTotals, consumed by AAR. Terminal view gains two new cards via _tsbRenderAAR() in js/tt_storyboard.js: (1) Exercise Scores table (card plays / insight bonus / total per role); (2) Per-inject breakdown table (inject row x role column, _tb9FormatBreakdown cells). _tsbScorePill() shared helper for score display. No schema changes.', '[]', 'completed')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
@@ -4996,7 +4996,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB_ARC_POS', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 15, 'Future archetype - POS / payment card compromise (hospitality): hotel POS or card-skimming breach. Plays differently from ransomware - distinct notification path (card brands, acquirer, PCI obligations), different containment. Strongest fifth archetype for the hotel vertical. NOT YET BUILT - add stage skeleton + card pool to tt_inject_cards / tt_response_cards when ready; no code change required.', false, 'Low', 'Content decision only - no code change when added. Build after the four live archetypes are proven.', '[]', 'add')
+VALUES ('TB_MP', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 15, 'Storyboard multiplayer integration: wire the existing multiplayer.js join/polling/role-claim engine into the storyboard. Participants join via session code on their own device, see the current inject body, receive their role-filtered card hand from tt_response_cards, and submit plays via tabletop_card_plays. Facilitator screen shows a submission status panel (who has played per role) and controls inject advancement. No new tables required. Three targeted edits: (1) tt_storyboard.js â€” tsbAdvance() persists current_inject to Supabase + writes current card to exercise_log; tsbStart() sets declaration_logged=true to signal exercise started; (2) multiplayer.js â€” mpRenderInjectView() branches on tsb_ scenario_id to a new card-hand view instead of TT_OPTIONS flip cards; (3) tb9_hand.js â€” facilitator view in multiplayer mode shows status dots per role rather than sequential dealing.', false, 'Medium', 'Depends on TB9, mp2, mp3, mp4. Build after TB10 (scoring) is solid â€” multiplayer without scoring is just a remote screen. ~160 lines across 3 files. No schema changes.', '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
@@ -5011,7 +5011,7 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB_ARC_CLOUD', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 16, 'Future archetype - cloud / SaaS account takeover (tech and SaaS clients): M365 or Google Workspace tenant compromise, OAuth abuse, admin account theft. Distinct from BEC and increasingly common in the SaaS vertical. DDoS / availability attack is a lighter secondary option for the same segment. NOT YET BUILT - add stage skeleton + card pool to tt_inject_cards / tt_response_cards when ready; no code change required.', false, 'Low', 'Content decision only - no code change when added. Build after the four live archetypes are proven. DDoS is a lighter secondary option for the same client segment.', '[]', 'add')
+VALUES ('TB_ARC_POS', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 16, 'Future archetype - POS / payment card compromise (hospitality): hotel POS or card-skimming breach. Plays differently from ransomware - distinct notification path (card brands, acquirer, PCI obligations), different containment. Strongest fifth archetype for the hotel vertical. NOT YET BUILT - add stage skeleton + card pool to tt_inject_cards / tt_response_cards when ready; no code change required.', false, 'Low', 'Content decision only - no code change when added. Build after the four live archetypes are proven.', '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,
@@ -5026,7 +5026,22 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at    = now();
 
 INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
-VALUES ('TB14', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 17, 'Interactive flow map: extend generate_grids.mjs to also write tabletop/flowmap.json (archetype-keyed, cards with stage/requires/grants/nist_phase, deterministic order). Create tabletop/flowmap.html â€” self-contained page (no build step) that loads flowmap.json and renders an interactive layered graph: archetype selector, nodes = cards in stage columns colored by NIST phase, edges = A.grants intersects B.requires, click to BFS-highlight downstream-reachable path, hover shows requires/grants. Note in FLOWMAP_INDEX.md that flowmap.html refreshes with node tabletop/generate_grids.mjs.', false, 'Medium', 'Depends on TB5. Generator already fetches all cards â€” flowmap.json is a zero-cost side output. flowmap.html is a facilitator/developer tool, not a client-facing module. Keep dependency-light (vanilla JS or single CDN lib).', '[]', 'add')
+VALUES ('TB_ARC_CLOUD', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 17, 'Future archetype - cloud / SaaS account takeover (tech and SaaS clients): M365 or Google Workspace tenant compromise, OAuth abuse, admin account theft. Distinct from BEC and increasingly common in the SaaS vertical. DDoS / availability attack is a lighter secondary option for the same segment. NOT YET BUILT - add stage skeleton + card pool to tt_inject_cards / tt_response_cards when ready; no code change required.', false, 'Low', 'Content decision only - no code change when added. Build after the four live archetypes are proven. DDoS is a lighter secondary option for the same client segment.', '[]', 'add')
+ON CONFLICT (id) DO UPDATE SET
+  section_id    = EXCLUDED.section_id,
+  section_title = EXCLUDED.section_title,
+  section_phase = EXCLUDED.section_phase,
+  sort_order    = EXCLUDED.sort_order,
+  "text"        = EXCLUDED."text",
+  done          = EXCLUDED.done,
+  priority      = EXCLUDED.priority,
+  notes         = EXCLUDED.notes,
+  dependencies  = EXCLUDED.dependencies,
+  status        = EXCLUDED.status,
+  updated_at    = now();
+
+INSERT INTO backlog_items (id, section_id, section_title, section_phase, sort_order, "text", done, priority, notes, dependencies, status)
+VALUES ('TB14', 'tb_storyboard', 'Tabletop Ã¢â‚¬ Story Board', 3, 18, 'Interactive flow map: extend generate_grids.mjs to also write tabletop/flowmap.json (archetype-keyed, cards with stage/requires/grants/nist_phase, deterministic order). Create tabletop/flowmap.html â€” self-contained page (no build step) that loads flowmap.json and renders an interactive layered graph: archetype selector, nodes = cards in stage columns colored by NIST phase, edges = A.grants intersects B.requires, click to BFS-highlight downstream-reachable path, hover shows requires/grants. Note in FLOWMAP_INDEX.md that flowmap.html refreshes with node tabletop/generate_grids.mjs.', false, 'Medium', 'Depends on TB5. Generator already fetches all cards â€” flowmap.json is a zero-cost side output. flowmap.html is a facilitator/developer tool, not a client-facing module. Keep dependency-light (vanilla JS or single CDN lib).', '[]', 'add')
 ON CONFLICT (id) DO UPDATE SET
   section_id    = EXCLUDED.section_id,
   section_title = EXCLUDED.section_title,

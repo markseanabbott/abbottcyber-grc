@@ -25,6 +25,25 @@ const TB9_HOLD_CARD = {
   body:  'Deliberately take no action at this stage. Choose this card if your role has nothing meaningful to add right now. Restraint is a valid and scorable play.',
 };
 
+// Compact score + play-type breakdown for AAR table cells (used by _tsbRenderAAR in tt_storyboard.js)
+function _tb9FormatBreakdown(score, graded) {
+  const nonHold = (graded || []).filter(g => g.id !== 'HOLD');
+  if (!nonHold.length) return `<span style="color:var(--muted);font-size:11px">Hold</span>`;
+  const correct  = nonHold.filter(g => g.rating === 'correct' && g.weight === 1).length;
+  const critical = nonHold.filter(g => g.rating === 'correct' && g.weight === 2).length;
+  const partial  = nonHold.filter(g => g.rating === 'defensible_partial').length;
+  const wrong    = nonHold.filter(g => g.rating === 'inappropriate').length;
+  const parts = [];
+  if (correct)  parts.push(`${correct}✓`);
+  if (critical) parts.push(`${critical}★`);
+  if (partial)  parts.push(`${partial}~`);
+  if (wrong)    parts.push(`${wrong}✗`);
+  const scoreColor = score > 0 ? '#15803d' : score < 0 ? '#dc2626' : 'var(--muted)';
+  const scoreStr   = score > 0 ? `+${score}` : String(score);
+  return `<span style="color:${scoreColor};font-weight:700;font-size:12px">${scoreStr}</span>` +
+    (parts.length ? `<span style="color:var(--muted);font-size:10px;margin-left:3px">${parts.join(' ')}</span>` : '');
+}
+
 let tb9State = {
   mode:        null,    // null | 'loading' | 'dealing' | 'round_complete'
   roleIdx:     0,       // 0–4 within TB9_ROLE_ORDER
@@ -34,6 +53,8 @@ let tb9State = {
   submitted:   {},      // roleId → bool
   holdPrompt:  false,   // show "did you mean to hold?" confirmation
   saving:      false,
+  scores:         {},   // roleId → { score, graded } — populated by tb9ScoreRound
+  insightAwarded: {},   // roleId → bool — resets each inject round
 };
 
 function tb9Init() {
@@ -41,6 +62,7 @@ function tb9Init() {
     mode: null, roleIdx: 0, hands: {},
     selections: {}, comments: {}, submitted: {},
     holdPrompt: false, saving: false,
+    scores: {}, insightAwarded: {},
   };
 }
 
@@ -157,6 +179,7 @@ async function tb9DoSubmit() {
   if (tb9State.roleIdx < TB9_ROLE_ORDER.length - 1) {
     tb9State.roleIdx++;
   } else {
+    tb9ScoreRound();
     tb9State.mode = 'round_complete';
   }
 
@@ -171,6 +194,80 @@ function tb9StepBack() {
   const prevRole = TB9_ROLE_ORDER[tb9State.roleIdx];
   tb9State.submitted[prevRole] = false;
   tb9State.holdPrompt = false;
+  tsbRender();
+}
+
+// ── TB10 scoring ──────────────────────────────────────────────
+
+function tb9ScoreRound() {
+  const archetype    = tsbState.archetype;
+  const stage        = tsbState.currentStage;
+  const cardId       = tsbState.currentCard?.id;
+  const nistPhaseKey = TB9_NIST_PHASES[tsbState.currentCard?.nist_phase_idx] || 'detect_analyze';
+
+  const roleScores = {};
+  for (const roleId of TB9_ROLE_ORDER) {
+    const hand    = tb9State.hands[roleId] || [];
+    const cardIds = tb9State.selections[roleId] || [];
+    const graded  = [];
+    let score     = 0;
+
+    for (const cid of cardIds) {
+      if (cid === 'HOLD') {
+        graded.push({ id: 'HOLD', title: 'Hold', rating: 'hold', weight: 0, pts: 0 });
+        continue;
+      }
+      const card = hand.find(c => c.id === cid);
+      if (!card) continue;
+      const appr  = card.appropriateness?.[archetype];
+      if (!appr) continue;
+      const rating = appr.rating;
+      const weight = appr.weight || 1;
+      let pts = 0;
+      if (rating === 'correct')       pts =  weight;
+      if (rating === 'inappropriate') pts = -weight;
+      // defensible_partial → 0 (neutral; precision over volume by design)
+      graded.push({ id: cid, title: card.title || cid, rating, weight, pts });
+      score += pts;
+    }
+
+    roleScores[roleId] = { score, graded };
+  }
+
+  // Accumulate into session-level AAR
+  if (tsbState.aarData) {
+    tsbState.aarData.perInject.push({ stage, cardId, nistPhaseKey, roleScores });
+    for (const roleId of TB9_ROLE_ORDER) {
+      tsbState.aarData.roleTotals[roleId] =
+        (tsbState.aarData.roleTotals[roleId] || 0) + (roleScores[roleId]?.score || 0);
+    }
+  }
+
+  tb9State.scores         = roleScores;
+  tb9State.insightAwarded = {};
+
+  // Persist grade map to DB async (non-blocking; TB10 record-keeping)
+  if (tsbState.sessionId) {
+    for (const roleId of TB9_ROLE_ORDER) {
+      const gradesMap = {};
+      for (const g of (roleScores[roleId]?.graded || [])) {
+        if (g.id !== 'HOLD') gradesMap[g.id] = g.rating;
+      }
+      if (Object.keys(gradesMap).length) {
+        sb.tt.gradeCardPlay(tsbState.sessionId, stage, roleId, gradesMap)
+          .catch(e => console.warn('TB10: grade write failed:', e.message || e));
+      }
+    }
+  }
+}
+
+function tb9AwardInsight(roleId) {
+  if (tb9State.insightAwarded[roleId]) return;
+  tb9State.insightAwarded[roleId] = true;
+  if (tsbState.aarData) {
+    tsbState.aarData.insightTotals[roleId] =
+      (tsbState.aarData.insightTotals[roleId] || 0) + 1;
+  }
   tsbRender();
 }
 
@@ -213,14 +310,6 @@ function _tb9RenderDealing() {
   const nistLabel  = TB9_PHASE_LABELS[nistKey];
   const totalStages = tsbMaxStage();
   const isTerminal = typeof tsbIsTerminal === 'function' && tsbIsTerminal(injectCard);
-
-  const rolePrompts = (() => {
-    try {
-      const rp = typeof injectCard.role_prompts === 'string'
-        ? JSON.parse(injectCard.role_prompts) : (injectCard.role_prompts || {});
-      return rp;
-    } catch { return {}; }
-  })();
 
   // Role stepper
   const stepper = TB9_ROLE_ORDER.map((rid, i) => {
@@ -295,15 +384,9 @@ function _tb9RenderDealing() {
     <span style="font-size:11px;color:var(--muted);font-family:monospace;margin-left:auto">${injectCard?.id || ''}</span>
   </div>
 
-  <!-- Inject + role prompt (slim) -->
+  <!-- Inject context (slim) — role prompts omitted so they don't tip off card choices -->
   <div class="card" style="margin-bottom:0.875rem;border-left:3px solid var(--cyan);padding:12px 16px">
-    <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:${rolePrompts[roleId] ? '8px' : '0'}">${injectCard?.title || ''}</div>
-    ${rolePrompts[roleId]
-      ? `<div style="font-size:12px;color:var(--text);line-height:1.55;padding:6px 10px;border-left:3px solid ${roleColor};background:${roleColor}0d;border-radius:0 4px 4px 0">
-          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:${roleColor};display:block;margin-bottom:2px">${roleLabel}</span>
-          ${rolePrompts[roleId]}
-        </div>`
-      : ''}
+    <div style="font-size:13px;font-weight:700;color:var(--navy)">${injectCard?.title || ''}</div>
   </div>
 
   <!-- Progress: role stepper -->
@@ -371,15 +454,19 @@ function _tb9RenderComplete() {
   const isTerminal = typeof tsbIsTerminal === 'function' && tsbIsTerminal(injectCard);
 
   const summaryRows = TB9_ROLE_ORDER.map(roleId => {
-    const sel     = tb9State.selections[roleId] || [];
-    const comment = (tb9State.comments[roleId] || '').trim();
-    const rc      = TSB_ROLE_COLORS[roleId];
-    const hasHold = sel.includes('HOLD');
+    const sel       = tb9State.selections[roleId] || [];
+    const comment   = (tb9State.comments[roleId] || '').trim();
+    const rc        = TSB_ROLE_COLORS[roleId];
+    const hasHold   = sel.includes('HOLD');
     const realCards = sel.filter(id => id !== 'HOLD');
-    const label   = sel.length === 0 ? '—'
+    const label     = sel.length === 0 ? '—'
       : hasHold && realCards.length === 0 ? 'Hold'
       : hasHold ? `Hold + ${realCards.length} card${realCards.length !== 1 ? 's' : ''}`
       : `${sel.length} card${sel.length !== 1 ? 's' : ''}`;
+    const injectScore = tb9State.scores[roleId]?.score;
+    const scoreHtml   = injectScore !== undefined
+      ? (typeof _tsbScorePill === 'function' ? _tsbScorePill(injectScore) : String(injectScore))
+      : '<span style="color:var(--muted)">—</span>';
     return `<tr style="border-bottom:1px solid var(--border)">
       <td style="padding:8px 12px;white-space:nowrap">
         <span style="font-size:11px;font-weight:700;color:${rc};background:${rc}18;padding:2px 8px;border-radius:10px">${roleId.toUpperCase()}</span>
@@ -387,6 +474,7 @@ function _tb9RenderComplete() {
       <td style="padding:8px 12px;font-size:13px;color:var(--text);font-weight:500">${TSB_ROLE_LABELS[roleId]}</td>
       <td style="padding:8px 12px;font-size:12px;color:var(--text)">${label}</td>
       <td style="padding:8px 12px;font-size:12px;color:var(--muted);max-width:200px">${comment || '—'}</td>
+      <td style="padding:8px 12px;text-align:center">${scoreHtml}</td>
     </tr>`;
   }).join('');
 
@@ -409,7 +497,7 @@ function _tb9RenderComplete() {
       <span style="font-size:15px;font-weight:700;color:var(--navy)">All roles submitted — Inject ${tsbState.currentStage} complete</span>
     </div>
     <div style="font-size:12px;color:var(--muted)">
-      ${tsbState.sessionId ? 'Plays persisted to Supabase.' : '⚠ No session — plays were not persisted.'}
+      ${tsbState.sessionId ? 'Plays scored and persisted to Supabase.' : '⚠ No session — plays were not persisted.'}
     </div>
   </div>
 
@@ -422,10 +510,30 @@ function _tb9RenderComplete() {
           <th style="padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left">Name</th>
           <th style="padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left">Played</th>
           <th style="padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left">Comment</th>
+          <th style="padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:center">Score</th>
         </tr>
       </thead>
       <tbody>${summaryRows}</tbody>
     </table>
+  </div>
+
+  <!-- TB10: Insight awards — facilitator discretionary +1 per role per inject -->
+  <div style="margin-bottom:0.875rem;padding:12px 16px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px">
+      Insight +1 — award for strong commentary or reasoning (one per role)
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${TB9_ROLE_ORDER.map(r => {
+        const awarded = tb9State.insightAwarded[r];
+        const rc = TSB_ROLE_COLORS[r];
+        return `<button onclick="tb9AwardInsight('${r}')" ${awarded ? 'disabled' : ''}
+          style="padding:5px 12px;border:1.5px solid ${awarded ? '#bbf7d0' : rc};border-radius:6px;
+          background:${awarded ? '#f0fdf4' : '#fff'};color:${awarded ? '#15803d' : rc};
+          font-family:inherit;font-size:11px;font-weight:700;cursor:${awarded ? 'default' : 'pointer'}">
+          ${r.toUpperCase()} ${awarded ? '★ Insight' : '+1 Insight'}
+        </button>`;
+      }).join('')}
+    </div>
   </div>
 
   <!-- Next action -->
@@ -446,6 +554,8 @@ window.tb9SetComment  = tb9SetComment;
 window.tb9TrySubmit   = tb9TrySubmit;
 window.tb9ConfirmHold = tb9ConfirmHold;
 window.tb9CancelHold  = tb9CancelHold;
-window.tb9StepBack    = tb9StepBack;
-window.tb9NextInject  = tb9NextInject;
-window.renderTB9Round = renderTB9Round;
+window.tb9StepBack       = tb9StepBack;
+window.tb9ScoreRound     = tb9ScoreRound;
+window.tb9AwardInsight   = tb9AwardInsight;
+window.tb9NextInject     = tb9NextInject;
+window.renderTB9Round    = renderTB9Round;

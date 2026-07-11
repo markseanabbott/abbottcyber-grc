@@ -29,20 +29,29 @@ const TSB_NIST_LABELS = {
 
 // ── Module state ──────────────────────────────────────────────────────────
 let tsbState = {
-  view:          'setup',   // 'setup' | 'running' | 'terminal'
-  archetype:     null,
-  allCards:      [],        // curated cards for current archetype (from DB)
-  loading:       false,
-  loadError:     null,
-  seed:          null,      // 32-bit unsigned int — set on archetype load and reroll
-  prngCallCount: 0,         // advances +1 per card drawn; reset to 0 on Start
-  previewPath:   [],        // [{stage, card}] — simulated from seed, shown on setup
-  tagState:      [],        // accumulated grant tags during live session
-  currentStage:  1,
-  currentCard:   null,
-  path:          [],        // [{stage, card}] — actual path taken so far
-  showPath:      false,
-  sessionId:     null,     // set async when tsbStart() creates a tabletop_sessions row (TB9)
+  view:                'setup',   // 'setup' | 'running' | 'terminal'
+  archetype:           null,
+  allCards:            [],        // curated cards for current archetype (from DB)
+  loading:             false,
+  loadError:           null,
+  seed:                null,      // 32-bit unsigned int — set on archetype load and reroll
+  prngCallCount:       0,         // advances +1 per card drawn; reset to 0 on Start
+  previewPath:         [],        // [{stage, card}] — simulated from seed, shown on setup
+  tagState:            [],        // accumulated grant tags during live session
+  currentStage:        1,
+  currentCard:         null,
+  path:                [],        // [{stage, card}] — actual path taken so far
+  showPath:            false,
+  sessionId:           null,      // set async when tsbStart() creates a tabletop_sessions row (TB9)
+  breachDeclared:      false,
+  breachStage:         null,      // stage number when breach was declared
+  breachTimestamp:     null,
+  showBreachConfirm:   false,
+  aarData: {
+    perInject:     [],
+    roleTotals:    { ic: 0, tl: 0, cl: 0, lc: 0, es: 0 },
+    insightTotals: { ic: 0, tl: 0, cl: 0, lc: 0, es: 0 },
+  },
 };
 
 // ── Seeded PRNG (mulberry32) ──────────────────────────────────────────────
@@ -166,6 +175,11 @@ async function tsbStart() {
   tsbState.prngCallCount = 0;  // reset so delivery starts at same PRNG position as preview
   tsbState.showPath      = false;
   tsbState.sessionId     = null;
+  tsbState.aarData       = {
+    perInject:     [],
+    roleTotals:    { ic: 0, tl: 0, cl: 0, lc: 0, es: 0 },
+    insightTotals: { ic: 0, tl: 0, cl: 0, lc: 0, es: 0 },
+  };
   if (typeof tb9Init === 'function') tb9Init();
 
   const card = tsbPickCard(1);
@@ -240,8 +254,17 @@ function tsbReset() {
   tsbState.currentStage  = 1;
   tsbState.currentCard   = null;
   tsbState.path          = [];
-  tsbState.showPath      = false;
-  tsbState.sessionId     = null;
+  tsbState.showPath          = false;
+  tsbState.sessionId         = null;
+  tsbState.breachDeclared    = false;
+  tsbState.breachStage       = null;
+  tsbState.breachTimestamp   = null;
+  tsbState.showBreachConfirm = false;
+  tsbState.aarData           = {
+    perInject:     [],
+    roleTotals:    { ic: 0, tl: 0, cl: 0, lc: 0, es: 0 },
+    insightTotals: { ic: 0, tl: 0, cl: 0, lc: 0, es: 0 },
+  };
   // Keep archetype + loaded cards + seed so user can reroll or re-start immediately
   tsbState.prngCallCount = 0;
   if (typeof tb9Init === 'function') tb9Init();
@@ -278,6 +301,103 @@ function tsbNistBadge(idx) {
 
 function tsbSeedHex(seed) {
   return '0x' + (seed >>> 0).toString(16).toUpperCase().padStart(8, '0');
+}
+
+// ── TB10 scoring helpers ──────────────────────────────────────────────────
+
+function _tsbScorePill(pts, big) {
+  const sz = big ? '16px' : '13px';
+  if (pts > 0) return `<span style="color:#15803d;font-weight:700;font-size:${sz}">+${pts}</span>`;
+  if (pts < 0) return `<span style="color:#dc2626;font-weight:700;font-size:${sz}">${pts}</span>`;
+  return `<span style="color:var(--muted);font-size:${sz}">0</span>`;
+}
+
+function _tsbRenderAAR() {
+  const aar = tsbState.aarData;
+  if (!aar || !aar.perInject.length) return '';
+
+  const roles = ['ic', 'tl', 'cl', 'lc', 'es'];
+
+  const roleHeaders = roles.map(r =>
+    `<th style="text-align:center;padding:6px 10px;font-size:11px;font-weight:700;color:${TSB_ROLE_COLORS[r]}">${r.toUpperCase()}</th>`
+  ).join('');
+
+  const playRow = roles.map(r =>
+    `<td style="text-align:center;padding:7px 10px">${_tsbScorePill(aar.roleTotals[r] || 0)}</td>`
+  ).join('');
+
+  const insightRow = roles.map(r => {
+    const ins = aar.insightTotals[r] || 0;
+    return `<td style="text-align:center;padding:7px 10px;font-size:13px;color:${ins > 0 ? '#d97706' : 'var(--muted)'}">
+      ${ins > 0 ? `+${ins}` : '—'}</td>`;
+  }).join('');
+
+  const totalRow = roles.map(r => {
+    const total = (aar.roleTotals[r] || 0) + (aar.insightTotals[r] || 0);
+    return `<td style="text-align:center;padding:7px 10px">${_tsbScorePill(total, true)}</td>`;
+  }).join('');
+
+  const injectRows = aar.perInject.map(({ stage, cardId, nistPhaseKey, roleScores }) => {
+    const phaseLabels = typeof TB9_PHASE_LABELS !== 'undefined' ? TB9_PHASE_LABELS : {};
+    const nistLabel   = phaseLabels[nistPhaseKey] || nistPhaseKey || '';
+    const cells = roles.map(r => {
+      const rs = roleScores[r] || { score: 0, graded: [] };
+      return `<td style="text-align:center;padding:5px 8px">${
+        typeof _tb9FormatBreakdown === 'function'
+          ? _tb9FormatBreakdown(rs.score, rs.graded)
+          : _tsbScorePill(rs.score)
+      }</td>`;
+    }).join('');
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:6px 10px;white-space:nowrap">
+        <span style="font-family:monospace;font-weight:700;color:var(--navy);font-size:12px">${cardId}</span>
+        <span style="font-size:11px;color:var(--muted);margin-left:6px">Stage ${stage}</span>
+        <div style="font-size:10px;color:var(--muted)">${nistLabel}</div>
+      </td>
+      ${cells}
+    </tr>`;
+  }).join('');
+
+  return `
+    <div class="card" style="margin-bottom:1rem">
+      <div style="font-weight:700;color:var(--navy);font-size:15px;margin-bottom:0.875rem">📊 Exercise Scores</div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;min-width:420px">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border)">
+              <th style="text-align:left;font-size:11px;color:var(--muted);padding:6px 10px;text-transform:uppercase;min-width:80px"></th>
+              ${roleHeaders}
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:7px 10px;font-size:12px;color:var(--muted)">Card plays</td>${playRow}
+            </tr>
+            <tr style="border-bottom:2px solid var(--border)">
+              <td style="padding:7px 10px;font-size:12px;color:var(--muted)">Insight bonus</td>${insightRow}
+            </tr>
+            <tr>
+              <td style="padding:8px 10px;font-size:13px;font-weight:700;color:var(--text)">Total</td>${totalRow}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:1rem">
+      <div style="font-weight:600;color:var(--navy);font-size:13px;margin-bottom:0.75rem">Per-inject breakdown</div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;min-width:420px">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border)">
+              <th style="text-align:left;font-size:11px;color:var(--muted);padding:5px 10px;text-transform:uppercase">Inject</th>
+              ${roleHeaders}
+            </tr>
+          </thead>
+          <tbody>${injectRows}</tbody>
+        </table>
+      </div>
+    </div>`;
 }
 
 // ── Render router ─────────────────────────────────────────────────────────
@@ -404,24 +524,6 @@ function _tsbRenderRunning() {
   const maxSt      = tsbMaxStage();
   const isTerminal = tsbIsTerminal(card);
 
-  // Role prompts
-  const rolePrompts = (() => {
-    try {
-      const rp = typeof card.role_prompts === 'string'
-        ? JSON.parse(card.role_prompts)
-        : (card.role_prompts || {});
-      return Object.entries(TSB_ROLE_LABELS).map(([id, label]) => {
-        const prompt = rp[id];
-        if (!prompt) return '';
-        const col = TSB_ROLE_COLORS[id];
-        return `<div style="border-left:3px solid ${col};padding:0.5rem 0.75rem;background:rgba(0,0,0,0.02);border-radius:0 4px 4px 0;margin-bottom:0.5rem">
-          <div style="font-size:11px;font-weight:700;color:${col};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">${label}</div>
-          <div style="font-size:13px;color:var(--text);line-height:1.55">${prompt}</div>
-        </div>`;
-      }).join('');
-    } catch { return ''; }
-  })();
-
   // Tag state display
   const tagHtml = tsbState.tagState.length
     ? tsbState.tagState.map(t => `<span class="badge" style="background:rgba(7,180,217,0.12);color:var(--navy);font-size:11px;font-weight:600">${t}</span>`).join(' ')
@@ -456,12 +558,20 @@ function _tsbRenderRunning() {
         <span style="font-size:11px;color:var(--muted);font-family:monospace;margin-left:auto">${card.id} · seed ${tsbSeedHex(tsbState.seed)}</span>
       </div>
 
-      <!-- Inject card -->
+      <!-- Breach banner — persists once declared -->
+      ${tsbState.breachDeclared ? `
+      <div style="background:#fef2f2;border:2px solid #dc2626;border-radius:8px;padding:10px 16px;margin-bottom:0.875rem;display:flex;align-items:center;gap:10px">
+        <span style="font-size:16px">⚠</span>
+        <div>
+          <span style="font-size:13px;font-weight:700;color:#dc2626">BREACH DECLARED</span>
+          <span style="font-size:12px;color:var(--muted);margin-left:10px">Declared at Stage ${tsbState.breachStage} — continuing exercise for response practice</span>
+        </div>
+      </div>` : ''}
+
+      <!-- Inject card — role prompts intentionally omitted; they don't align with card hands -->
       <div class="card" style="margin-bottom:0.875rem;border-left:4px solid ${isTerminal ? '#dc2626' : 'var(--cyan)'}">
         <div style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:0.75rem">${card.title}</div>
-        <p style="font-size:14px;color:var(--text);line-height:1.7;margin:0 0 1.25rem">${tsbSubOrg(card.body || '')}</p>
-        <div style="font-weight:600;color:var(--navy);font-size:13px;margin-bottom:0.5rem">Role prompts</div>
-        ${rolePrompts || '<p style="color:var(--muted);font-size:13px;margin:0">No role prompts on this card.</p>'}
+        <p style="font-size:14px;color:var(--text);line-height:1.7;margin:0">${tsbSubOrg(card.body || '')}</p>
       </div>
 
       <!-- Tag state + grants -->
@@ -498,9 +608,23 @@ function _tsbRenderRunning() {
         </table>` : ''}
       </div>
 
-      <!-- TB9 Deal Hands — replaces direct inject advance; inject advances after all roles submit -->
-      <div style="display:flex;gap:0.75rem;align-items:center">
-        <button class="btn btn-primary" onclick="tb9StartRound()" style="font-size:14px;padding:0.6rem 1.5rem">
+      <!-- Breach confirmation prompt -->
+      ${tsbState.showBreachConfirm ? `
+      <div style="padding:12px 16px;background:#fef2f2;border:1.5px solid #dc2626;border-radius:8px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-size:13px;font-weight:600;color:#dc2626">⚠ Confirm breach declaration — all roles should agree before declaring. This is a significant IR milestone.</span>
+        <div style="display:flex;gap:8px;margin-left:auto">
+          <button onclick="tsbCancelBreachPrompt()" style="padding:5px 14px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px;background:#fff;color:var(--text)">Cancel</button>
+          <button onclick="tsbConfirmBreach()" style="padding:5px 14px;background:#dc2626;border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;color:#fff">Yes — Declare Breach</button>
+        </div>
+      </div>` : ''}
+
+      <!-- Action bar: breach gate + deal hands -->
+      <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">
+        ${tsbState.breachDeclared
+          ? `<span style="font-size:12px;font-weight:700;color:#dc2626;border:1.5px solid #dc2626;padding:5px 12px;border-radius:6px;white-space:nowrap">⚠ Breach declared</span>`
+          : `<button class="btn btn-outline btn-sm" onclick="tsbDeclareBreachPrompt()" style="border-color:#dc2626;color:#dc2626;white-space:nowrap">⚠ Declare breach</button>`
+        }
+        <button class="btn btn-primary" onclick="tb9StartRound()" style="margin-left:auto;font-size:14px;padding:0.6rem 1.5rem">
           🃏 Deal response hands
         </button>
       </div>
@@ -538,6 +662,8 @@ function _tsbRenderTerminal() {
         <p style="color:var(--muted);font-size:13px;margin:0">${tsbState.path.length}-card chain · ${tsbState.tagState.length} tag${tsbState.tagState.length !== 1 ? 's' : ''} accumulated</p>
       </div>
 
+      ${_tsbRenderAAR()}
+
       <div class="card" style="margin-bottom:1rem">
         <div style="font-weight:600;color:var(--navy);margin-bottom:0.75rem">Chain replay</div>
         <table style="width:100%;border-collapse:collapse">
@@ -566,6 +692,38 @@ function _tsbRenderTerminal() {
     </div>`;
 }
 
+// ── Breach declaration ────────────────────────────────────────────────────
+
+function tsbDeclareBreachPrompt() {
+  tsbState.showBreachConfirm = true;
+  tsbRender();
+}
+
+function tsbCancelBreachPrompt() {
+  tsbState.showBreachConfirm = false;
+  tsbRender();
+}
+
+async function tsbConfirmBreach() {
+  tsbState.breachDeclared    = true;
+  tsbState.breachStage       = tsbState.currentStage;
+  tsbState.breachTimestamp   = new Date().toISOString();
+  tsbState.showBreachConfirm = false;
+  tsbRender();
+
+  if (tsbState.sessionId) {
+    try {
+      await sbFetch(`tabletop_sessions?id=eq.${tsbState.sessionId}`, 'PATCH', {
+        breach_declared:  true,
+        breach_timestamp: tsbState.breachTimestamp,
+        breach_rationale: `Declared at Stage ${tsbState.breachStage} — Storyboard exercise`,
+      });
+    } catch (e) {
+      console.warn('TSB: breach persist failed:', e.message || e);
+    }
+  }
+}
+
 // ── Window exports ────────────────────────────────────────────────────────
 window.renderTTStoryboard = renderTTStoryboard;
 window.tsbSetArchetype    = tsbSetArchetype;
@@ -574,4 +732,7 @@ window.tsbStart           = tsbStart;
 window.tsbAdvance         = tsbAdvance;
 window.tsbReset           = tsbReset;
 window.tsbRunAgain        = tsbRunAgain;
-window.tsbTogglePath      = tsbTogglePath;
+window.tsbTogglePath          = tsbTogglePath;
+window.tsbDeclareBreachPrompt = tsbDeclareBreachPrompt;
+window.tsbCancelBreachPrompt  = tsbCancelBreachPrompt;
+window.tsbConfirmBreach       = tsbConfirmBreach;

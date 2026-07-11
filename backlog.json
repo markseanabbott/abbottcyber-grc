@@ -2,7 +2,7 @@
     "project":  "Abbott Cyber Consulting ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â GRC Security Scorecard",
     "version":  "1.6.2",
     "created":  "2026-05-14",
-    "updated":  "2026-07-04 (session 119)",
+    "updated":  "2026-07-10 (session 120)",
     "description":  "Feature backlog for the Security Scorecard / GRC Platform MVP. Items are ordered by build phase. Mark done: true when a feature is built and approved.",
     "build_approach":  "Artifact-first MVP built in Claude. Each session picks the next open section, builds it as an interactive artifact, user approves, item marked done.",
     "sections":  [
@@ -2133,9 +2133,9 @@
                                        {
                                            "id":  "TB10",
                                            "text":  "Scoring and AAR integration: grade the played hand against the appropriateness data (correct +, critical missed -, inappropriate -, partial credit for defensible-but-not-optimal) and feed results into the existing rubric and AAR.",
-                                           "done":  false,
+                                           "done":  true,
                                            "priority":  "High",
-                                           "notes":  "Depends on TB7, TB9."
+                                           "notes":  "Deterministic client-side scoring, no AI. Scoring: correct=+weight, inappropriate=-weight, defensible_partial=0 (neutral; precision over volume). tb9ScoreRound() in js/tb9_hand.js runs after ES submits — computes per-role scores from appropriateness[archetype].rating/.weight on each hand card, accumulates into tsbState.aarData (perInject[], roleTotals, insightTotals). Grades persisted async via sb.tt.gradeCardPlay() (TB8 hook). _tb9FormatBreakdown() formats compact score+play-type cells (2✓ 1✗ etc). Round-complete screen gains a Score column in summary table. Insight +1 buttons (one per role, one per inject) allow facilitator to award a discretionary point for strong commentary — tracked in aarData.insightTotals, consumed by AAR. Terminal view gains two new cards via _tsbRenderAAR() in js/tt_storyboard.js: (1) Exercise Scores table (card plays / insight bonus / total per role); (2) Per-inject breakdown table (inject row x role column, _tb9FormatBreakdown cells). _tsbScorePill() shared helper for score display. No schema changes."
                                        },
                                        {
                                            "id":  "TB10b",
@@ -2164,6 +2164,13 @@
                                            "done":  false,
                                            "priority":  "Low",
                                            "notes":  "Depends on TB5, TB10."
+                                       },
+                                       {
+                                           "id":  "TB_MP",
+                                           "text":  "Storyboard multiplayer integration: wire the existing multiplayer.js join/polling/role-claim engine into the storyboard. Participants join via session code on their own device, see the current inject body, receive their role-filtered card hand from tt_response_cards, and submit plays via tabletop_card_plays. Facilitator screen shows a submission status panel (who has played per role) and controls inject advancement. No new tables required. Three targeted edits: (1) tt_storyboard.js — tsbAdvance() persists current_inject to Supabase + writes current card to exercise_log; tsbStart() sets declaration_logged=true to signal exercise started; (2) multiplayer.js — mpRenderInjectView() branches on tsb_ scenario_id to a new card-hand view instead of TT_OPTIONS flip cards; (3) tb9_hand.js — facilitator view in multiplayer mode shows status dots per role rather than sequential dealing.",
+                                           "done":  false,
+                                           "priority":  "Medium",
+                                           "notes":  "Depends on TB9, mp2, mp3, mp4. Build after TB10 (scoring) is solid — multiplayer without scoring is just a remote screen. ~160 lines across 3 files. No schema changes."
                                        },
                                        {
                                            "id":  "TB_ARC_POS",
